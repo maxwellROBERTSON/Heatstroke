@@ -1,0 +1,15 @@
+.cache
+.vscode
+.vs
+bin/
+build/
+Makefile
+lib/
+Shaders/bin
+*.vcxproj
+*.vcxproj.user
+*.vcxproj.filters
+*.make
+*.sln
+*.spv
+compile_commands.json
