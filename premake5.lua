@@ -1,6 +1,6 @@
 -- Adapted from COMP5892M (Advanced Rendering)
 
-workspace "GroupProject"
+workspace "Heatstroke"
     language "C++"
     cppdialect "C++20"
 
