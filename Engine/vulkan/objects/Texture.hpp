@@ -11,45 +11,6 @@
 namespace Engine {
 namespace vk {
 
-	struct SamplerInfo {
-		VkFilter minFilter;
-		VkFilter magFilter;
-		VkSamplerAddressMode addressModeU;
-		VkSamplerAddressMode addressModeV;
-	};
-
-	enum AlphaMode {
-		ALPHA_OPAQUE,
-		ALPHA_MASK,
-		ALPHA_BLEND
-	};
-
-	struct Material {
-		AlphaMode alphaMode;
-		float alphaCutoff;
-
-		glm::vec3 emissiveFactor;
-		int emissiveTextureIndex;
-		int emissiveTextureTexCoords;
-
-		int normalTextureIndex;
-		int normalTextureTexCoords;
-
-		int occlusionTextureIndex;
-		int occlusionTextureTexCoords;
-		float occlusionStrength;
-
-		glm::vec4 baseColourFactor;
-		int baseColourTextureIndex;
-		int baseColourTextureTexCoords;
-
-		int metallicRoughnessTextureIndex;
-		int metallicRoughnessTextureTexCoords;
-		float metallicFactor;
-		float roughnessFactor;
-
-	};
-
 	class Texture {
 	public:
 		Texture() noexcept = default;

@@ -36,8 +36,8 @@ namespace Engine {
 		return model;
 	}
 
-	Model makeVulkanModel(const VulkanContext& aContext, tinygltf::Model model) {
-		Model vkModel{};
+	vk::Model makeVulkanModel(const VulkanContext& aContext, tinygltf::Model& model) {
+		vk::Model vkModel{};
 
 		// 1. Load material info
 		loadMaterials(model, vkModel);
@@ -53,11 +53,22 @@ namespace Engine {
 
 		// 5. Recurse through scene nodes and get mesh data for each
 
+		std::uint32_t indicesCount, verticesCount;
+
+		// Get indices and vertices count for all nodes in the scene
+		for (std::size_t i = 0; i < model.nodes.size(); i++)
+			getCounts(model, model.nodes[scene.nodes[i]], indicesCount, verticesCount);
+
+		// Load the node meshes into Vulkan objects
+		for (std::size_t i = 0; scene.nodes.size(); i++) {
+			const tinygltf::Node node = model.nodes[scene.nodes[i]];
+			// loadNodeMeshes()
+		}
 
 		return vkModel;
 	}
 
-	void loadMaterials(tinygltf::Model model, Model& vkModel) {
+	void loadMaterials(tinygltf::Model& model, vk::Model& vkModel) {
 		for (tinygltf::Material material : model.materials) {
 			vk::Material vkMaterial{};
 			
@@ -96,7 +107,7 @@ namespace Engine {
 		}
 	}
 
-	void loadTextureSamplers(tinygltf::Model model, Model& vkModel) {
+	void loadTextureSamplers(tinygltf::Model& model, vk::Model& vkModel) {
 		for (tinygltf::Sampler sampler : model.samplers) {
 			vk::SamplerInfo vkSampler{};
 			vkSampler.minFilter = Utils::getVkFilter(sampler.minFilter);
@@ -108,7 +119,7 @@ namespace Engine {
 		}
 	}
 
-	void loadTextures(const VulkanContext& aContext, tinygltf::Model model, Model& vkModel) {
+	void loadTextures(const VulkanContext& aContext, tinygltf::Model& model, vk::Model& vkModel) {
 		for (std::size_t i = 0; i < model.textures.size(); i++) {
 			tinygltf::Texture texture = model.textures[i];
 
@@ -144,6 +155,25 @@ namespace Engine {
 
 			vkModel.textures.emplace_back(std::move(vkTexture));
 			vkModel.imageViews.emplace_back(std::move(vkImageView));
+		}
+	}
+
+	void getCounts(tinygltf::Model& model, tinygltf::Node& node, std::uint32_t& indicesCount, std::uint32_t& verticesCount) {
+		if (!node.children.empty()) {
+			for (std::size_t i = 0; i < node.children.size(); i++)
+				getCounts(model, model.nodes[node.children[i]], indicesCount, verticesCount);
+		}
+
+		if (node.mesh > -1) {
+			const tinygltf::Mesh mesh = model.meshes[node.mesh];
+
+			for (std::size_t i = 0; i < mesh.primitives.size(); i++) {
+				tinygltf::Primitive primitive = mesh.primitives[i];
+				verticesCount += model.accessors[primitive.attributes.find("POSITION")->second].count;
+
+				if (primitive.indices > -1)
+					indicesCount += model.accessors[primitive.indices].count;
+			}
 		}
 	}
 
