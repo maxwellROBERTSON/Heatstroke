@@ -81,9 +81,9 @@ project "Engine"
 
     links "Utils"
     links "x-volk"
-    links "x-stb"
     links "x-glfw"
     links "x-vma"
+    links "x-tinygltf"
 
     dependson "x-glm"
 
@@ -104,7 +104,7 @@ project "Game"
 
     files(sources)
     removefiles("**.vcxproj*")
-
+    
     links "Engine"
     links "Utils"
     links "x-volk"

@@ -49,14 +49,22 @@ namespace vk {
 	};
 
 	struct Primitive {
+		Primitive(std::uint32_t firstIndex, std::uint32_t indexCount, std::uint32_t vertexCount, Material& material) :
+			firstIndex(firstIndex), indexCount(indexCount), vertexCount(vertexCount), material(material) {
+				hasIndices = indexCount > 0;
+			};
+
 		std::uint32_t firstIndex;
 		std::uint32_t indexCount;
 		std::uint32_t vertexCount;
-		Material* material;
+		Material& material;
+		bool hasIndices;
 	};
 
 	struct Mesh {
+		Mesh(glm::mat4 matrix) : matrix(matrix) {};
 		std::vector<Primitive*> primitives;
+		glm::mat4 matrix;
 	};
 
 	struct Node {
@@ -71,13 +79,32 @@ namespace vk {
 	};
 
     struct Model {
-        std::vector<vk::Material> materials;
-        std::vector<vk::SamplerInfo> samplers;
-        std::vector<vk::Texture> textures;
-        std::vector<vk::ImageView> imageViews;
+		std::vector<Node*> nodes;
+        std::vector<Material> materials;
+        std::vector<SamplerInfo> samplerInfos;
+        std::vector<Texture> textures;
+        std::vector<ImageView> imageViews;
+
+
 
         void drawModel();
     };
+
+	struct RawData {
+		RawData(std::uint32_t vertexCount, std::uint32_t indexCount) {
+			positions.reserve(vertexCount);
+			normals.reserve(vertexCount);
+			texCoords.reserve(vertexCount);
+			vertexColours.reserve(vertexCount);
+			indices.reserve(indexCount);
+		};
+
+		std::vector<glm::vec3> positions;
+		std::vector<glm::vec3> normals;
+		std::vector<glm::vec2> texCoords;
+		std::vector<glm::vec4> vertexColours;
+		std::vector<std::uint32_t> indices;
+	};
 
 }
 }

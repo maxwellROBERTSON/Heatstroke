@@ -2,6 +2,7 @@
 
 #include <volk/volk.h>
 #include <vk_mem_alloc.h>
+#define TINYGLTF_NO_STB_IMAGE_WRITE
 #include <tiny_gltf.h>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>

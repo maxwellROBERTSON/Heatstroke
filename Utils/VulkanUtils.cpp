@@ -1,4 +1,6 @@
 #include "VulkanUtils.hpp"
+#include "vulkan/vulkan_core.h"
+#include <stdexcept>
 
 namespace Utils {
 
@@ -16,6 +18,7 @@ namespace Utils {
 		std::uint32_t aDstQueueFamilyIndex
 	) {
 		VkImageMemoryBarrier ibarrier{};
+		ibarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
 		ibarrier.image = aImage;
 		ibarrier.srcAccessMask = aSrcAccessMask;
 		ibarrier.dstAccessMask = aDstAccessMask;

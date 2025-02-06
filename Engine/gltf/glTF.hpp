@@ -2,9 +2,6 @@
 
 #include <string>
 
-#define TINYGLTF_NO_STB_IMAGE_WRITE
-#include <tiny_gltf.h>
-
 #include "../vulkan/objects/Model.hpp"
 #include "../vulkan/VulkanContext.hpp"
 
@@ -21,6 +18,7 @@ namespace Engine {
 
 	void getCounts(tinygltf::Model& model, tinygltf::Node& node, std::uint32_t& indicesCount, std::uint32_t& verticesCount);
 
-	// void loadNodeMeshes(vk::Node* parent, tinygltf::Node& node, std::uint32_t nodeIndex);
+	void loadNodeMeshes(vk::Node* parent, tinygltf::Node& node, tinygltf::Model& model, std::uint32_t nodeIndex, vk::RawData& rawData, vk::Model& vkModel);
 
+	void createVulkanBuffers(vk::Model& vkModel, vk::RawData& rawData);
 }

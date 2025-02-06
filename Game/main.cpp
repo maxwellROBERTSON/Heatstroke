@@ -5,6 +5,7 @@
 #include "../Engine/vulkan/VulkanContext.hpp"
 #include "../Engine/glfw/Callbacks.hpp"
 #include "../Engine/vulkan/VulkanWindow.hpp"
+#include "Engine/gltf/glTF.hpp"
 
 
 namespace {
@@ -39,6 +40,9 @@ namespace {
         vkContext.allocator = Engine::createVulkanAllocator(*vkContext.window.get());
 
         Engine::registerCallbacks(vkContext.getGLFWWindow());
+
+        tinygltf::Model model = Engine::loadFromFile("DamagedHelmet.gltf");
+        Engine::makeVulkanModel(vkContext, model);
     }
 
     void runGameLoop() {
