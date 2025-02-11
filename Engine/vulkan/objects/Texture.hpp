@@ -28,12 +28,14 @@ namespace vk {
 		VkImage image = VK_NULL_HANDLE;
 		VmaAllocation allocation = VK_NULL_HANDLE;
 
+		int sampler = -1;
+
 	private:
 		VmaAllocator mAllocator = VK_NULL_HANDLE;
 	};
 
-	Texture createTexture(const VulkanContext&, tinygltf::Image, VkFormat);
-	ImageView createImageView(const VulkanWindow&, VkImage, VkFormat);
+	Texture createTexture(const VulkanContext& aContext, tinygltf::Image aTinygltfImage, VkFormat aFormat, int aSampler);
+	ImageView createImageView(const VulkanWindow& aWindow, VkImage aImage, VkFormat aFormat);
 
 	std::uint32_t computeMipLevels(std::uint32_t width, std::uint32_t height);
 

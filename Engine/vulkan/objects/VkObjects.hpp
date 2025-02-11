@@ -92,7 +92,8 @@ namespace vk {
 	using RenderPass = UniqueHandle< VkRenderPass, VkDevice, vkDestroyRenderPass >;
 	using Framebuffer = UniqueHandle< VkFramebuffer, VkDevice, vkDestroyFramebuffer >;
 
-	using DescriptorPool = UniqueHandle< VkDescriptorPool, VkDevice, vkDestroyDescriptorPool >;
+	// We use 1 descriptor pool throughout the entire application lifetime at the moment
+	//using DescriptorPool = UniqueHandle< VkDescriptorPool, VkDevice, vkDestroyDescriptorPool >;
 	using DescriptorSetLayout = UniqueHandle< VkDescriptorSetLayout, VkDevice, vkDestroyDescriptorSetLayout >;
 
 	using Pipeline = UniqueHandle< VkPipeline, VkDevice, vkDestroyPipeline >;

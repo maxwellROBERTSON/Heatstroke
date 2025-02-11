@@ -255,7 +255,7 @@ namespace Engine {
 		std::tie(window.get()->swapchain, window.get()->swapchainFormat, window.get()->swapchainExtent) = createSwapchain(window.get()->physicalDevice, window.get()->surface, window.get()->device->device, window.get()->window, queueFamilyIndices);
 
 		// Get swap chain images & create associated image views
-		getSwpachainImages(window.get()->device->device, window.get()->swapchain, window.get()->swapImages);
+		getSwapchainImages(window.get()->device->device, window.get()->swapchain, window.get()->swapImages);
 		createSwapchainImageViews(window.get()->device->device, window.get()->swapchainFormat, window.get()->swapImages, window.get()->swapViews);
 
 		// Done
@@ -291,7 +291,7 @@ namespace Engine {
 
 		vkDestroySwapchainKHR(aWindow.device->device, oldSwapchain, nullptr);
 
-		getSwpachainImages(aWindow.device->device, aWindow.swapchain, aWindow.swapImages);
+		getSwapchainImages(aWindow.device->device, aWindow.swapchain, aWindow.swapImages);
 		createSwapchainImageViews(aWindow.device->device, aWindow.swapchainFormat, aWindow.swapImages, aWindow.swapViews);
 
 		SwapChanges ret{};
@@ -556,7 +556,7 @@ namespace Engine {
 		return { chain, format.format, extent };
 	}
 
-	void getSwpachainImages(VkDevice aDevice, VkSwapchainKHR aSwapchain, std::vector<VkImage>& aImages) {
+	void getSwapchainImages(VkDevice aDevice, VkSwapchainKHR aSwapchain, std::vector<VkImage>& aImages) {
 		assert(0 == aImages.size());
 
 		std::uint32_t numImages = 0;
@@ -597,6 +597,49 @@ namespace Engine {
 		}
 
 		assert(aViews.size() == aImages.size());
+	}
+
+	void submitAndPresent(
+		const VulkanWindow& aWindow,
+		std::vector<VkCommandBuffer>& aCmdBuffers,
+		std::vector<vk::Fence>& frameDone,
+		std::vector<vk::Semaphore>& imageAvailable,
+		std::vector<vk::Semaphore>& renderFinished,
+		std::size_t frameIndex,
+		std::uint32_t imageIndex
+	) {
+		// Submit
+		VkPipelineStageFlags waitPipelineStages = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+
+		VkSubmitInfo subInfo{};
+		subInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		subInfo.commandBufferCount = 1;
+		subInfo.pCommandBuffers = &aCmdBuffers[frameIndex];
+		subInfo.waitSemaphoreCount = 1;
+		subInfo.pWaitSemaphores = &imageAvailable[frameIndex].handle;
+		subInfo.pWaitDstStageMask = &waitPipelineStages;
+		subInfo.signalSemaphoreCount = 1;
+		subInfo.pSignalSemaphores = &renderFinished[frameIndex].handle;
+
+		if (const auto res = vkQueueSubmit(aWindow.graphicsQueue, 1, &subInfo, frameDone[frameIndex].handle); VK_SUCCESS != res)
+			throw Utils::Error("Unable to submit command buffer to queue\n vkQueueSubmit() returned %s", Utils::toString(res).c_str());
+
+		// Present
+		VkPresentInfoKHR presentInfo{};
+		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+		presentInfo.waitSemaphoreCount = 1;
+		presentInfo.pWaitSemaphores = &renderFinished[frameIndex].handle;
+		presentInfo.swapchainCount = 1;
+		presentInfo.pSwapchains = &aWindow.swapchain;
+		presentInfo.pImageIndices = &imageIndex;
+		presentInfo.pResults = nullptr;
+
+		const auto presentRes = vkQueuePresentKHR(aWindow.presentQueue, &presentInfo);	
+
+		/*if (VK_SUBOPTIMAL_KHR == presentRes || VK_ERROR_OUT_OF_DATE_KHR == presentRes)
+			recreateSwapchain = true;
+		else */if (VK_SUCCESS != presentRes)
+			throw Utils::Error("Unable to present swapchain image %u\n vkQueuePresentKHR() returned %s", imageIndex, Utils::toString(presentRes).c_str());
 	}
 
 }

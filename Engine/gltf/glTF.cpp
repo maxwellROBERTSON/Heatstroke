@@ -3,7 +3,11 @@
 #include <glm/gtc/type_ptr.inl>
 
 #include "Error.hpp"
+#include "toString.hpp"
 #include "VulkanEnums.hpp"
+#include "VulkanUtils.hpp"
+#include "../vulkan/VulkanDevice.hpp"
+#include "../vulkan/objects/Buffer.hpp"
 
 namespace Engine {
 
@@ -35,7 +39,6 @@ namespace Engine {
 
 	vk::Model makeVulkanModel(const VulkanContext& aContext, tinygltf::Model& model) {
 		vk::Model vkModel{};
-		std::fprintf(stdout, "In makeVulkanModel\n");
 
 		// 1. Load material info
 		loadMaterials(model, vkModel);
@@ -51,7 +54,7 @@ namespace Engine {
 
 		// 5. Recurse through scene nodes and get mesh data for each
 
-		std::uint32_t indicesCount, verticesCount;
+		std::uint32_t indicesCount = 0, verticesCount = 0;
 
 		// Get indices and vertices count for all nodes in the scene
 		for (std::size_t i = 0; i < model.nodes.size(); i++)
@@ -62,14 +65,12 @@ namespace Engine {
 		std::fprintf(stdout, "Before loadNodeMeshes\nscene.nodes.size(): %zu\n", scene.nodes.size());
 
 		// Load the node meshes into Vulkan objects
-		for (std::size_t i = 0; scene.nodes.size(); i++) {
+		for (std::size_t i = 0; i < scene.nodes.size(); i++) {
 			tinygltf::Node node = model.nodes[scene.nodes[i]];
 			loadNodeMeshes(nullptr, node, model, scene.nodes[i], rawData, vkModel);
 		}
 
-		std::fprintf(stdout, "Before createVulkanBuffers\n");
-
-		createVulkanBuffers(vkModel, rawData);
+		createVulkanBuffers(aContext, vkModel, rawData);
 
 		return vkModel;
 	}
@@ -156,7 +157,7 @@ namespace Engine {
 					format = VK_FORMAT_R8G8B8A8_SRGB;
 			}
 
-			vk::Texture vkTexture = vk::createTexture(aContext, image, format);
+			vk::Texture vkTexture = vk::createTexture(aContext, image, format, texture.sampler);
 			vk::ImageView vkImageView = vk::createImageView(*aContext.window, vkTexture.image, format);
 
 			vkModel.textures.emplace_back(std::move(vkTexture));
@@ -185,7 +186,6 @@ namespace Engine {
 
 	void loadNodeMeshes(vk::Node* parent, tinygltf::Node& node, tinygltf::Model& model, std::uint32_t nodeIndex, vk::RawData& rawData, vk::Model& vkModel) {
 		vk::Node* newNode = new vk::Node();
-		std::fprintf(stdout, "After newNode\n");
 		newNode->index = nodeIndex;
 		newNode->parent = parent;
 		newNode->nodeMatrix = glm::mat4(1.0f);
@@ -213,7 +213,6 @@ namespace Engine {
 		std::fprintf(stdout, "node.children.size(): %zu\nnode.children.empty(): %i\n", node.children.size(), node.children.empty());
 
 		if (!node.children.empty()) {
-			std::fprintf(stdout, "In !node.children.empty()\n");
 			for (std::size_t i = 0; i < node.children.size(); i++)
 				loadNodeMeshes(newNode, model.nodes[node.children[i]], model, node.children[i], rawData, vkModel);
 		}
@@ -314,16 +313,218 @@ namespace Engine {
 			}
 		}
 
-		std::fprintf(stdout, "After primitive loop\n");
-
 		if (parent)
 			parent->children.push_back(newNode);
 		else
 			vkModel.nodes.push_back(newNode);
 	}
 
-	void createVulkanBuffers(vk::Model& vkModel, vk::RawData& rawData) {
+	void createVulkanBuffers(const VulkanContext& aContext, vk::Model& vkModel, vk::RawData& rawData) {
 		std::fprintf(stdout, "positions: %zu\nnormals: %zu\ntexCoords: %zu\ncolours: %zu\n", rawData.positions.size(), rawData.normals.size(), rawData.texCoords.size(), rawData.vertexColours.size());
+
+		// Pre-calculate sizes for less code duplication
+		std::size_t posSize = rawData.positions.size() * sizeof(glm::vec3);
+		std::size_t normSize = rawData.normals.size() * sizeof(glm::vec3);
+		std::size_t texSize = rawData.texCoords.size() * sizeof(glm::vec2);
+		std::size_t vertColSize = rawData.vertexColours.size() * sizeof(glm::vec4);
+		std::size_t indicesSize = rawData.indices.size() * sizeof(std::uint32_t);
+
+		// GPU sided buffers
+		vk::Buffer posGPUBuf = vk::createBuffer(
+			*aContext.allocator,
+			posSize,
+			VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+			0,
+			VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
+		);
+
+		vk::Buffer normGPUBuf = vk::createBuffer(
+			*aContext.allocator,
+			normSize,
+			VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+			0,
+			VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
+		);
+
+		vk::Buffer texGPUBuf = vk::createBuffer(
+			*aContext.allocator,
+			texSize,
+			VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+			0,
+			VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
+		);
+
+		vk::Buffer vertColGPUBuf = vk::createBuffer(
+			*aContext.allocator,
+			vertColSize,
+			VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+			0,
+			VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
+		);
+
+		vk::Buffer indicesGPUBuf = vk::createBuffer(
+			*aContext.allocator,
+			indicesSize,
+			VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+			0,
+			VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
+		);
+
+		// Staging buffers
+		vk::Buffer posStaging = vk::createBuffer(
+			*aContext.allocator,
+			posSize,
+			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+			VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT
+		);
+
+		vk::Buffer normStaging = vk::createBuffer(
+			*aContext.allocator,
+			normSize,
+			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+			VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT
+		);
+
+		vk::Buffer texStaging = vk::createBuffer(
+			*aContext.allocator,
+			texSize,
+			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+			VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT
+		);
+
+		vk::Buffer vertColStaging = vk::createBuffer(
+			*aContext.allocator,
+			vertColSize,
+			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+			VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT
+		);
+
+		vk::Buffer indicesStaging = vk::createBuffer(
+			*aContext.allocator,
+			indicesSize,
+			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+			VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT
+		);
+
+		// Copy to ptr
+		void* posPtr = nullptr;
+		if (const auto res = vmaMapMemory(aContext.allocator->allocator, posStaging.allocation, &posPtr); VK_SUCCESS != res)
+			throw Utils::Error("Mapping memory for writing\n vmaMapMemory() returned %s", Utils::toString(res).c_str());
+
+		std::memcpy(posPtr, rawData.positions.data(), posSize);
+		vmaUnmapMemory(aContext.allocator->allocator, posStaging.allocation);
+
+		void* normPtr = nullptr;
+		if (const auto res = vmaMapMemory(aContext.allocator->allocator, normStaging.allocation, &normPtr); VK_SUCCESS != res)
+			throw Utils::Error("Mapping memory for writing\n vmaMapMemory() returned %s", Utils::toString(res).c_str());
+
+		std::memcpy(normPtr, rawData.normals.data(), normSize);
+		vmaUnmapMemory(aContext.allocator->allocator, normStaging.allocation);
+
+		void* texPtr = nullptr;
+		if (const auto res = vmaMapMemory(aContext.allocator->allocator, texStaging.allocation, &texPtr); VK_SUCCESS != res)
+			throw Utils::Error("Mapping memory for writing\n vmaMapMemory() returned %s", Utils::toString(res).c_str());
+
+		std::memcpy(texPtr, rawData.texCoords.data(), texSize);
+		vmaUnmapMemory(aContext.allocator->allocator, texStaging.allocation);
+
+		void* vertColPtr = nullptr;
+		if (const auto res = vmaMapMemory(aContext.allocator->allocator, vertColStaging.allocation, &vertColPtr); VK_SUCCESS != res)
+			throw Utils::Error("Mapping memory for writing\n vmaMapMemory() returned %s", Utils::toString(res).c_str());
+
+		std::memcpy(vertColPtr, rawData.vertexColours.data(), vertColSize);
+		vmaUnmapMemory(aContext.allocator->allocator, vertColStaging.allocation);
+
+		void* indicesPtr = nullptr;
+		if (const auto res = vmaMapMemory(aContext.allocator->allocator, indicesStaging.allocation, &indicesPtr); VK_SUCCESS != res)
+			throw Utils::Error("Mapping memory for writing\n vmaMapMemory() returned %s", Utils::toString(res).c_str());
+
+		std::memcpy(indicesPtr, rawData.indices.data(), indicesSize);
+		vmaUnmapMemory(aContext.allocator->allocator, indicesStaging.allocation);
+		
+		vk::Fence uploadComplete = createFence(*aContext.window);
+
+		VkCommandBuffer uploadCmdBuf = createCommandBuffer(*aContext.window);
+
+		beginCommandBuffer(uploadCmdBuf);
+
+		VkBufferCopy posCopy{};
+		posCopy.size = posSize;
+
+		vkCmdCopyBuffer(uploadCmdBuf, posStaging.buffer, posGPUBuf.buffer, 1, &posCopy);
+
+		Utils::bufferBarrier(
+			uploadCmdBuf,
+			posGPUBuf.buffer,
+			VK_ACCESS_TRANSFER_WRITE_BIT,
+			VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,
+			VK_PIPELINE_STAGE_TRANSFER_BIT,
+			VK_PIPELINE_STAGE_VERTEX_INPUT_BIT
+		);
+
+		VkBufferCopy normCopy{};
+		normCopy.size = normSize;
+
+		vkCmdCopyBuffer(uploadCmdBuf, normStaging.buffer, normGPUBuf.buffer, 1, &normCopy);
+
+		Utils::bufferBarrier(
+			uploadCmdBuf,
+			normGPUBuf.buffer,
+			VK_ACCESS_TRANSFER_WRITE_BIT,
+			VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,
+			VK_PIPELINE_STAGE_TRANSFER_BIT,
+			VK_PIPELINE_STAGE_VERTEX_INPUT_BIT
+		);
+
+		VkBufferCopy texCopy{};
+		texCopy.size = texSize;
+
+		vkCmdCopyBuffer(uploadCmdBuf, texStaging.buffer, texGPUBuf.buffer, 1, &texCopy);
+
+		Utils::bufferBarrier(
+			uploadCmdBuf,
+			texGPUBuf.buffer,
+			VK_ACCESS_TRANSFER_WRITE_BIT,
+			VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,
+			VK_PIPELINE_STAGE_TRANSFER_BIT,
+			VK_PIPELINE_STAGE_VERTEX_INPUT_BIT
+		);
+
+		VkBufferCopy vertColCopy{};
+		vertColCopy.size = vertColSize;
+
+		vkCmdCopyBuffer(uploadCmdBuf, vertColStaging.buffer, vertColGPUBuf.buffer, 1, &vertColCopy);
+
+		Utils::bufferBarrier(
+			uploadCmdBuf,
+			vertColGPUBuf.buffer,
+			VK_ACCESS_TRANSFER_WRITE_BIT,
+			VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,
+			VK_PIPELINE_STAGE_TRANSFER_BIT,
+			VK_PIPELINE_STAGE_VERTEX_INPUT_BIT
+		);
+
+		VkBufferCopy indicesCopy{};
+		indicesCopy.size = indicesSize;
+
+		vkCmdCopyBuffer(uploadCmdBuf, indicesStaging.buffer, indicesGPUBuf.buffer, 1, &indicesCopy);
+
+		Utils::bufferBarrier(
+			uploadCmdBuf,
+			indicesGPUBuf.buffer,
+			VK_ACCESS_TRANSFER_WRITE_BIT,
+			VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,
+			VK_PIPELINE_STAGE_TRANSFER_BIT,
+			VK_PIPELINE_STAGE_VERTEX_INPUT_BIT
+		);
+
+		endAndSubmitCommandBuffer(*aContext.window, uploadCmdBuf);
+
+		vkModel.posBuffer = std::move(posGPUBuf);
+		vkModel.normBuffer = std::move(normGPUBuf);
+		vkModel.texBuffer = std::move(texGPUBuf);
+		vkModel.vertColBuffer = std::move(vertColGPUBuf);
+		vkModel.indicesBuffer = std::move(indicesGPUBuf);
 	}
 
 }

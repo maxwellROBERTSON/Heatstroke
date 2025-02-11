@@ -7,6 +7,7 @@
 #include "Error.hpp"
 #include "toString.hpp"
 #include "VulkanWindow.hpp"
+#include "VulkanDevice.hpp"
 
 namespace Engine {
 

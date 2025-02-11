@@ -14,10 +14,11 @@
 #endif
 #include <GLFW/glfw3.h>
 
-#include "VulkanAllocator.hpp"
-#include "VulkanDevice.hpp"
+#include "objects/VkObjects.hpp"
 
 namespace Engine {
+
+	class VulkanDevice;
 
 	class VulkanWindow {
 	public:
@@ -71,8 +72,8 @@ namespace Engine {
 	std::optional<std::uint32_t> findQueueFamily(VkPhysicalDevice, VkQueueFlags, VkSurfaceKHR = VK_NULL_HANDLE);
 
 	std::unique_ptr<VulkanDevice> createDevice(
-		const VulkanWindow&,
-		VkPhysicalDevice,
+		const VulkanWindow& aWindow,
+		VkPhysicalDevice aPhysicalDev,
 		std::vector<std::uint32_t> const& aQueueFamilies,
 		std::vector<char const*> const& aEnabledDeviceExtensions = {}
 	);
@@ -89,7 +90,16 @@ namespace Engine {
 		VkSwapchainKHR aOldSwapchain = VK_NULL_HANDLE
 	);
 
-	void getSwpachainImages(VkDevice, VkSwapchainKHR, std::vector<VkImage>&);
+	void getSwapchainImages(VkDevice, VkSwapchainKHR, std::vector<VkImage>&);
 	void createSwapchainImageViews(VkDevice, VkFormat, std::vector<VkImage> const&, std::vector<VkImageView>&);
 
+	void submitAndPresent(
+		const VulkanWindow& aWindow,
+		std::vector<VkCommandBuffer>& aCmdBuffers,
+		std::vector<vk::Fence>& frameDone,
+		std::vector<vk::Semaphore>& imageAvailable,
+		std::vector<vk::Semaphore>& renderFinished,
+		std::size_t frameIndex,
+		std::uint32_t imageIndex
+	);
 }

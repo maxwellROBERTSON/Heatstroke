@@ -6,6 +6,7 @@
 #include <glm/gtc/quaternion.hpp>
 
 #include "Texture.hpp"
+#include "Buffer.hpp"
 
 namespace Engine {
 namespace vk {
@@ -85,10 +86,15 @@ namespace vk {
         std::vector<Texture> textures;
         std::vector<ImageView> imageViews;
 
+		Buffer posBuffer;
+		Buffer normBuffer;
+		Buffer texBuffer;
+		Buffer vertColBuffer;
+		Buffer indicesBuffer;
 
-
-        void drawModel();
-    };
+        void drawModel(VkCommandBuffer aCmdBuf);
+		void drawNode(Node* node, VkCommandBuffer aCmdBuf);
+	};
 
 	struct RawData {
 		RawData(std::uint32_t vertexCount, std::uint32_t indexCount) {

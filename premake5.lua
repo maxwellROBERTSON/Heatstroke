@@ -83,7 +83,6 @@ project "Engine"
     links "x-volk"
     links "x-glfw"
     links "x-vma"
-    links "x-tinygltf"
 
     dependson "x-glm"
 
@@ -96,7 +95,6 @@ project "Game"
         ".",
         "../",
         "Utils/"
-
     }
 
     kind "ConsoleApp"
@@ -128,7 +126,7 @@ project "Shaders"
 
     files(sources)
 
-    handle_glsl_files(glslcOptions, "Shaders", {})
+    handle_glsl_files(glslcOptions, "Shaders/spv", {})
 
 project "Utils"
     local sources = {
