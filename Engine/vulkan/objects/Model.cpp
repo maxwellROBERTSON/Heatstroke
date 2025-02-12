@@ -35,5 +35,13 @@ namespace vk {
 		}
 	}
 
+	void Model::destroy() {
+		posBuffer.~Buffer();
+		normBuffer.~Buffer();
+		texBuffer.~Buffer();
+		vertColBuffer.~Buffer();
+		indicesBuffer.~Buffer();
+	}
+
 }
 }

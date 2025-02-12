@@ -93,7 +93,7 @@ namespace Engine {
 	void getSwapchainImages(VkDevice, VkSwapchainKHR, std::vector<VkImage>&);
 	void createSwapchainImageViews(VkDevice, VkFormat, std::vector<VkImage> const&, std::vector<VkImageView>&);
 
-	void submitAndPresent(
+	VkResult submitAndPresent(
 		const VulkanWindow& aWindow,
 		std::vector<VkCommandBuffer>& aCmdBuffers,
 		std::vector<vk::Fence>& frameDone,

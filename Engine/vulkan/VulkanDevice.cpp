@@ -51,7 +51,6 @@ namespace Engine {
 		poolInfo.poolSizeCount = sizeof(pools) / sizeof(pools[0]);
 		poolInfo.pPoolSizes = pools;
 
-		VkDescriptorPool pool = VK_NULL_HANDLE;
 		if (const auto res = vkCreateDescriptorPool(device, &poolInfo, nullptr, &dPool); VK_SUCCESS != res)
 			throw Utils::Error("Unable to create descriptor pool\n vkCreateDescriptorPool() returned %s", Utils::toString(res).c_str());
 	}
@@ -170,7 +169,7 @@ namespace Engine {
 			throw Utils::Error("Unable to reset frame fence %u\n vkResetFences() returned %s", frameIndex, Utils::toString(res).c_str());
 	}
 
-	void acquireNextSwapchainImage(const VulkanWindow& aWindow, std::vector<vk::Semaphore>& aSemaphores, std::size_t frameIndex, std::uint32_t imageIndex) {
+	void acquireNextSwapchainImage(const VulkanWindow& aWindow, std::vector<vk::Semaphore>& aSemaphores, std::size_t frameIndex, std::uint32_t& imageIndex) {
 		const VkResult acquireResult = vkAcquireNextImageKHR(
 			aWindow.device->device,
 			aWindow.swapchain,

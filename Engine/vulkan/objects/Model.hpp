@@ -94,6 +94,7 @@ namespace vk {
 
         void drawModel(VkCommandBuffer aCmdBuf);
 		void drawNode(Node* node, VkCommandBuffer aCmdBuf);
+		void destroy();
 	};
 
 	struct RawData {

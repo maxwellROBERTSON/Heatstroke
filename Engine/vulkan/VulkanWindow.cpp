@@ -56,6 +56,7 @@ namespace Engine {
 			vkDestroyCommandPool(device->device, device->cPool, nullptr);
 		}
 
+		std::fprintf(stdout, "Destroying device\n");
 		if (device->device != VK_NULL_HANDLE) {
 			vkDestroyDevice(device->device, nullptr);
 		}
@@ -599,7 +600,7 @@ namespace Engine {
 		assert(aViews.size() == aImages.size());
 	}
 
-	void submitAndPresent(
+	VkResult submitAndPresent(
 		const VulkanWindow& aWindow,
 		std::vector<VkCommandBuffer>& aCmdBuffers,
 		std::vector<vk::Fence>& frameDone,
@@ -634,12 +635,7 @@ namespace Engine {
 		presentInfo.pImageIndices = &imageIndex;
 		presentInfo.pResults = nullptr;
 
-		const auto presentRes = vkQueuePresentKHR(aWindow.presentQueue, &presentInfo);	
-
-		/*if (VK_SUBOPTIMAL_KHR == presentRes || VK_ERROR_OUT_OF_DATE_KHR == presentRes)
-			recreateSwapchain = true;
-		else */if (VK_SUCCESS != presentRes)
-			throw Utils::Error("Unable to present swapchain image %u\n vkQueuePresentKHR() returned %s", imageIndex, Utils::toString(presentRes).c_str());
+		return vkQueuePresentKHR(aWindow.presentQueue, &presentInfo);
 	}
 
 }

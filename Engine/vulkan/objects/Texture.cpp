@@ -48,6 +48,7 @@ namespace vk {
 
 		vk::Buffer staging = createBuffer(
 			*aContext.allocator,
+			"textureStaging",
 			sizeInBytes,
 			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 			VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT

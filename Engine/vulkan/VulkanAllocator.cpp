@@ -12,6 +12,7 @@
 namespace Engine {
 
 	VulkanAllocator::~VulkanAllocator() {
+		std::fprintf(stdout, "Destroying allocator\n");
 		if (allocator != VK_NULL_HANDLE) {
 			vmaDestroyAllocator(allocator);
 		}

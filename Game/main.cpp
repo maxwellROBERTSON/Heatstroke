@@ -14,6 +14,8 @@
 #include "../Engine/vulkan/objects/Buffer.hpp"
 #include "../Engine/gltf/glTF.hpp"
 
+#include "Error.hpp"
+#include "toString.hpp"
 #include "Uniforms.hpp"
 
 #include "Camera.hpp"
@@ -29,6 +31,7 @@ namespace {
     Engine::vk::Model model;
 
     Camera camera;
+    bool recreateSwapchain = false;
 }
 
 int main() try {
@@ -39,6 +42,7 @@ int main() try {
     // and Vulkan doesnt like objects being destroyed
     // past main, so we manually call those object 
     // destructors ourselves.
+    model.destroy();
     vkContext.allocator.reset();
     vkContext.window.reset();
 
@@ -96,7 +100,7 @@ namespace {
         }
 
         // Create uniform buffers
-        Engine::vk::Buffer sceneUBO = Engine::vk::createBuffer(*vkContext.allocator, sizeof(glsl::SceneUniform), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, 0, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
+        Engine::vk::Buffer sceneUBO = Engine::vk::createBuffer(*vkContext.allocator, "sceneUBO", sizeof(glsl::SceneUniform), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, 0, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
 
         VkDescriptorSet sceneDescriptors = Engine::allocateDescriptorSet(*vkContext.window, vkContext.window->device->dPool, sceneLayout.handle);
         {
@@ -189,9 +193,19 @@ namespace {
             vkUpdateDescriptorSets(vkContext.window->device->device, numSets, desc, 0, nullptr);
         }
 
-
         while (!glfwWindowShouldClose(vkContext.getGLFWWindow())) {
             glfwPollEvents();
+
+            if (recreateSwapchain) {
+                vkDeviceWaitIdle(vkContext.window->device->device);
+
+                const auto changes = Engine::recreateSwapchain(*vkContext.window);
+
+                std::fprintf(stdout, "size: %d - format: %d\n", changes.changedSize, changes.changedFormat);
+
+                recreateSwapchain = false;
+                continue;
+            }
 
             frameIndex++;
             frameIndex %= cmdBuffers.size();
@@ -202,6 +216,9 @@ namespace {
             Engine::acquireNextSwapchainImage(*vkContext.window, imageAvailable, frameIndex, imageIndex);
 
             Engine::resetFences(*vkContext.window, frameDone, frameIndex);
+
+            assert(std::size_t(frameIndex) < cmdBuffers.size());
+		    assert(std::size_t(imageIndex) < framebuffers.size());
 
             camera.updateCamera();
             
@@ -222,8 +239,13 @@ namespace {
                 materialDescriptors
             );
 
-            Engine::submitAndPresent(*vkContext.window, cmdBuffers, frameDone, imageAvailable, renderFinished, frameIndex, imageIndex);
+            assert(std::size_t(frameIndex) < renderFinished.size());
 
+            const VkResult result = Engine::submitAndPresent(*vkContext.window, cmdBuffers, frameDone, imageAvailable, renderFinished, frameIndex, imageIndex);
+            if (VK_SUBOPTIMAL_KHR == result || VK_ERROR_OUT_OF_DATE_KHR == result)
+			    recreateSwapchain = true;
+		    else if (VK_SUCCESS != result)
+			    throw Utils::Error("Unable to present swapchain image %u\n vkQueuePresentKHR() returned %s", imageIndex, Utils::toString(result).c_str());
         }
 
         vkDeviceWaitIdle(vkContext.window->device->device);
