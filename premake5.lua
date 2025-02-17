@@ -83,6 +83,8 @@ project "Engine"
     links "x-volk"
     links "x-glfw"
     links "x-vma"
+	links "x-imgui"
+
 
     dependson "x-glm"
 
@@ -108,6 +110,8 @@ project "Game"
     links "x-volk"
     links "x-glfw"
     links "x-vma"
+	links "x-imgui"
+
 
     dependson "Engine"
 

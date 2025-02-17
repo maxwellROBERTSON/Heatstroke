@@ -8,6 +8,8 @@ includedirs("VulkanMemoryAllocator/include")
 includedirs("glm/include")
 includedirs("tgen/include")
 includedirs("tinygltf/")
+includedirs( "imgui");
+includedirs( "imgui/backends");
 
 defines("GLM_FORCE_RADIANS=1")
 defines("GLM_FORCE_SIZE_T_LENGTH=1")
@@ -118,5 +120,25 @@ project("x-tinygltf")
     location "."
 
     files("tinygltf/**.h*")
+
+project ( "x-imgui")
+	kind "StaticLib"
+	location "."
+
+	files {
+		"imgui/*.cpp",
+		"imgui/*.h",
+		"imgui/backends/imgui_impl_vulkan.h",
+		"imgui/backends/imgui_impl_vulkan.cpp",
+		"imgui/backends/imgui_impl_glfw.h",
+		"imgui/backends/imgui_impl_glfw.cpp",
+		"imgui/misc/debuggers/imgui.natvis",
+		"imgui/misc/debuggers/imgui.nastepfilter",
+		"imgui/misc/cpp/imgui_stdlib.cpp",
+		"imgui/misc/cpp/imgui_stdlib.h"
+	}
+
+	includedirs( "imgui");
+	includedirs( "imgui/backends");
 
 project()
