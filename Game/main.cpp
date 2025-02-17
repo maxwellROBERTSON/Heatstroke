@@ -2,6 +2,7 @@
 #include <iostream>
 #include <memory>
 
+<<<<<<< Updated upstream
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -10,6 +11,12 @@
 #include "../Engine/vulkan/VulkanAllocator.hpp"
 #include "../Engine/vulkan/VulkanDevice.hpp"
 #include "../Engine/glfw/Callbacks.hpp"
+=======
+#include "../Engine/debug/Debug.hpp"
+#include "../Engine/glfw/Callbacks.hpp"
+#include "../Engine/vulkan/VulkanAllocator.hpp"
+#include "../Engine/vulkan/VulkanContext.hpp"
+>>>>>>> Stashed changes
 #include "../Engine/vulkan/VulkanWindow.hpp"
 #include "../Engine/vulkan/Renderer.hpp"
 #include "../Engine/vulkan/PipelineCreation.hpp"
@@ -22,12 +29,16 @@
 
 #include "Camera.hpp"
 
+<<<<<<< Updated upstream
 
+=======
+>>>>>>> Stashed changes
 using namespace Engine;
 namespace {
 	void initialiseGame();
 	void runGameLoop();
 
+<<<<<<< Updated upstream
 	void updateSceneUniform(glsl::SceneUniform& aScene, Camera& camera, std::uint32_t aFramebufferWidth, std::uint32_t aFramebufferHeight);
 
 	Engine::VulkanContext vkContext;
@@ -35,6 +46,9 @@ namespace {
 
 	Camera camera;
 	bool recreateSwapchain = false;
+=======
+	VulkanContext vkContext;
+>>>>>>> Stashed changes
 	Debug::DebugManager debug;
 }
 
@@ -50,7 +64,10 @@ int main() try {
 	// and Vulkan doesnt like objects being destroyed
 	// past main, so we manually call those object 
 	// destructors ourselves.
+<<<<<<< Updated upstream
 	model.destroy();
+=======
+>>>>>>> Stashed changes
 	vkContext.allocator.reset();
 	vkContext.window.reset();
 
@@ -71,14 +88,19 @@ namespace {
 		// Get number of connected inputs
 		Engine::registerCallbacks(vkContext.getGLFWWindow());
 
+<<<<<<< Updated upstream
 		tinygltf::Model tinygltfmodel = Engine::loadFromFile("DamagedHelmet.gltf");
 		model = Engine::makeVulkanModel(vkContext, tinygltfmodel);
 
 		camera = Camera(60.0f, 0.1f, 100.0f, glm::vec3(0.0f, 0.0f, 5.0f), glm::vec3(0.0f, 0.0f, -1.0f));
+=======
+		debug.initImGui(vkContext);
+>>>>>>> Stashed changes
 
 		debug.initImGui(vkContext);
 	}
 
+<<<<<<< Updated upstream
 	void runGameLoop() {
 
 		// Create required objects for rendering
@@ -204,10 +226,16 @@ namespace {
 			constexpr auto numSets = sizeof(desc) / sizeof(desc[0]);
 			vkUpdateDescriptorSets(vkContext.window->device->device, numSets, desc, 0, nullptr);
 		}
+=======
+	}
+
+	void runGameLoop() {
+>>>>>>> Stashed changes
 
 		while (!glfwWindowShouldClose(vkContext.getGLFWWindow())) {
 			glfwPollEvents();
 
+<<<<<<< Updated upstream
 			if (recreateSwapchain) {
 				vkDeviceWaitIdle(vkContext.window->device->device);
 
@@ -271,3 +299,9 @@ namespace {
 		aScene.position = glm::vec4(camera.position, 1.0f);
 	}
 }
+=======
+
+		}
+	}
+}
+>>>>>>> Stashed changes
