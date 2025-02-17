@@ -12,14 +12,12 @@ namespace vk {
 			assert(mAllocator != VK_NULL_HANDLE);
 			assert(allocation != VK_NULL_HANDLE);
 			vmaDestroyBuffer(mAllocator, buffer, allocation);
-			std::fprintf(stdout, "Destroyed buffer: %s\n", this->buffername.c_str());
 		}
 	}
 
-	Buffer::Buffer(VmaAllocator aAllocator, std::string name, VkBuffer aBuffer, VmaAllocation aAllocation) noexcept
+	Buffer::Buffer(VmaAllocator aAllocator, VkBuffer aBuffer, VmaAllocation aAllocation) noexcept
 		: buffer(aBuffer)
 		, allocation(aAllocation)
-		, buffername(name)
 		, mAllocator(aAllocator)
 	{}
 
@@ -37,7 +35,7 @@ namespace vk {
 	}
 
 
-	Buffer createBuffer(const VulkanAllocator& aAllocator, const std::string& name, VkDeviceSize aDeviceSize, VkBufferUsageFlags aUsageFlags, VmaAllocationCreateFlags aCreateFlags, VmaMemoryUsage aMemoryUsage) {		
+	Buffer createBuffer(const VulkanAllocator& aAllocator, VkDeviceSize aDeviceSize, VkBufferUsageFlags aUsageFlags, VmaAllocationCreateFlags aCreateFlags, VmaMemoryUsage aMemoryUsage) {		
 		VkBufferCreateInfo bufferInfo{};
 		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 		bufferInfo.size = aDeviceSize;
@@ -53,9 +51,7 @@ namespace vk {
 		if (const auto res = vmaCreateBuffer(aAllocator.allocator, &bufferInfo, &allocInfo, &buffer, &allocation, nullptr); VK_SUCCESS != res)
 			throw Utils::Error("Unable to allocate buffer\n vmaCreateBuffer() returned %s", Utils::toString(res).c_str());
 
-		std::fprintf(stdout, "Allocated a buffer!\n");
-
-		return Buffer(aAllocator.allocator, name, buffer, allocation);
+		return Buffer(aAllocator.allocator, buffer, allocation);
 	}
 
 }

@@ -62,8 +62,6 @@ namespace Engine {
 
 		vk::RawData rawData(verticesCount, indicesCount);
 
-		std::fprintf(stdout, "Before loadNodeMeshes\nscene.nodes.size(): %zu\n", scene.nodes.size());
-
 		// Load the node meshes into Vulkan objects
 		for (std::size_t i = 0; i < scene.nodes.size(); i++) {
 			tinygltf::Node node = model.nodes[scene.nodes[i]];
@@ -210,8 +208,6 @@ namespace Engine {
 		if (node.matrix.size() == 16)
 			newNode->nodeMatrix = glm::make_mat4x4(node.matrix.data());
 
-		std::fprintf(stdout, "node.children.size(): %zu\nnode.children.empty(): %i\n", node.children.size(), node.children.empty());
-
 		if (!node.children.empty()) {
 			for (std::size_t i = 0; i < node.children.size(); i++)
 				loadNodeMeshes(newNode, model.nodes[node.children[i]], model, node.children[i], rawData, vkModel);
@@ -281,23 +277,25 @@ namespace Engine {
 
 					indexCount = indicesAccessor.count;
 					const void* dataPtr = &(indicesBuffer.data[indicesAccessor.byteOffset + indicesBufferView.byteOffset]);
-				
+
 					switch (indicesAccessor.componentType) {
 						case TINYGLTF_PARAMETER_TYPE_UNSIGNED_INT: {
 							const std::uint32_t* buffer = (const std::uint32_t*)dataPtr;
-							for (std::size_t k = 0; k < indicesAccessor.componentType; k++)
+							for (std::size_t k = 0; k < indicesAccessor.count; k++)
 								rawData.indices.push_back(buffer[k]);
+							vkModel.indexType = VK_INDEX_TYPE_UINT32;
 							break;
 						}
 						case TINYGLTF_PARAMETER_TYPE_UNSIGNED_SHORT: {
 							const std::uint16_t* buffer = (const std::uint16_t*)dataPtr;
-							for (std::size_t k = 0; k < indicesAccessor.componentType; k++)
+							for (std::size_t k = 0; k < indicesAccessor.count; k++)
 								rawData.indices.push_back(buffer[k]);
+							vkModel.indexType = VK_INDEX_TYPE_UINT16;
 							break;
 						}
 						case TINYGLTF_PARAMETER_TYPE_UNSIGNED_BYTE: {
 							const std::uint8_t* buffer = (const std::uint8_t*)dataPtr;
-							for (std::size_t k = 0; k < indicesAccessor.componentType; k++)
+							for (std::size_t k = 0; k < indicesAccessor.count; k++)
 								rawData.indices.push_back(buffer[k]);
 							break;
 						}
@@ -307,10 +305,11 @@ namespace Engine {
 					}
 				}
 
-				vk::Primitive* newPrimitive = new vk::Primitive(rawData.indices.size(), indexCount, vertexCount, primitive.material > -1 ? vkModel.materials[primitive.material] : vkModel.materials.back());
+				vk::Primitive* newPrimitive = new vk::Primitive(0, indexCount, vertexCount, primitive.material > -1 ? vkModel.materials[primitive.material] : vkModel.materials.back());
 				newMesh->primitives.push_back(newPrimitive);
 
 			}
+			newNode->mesh = newMesh;
 		}
 
 		if (parent)
@@ -320,19 +319,16 @@ namespace Engine {
 	}
 
 	void createVulkanBuffers(const VulkanContext& aContext, vk::Model& vkModel, vk::RawData& rawData) {
-		std::fprintf(stdout, "positions: %zu\nnormals: %zu\ntexCoords: %zu\ncolours: %zu\n", rawData.positions.size(), rawData.normals.size(), rawData.texCoords.size(), rawData.vertexColours.size());
-
 		// Pre-calculate sizes for less code duplication
 		std::size_t posSize = rawData.positions.size() * sizeof(glm::vec3);
 		std::size_t normSize = rawData.normals.size() * sizeof(glm::vec3);
 		std::size_t texSize = rawData.texCoords.size() * sizeof(glm::vec2);
 		std::size_t vertColSize = rawData.vertexColours.size() * sizeof(glm::vec4);
-		std::size_t indicesSize = rawData.indices.size() * sizeof(std::uint32_t);
+		std::size_t indicesSize = rawData.indices.size() * (vkModel.indexType == VK_INDEX_TYPE_UINT32 ? sizeof(std::uint32_t) : sizeof(std::uint32_t));
 
 		// GPU sided buffers
 		vk::Buffer posGPUBuf = vk::createBuffer(
 			*aContext.allocator,
-			"posGPUBuf",
 			posSize,
 			VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 			0,
@@ -341,7 +337,6 @@ namespace Engine {
 
 		vk::Buffer normGPUBuf = vk::createBuffer(
 			*aContext.allocator,
-			"normGPUBuf",
 			normSize,
 			VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 			0,
@@ -350,7 +345,6 @@ namespace Engine {
 
 		vk::Buffer texGPUBuf = vk::createBuffer(
 			*aContext.allocator,
-			"texGPUBuf",
 			texSize,
 			VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 			0,
@@ -359,7 +353,6 @@ namespace Engine {
 
 		vk::Buffer vertColGPUBuf = vk::createBuffer(
 			*aContext.allocator,
-			"vertColGPUBuf",
 			vertColSize,
 			VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 			0,
@@ -368,7 +361,6 @@ namespace Engine {
 
 		vk::Buffer indicesGPUBuf = vk::createBuffer(
 			*aContext.allocator,
-			"indicesGPUBuf",
 			indicesSize,
 			VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 			0,
@@ -378,7 +370,6 @@ namespace Engine {
 		// Staging buffers
 		vk::Buffer posStaging = vk::createBuffer(
 			*aContext.allocator,
-			"posStaging",
 			posSize,
 			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 			VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT
@@ -386,7 +377,6 @@ namespace Engine {
 
 		vk::Buffer normStaging = vk::createBuffer(
 			*aContext.allocator,
-			"normStaging",
 			normSize,
 			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 			VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT
@@ -394,7 +384,6 @@ namespace Engine {
 
 		vk::Buffer texStaging = vk::createBuffer(
 			*aContext.allocator,
-			"texStaging",
 			texSize,
 			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 			VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT
@@ -402,7 +391,6 @@ namespace Engine {
 
 		vk::Buffer vertColStaging = vk::createBuffer(
 			*aContext.allocator,
-			"vertColStaging",
 			vertColSize,
 			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 			VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT
@@ -410,7 +398,6 @@ namespace Engine {
 
 		vk::Buffer indicesStaging = vk::createBuffer(
 			*aContext.allocator,
-			"indicesStaging",
 			indicesSize,
 			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 			VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT

@@ -3,6 +3,10 @@
 namespace Engine {
 namespace vk {
 
+	glm::mat4 Node::getModelMatrix() {
+		return glm::translate(glm::mat4(1.0f), translation) * glm::mat4(rotation) * glm::scale(glm::mat4(1.0f), scale) * this->nodeMatrix;
+	}
+
 	void Model::drawModel(VkCommandBuffer aCmdBuf) {
 
 		VkBuffer vBuffers[4] = {
@@ -16,7 +20,7 @@ namespace vk {
 		VkDeviceSize iOffset{};
 
 		vkCmdBindVertexBuffers(aCmdBuf, 0, 4, vBuffers, vOffsets);
-		vkCmdBindIndexBuffer(aCmdBuf, iBuffer, iOffset, VK_INDEX_TYPE_UINT32);
+		vkCmdBindIndexBuffer(aCmdBuf, iBuffer, 0, VK_INDEX_TYPE_UINT32);
 
 		for (Node* node : nodes) {
 			drawNode(node, aCmdBuf);
@@ -36,11 +40,10 @@ namespace vk {
 	}
 
 	void Model::destroy() {
-		posBuffer.~Buffer();
-		normBuffer.~Buffer();
-		texBuffer.~Buffer();
-		vertColBuffer.~Buffer();
-		indicesBuffer.~Buffer();
+		// We shouldn't need to have or use this function since
+		// everything in Model has its own clean up after it all
+		// goes out of scope, but in the case we do need to manually
+		// clean up / destroy anything, we have this function ready.
 	}
 
 }

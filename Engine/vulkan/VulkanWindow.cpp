@@ -52,11 +52,14 @@ namespace Engine {
 			glfwTerminate();
 		}
 
+		if (device->dPool != VK_NULL_HANDLE) {
+			vkDestroyDescriptorPool(device->device, device->dPool, nullptr);
+		}
+
 		if (device->cPool != VK_NULL_HANDLE) {
 			vkDestroyCommandPool(device->device, device->cPool, nullptr);
 		}
 
-		std::fprintf(stdout, "Destroying device\n");
 		if (device->device != VK_NULL_HANDLE) {
 			vkDestroyDevice(device->device, nullptr);
 		}

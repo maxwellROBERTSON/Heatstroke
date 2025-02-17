@@ -77,6 +77,8 @@ namespace vk {
 		glm::vec3 translation;
 		glm::vec3 scale{1.f};
 		glm::quat rotation;
+
+		glm::mat4 getModelMatrix();
 	};
 
     struct Model {
@@ -91,6 +93,8 @@ namespace vk {
 		Buffer texBuffer;
 		Buffer vertColBuffer;
 		Buffer indicesBuffer;
+
+		VkIndexType indexType;
 
         void drawModel(VkCommandBuffer aCmdBuf);
 		void drawNode(Node* node, VkCommandBuffer aCmdBuf);

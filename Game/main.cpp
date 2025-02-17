@@ -1,5 +1,6 @@
 #include <cstdio>
 #include <memory>
+#include <chrono>
 
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -20,54 +21,58 @@
 
 #include "Camera.hpp"
 
-
 namespace {
-    void initialiseGame();
-    void runGameLoop();
+    void initialiseGame(std::vector<Engine::vk::Model>& models);
+    void runGameLoop(std::vector<Engine::vk::Model>& models);
 
     void updateSceneUniform(glsl::SceneUniform& aScene, Camera& camera, std::uint32_t aFramebufferWidth, std::uint32_t aFramebufferHeight);
 
     Engine::VulkanContext vkContext;
-    Engine::vk::Model model;
+    //Engine::vk::Model model;
 
     Camera camera;
     bool recreateSwapchain = false;
 }
 
 int main() try {
-    initialiseGame();
-    runGameLoop();
+    // This manual scope is very important, it ensures the objects in models have their associated
+    // objects' destructors called BEFORE we destroy the vulkan device.
+    {
+        std::vector<Engine::vk::Model> models;
+        initialiseGame(models);
+        runGameLoop(models);
+    }
 
     // vkContext would get destroyed after main exits
     // and Vulkan doesnt like objects being destroyed
     // past main, so we manually call those object 
     // destructors ourselves.
-    model.destroy();
     vkContext.allocator.reset();
-    vkContext.window.reset();
+    vkContext.window.reset(); 
 
     return 0;
-} catch (const std::exception& error ) {
+} catch (const std::exception& error) {
     std::fprintf(stderr, "\n");
     std::fprintf(stderr, "Error thrown: %s\n", error.what());
     return 1;
 }
 
 namespace {
-    void initialiseGame() {
+    void initialiseGame(std::vector<Engine::vk::Model>& models) {
 
         vkContext.window = Engine::initialiseVulkan();
         vkContext.allocator = Engine::createVulkanAllocator(*vkContext.window.get());
 
         Engine::registerCallbacks(vkContext.getGLFWWindow());
 
+        // Here we would load all relevant glTF models and put them in the models vector
         tinygltf::Model tinygltfmodel = Engine::loadFromFile("DamagedHelmet.gltf");
-        model = Engine::makeVulkanModel(vkContext, tinygltfmodel);
+        models.emplace_back(Engine::makeVulkanModel(vkContext, tinygltfmodel));
 
-        camera = Camera(60.0f, 0.1f, 100.0f, glm::vec3(0.0f, 0.0f, 5.0f), glm::vec3(0.0f, 0.0f, -1.0f));
+        camera = Camera(60.0f, 0.1f, 100.0f, glm::vec3(-5.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f));
     }
 
-    void runGameLoop() {
+    void runGameLoop(std::vector<Engine::vk::Model>& models) {
 
         // Create required objects for rendering
         Engine::vk::RenderPass renderPass = Engine::createRenderPass(*vkContext.window);
@@ -100,7 +105,7 @@ namespace {
         }
 
         // Create uniform buffers
-        Engine::vk::Buffer sceneUBO = Engine::vk::createBuffer(*vkContext.allocator, "sceneUBO", sizeof(glsl::SceneUniform), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, 0, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
+        Engine::vk::Buffer sceneUBO = Engine::vk::createBuffer(*vkContext.allocator, sizeof(glsl::SceneUniform), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, 0, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
 
         VkDescriptorSet sceneDescriptors = Engine::allocateDescriptorSet(*vkContext.window, vkContext.window->device->dPool, sceneLayout.handle);
         {
@@ -121,9 +126,12 @@ namespace {
             vkUpdateDescriptorSets(vkContext.window->device->device, numSets, desc, 0, nullptr);
         }
 
+        // We will need to change the following to create all the samplers, descriptors etc for each model in the models vector
+        // rather than just doing it for the first one, I have it this way for now just to get something on screen.
+
         // Create all texture samplers
         std::vector<Engine::vk::Sampler> samplers;
-        Engine::createTextureSamplers(*vkContext.window, model, samplers);
+        Engine::createTextureSamplers(*vkContext.window, models[0], samplers);
 
         VkDescriptorSet materialDescriptors = Engine::allocateDescriptorSet(*vkContext.window, vkContext.window->device->dPool, materialLayout.handle);
         {
@@ -131,8 +139,8 @@ namespace {
 
             VkDescriptorImageInfo baseColourInfo{};
             baseColourInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            baseColourInfo.imageView = model.imageViews[model.materials[0].baseColourTextureIndex].handle;
-            baseColourInfo.sampler = samplers[model.textures[model.materials[0].baseColourTextureIndex].sampler].handle; // This could definitely be done better
+            baseColourInfo.imageView = models[0].imageViews[models[0].materials[0].baseColourTextureIndex].handle;
+            baseColourInfo.sampler = samplers[models[0].textures[models[0].materials[0].baseColourTextureIndex].sampler].handle; // This could definitely be done better
 
             desc[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             desc[0].dstSet = materialDescriptors;
@@ -143,8 +151,8 @@ namespace {
 
             VkDescriptorImageInfo metallicRoughnessInfo{};
             metallicRoughnessInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            metallicRoughnessInfo.imageView = model.imageViews[model.materials[0].metallicRoughnessTextureIndex].handle;
-            metallicRoughnessInfo.sampler = samplers[model.textures[model.materials[0].metallicRoughnessTextureIndex].sampler].handle;
+            metallicRoughnessInfo.imageView = models[0].imageViews[models[0].materials[0].metallicRoughnessTextureIndex].handle;
+            metallicRoughnessInfo.sampler = samplers[models[0].textures[models[0].materials[0].metallicRoughnessTextureIndex].sampler].handle;
 
             desc[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             desc[1].dstSet = materialDescriptors;
@@ -155,8 +163,8 @@ namespace {
 
             VkDescriptorImageInfo emissiveInfo{};
             emissiveInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            emissiveInfo.imageView = model.imageViews[model.materials[0].emissiveTextureIndex].handle;
-            emissiveInfo.sampler = samplers[model.textures[model.materials[0].emissiveTextureIndex].sampler].handle;
+            emissiveInfo.imageView = models[0].imageViews[models[0].materials[0].emissiveTextureIndex].handle;
+            emissiveInfo.sampler = samplers[models[0].textures[models[0].materials[0].emissiveTextureIndex].sampler].handle;
 
             desc[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             desc[2].dstSet = materialDescriptors;
@@ -167,8 +175,8 @@ namespace {
 
             VkDescriptorImageInfo occlusionInfo{};
             occlusionInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            occlusionInfo.imageView = model.imageViews[model.materials[0].occlusionTextureIndex].handle;
-            occlusionInfo.sampler = samplers[model.textures[model.materials[0].occlusionTextureIndex].sampler].handle;
+            occlusionInfo.imageView = models[0].imageViews[models[0].materials[0].occlusionTextureIndex].handle;
+            occlusionInfo.sampler = samplers[models[0].textures[models[0].materials[0].occlusionTextureIndex].sampler].handle;
 
             desc[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             desc[3].dstSet = materialDescriptors;
@@ -179,8 +187,8 @@ namespace {
 
             VkDescriptorImageInfo normalMapInfo{};
             normalMapInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            normalMapInfo.imageView = model.imageViews[model.materials[0].normalTextureIndex].handle;
-            normalMapInfo.sampler = samplers[model.textures[model.materials[0].normalTextureIndex].sampler].handle;
+            normalMapInfo.imageView = models[0].imageViews[models[0].materials[0].normalTextureIndex].handle;
+            normalMapInfo.sampler = samplers[models[0].textures[models[0].materials[0].normalTextureIndex].sampler].handle;
 
             desc[4].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             desc[4].dstSet = materialDescriptors;
@@ -192,6 +200,8 @@ namespace {
             constexpr auto numSets = sizeof(desc) / sizeof(desc[0]);
             vkUpdateDescriptorSets(vkContext.window->device->device, numSets, desc, 0, nullptr);
         }
+
+        auto previous = std::chrono::steady_clock::now();
 
         while (!glfwWindowShouldClose(vkContext.getGLFWWindow())) {
             glfwPollEvents();
@@ -220,13 +230,18 @@ namespace {
             assert(std::size_t(frameIndex) < cmdBuffers.size());
 		    assert(std::size_t(imageIndex) < framebuffers.size());
 
-            camera.updateCamera();
+            // Calculate time delta
+            const auto now = std::chrono::steady_clock::now();
+            const auto timeDelta = std::chrono::duration_cast<std::chrono::duration<float, std::ratio<1>>>(now - previous).count();
+            previous = now;
+
+            camera.updateCamera(vkContext.getGLFWWindow(), timeDelta);
             
             glsl::SceneUniform sceneUniform{};
             updateSceneUniform(sceneUniform, camera, vkContext.window->swapchainExtent.width, vkContext.window->swapchainExtent.height);
 
             Engine::renderModel(
-                model,
+                models[0],
                 cmdBuffers[frameIndex], 
                 renderPass.handle, 
                 framebuffers[imageIndex].handle, 
@@ -254,8 +269,10 @@ namespace {
     void updateSceneUniform(glsl::SceneUniform& aScene, Camera& camera, std::uint32_t aFramebufferWidth, std::uint32_t aFramebufferHeight) {
         const float aspectRatio = float(aFramebufferWidth / aFramebufferHeight);
 
-        aScene.projection = glm::perspectiveRH_ZO(camera.fov, aspectRatio, camera.nearPlane, camera.farPlane);
+        aScene.projection = glm::perspective(glm::radians(camera.fov), aspectRatio, camera.nearPlane, camera.farPlane);
+        aScene.projection[1][1] *= -1.0f;
         aScene.view = glm::lookAt(camera.position, camera.position + camera.frontDirection, glm::vec3(0.0f, 1.0f, 0.0f));
+        //aScene.model = glm::rotate(glm::mat4(1.0f), 90.0f, glm::vec3(1.0f, 0.0f, 0.0f));
         aScene.position = glm::vec4(camera.position, 1.0f);
     }
 }

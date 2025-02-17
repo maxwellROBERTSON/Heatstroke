@@ -3,6 +3,8 @@
 #include <glm/mat4x4.hpp>
 #include <glm/vec4.hpp>
 
+struct GLFWwindow;
+
 // We put the camera implementation on the game side but do we want to have 
 // the camera implementation determined by the game or engine?
 class Camera {
@@ -11,13 +13,15 @@ public:
 	Camera(float fov, float near, float far, glm::vec3 position, glm::vec3 frontDirection);
 	~Camera() = default;
 
-	void updateCamera();
+	void updateCamera(GLFWwindow* aWindow, float timeDelta);
 
 	float fov;
 	float nearPlane;
 	float farPlane;
 	glm::vec3 position;
 	glm::vec3 frontDirection;
+
+	bool firstClick = true;
 
 	float yaw = 0.0f;
 	float pitch = 0.0f;

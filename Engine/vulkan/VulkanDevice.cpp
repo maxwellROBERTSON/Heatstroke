@@ -19,12 +19,13 @@ namespace Engine {
 	VulkanDevice::VulkanDevice(VulkanDevice&& aOther) noexcept
 		: device(std::exchange(aOther.device, VK_NULL_HANDLE))
 		, cPool(std::exchange(aOther.cPool, VK_NULL_HANDLE))
-	{
-	}
+		, dPool(std::exchange(aOther.dPool, VK_NULL_HANDLE))
+	{}
 
 	VulkanDevice& VulkanDevice::operator=(VulkanDevice&& aOther) noexcept {
 		std::swap(device, aOther.device);
 		std::swap(cPool, aOther.cPool);
+		std::swap(dPool, aOther.dPool);
 		return *this;
 	}
 
