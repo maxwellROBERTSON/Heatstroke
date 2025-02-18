@@ -1,6 +1,6 @@
 -- Adapted from COMP5892M (Advanced Rendering)
 
-workspace "Heatstroke-Client"
+workspace "Heatstroke-Server"
     language "C++"
     cppdialect "C++20"
 
@@ -25,17 +25,18 @@ workspace "Heatstroke-Client"
         defines { "_SCL_SECURE_NO_WARNINGS=1" }
         buildoptions { "/utf-8" }
 
-    filter "*"
-
-    -- default options for GLSLC
-    glslcOptions = "-O --target-env=vulkan1.2"
-
-    filter "system:linux"
-        links "dl"
-
+    filter "configurations:Debug"
+        symbols "On"
+        defines {"DEBUG", "YOJIMBO_DEBUG", "NETCODE_DEBUG", "RELIABLE_DEBUG"}
+    filter "configurations:Release"
+        symbols "Off"
+        optimize "On"
+        defines {"YOJIMBO_RELEASE", "NETCODE_RELEASE", "RELIABLE_RELEASE"}
     filter "system:windows"
-
-    filter "*"
+        defines {"OS_WINDOWS"}
+    filter "system:linux"
+        defines {"OS_LINUX"}
+        links "dl"
 
     filter "kind:StaticLib"
         targetdir "lib/"
@@ -46,29 +47,12 @@ workspace "Heatstroke-Client"
 
     filter "*"
 
-    filter "Debug"
-		symbols "On"
-		defines { "_DEBUG=1" }
-
-	filter "Release"
-		optimize "On"
-		defines { "NDEBUG=1" }
-
-    filter "*"
-
 include "third_party"
-
--- GLSLC helpers
-dofile("Utils/glslc.lua")
 
 -- Projects
 project "Engine"
     local sources = {
         "Engine/**"
-    }
-
-    includedirs {
-        "Utils/"
     }
 
     kind "StaticLib"
@@ -77,14 +61,7 @@ project "Engine"
     files(sources)
     removefiles("**.vcxproj*")
 
-    dependson "Shaders"
-
-    links "Utils"
-    links "x-volk"
-    links "x-glfw"
-    links "x-vma"
-
-    dependson "x-glm"
+    dependson "Yojimbo"
 
 project "Game"
     local sources = {
@@ -93,8 +70,7 @@ project "Game"
 
     includedirs {
         ".",
-        "../",
-        "Utils/"
+        "../"
     }
 
     kind "ConsoleApp"
@@ -104,40 +80,9 @@ project "Game"
     removefiles("**.vcxproj*")
     
     links "Engine"
-    links "Utils"
-    links "x-volk"
-    links "x-glfw"
-    links "x-vma"
+    links "Yojimbo"
 
     dependson "Engine"
-
-project "Shaders"
-    local sources = {
-        "Shaders/**.vert",
-        "Shaders/**.frag",
-        "Shaders/**.geom",
-        "Shaders/**.tesc",
-        "Shaders/**.tese",
-        "Shaders/**.comp"
-    }
-
-    kind "Utility"
-    location "Shaders"
-
-    files(sources)
-
-    handle_glsl_files(glslcOptions, "Shaders/spv", {})
-
-project "Utils"
-    local sources = {
-        "Utils/**.cpp",
-        "Utils/**.h*"
-    }
-
-    kind "StaticLib"
-    location "Utils"
-
-    files(sources)
 
 project()
 
