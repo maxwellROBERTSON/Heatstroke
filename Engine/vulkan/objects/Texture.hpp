@@ -7,9 +7,13 @@
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 
-#include "../VulkanContext.hpp"
+#include "VkObjects.hpp"
 
 namespace Engine {
+
+	struct VulkanContext;
+	class VulkanWindow;
+
 namespace vk {
 
 	class Texture {

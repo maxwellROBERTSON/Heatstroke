@@ -6,6 +6,7 @@
 #include "toString.hpp"
 #include "ShaderPaths.hpp"
 #include "VulkanDevice.hpp"
+#include "VulkanWindow.hpp"
 
 namespace Engine {
 

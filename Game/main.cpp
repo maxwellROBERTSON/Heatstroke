@@ -28,7 +28,6 @@ namespace {
     void updateSceneUniform(glsl::SceneUniform& aScene, Camera& camera, std::uint32_t aFramebufferWidth, std::uint32_t aFramebufferHeight);
 
     Engine::VulkanContext vkContext;
-    //Engine::vk::Model model;
 
     Camera camera;
     bool recreateSwapchain = false;
@@ -69,27 +68,35 @@ namespace {
         tinygltf::Model tinygltfmodel = Engine::loadFromFile("DamagedHelmet.gltf");
         models.emplace_back(Engine::makeVulkanModel(vkContext, tinygltfmodel));
 
-        camera = Camera(60.0f, 0.1f, 100.0f, glm::vec3(-5.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+        camera = Camera(100.0f, 0.01f, 256.0f, glm::vec3(0.0f, 0.0f, 2.0f), glm::vec3(0.0f, 0.0f, -1.0f));
     }
 
     void runGameLoop(std::vector<Engine::vk::Model>& models) {
 
         // Create required objects for rendering
-        Engine::vk::RenderPass renderPass = Engine::createRenderPass(*vkContext.window);
-        Engine::vk::DescriptorSetLayout sceneLayout = Engine::createSceneLayout(*vkContext.window);
-        Engine::vk::DescriptorSetLayout materialLayout = Engine::createMaterialLayout(*vkContext.window);
+        std::map<std::string, Engine::vk::RenderPass> renderPasses;
+        renderPasses.emplace("default", Engine::createRenderPass(*vkContext.window));
 
-        std::vector<VkDescriptorSetLayout> descriptorLayouts;
-        descriptorLayouts.emplace_back(sceneLayout.handle);
-        descriptorLayouts.emplace_back(materialLayout.handle);
+        std::map<std::string, Engine::vk::DescriptorSetLayout> descriptorLayouts;
+        descriptorLayouts.emplace("sceneLayout", Engine::createSceneLayout(*vkContext.window));
+        descriptorLayouts.emplace("materialLayout", Engine::createMaterialLayout(*vkContext.window));
 
-        Engine::vk::PipelineLayout pipelineLayout = Engine::createPipelineLayout(*vkContext.window, descriptorLayouts);
-        Engine::vk::Pipeline pipeline = Engine::createPipeline(*vkContext.window, renderPass.handle, pipelineLayout.handle);
-        auto [depthBuffer, depthBufferView] = Engine::createDepthBuffer(*vkContext.window, *vkContext.allocator);
+        std::vector<VkDescriptorSetLayout> sceneDescriptorLayouts;
+        sceneDescriptorLayouts.emplace_back(descriptorLayouts["sceneLayout"].handle);
+        sceneDescriptorLayouts.emplace_back(descriptorLayouts["materialLayout"].handle);
+
+        std::map<std::string, Engine::vk::PipelineLayout> pipelineLayouts;
+        pipelineLayouts.emplace("default", Engine::createPipelineLayout(*vkContext.window, sceneDescriptorLayouts));
+
+        std::map<std::string, Engine::vk::Pipeline> pipelines;
+        pipelines.emplace("default", Engine::createPipeline(*vkContext.window, renderPasses["default"].handle, pipelineLayouts["default"].handle));
+
+        std::map<std::string, std::tuple<Engine::vk::Texture, Engine::vk::ImageView>> buffers;
+        buffers.emplace("depthBuffer", Engine::createDepthBuffer(*vkContext.window, *vkContext.allocator));
 
         // Create basic swapchain framebuffers
         std::vector<Engine::vk::Framebuffer> framebuffers;
-        Engine::createFramebuffers(*vkContext.window, framebuffers, renderPass.handle, depthBufferView.handle);
+        Engine::createFramebuffers(*vkContext.window, framebuffers, renderPasses["default"].handle, std::get<1>(buffers["depthBuffer"]).handle);
 
         // Setup synchronisation
         std::size_t frameIndex = 0;
@@ -107,7 +114,8 @@ namespace {
         // Create uniform buffers
         Engine::vk::Buffer sceneUBO = Engine::vk::createBuffer(*vkContext.allocator, sizeof(glsl::SceneUniform), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, 0, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
 
-        VkDescriptorSet sceneDescriptors = Engine::allocateDescriptorSet(*vkContext.window, vkContext.window->device->dPool, sceneLayout.handle);
+        std::map<std::string, VkDescriptorSet> descriptorSets;
+        VkDescriptorSet sceneDescriptors = Engine::allocateDescriptorSet(*vkContext.window, vkContext.window->device->dPool, descriptorLayouts["sceneLayout"].handle);
         {
             VkWriteDescriptorSet desc[1]{};
 
@@ -125,6 +133,7 @@ namespace {
             constexpr auto numSets = sizeof(desc) / sizeof(desc[0]);
             vkUpdateDescriptorSets(vkContext.window->device->device, numSets, desc, 0, nullptr);
         }
+        descriptorSets.emplace("sceneDescriptors", sceneDescriptors);
 
         // We will need to change the following to create all the samplers, descriptors etc for each model in the models vector
         // rather than just doing it for the first one, I have it this way for now just to get something on screen.
@@ -133,7 +142,7 @@ namespace {
         std::vector<Engine::vk::Sampler> samplers;
         Engine::createTextureSamplers(*vkContext.window, models[0], samplers);
 
-        VkDescriptorSet materialDescriptors = Engine::allocateDescriptorSet(*vkContext.window, vkContext.window->device->dPool, materialLayout.handle);
+        VkDescriptorSet materialDescriptors = Engine::allocateDescriptorSet(*vkContext.window, vkContext.window->device->dPool, descriptorLayouts["materialLayout"].handle);
         {
             VkWriteDescriptorSet desc[5]{};
 
@@ -200,6 +209,7 @@ namespace {
             constexpr auto numSets = sizeof(desc) / sizeof(desc[0]);
             vkUpdateDescriptorSets(vkContext.window->device->device, numSets, desc, 0, nullptr);
         }
+        descriptorSets.emplace("materialDescriptors", materialDescriptors);
 
         auto previous = std::chrono::steady_clock::now();
 
@@ -210,6 +220,14 @@ namespace {
                 vkDeviceWaitIdle(vkContext.window->device->device);
 
                 const auto changes = Engine::recreateSwapchain(*vkContext.window);
+
+                if (changes.changedFormat)
+                    Engine::recreateFormatDependents(*vkContext.window, renderPasses);
+
+                if (changes.changedSize)
+                    Engine::recreateSizeDependents(vkContext, renderPasses, pipelineLayouts, buffers, pipelines);
+
+                Engine::recreateOthers(*vkContext.window, renderPasses, buffers, framebuffers, descriptorSets);
 
                 std::fprintf(stdout, "size: %d - format: %d\n", changes.changedSize, changes.changedFormat);
 
@@ -223,7 +241,14 @@ namespace {
             Engine::waitForFences(*vkContext.window, frameDone, frameIndex);
 
             std::uint32_t imageIndex = 0;
-            Engine::acquireNextSwapchainImage(*vkContext.window, imageAvailable, frameIndex, imageIndex);
+            if (Engine::acquireNextSwapchainImage(*vkContext.window, imageAvailable, frameIndex, imageIndex)) {
+                recreateSwapchain = true;
+
+                --frameIndex;
+                frameIndex %= cmdBuffers.size();
+
+                continue;
+            }
 
             Engine::resetFences(*vkContext.window, frameDone, frameIndex);
 
@@ -240,16 +265,18 @@ namespace {
             glsl::SceneUniform sceneUniform{};
             updateSceneUniform(sceneUniform, camera, vkContext.window->swapchainExtent.width, vkContext.window->swapchainExtent.height);
 
+            sceneUniform.model = models[0].nodes[0]->getModelMatrix();
+
             Engine::renderModel(
                 models[0],
                 cmdBuffers[frameIndex], 
-                renderPass.handle, 
+                renderPasses["default"].handle,
                 framebuffers[imageIndex].handle, 
-                pipeline.handle, 
+                pipelines["default"].handle,
                 vkContext.window->swapchainExtent,
                 sceneUBO.buffer,
                 sceneUniform,
-                pipelineLayout.handle,
+                pipelineLayouts["default"].handle,
                 sceneDescriptors,
                 materialDescriptors
             );

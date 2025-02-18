@@ -9,6 +9,7 @@
 #include "toString.hpp"
 #include "VulkanUtils.hpp"
 #include "../VulkanDevice.hpp"
+#include "../VulkanContext.hpp"
 
 namespace Engine {
 namespace vk {

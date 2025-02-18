@@ -170,7 +170,7 @@ namespace Engine {
 			throw Utils::Error("Unable to reset frame fence %u\n vkResetFences() returned %s", frameIndex, Utils::toString(res).c_str());
 	}
 
-	void acquireNextSwapchainImage(const VulkanWindow& aWindow, std::vector<vk::Semaphore>& aSemaphores, std::size_t frameIndex, std::uint32_t& imageIndex) {
+	bool acquireNextSwapchainImage(const VulkanWindow& aWindow, std::vector<vk::Semaphore>& aSemaphores, std::size_t frameIndex, std::uint32_t& imageIndex) {
 		const VkResult acquireResult = vkAcquireNextImageKHR(
 			aWindow.device->device,
 			aWindow.swapchain,
@@ -180,8 +180,13 @@ namespace Engine {
 			&imageIndex
 		);
 
+		if (acquireResult == VK_SUBOPTIMAL_KHR || acquireResult == VK_ERROR_OUT_OF_DATE_KHR)
+			return true;
+
 		if (acquireResult != VK_SUCCESS)
 			throw Utils::Error("Unable to acquire next swapchain image\n vkAcquireNextImageKHR() returned %s", Utils::toString(acquireResult).c_str());
+
+		return false;
 	}
 
 }

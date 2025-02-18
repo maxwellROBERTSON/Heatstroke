@@ -7,6 +7,7 @@
 #include <unordered_set>
 #include <optional>
 #include <memory>
+#include <map>
 
 #include <volk/volk.h>
 #if !defined(GLFW_INCLUDE_NONE)
@@ -15,6 +16,7 @@
 #include <GLFW/glfw3.h>
 
 #include "objects/VkObjects.hpp"
+#include "objects/Texture.hpp"
 
 namespace Engine {
 
@@ -102,4 +104,17 @@ namespace Engine {
 		std::size_t frameIndex,
 		std::uint32_t imageIndex
 	);
+
+	void recreateFormatDependents(const VulkanWindow& aWindow, std::map<std::string, vk::RenderPass>& aRenderPasses);
+	void recreateSizeDependents(
+		const VulkanContext& aContext,
+		std::map<std::string, vk::RenderPass>& aRenderPasses,
+		std::map<std::string, vk::PipelineLayout>& aPipelineLayouts,
+		std::map<std::string, std::tuple<vk::Texture, vk::ImageView>>& aBuffers,
+		std::map<std::string, vk::Pipeline>& aPipelines);
+	void recreateOthers(
+		const VulkanWindow& aWindow,
+		std::map<std::string, vk::RenderPass>& aRenderPasses,
+		std::map<std::string, std::tuple<vk::Texture, vk::ImageView>>& buffers,
+		std::vector<vk::Framebuffer>& aFramebuffers, std::map<std::string, VkDescriptorSet>& aDescriptorSets);
 }

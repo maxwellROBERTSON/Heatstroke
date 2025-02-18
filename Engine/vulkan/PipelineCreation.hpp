@@ -2,9 +2,13 @@
 
 #include "objects/VkObjects.hpp"
 #include "objects/Texture.hpp"
-#include "VulkanWindow.hpp"
+//#include "VulkanWindow.hpp"
+
 
 namespace Engine {
+	
+	class VulkanWindow;
+	class VulkanAllocator;
 
 	vk::ShaderModule loadShaderModule(const VulkanWindow& aWindow, const char* aSpirvPath);
 
