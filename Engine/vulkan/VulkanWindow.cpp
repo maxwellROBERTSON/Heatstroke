@@ -15,11 +15,12 @@
 
 #include <volk/volk.h>
 
-#include "VulkanAllocator.hpp"
+#include "VulkanContext.hpp"
 #include "VulkanDevice.hpp"
 #include "Error.hpp"
 #include "toString.hpp"
 #include "ContextHelper.hpp"
+#include "PipelineCreation.hpp"
 
 namespace Engine {
 
@@ -50,6 +51,10 @@ namespace Engine {
 			// window-related resources are.
 			// (We also will assume this for our project)
 			glfwTerminate();
+		}
+
+		if (device->dPool != VK_NULL_HANDLE) {
+			vkDestroyDescriptorPool(device->device, device->dPool, nullptr);
 		}
 
 		if (device->cPool != VK_NULL_HANDLE) {
@@ -255,7 +260,7 @@ namespace Engine {
 		std::tie(window.get()->swapchain, window.get()->swapchainFormat, window.get()->swapchainExtent) = createSwapchain(window.get()->physicalDevice, window.get()->surface, window.get()->device->device, window.get()->window, queueFamilyIndices);
 
 		// Get swap chain images & create associated image views
-		getSwpachainImages(window.get()->device->device, window.get()->swapchain, window.get()->swapImages);
+		getSwapchainImages(window.get()->device->device, window.get()->swapchain, window.get()->swapImages);
 		createSwapchainImageViews(window.get()->device->device, window.get()->swapchainFormat, window.get()->swapImages, window.get()->swapViews);
 
 		// Done
@@ -291,7 +296,7 @@ namespace Engine {
 
 		vkDestroySwapchainKHR(aWindow.device->device, oldSwapchain, nullptr);
 
-		getSwpachainImages(aWindow.device->device, aWindow.swapchain, aWindow.swapImages);
+		getSwapchainImages(aWindow.device->device, aWindow.swapchain, aWindow.swapImages);
 		createSwapchainImageViews(aWindow.device->device, aWindow.swapchainFormat, aWindow.swapImages, aWindow.swapViews);
 
 		SwapChanges ret{};
@@ -556,7 +561,7 @@ namespace Engine {
 		return { chain, format.format, extent };
 	}
 
-	void getSwpachainImages(VkDevice aDevice, VkSwapchainKHR aSwapchain, std::vector<VkImage>& aImages) {
+	void getSwapchainImages(VkDevice aDevice, VkSwapchainKHR aSwapchain, std::vector<VkImage>& aImages) {
 		assert(0 == aImages.size());
 
 		std::uint32_t numImages = 0;
@@ -597,6 +602,75 @@ namespace Engine {
 		}
 
 		assert(aViews.size() == aImages.size());
+	}
+
+	VkResult submitAndPresent(
+		const VulkanWindow& aWindow,
+		std::vector<VkCommandBuffer>& aCmdBuffers,
+		std::vector<vk::Fence>& frameDone,
+		std::vector<vk::Semaphore>& imageAvailable,
+		std::vector<vk::Semaphore>& renderFinished,
+		std::size_t frameIndex,
+		std::uint32_t imageIndex
+	) {
+		// Submit
+		VkPipelineStageFlags waitPipelineStages = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+
+		VkSubmitInfo subInfo{};
+		subInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		subInfo.commandBufferCount = 1;
+		subInfo.pCommandBuffers = &aCmdBuffers[frameIndex];
+		subInfo.waitSemaphoreCount = 1;
+		subInfo.pWaitSemaphores = &imageAvailable[frameIndex].handle;
+		subInfo.pWaitDstStageMask = &waitPipelineStages;
+		subInfo.signalSemaphoreCount = 1;
+		subInfo.pSignalSemaphores = &renderFinished[frameIndex].handle;
+
+		if (const auto res = vkQueueSubmit(aWindow.graphicsQueue, 1, &subInfo, frameDone[frameIndex].handle); VK_SUCCESS != res)
+			throw Utils::Error("Unable to submit command buffer to queue\n vkQueueSubmit() returned %s", Utils::toString(res).c_str());
+
+		// Present
+		VkPresentInfoKHR presentInfo{};
+		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+		presentInfo.waitSemaphoreCount = 1;
+		presentInfo.pWaitSemaphores = &renderFinished[frameIndex].handle;
+		presentInfo.swapchainCount = 1;
+		presentInfo.pSwapchains = &aWindow.swapchain;
+		presentInfo.pImageIndices = &imageIndex;
+		presentInfo.pResults = nullptr;
+
+		return vkQueuePresentKHR(aWindow.presentQueue, &presentInfo);
+	}
+
+	// Maybe these 3 recreate functions could go in PipelineCreation.cpp?
+
+	void recreateFormatDependents(const VulkanWindow& aWindow, std::map<std::string, vk::RenderPass>& aRenderPasses) {
+		for (auto& [name, renderPass] : aRenderPasses) {
+			renderPass = createRenderPass(aWindow);
+		}
+	}
+
+	void recreateSizeDependents(
+		const VulkanContext& aContext, 
+		std::map<std::string, vk::RenderPass>& aRenderPasses,
+		std::map<std::string, vk::PipelineLayout>& aPipelineLayouts,
+		std::map<std::string, std::tuple<vk::Texture, vk::ImageView>>& aBuffers, 
+		std::map<std::string, vk::Pipeline>& aPipelines) 
+	{
+		aBuffers["depthBuffer"] = createDepthBuffer(*aContext.window, *aContext.allocator);
+
+		aPipelines["default"] = createPipeline(*aContext.window, aRenderPasses["default"].handle, aPipelineLayouts["default"].handle);
+	}
+
+	void recreateOthers(
+		const VulkanWindow& aWindow, 
+		std::map<std::string, vk::RenderPass>& aRenderPasses, 
+		std::map<std::string, std::tuple<vk::Texture, vk::ImageView>>& buffers, 
+		std::vector<vk::Framebuffer>& aFramebuffers, 
+		std::map<std::string, VkDescriptorSet>& aDescriptorSets) 
+	{
+		aFramebuffers.clear();
+		Engine::createFramebuffers(aWindow, aFramebuffers, aRenderPasses["default"].handle, std::get<1>(buffers["depthBuffer"]).handle);
 	}
 
 }

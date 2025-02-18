@@ -11,5 +11,13 @@ namespace Mouse {
 		mouseY = y;
 	}
 
+	float getX() {
+		return float(mouseX);
+	}
+
+	float getY() {
+		return float(mouseY);
+	}
+
 }
 }

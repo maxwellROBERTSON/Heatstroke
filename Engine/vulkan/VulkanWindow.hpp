@@ -7,6 +7,7 @@
 #include <unordered_set>
 #include <optional>
 #include <memory>
+#include <map>
 
 #include <volk/volk.h>
 #if !defined(GLFW_INCLUDE_NONE)
@@ -14,10 +15,12 @@
 #endif
 #include <GLFW/glfw3.h>
 
-#include "VulkanAllocator.hpp"
-#include "VulkanDevice.hpp"
+#include "objects/VkObjects.hpp"
+#include "objects/Texture.hpp"
 
 namespace Engine {
+
+	class VulkanDevice;
 
 	class VulkanWindow {
 	public:
@@ -71,8 +74,8 @@ namespace Engine {
 	std::optional<std::uint32_t> findQueueFamily(VkPhysicalDevice, VkQueueFlags, VkSurfaceKHR = VK_NULL_HANDLE);
 
 	std::unique_ptr<VulkanDevice> createDevice(
-		const VulkanWindow&,
-		VkPhysicalDevice,
+		const VulkanWindow& aWindow,
+		VkPhysicalDevice aPhysicalDev,
 		std::vector<std::uint32_t> const& aQueueFamilies,
 		std::vector<char const*> const& aEnabledDeviceExtensions = {}
 	);
@@ -89,7 +92,29 @@ namespace Engine {
 		VkSwapchainKHR aOldSwapchain = VK_NULL_HANDLE
 	);
 
-	void getSwpachainImages(VkDevice, VkSwapchainKHR, std::vector<VkImage>&);
+	void getSwapchainImages(VkDevice, VkSwapchainKHR, std::vector<VkImage>&);
 	void createSwapchainImageViews(VkDevice, VkFormat, std::vector<VkImage> const&, std::vector<VkImageView>&);
 
+	VkResult submitAndPresent(
+		const VulkanWindow& aWindow,
+		std::vector<VkCommandBuffer>& aCmdBuffers,
+		std::vector<vk::Fence>& frameDone,
+		std::vector<vk::Semaphore>& imageAvailable,
+		std::vector<vk::Semaphore>& renderFinished,
+		std::size_t frameIndex,
+		std::uint32_t imageIndex
+	);
+
+	void recreateFormatDependents(const VulkanWindow& aWindow, std::map<std::string, vk::RenderPass>& aRenderPasses);
+	void recreateSizeDependents(
+		const VulkanContext& aContext,
+		std::map<std::string, vk::RenderPass>& aRenderPasses,
+		std::map<std::string, vk::PipelineLayout>& aPipelineLayouts,
+		std::map<std::string, std::tuple<vk::Texture, vk::ImageView>>& aBuffers,
+		std::map<std::string, vk::Pipeline>& aPipelines);
+	void recreateOthers(
+		const VulkanWindow& aWindow,
+		std::map<std::string, vk::RenderPass>& aRenderPasses,
+		std::map<std::string, std::tuple<vk::Texture, vk::ImageView>>& buffers,
+		std::vector<vk::Framebuffer>& aFramebuffers, std::map<std::string, VkDescriptorSet>& aDescriptorSets);
 }

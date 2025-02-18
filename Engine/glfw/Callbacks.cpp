@@ -17,10 +17,26 @@ namespace Engine {
 			glfwSetWindowShouldClose(aWindow, true);
 			break;
 		}
+
+		if (aAction == GLFW_PRESS)
+			Keyboard::setKey(aKey, std::pair(true, aModifiers));
+		else if (aAction == GLFW_RELEASE)
+			Keyboard::setKey(aKey, std::pair(false, aModifiers));
 	}
 
 	void onMouseButton(GLFWwindow* aWindow, int aButton, int aAction, int aModifiers) {
-
+		switch (aButton) {
+		case GLFW_MOUSE_BUTTON_RIGHT:
+			if (aAction == GLFW_PRESS) {
+				if (glfwGetInputMode(aWindow, GLFW_CURSOR) == GLFW_CURSOR_NORMAL) {
+					glfwSetInputMode(aWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+				}
+				else if (glfwGetInputMode(aWindow, GLFW_CURSOR) == GLFW_CURSOR_DISABLED) {
+					glfwSetInputMode(aWindow, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+				}
+			}
+			break;
+		}
 	}
 	
 	void onMouseMove(GLFWwindow* aWindow, double x, double y) {

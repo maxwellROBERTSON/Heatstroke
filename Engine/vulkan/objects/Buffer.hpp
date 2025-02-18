@@ -2,10 +2,12 @@
 
 // Adapted from: COMP5892M (Advanced Rendering)
 
+#include <string>
+
 #include <volk/volk.h>
 #include <vk_mem_alloc.h>
 
-#include "../VulkanContext.hpp"
+#include "../VulkanAllocator.hpp"
 
 namespace Engine {
 namespace vk {
@@ -30,7 +32,7 @@ namespace vk {
 		VmaAllocator mAllocator = VK_NULL_HANDLE;
 	};
 
-	Buffer createBuffer(const VulkanContext&, VkDeviceSize, VkBufferUsageFlags, VmaAllocationCreateFlags, VmaMemoryUsage = VMA_MEMORY_USAGE_AUTO);
+	Buffer createBuffer(const VulkanAllocator& aAllocator, VkDeviceSize aDeviceSize, VkBufferUsageFlags aUsageFlags, VmaAllocationCreateFlags aCreateFlags, VmaMemoryUsage aMemoryUsage = VMA_MEMORY_USAGE_AUTO);
 
 }
 }

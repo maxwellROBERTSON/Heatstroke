@@ -81,7 +81,6 @@ project "Engine"
 
     links "Utils"
     links "x-volk"
-    links "x-stb"
     links "x-glfw"
     links "x-vma"
 
@@ -96,7 +95,6 @@ project "Game"
         ".",
         "../",
         "Utils/"
-
     }
 
     kind "ConsoleApp"
@@ -104,7 +102,7 @@ project "Game"
 
     files(sources)
     removefiles("**.vcxproj*")
-
+    
     links "Engine"
     links "Utils"
     links "x-volk"
@@ -128,7 +126,7 @@ project "Shaders"
 
     files(sources)
 
-    handle_glsl_files(glslcOptions, "Shaders", {})
+    handle_glsl_files(glslcOptions, "Shaders/spv", {})
 
 project "Utils"
     local sources = {

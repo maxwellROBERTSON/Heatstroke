@@ -2,6 +2,7 @@
 
 #include "Error.hpp"
 #include "toString.hpp"
+#include "../VulkanContext.hpp"
 
 namespace Engine {
 namespace vk {
@@ -34,7 +35,7 @@ namespace vk {
 	}
 
 
-	Buffer createBuffer(const VulkanContext& aContext, VkDeviceSize aDeviceSize, VkBufferUsageFlags aUsageFlags, VmaAllocationCreateFlags aCreateFlags, VmaMemoryUsage aMemoryUsage) {
+	Buffer createBuffer(const VulkanAllocator& aAllocator, VkDeviceSize aDeviceSize, VkBufferUsageFlags aUsageFlags, VmaAllocationCreateFlags aCreateFlags, VmaMemoryUsage aMemoryUsage) {		
 		VkBufferCreateInfo bufferInfo{};
 		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 		bufferInfo.size = aDeviceSize;
@@ -47,10 +48,10 @@ namespace vk {
 		VkBuffer buffer = VK_NULL_HANDLE;
 		VmaAllocation allocation = VK_NULL_HANDLE;
 
-		if (const auto res = vmaCreateBuffer(aContext.allocator.get()->allocator, &bufferInfo, &allocInfo, &buffer, &allocation, nullptr); VK_SUCCESS != res)
+		if (const auto res = vmaCreateBuffer(aAllocator.allocator, &bufferInfo, &allocInfo, &buffer, &allocation, nullptr); VK_SUCCESS != res)
 			throw Utils::Error("Unable to allocate buffer\n vmaCreateBuffer() returned %s", Utils::toString(res).c_str());
 
-		return Buffer(aContext.allocator.get()->allocator, buffer, allocation);
+		return Buffer(aAllocator.allocator, buffer, allocation);
 	}
 
 }

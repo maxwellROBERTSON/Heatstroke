@@ -6,6 +6,19 @@
 
 namespace Utils {
 
+	void bufferBarrier(
+		VkCommandBuffer aCmdBuff,
+		VkBuffer aBuff,
+		VkAccessFlags aSrcAccessMask,
+		VkAccessFlags aDstAccessMask,
+		VkPipelineStageFlags aSrcStageMask,
+		VkPipelineStageFlags aDstStageMask,
+		VkDeviceSize aSize = VK_WHOLE_SIZE,
+		VkDeviceSize aOffset = 0,
+		uint32_t aSrcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+		uint32_t aDstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED
+	);
+
 	void imageBarrier(
 		VkCommandBuffer aCmdBuff,
 		VkImage aImage,

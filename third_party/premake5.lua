@@ -3,7 +3,6 @@
 
 includedirs("volk/include")
 includedirs("vulkan/include")
-includedirs("stb/include")
 includedirs("glfw/include")
 includedirs("VulkanMemoryAllocator/include")
 includedirs("glm/include")
@@ -28,13 +27,6 @@ project("x-vulkan-headers")
     location "."
 
     files("vulkan/include/**.h*")
-
-project("x-stb")
-    kind "StaticLib"
-
-    location "."
-
-    files("stb/src/*.c")
 
 project("x-glfw")
     kind "StaticLib"

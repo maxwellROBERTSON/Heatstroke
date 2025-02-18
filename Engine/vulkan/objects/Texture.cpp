@@ -1,3 +1,5 @@
+#define TINYGLTF_IMPLEMENTATION
+#define STB_IMAGE_IMPLEMENTATION
 #include "Texture.hpp"
 
 #include <bit>
@@ -6,6 +8,8 @@
 #include "Error.hpp"
 #include "toString.hpp"
 #include "VulkanUtils.hpp"
+#include "../VulkanDevice.hpp"
+#include "../VulkanContext.hpp"
 
 namespace Engine {
 namespace vk {
@@ -28,6 +32,7 @@ namespace vk {
 		: image(std::exchange(aOther.image, VK_NULL_HANDLE))
 		, allocation(std::exchange(aOther.allocation, VK_NULL_HANDLE))
 		, mAllocator(std::exchange(aOther.mAllocator, VK_NULL_HANDLE))
+		, sampler(std::exchange(aOther.sampler, -1))
 	{}
 
 	Texture& Texture::operator=(Texture&& aOther) noexcept
@@ -35,14 +40,15 @@ namespace vk {
 		std::swap(image, aOther.image);
 		std::swap(allocation, aOther.allocation);
 		std::swap(mAllocator, aOther.mAllocator);
+		std::swap(sampler, aOther.sampler);
 		return *this;
 	}
 
-	Texture createTexture(const VulkanContext& aContext, tinygltf::Image aTinygltfImage, VkFormat aFormat) {
+	Texture createTexture(const VulkanContext& aContext, tinygltf::Image aTinygltfImage, VkFormat aFormat, int aSampler) {
 		std::size_t sizeInBytes = aTinygltfImage.image.size();
 
 		vk::Buffer staging = createBuffer(
-			aContext,
+			*aContext.allocator,
 			sizeInBytes,
 			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 			VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT
@@ -151,6 +157,9 @@ namespace vk {
 		);
 
 		endAndSubmitCommandBuffer(*aContext.window, cmdBuff);
+
+		// Save which sampler this texture references
+		texture.sampler = aSampler;
 
 		return texture;
 	}
