@@ -1,7 +1,6 @@
 #include <iostream>
 
 #include "GameServer.hpp"
-#include "../../third_party/yojimbo/source/yojimbo_allocator.cpp"
 
 static const uint8_t DEFAULT_PRIVATE_KEY[yojimbo::KeyBytes] = { 0 };
 
@@ -21,6 +20,9 @@ GameServer::GameServer(yojimbo::Address address, int maxClients) : maxClients(ma
 		time);
 
 	adapter->SetServer(server);
+
+	// Create entity list
+	//entityList = new EntityList();
 }
 
 void GameServer::Start()
@@ -104,4 +106,9 @@ void GameServer::Stop()
 	server->Stop();
 	YOJIMBO_DELETE(yojimbo::GetDefaultAllocator(), GameAdapter, adapter);
 	YOJIMBO_DELETE(yojimbo::GetDefaultAllocator(), Server, server);
+}
+
+EntityManager* GameServer::GetEntityManager()
+{
+	return &entityManager;
 }

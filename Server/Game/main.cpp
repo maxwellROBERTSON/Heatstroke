@@ -1,9 +1,12 @@
+#pragma once
+
 #include <iostream>
 #include <cstdlib>
 #include <regex>
 
-#include "../third_party/yojimbo/include/yojimbo.h"
 #include "../Engine/GameServer.hpp"
+#include "../Engine/RenderComponent.hpp"
+#include "../Engine/EntityManager.hpp"
 
 bool isValidIPAddress(const std::string& ip) {
 	// Define the regex pattern for IPv4 and IPv6
@@ -164,6 +167,10 @@ int main(int argc, char* argv[])
 
 	// start server at address of machine and max clients from command line
 	GameServer server(GetLocalIPAddress(portInt), 2);
+
+	Entity entity(server.GetEntityManager(), server.GetEntityManager()->GetNumberOfEntities());
+	entity.AddComponent(ComponentType::Render);
+
 	server.Start();
 
 	server.Stop();

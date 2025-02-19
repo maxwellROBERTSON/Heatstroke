@@ -47,7 +47,7 @@ workspace "Heatstroke-Server"
 
     filter "*"
 
-include "third_party"
+include"third_party"
 
 -- Projects
 project "Engine"
@@ -61,7 +61,11 @@ project "Engine"
     files(sources)
     removefiles("**.vcxproj*")
 
+    links "Yojimbo"
+    links "x-glm"
+
     dependson "Yojimbo"
+    dependson "x-glm"
 
 project "Game"
     local sources = {
@@ -80,7 +84,6 @@ project "Game"
     removefiles("**.vcxproj*")
     
     links "Engine"
-    links "Yojimbo"
 
     dependson "Engine"
 

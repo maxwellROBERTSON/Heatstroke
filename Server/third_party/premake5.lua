@@ -1,16 +1,19 @@
 -- Third party libraries
 -- Adapted from COMP5892M (Advanced Rendering)
 
-includedirs("yojimbo")
+includedirs("yojimbo/")
+includedirs("tinygltf/")
+includedirs("glm/include")
 
-print("Including third_party")
+defines("GLM_FORCE_RADIANS=1")
+defines("GLM_FORCE_SIZE_T_LENGTH=1")
+defines("GLM_ENABLE_EXPERIMENTAL=1")
 
-project "Yojimbo"
+project("Yojimbo")
     kind "StaticLib"
 
     location "."
 
-    -- Include all necessary files
     files {
         "yojimbo/include/**.h",
         "yojimbo/source/**.cpp",
@@ -32,4 +35,18 @@ project "Yojimbo"
         "yojimbo/tlsf"
     }
 
-project()
+project("x-glm")
+    kind "Utility"
+
+    location "."
+
+    files("glm/include/**.h*")
+    files("glm/include/**.inl")
+
+project("x-tinygltf")
+    kind "StaticLib"
+
+    location "."
+
+    files("tinygltf/**.h*")
+

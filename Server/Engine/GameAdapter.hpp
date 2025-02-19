@@ -1,3 +1,5 @@
+#pragma once
+
 #include "../../third_party/yojimbo/include/yojimbo.h"
 
 #include <iostream>
