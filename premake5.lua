@@ -12,6 +12,8 @@ workspace "Heatstroke"
 
     startproject "Game"
 
+    defines { "CLIENT" }
+
     debugdir "%{wks.location}"
     objdir "build/%{cfg.buildcfg}-%{cfg.platform}-%{cfg.toolset}"
     targetsuffix "-%{cfg.buildcfg}-%{cfg.platform}-%{cfg.toolset}"
