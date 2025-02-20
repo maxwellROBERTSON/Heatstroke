@@ -34,7 +34,6 @@ namespace vk {
 		return *this;
 	}
 
-
 	Buffer createBuffer(const VulkanAllocator& aAllocator, VkDeviceSize aDeviceSize, VkBufferUsageFlags aUsageFlags, VmaAllocationCreateFlags aCreateFlags, VmaMemoryUsage aMemoryUsage) {		
 		VkBufferCreateInfo bufferInfo{};
 		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;

@@ -69,8 +69,6 @@ workspace "Heatstroke"
 
 include "Engine/third_party"
 
-defines { "CLIENT" }
-
 -- GLSLC helpers
 dofile("Engine/Utils/glslc.lua")
 

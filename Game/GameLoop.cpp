@@ -28,11 +28,7 @@
 namespace {
     void initialiseGame();
 
-#ifdef CLIENT
     void runGameLoop(GameClient* client);
-#else
-    void runGameLoop();
-#endif
 
     void updateSceneUniform(glsl::SceneUniform& aScene, Camera& camera, std::uint32_t aFramebufferWidth, std::uint32_t aFramebufferHeight);
 
@@ -55,7 +51,15 @@ namespace {
         vkContext.window = Engine::initialiseVulkan();
         vkContext.allocator = Engine::createVulkanAllocator(*vkContext.window.get());
 
+#ifdef CLIENT
+        vkContext.window = Engine::initialiseVulkan();
+        vkContext.allocator = Engine::createVulkanAllocator(*vkContext.window.get());
         Engine::registerCallbacks(vkContext.getGLFWWindow());
+#else
+        Engine::initialiseVulkan();
+        vkContext.allocator = Engine::createVulkanAllocator(*vkContext.window.get());
+        Engine::registerCallbacks(vkContext.getGLFWWindow());
+#endif
 
         // Here we would load all relevant glTF models and put them in the models vector
         tinygltf::Model tinygltfmodel = Engine::loadFromFile("Game/assets/DamagedHelmet.gltf");
@@ -64,11 +68,7 @@ namespace {
         camera = Camera(100.0f, 0.01f, 256.0f, glm::vec3(0.0f, 0.0f, 2.0f), glm::vec3(0.0f, 0.0f, -1.0f));
     }
 
-#ifdef CLIENT
     void runGameLoop(GameClient* client) {
-#else
-    void runGameLoop() {
-#endif
         // Create required objects for rendering
         std::map<std::string, Engine::vk::RenderPass> renderPasses;
         renderPasses.emplace("default", Engine::createRenderPass(*vkContext.window));
@@ -210,9 +210,8 @@ namespace {
         auto previous = std::chrono::steady_clock::now();
 
         while (!glfwWindowShouldClose(vkContext.getGLFWWindow())) {
-#ifdef CLIENT
+
             client->Update();
-#endif
             glfwPollEvents();
 
             if (recreateSwapchain) {
