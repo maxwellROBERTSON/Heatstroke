@@ -2,8 +2,9 @@
 
 #include <string>
 #include <vector>
+#include <unordered_map>
+#include <glm/gtc/matrix_transform.hpp>
 
-#include "EntityManager.hpp"
 #include "Component.hpp"
 #include "../gltf/glTF.hpp"
 
@@ -12,22 +13,20 @@ class EntityManager;
 class Entity
 {
 public:
-	Entity(EntityManager*, int, bool[], int[]);
+	Entity(EntityManager*, int entityId, std::vector<int> typeIndexList);
 	~Entity() {};
 
-	int HasComponent(ComponentType);
-	int GetNumberOfComponents();
-
-	//void AddComponent(ComponentType);
-	void Update(float);
+	int HasComponent(int);
+	int GetComponentIndexArray();
 
 private:
-	void LoadEntity();
-
 	EntityManager* entityManager;
 	int entityId;
+	bool isActive = true;
+	glm::mat4 modelToWorldTransform = glm::mat4(1.0f);
+
 	// Holds a list of components with the type and
 	// their id in that types list in EntityManager
-	std::vector<std::pair<ComponentType, int>> componentListId;
+	std::vector<int> componentListId;
 
 };

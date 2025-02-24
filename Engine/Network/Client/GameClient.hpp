@@ -14,10 +14,10 @@ public:
 
 	void Connect(yojimbo::Address);
 	void Run();
-	void Update();
+	int Update();
 	void ProcessMessages();
 	void ProcessMessage(yojimbo::Message*);
-	void Disconnect();
+	void CleanUp();
 
 private:
 	double time = 1.0;

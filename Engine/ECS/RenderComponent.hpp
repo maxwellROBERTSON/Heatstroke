@@ -4,15 +4,12 @@
 
 #include "Component.hpp"
 
-class RenderComponent : public Component
+class RenderComponent : public Component<RenderComponent>
 {
 public:
-	RenderComponent() { meshLocation = ""; }
-	RenderComponent(std::string meshLocation) : meshLocation(meshLocation) {}
-	ComponentType GetType() const override { return ComponentType::Render; }
-
+	RenderComponent() {};
 private:
-	std::string meshLocation;
-
+	std::string meshLocation = "";
 };
+
 

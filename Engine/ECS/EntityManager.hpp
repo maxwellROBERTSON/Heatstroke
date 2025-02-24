@@ -7,34 +7,52 @@
 #include "Entity.hpp"
 #include "Component.hpp"
 #include "RenderComponent.hpp"
-
-class Entity;
+#include "ComponentTypeRegistry.hpp"
 
 class EntityManager
 {
 public:
-	EntityManager();
-	~EntityManager();
+	EntityManager(ComponentTypeRegistry* registry) : registry(registry) {};
+	~EntityManager() {};
 
-	//static EntityManager* get();
+	void AddComponentTypesPointers(std::vector<std::pair<void*, int>>);
+
 	int GetNumberOfEntities();
-	Entity* AddEntity(ComponentType type[]);
-	//void RemoveEntity(Entity);
-	void Update(float);
-	//void AddComponent(ComponentType);
+
+	template <typename... Types>
+	Entity* AddEntity()
+	{
+		int numberOfComponentTypes = registry->GetNumberOfComponentTypes();
+
+		std::vector<int> typeIndexList(numberOfComponentTypes, -1);
+		(addComponent<Types>(typeIndexList), ...);
+
+		Entity entity = Entity(this, entities.size(), typeIndexList);
+		entities.push_back(entity);
+		return &entities[entities.size() - 1];
+	}
 
 private:
-	/*std::unique_ptr<Component> MakeComponent(ComponentType);
-	Component* GetComponent(ComponentType);*/
-
+	ComponentTypeRegistry* registry;
 	std::vector<Entity> entities;
+	std::vector<std::pair<void*, int>> componentList;
 
-	// List of component types, each item in the list holds a pair of type and
-	// a list of indices used for the component list,
-	// each entity has an index in the list (for each type)
-	std::vector<std::pair<ComponentType, std::vector<std::unique_ptr<Component>>>> componentList;
+	template <typename T>
+	void addComponent(std::vector<int>& typeIndexList)
+	{
+		int typeIndex = registry->GetComponentID<T>();
+		typeIndexList[typeIndex] = static_cast<int>(componentList[typeIndex].second);
+		T* newMemory = new T[componentList[typeIndex].second + 1];
+		T* oldMemory = static_cast<T*>(componentList[typeIndex].first);
 
-	//// List of all components for all entities
-	//std::vector<Component*> componentList;
+		for (int i = 0; i < componentList[typeIndex].second; i++)
+		{
+			newMemory[i] = oldMemory[i];
+		}
+
+		delete[] oldMemory;
+
+		componentList[typeIndex].first = static_cast<void*>(newMemory);
+		componentList[typeIndex].second++;
+	}
 };
-

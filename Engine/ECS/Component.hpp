@@ -1,25 +1,18 @@
 #pragma once
 
-#include <variant>
+#include <typeindex>
 
-// When you add more component types:
-// 1. Add name enum class ComponentType
-// 2. Define the GetType() method in the derived class to return this enum
-// 3. Add an include for the new component in EntityManager.hpp
-// 4. Add a new case to the switch statement in EntityManager::MakeComponent()
+#include "ComponentTypeRegistry.hpp"
 
-enum class ComponentType
-{
-    Render,
-    Audio,
-    Physics,
-    Transform
-	// Add more component types here
-};
-
+template <typename T>
 class Component
 {
-public:
-    virtual ~Component() = default;  // Ensure proper polymorphic behavior
-    virtual ComponentType GetType() const = 0;  // Force derived classes to specify type
+protected:
+    Component() : componentId(ComponentTypeRegistry::Get().GetComponentID<T>()) {}
+
+    virtual std::type_index GetType() const { return ComponentTypeRegistry::Get().GetTypeIndex(componentId); }
+    virtual int GetTypeId() const { return componentId; }
+
+private:
+    int componentId;
 };

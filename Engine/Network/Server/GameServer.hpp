@@ -18,7 +18,7 @@ public:
 	void Update(float);
 	void ProcessMessages();
 	void ProcessMessage(int, GameMessage*);
-	void Stop();
+	void CleanUp();
 
 	//EntityManager* GetEntityManager();
 	//void AddEntity(Entity entity);

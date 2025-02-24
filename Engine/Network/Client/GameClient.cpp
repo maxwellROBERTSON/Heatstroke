@@ -1,3 +1,5 @@
+#include <iostream>
+
 #include "GameClient.hpp"
 #include "../../../Game/GameLoop.cpp"
 
@@ -76,13 +78,20 @@ void GameClient::Run()
 	}*/
 }
 
-void GameClient::Update()
+int GameClient::Update()
 {
+	// check if client is disconnected
+	if (client->GetClientId() == 0)
+	{
+		CleanUp();
+		return 1;
+	}
+
     // update client
 	double currentTime = yojimbo_time();
 	if (client->GetTime() >= currentTime)
 	{
-		return;
+		return 0;
 	}
 
     client->AdvanceTime(client->GetTime() + dt);
@@ -105,6 +114,7 @@ void GameClient::Update()
     }
 
     client->SendPackets();
+	return 0;
 }
 
 void GameClient::ProcessMessages()
@@ -126,10 +136,9 @@ void GameClient::ProcessMessage(yojimbo::Message* message)
     std::cout << "Processing message from server with messageID " << message->GetId() << std::endl;
 }
 
-void GameClient::Disconnect()
+void GameClient::CleanUp()
 {
-	// Disconnect client
-	client->Disconnect();
+	// Clean up client
 	YOJIMBO_DELETE(yojimbo::GetDefaultAllocator(), GameAdapter, adapter);
 	YOJIMBO_DELETE(yojimbo::GetDefaultAllocator(), Client, client);
 	ShutdownYojimbo();

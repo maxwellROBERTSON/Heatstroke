@@ -1,8 +1,3 @@
-//#include <cstdio>
-//#include <memory>
-//#include <chrono>
-//#include <string>
-
 #include <yojimbo.h>
 
 #include "../Engine/Network/Helpers/GameAdapter.hpp"
@@ -41,5 +36,7 @@ int main()
 #else
     // Make and start server
     GameServer server(&config, adapter, GetLocalIPAddress(3000), 2);
+	server.Stop();
 #endif
+    return 0;
 }

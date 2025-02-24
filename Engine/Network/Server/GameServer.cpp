@@ -55,13 +55,6 @@ void GameServer::Run()
 
 void GameServer::Update(float fixedDt)
 {
-	// stop if server is not running
-	if (!server->IsRunning()) 
-	{
-		Stop();
-		return;
-	}
-
 	// update server and process messages
 	server->AdvanceTime(server->GetTime() + fixedDt);
 	server->ReceivePackets();
@@ -104,10 +97,9 @@ void GameServer::ProcessMessage(int clientIndex, GameMessage* message)
 	std::cout << "MESSAGE FROM CLIENT " << clientIndex << " " << message->sequence << " MESSAGEID = " << message->GetId() << std::endl;
 }
 
-void GameServer::Stop()
+void GameServer::CleanUp()
 {
-	// Stop server
-	server->Stop();
+	// Clean up server
 	YOJIMBO_DELETE(yojimbo::GetDefaultAllocator(), GameAdapter, adapter);
 	YOJIMBO_DELETE(yojimbo::GetDefaultAllocator(), Server, server);
 	ShutdownYojimbo();

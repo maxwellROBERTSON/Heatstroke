@@ -16,8 +16,13 @@
 #include "../Engine/vulkan/PipelineCreation.hpp"
 #include "../Engine/vulkan/objects/Buffer.hpp"
 #include "../Engine/gltf/glTF.hpp"
-#include "../Engine/ECS/EntityManager.hpp"
+
 #include "../Engine/Network/Client/GameClient.hpp"
+
+#include "../Engine/ECS/ComponentTypeRegistry.hpp"
+#include "../Engine/ECS/EntityManager.hpp"
+#include "../Engine/ECS/RenderComponent.hpp"
+#include "UserComponents/TestUserComponent.hpp"
 
 #include "Error.hpp"
 #include "toString.hpp"
@@ -40,35 +45,54 @@ namespace {
 }
 
 namespace {
-    void initialiseGame() {
-        // Make entity manager
-        EntityManager entityManager;
+    void initialiseGame() try {
+        // Make a registry of component types
+        ComponentTypeRegistry registry = ComponentTypeRegistry::Get();
 
-        // Add test entity
-        ComponentType testComponentList[] = { ComponentType::Render };
-        entityManager.AddEntity(testComponentList);
+        // Make an entity manager
+		EntityManager entityManager = EntityManager(&registry);
 
-        vkContext.window = Engine::initialiseVulkan();
-        vkContext.allocator = Engine::createVulkanAllocator(*vkContext.window.get());
+		// Register component types
+		registry.RegisterComponentTypes<RenderComponent, TestUserComponent>();
+
+		// Make component arrays
+		RenderComponent* renderComponents = new RenderComponent[1];
+		TestUserComponent* testUserComponents = new TestUserComponent[1];
+
+        // Make vector of pointers to each component type's data
+		std::vector<std::pair<void*, int>> componentTypePointers;
+
+        // Push back the address of the component vectors
+        componentTypePointers.push_back(std::make_pair(reinterpret_cast<void*>(renderComponents), 0));
+        componentTypePointers.push_back(std::make_pair(reinterpret_cast<void*>(testUserComponents), 0));
+
+		// Add component pointers to the entity manager
+		entityManager.AddComponentTypesPointers(componentTypePointers);
+
+        // Add entities
+        entityManager.AddEntity<RenderComponent>();
+        entityManager.AddEntity<TestUserComponent>();
+        entityManager.AddEntity<RenderComponent, TestUserComponent>();
 
 #ifdef CLIENT
         vkContext.window = Engine::initialiseVulkan();
         vkContext.allocator = Engine::createVulkanAllocator(*vkContext.window.get());
         Engine::registerCallbacks(vkContext.getGLFWWindow());
-#else
-        Engine::initialiseVulkan();
-        vkContext.allocator = Engine::createVulkanAllocator(*vkContext.window.get());
-        Engine::registerCallbacks(vkContext.getGLFWWindow());
-#endif
 
         // Here we would load all relevant glTF models and put them in the models vector
         tinygltf::Model tinygltfmodel = Engine::loadFromFile("Game/assets/DamagedHelmet.gltf");
         models.emplace_back(Engine::makeVulkanModel(vkContext, tinygltfmodel));
+#endif
 
         camera = Camera(100.0f, 0.01f, 256.0f, glm::vec3(0.0f, 0.0f, 2.0f), glm::vec3(0.0f, 0.0f, -1.0f));
+
+    } catch (const std::exception& error) {
+        std::fprintf(stderr, "\n");
+        std::fprintf(stderr, "Error thrown: %s\n", error.what());
+		exit(1);
     }
 
-    void runGameLoop(GameClient* client) {
+    void runGameLoop(GameClient* client) try {
         // Create required objects for rendering
         std::map<std::string, Engine::vk::RenderPass> renderPasses;
         renderPasses.emplace("default", Engine::createRenderPass(*vkContext.window));
@@ -210,8 +234,6 @@ namespace {
         auto previous = std::chrono::steady_clock::now();
 
         while (!glfwWindowShouldClose(vkContext.getGLFWWindow())) {
-
-            client->Update();
             glfwPollEvents();
 
             if (recreateSwapchain) {
@@ -286,10 +308,19 @@ namespace {
                 recreateSwapchain = true;
             else if (VK_SUCCESS != result)
                 throw Utils::Error("Unable to present swapchain image %u\n vkQueuePresentKHR() returned %s", imageIndex, Utils::toString(result).c_str());
+            else if (client->Update() == 1)
+				throw Utils::Error("Client Disconnected");
         }
 
         vkDeviceWaitIdle(vkContext.window->device->device);
-    }
+        vkContext.allocator.reset();
+        vkContext.window.reset();
+
+	} catch (const std::exception& error) {
+		std::fprintf(stderr, "\n");
+		std::fprintf(stderr, "Error thrown: %s\n", error.what());
+        exit(1);
+	}
 
     void updateSceneUniform(glsl::SceneUniform& aScene, Camera& camera, std::uint32_t aFramebufferWidth, std::uint32_t aFramebufferHeight) {
         const float aspectRatio = float(aFramebufferWidth / aFramebufferHeight);
