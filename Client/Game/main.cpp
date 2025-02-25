@@ -80,13 +80,15 @@ namespace {
         std::map<std::string, Engine::vk::DescriptorSetLayout> descriptorLayouts;
         descriptorLayouts.emplace("sceneLayout", Engine::createSceneLayout(*vkContext.window));
         descriptorLayouts.emplace("materialLayout", Engine::createMaterialLayout(*vkContext.window));
+        descriptorLayouts.emplace("materialInfoLayout", Engine::createSSBOLayout(*vkContext.window));
 
         std::vector<VkDescriptorSetLayout> sceneDescriptorLayouts;
         sceneDescriptorLayouts.emplace_back(descriptorLayouts["sceneLayout"].handle);
         sceneDescriptorLayouts.emplace_back(descriptorLayouts["materialLayout"].handle);
+        sceneDescriptorLayouts.emplace_back(descriptorLayouts["materialInfoLayout"].handle);
 
         std::map<std::string, Engine::vk::PipelineLayout> pipelineLayouts;
-        pipelineLayouts.emplace("default", Engine::createPipelineLayout(*vkContext.window, sceneDescriptorLayouts));
+        pipelineLayouts.emplace("default", Engine::createPipelineLayout(*vkContext.window, sceneDescriptorLayouts, true));
 
         std::map<std::string, Engine::vk::Pipeline> pipelines;
         pipelines.emplace("default", Engine::createPipeline(*vkContext.window, renderPasses["default"].handle, pipelineLayouts["default"].handle));
@@ -115,101 +117,12 @@ namespace {
         Engine::vk::Buffer sceneUBO = Engine::vk::createBuffer(*vkContext.allocator, sizeof(glsl::SceneUniform), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, 0, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
 
         std::map<std::string, VkDescriptorSet> descriptorSets;
-        VkDescriptorSet sceneDescriptors = Engine::allocateDescriptorSet(*vkContext.window, vkContext.window->device->dPool, descriptorLayouts["sceneLayout"].handle);
-        {
-            VkWriteDescriptorSet desc[1]{};
+        descriptorSets.emplace("sceneDescriptors", Engine::createSceneDescriptor(*vkContext.window, descriptorLayouts["sceneLayout"].handle, sceneUBO.buffer));
 
-            VkDescriptorBufferInfo sceneUboInfo{};
-            sceneUboInfo.buffer = sceneUBO.buffer;
-            sceneUboInfo.range = VK_WHOLE_SIZE;
-
-            desc[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            desc[0].dstSet = sceneDescriptors;
-            desc[0].dstBinding = 0;
-            desc[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            desc[0].descriptorCount = 1;
-            desc[0].pBufferInfo = &sceneUboInfo;
-
-            constexpr auto numSets = sizeof(desc) / sizeof(desc[0]);
-            vkUpdateDescriptorSets(vkContext.window->device->device, numSets, desc, 0, nullptr);
+        // For each model create its descriptor sets
+        for (Engine::vk::Model& model : models) {
+            model.createDescriptorSets(vkContext, descriptorLayouts["materialLayout"].handle, descriptorLayouts["materialInfoLayout"].handle);
         }
-        descriptorSets.emplace("sceneDescriptors", sceneDescriptors);
-
-        // We will need to change the following to create all the samplers, descriptors etc for each model in the models vector
-        // rather than just doing it for the first one, I have it this way for now just to get something on screen.
-
-        // Create all texture samplers
-        std::vector<Engine::vk::Sampler> samplers;
-        Engine::createTextureSamplers(*vkContext.window, models[0], samplers);
-
-        VkDescriptorSet materialDescriptors = Engine::allocateDescriptorSet(*vkContext.window, vkContext.window->device->dPool, descriptorLayouts["materialLayout"].handle);
-        {
-            VkWriteDescriptorSet desc[5]{};
-
-            VkDescriptorImageInfo baseColourInfo{};
-            baseColourInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            baseColourInfo.imageView = models[0].imageViews[models[0].materials[0].baseColourTextureIndex].handle;
-            baseColourInfo.sampler = samplers[models[0].textures[models[0].materials[0].baseColourTextureIndex].sampler].handle; // This could definitely be done better
-
-            desc[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            desc[0].dstSet = materialDescriptors;
-            desc[0].dstBinding = 0;
-            desc[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            desc[0].descriptorCount = 1;
-            desc[0].pImageInfo = &baseColourInfo;
-
-            VkDescriptorImageInfo metallicRoughnessInfo{};
-            metallicRoughnessInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            metallicRoughnessInfo.imageView = models[0].imageViews[models[0].materials[0].metallicRoughnessTextureIndex].handle;
-            metallicRoughnessInfo.sampler = samplers[models[0].textures[models[0].materials[0].metallicRoughnessTextureIndex].sampler].handle;
-
-            desc[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            desc[1].dstSet = materialDescriptors;
-            desc[1].dstBinding = 1;
-            desc[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            desc[1].descriptorCount = 1;
-            desc[1].pImageInfo = &metallicRoughnessInfo;
-
-            VkDescriptorImageInfo emissiveInfo{};
-            emissiveInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            emissiveInfo.imageView = models[0].imageViews[models[0].materials[0].emissiveTextureIndex].handle;
-            emissiveInfo.sampler = samplers[models[0].textures[models[0].materials[0].emissiveTextureIndex].sampler].handle;
-
-            desc[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            desc[2].dstSet = materialDescriptors;
-            desc[2].dstBinding = 2;
-            desc[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            desc[2].descriptorCount = 1;
-            desc[2].pImageInfo = &emissiveInfo;
-
-            VkDescriptorImageInfo occlusionInfo{};
-            occlusionInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            occlusionInfo.imageView = models[0].imageViews[models[0].materials[0].occlusionTextureIndex].handle;
-            occlusionInfo.sampler = samplers[models[0].textures[models[0].materials[0].occlusionTextureIndex].sampler].handle;
-
-            desc[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            desc[3].dstSet = materialDescriptors;
-            desc[3].dstBinding = 3;
-            desc[3].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            desc[3].descriptorCount = 1;
-            desc[3].pImageInfo = &occlusionInfo;
-
-            VkDescriptorImageInfo normalMapInfo{};
-            normalMapInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            normalMapInfo.imageView = models[0].imageViews[models[0].materials[0].normalTextureIndex].handle;
-            normalMapInfo.sampler = samplers[models[0].textures[models[0].materials[0].normalTextureIndex].sampler].handle;
-
-            desc[4].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            desc[4].dstSet = materialDescriptors;
-            desc[4].dstBinding = 4;
-            desc[4].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            desc[4].descriptorCount = 1;
-            desc[4].pImageInfo = &normalMapInfo;
-
-            constexpr auto numSets = sizeof(desc) / sizeof(desc[0]);
-            vkUpdateDescriptorSets(vkContext.window->device->device, numSets, desc, 0, nullptr);
-        }
-        descriptorSets.emplace("materialDescriptors", materialDescriptors);
 
         auto previous = std::chrono::steady_clock::now();
 
@@ -277,8 +190,7 @@ namespace {
                 sceneUBO.buffer,
                 sceneUniform,
                 pipelineLayouts["default"].handle,
-                sceneDescriptors,
-                materialDescriptors
+                descriptorSets["sceneDescriptors"]
             );
 
             assert(std::size_t(frameIndex) < renderFinished.size());

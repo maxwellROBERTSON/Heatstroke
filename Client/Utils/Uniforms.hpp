@@ -10,4 +10,25 @@ namespace glsl {
         glm::mat4 model;
         glm::vec4 position;
     };
+
+    // Laying out the struct in groups of their
+    // types seem to be critical to sending the data
+    // to the GPU correctly. When the members are
+    // ordered differently, the data seems to be incorrect
+    // when read from the fragment shader
+    struct alignas(16) MaterialInfoBuffer {
+        glm::vec4 emissiveFactor;
+        glm::vec4 baseColourFactor;
+        int alphaMode;
+        int emissiveTexSet;
+        int baseColourTexSet;
+        int normalTexSet;
+        int metallicRoughnessTexSet;
+        int occlusionTexSet;
+        float alphaCutoff;
+        float emissiveStrength;
+        float occlusionStrength;
+        float metallicFactor;
+        float roughnessFactor;
+    };
 }

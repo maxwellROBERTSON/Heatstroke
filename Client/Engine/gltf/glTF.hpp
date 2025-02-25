@@ -12,7 +12,7 @@ namespace Engine {
 
 	void loadMaterials(tinygltf::Model& model, vk::Model& vkModel);
 
-	void loadTextureSamplers(tinygltf::Model& model, vk::Model& vkModel);
+	void loadTextureSamplers(const VulkanWindow& aWindow, tinygltf::Model& model, vk::Model& vkModel);
 
 	void loadTextures(const VulkanContext& aContext, tinygltf::Model& model, vk::Model& vkModel);
 

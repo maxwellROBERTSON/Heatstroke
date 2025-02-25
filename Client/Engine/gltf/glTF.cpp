@@ -44,7 +44,7 @@ namespace Engine {
 		loadMaterials(model, vkModel);
 
 		// 2. Load texture samplers
-		loadTextureSamplers(model, vkModel);
+		loadTextureSamplers(*aContext.window, model, vkModel);
 
 		// 3. Load textures
 		loadTextures(aContext, model, vkModel);
@@ -58,14 +58,14 @@ namespace Engine {
 
 		// Get indices and vertices count for all nodes in the scene
 		for (std::size_t i = 0; i < model.nodes.size(); i++)
-			getCounts(model, model.nodes[scene.nodes[i]], indicesCount, verticesCount);
+			getCounts(model, model.nodes[i], indicesCount, verticesCount);
 
 		vk::RawData rawData(verticesCount, indicesCount);
 
 		// Load the node meshes into Vulkan objects
-		for (std::size_t i = 0; i < scene.nodes.size(); i++) {
-			tinygltf::Node node = model.nodes[scene.nodes[i]];
-			loadNodeMeshes(nullptr, node, model, scene.nodes[i], rawData, vkModel);
+		for (std::size_t i = 0; i < model.nodes.size(); i++) {
+			tinygltf::Node node = model.nodes[i];
+			loadNodeMeshes(nullptr, node, model, i, rawData, vkModel);
 		}
 
 		createVulkanBuffers(aContext, vkModel, rawData);
@@ -91,6 +91,7 @@ namespace Engine {
 			vkMaterial.emissiveFactor = glm::make_vec3(material.emissiveFactor.data());
 			vkMaterial.emissiveTextureIndex = material.emissiveTexture.index;
 			vkMaterial.emissiveTextureTexCoords = material.emissiveTexture.texCoord;
+			vkMaterial.emissiveStrength = 1.0f; // This can be changed using a glTF extension, which we may want to account for
 
 			vkMaterial.normalTextureIndex = material.normalTexture.index;
 			vkMaterial.normalTextureTexCoords = material.normalTexture.texCoord;
@@ -108,11 +109,21 @@ namespace Engine {
 			vkMaterial.metallicFactor = material.pbrMetallicRoughness.metallicFactor;
 			vkMaterial.roughnessFactor = material.pbrMetallicRoughness.roughnessFactor;
 			
+			vkMaterial.index = vkModel.materials.size();
+
 			vkModel.materials.emplace_back(vkMaterial);
 		}
 	}
 
-	void loadTextureSamplers(tinygltf::Model& model, vk::Model& vkModel) {
+	void loadTextureSamplers(const VulkanWindow& aWindow, tinygltf::Model& model, vk::Model& vkModel) {
+		vk::SamplerInfo samplerInfo;
+		samplerInfo.magFilter = VK_FILTER_NEAREST;
+		samplerInfo.minFilter = VK_FILTER_NEAREST;
+		samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+
+		vkModel.defaultSampler = createTextureSampler(aWindow, samplerInfo);
+
 		for (tinygltf::Sampler sampler : model.samplers) {
 			vk::SamplerInfo vkSampler{};
 			vkSampler.minFilter = Utils::getVkFilter(sampler.minFilter);
@@ -120,27 +131,13 @@ namespace Engine {
 			vkSampler.addressModeU = Utils::getVkSamplerAddressMode(sampler.wrapS);
 			vkSampler.addressModeV = Utils::getVkSamplerAddressMode(sampler.wrapT);
 			
-			vkModel.samplerInfos.emplace_back(vkSampler);
+			vkModel.samplers.emplace_back(createTextureSampler(aWindow, vkSampler));
 		}
 	}
 
 	void loadTextures(const VulkanContext& aContext, tinygltf::Model& model, vk::Model& vkModel) {
 		for (std::size_t i = 0; i < model.textures.size(); i++) {
 			tinygltf::Texture texture = model.textures[i];
-
-			vk::SamplerInfo sampler;
-			// Check if texture references an existing sampler or not
-			if (texture.sampler == -1) {
-				// Texture does not reference an existing sampler so we assign it a default one
-				sampler.minFilter = VK_FILTER_NEAREST;
-				sampler.magFilter = VK_FILTER_NEAREST;
-				sampler.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-				sampler.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-			}
-			else {
-				// Get the referenced sampler
-				sampler = vkModel.samplerInfos[texture.sampler];
-			}
 
 			// Get image the texture references
 			int textureSource = texture.source;
@@ -155,7 +152,9 @@ namespace Engine {
 					format = VK_FORMAT_R8G8B8A8_SRGB;
 			}
 
-			vk::Texture vkTexture = vk::createTexture(aContext, image, format, texture.sampler);
+			VkSampler sampler = texture.sampler > -1 ? vkModel.samplers[texture.sampler].handle : vkModel.defaultSampler.handle;
+
+			vk::Texture vkTexture = vk::createTexture(aContext, image, format, sampler);
 			vk::ImageView vkImageView = vk::createImageView(*aContext.window, vkTexture.image, format);
 
 			vkModel.textures.emplace_back(std::move(vkTexture));
@@ -226,11 +225,13 @@ namespace Engine {
 
 				const float* bufferPos = nullptr;
 				const float* normalsPos = nullptr;
-				const float* texCoordsPos = nullptr;
+				const float* texCoords0Pos = nullptr;
+				const float* texCoords1Pos = nullptr;
 				const float* colourPos = nullptr;
 				int positionByteStride;
 				int normalsByteStride;
-				int texCoordsByteStride;
+				int texCoords0ByteStride;
+				int texCoords1ByteStride;
 				int colourByteStride;
 
 				const tinygltf::Accessor& positionAccessor = model.accessors[primitive.attributes.find("POSITION")->second];
@@ -249,10 +250,17 @@ namespace Engine {
 				
 				// Get texCoords
 				if (primitive.attributes.find("TEXCOORD_0") != primitive.attributes.end()) {
-					const tinygltf::Accessor& texCoordAccessor = model.accessors[primitive.attributes.find("TEXCOORD_0")->second];
-					const tinygltf::BufferView& texCoordBufView = model.bufferViews[texCoordAccessor.bufferView];
-					texCoordsPos = reinterpret_cast<const float*>(&(model.buffers[texCoordBufView.buffer].data[texCoordAccessor.byteOffset + texCoordBufView.byteOffset]));
-					texCoordsByteStride = texCoordAccessor.ByteStride(texCoordBufView) ? (texCoordAccessor.ByteStride(texCoordBufView) / sizeof(float)) : tinygltf::GetNumComponentsInType(TINYGLTF_TYPE_VEC2);
+					const tinygltf::Accessor& texCoord0Accessor = model.accessors[primitive.attributes.find("TEXCOORD_0")->second];
+					const tinygltf::BufferView& texCoord0BufView = model.bufferViews[texCoord0Accessor.bufferView];
+					texCoords0Pos = reinterpret_cast<const float*>(&(model.buffers[texCoord0BufView.buffer].data[texCoord0Accessor.byteOffset + texCoord0BufView.byteOffset]));
+					texCoords0ByteStride = texCoord0Accessor.ByteStride(texCoord0BufView) ? (texCoord0Accessor.ByteStride(texCoord0BufView) / sizeof(float)) : tinygltf::GetNumComponentsInType(TINYGLTF_TYPE_VEC2);
+				}
+
+				if (primitive.attributes.find("TEXCOORD_1") != primitive.attributes.end()) {
+					const tinygltf::Accessor& texCoord1Accessor = model.accessors[primitive.attributes.find("TEXCOORD_1")->second];
+					const tinygltf::BufferView& texCoord1BufView = model.bufferViews[texCoord1Accessor.bufferView];
+					texCoords1Pos = reinterpret_cast<const float*>(&(model.buffers[texCoord1BufView.buffer].data[texCoord1Accessor.byteOffset + texCoord1BufView.byteOffset]));
+					texCoords1ByteStride = texCoord1Accessor.ByteStride(texCoord1BufView) ? (texCoord1Accessor.ByteStride(texCoord1BufView) / sizeof(float)) : tinygltf::GetNumComponentsInType(TINYGLTF_TYPE_VEC2);
 				}
 				
 				// Get colour
@@ -266,7 +274,8 @@ namespace Engine {
 				for (std::size_t j = 0; j < positionAccessor.count; j++) {
 					rawData.positions.emplace_back(glm::make_vec3(&bufferPos[j * positionByteStride]));
 					rawData.normals.emplace_back(glm::normalize(glm::vec3(normalsPos ? glm::make_vec3(&normalsPos[j * normalsByteStride]) : glm::vec3(0.0f))));
-					rawData.texCoords.emplace_back(texCoordsPos ? glm::make_vec2(&texCoordsPos[j * texCoordsByteStride]) : glm::vec2(0.0f));
+					rawData.texCoords0.emplace_back(texCoords0Pos ? glm::make_vec2(&texCoords0Pos[j * texCoords0ByteStride]) : glm::vec2(0.0f));
+					rawData.texCoords1.emplace_back(texCoords1Pos ? glm::make_vec2(&texCoords1Pos[j * texCoords1ByteStride]) : glm::vec2(0.0f));
 					rawData.vertexColours.emplace_back(colourPos ? glm::make_vec4(&colourPos[j * colourByteStride]) : glm::vec4(1.0f));
 				}
 
@@ -322,7 +331,8 @@ namespace Engine {
 		// Pre-calculate sizes for less code duplication
 		std::size_t posSize = rawData.positions.size() * sizeof(glm::vec3);
 		std::size_t normSize = rawData.normals.size() * sizeof(glm::vec3);
-		std::size_t texSize = rawData.texCoords.size() * sizeof(glm::vec2);
+		std::size_t tex0Size = rawData.texCoords0.size() * sizeof(glm::vec2);
+		std::size_t tex1Size = rawData.texCoords1.size() * sizeof(glm::vec2);
 		std::size_t vertColSize = rawData.vertexColours.size() * sizeof(glm::vec4);
 		std::size_t indicesSize = rawData.indices.size() * (vkModel.indexType == VK_INDEX_TYPE_UINT32 ? sizeof(std::uint32_t) : sizeof(std::uint32_t));
 
@@ -343,9 +353,17 @@ namespace Engine {
 			VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
 		);
 
-		vk::Buffer texGPUBuf = vk::createBuffer(
+		vk::Buffer tex0GPUBuf = vk::createBuffer(
 			*aContext.allocator,
-			texSize,
+			tex0Size,
+			VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+			0,
+			VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
+		);
+
+		vk::Buffer tex1GPUBuf = vk::createBuffer(
+			*aContext.allocator,
+			tex1Size,
 			VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 			0,
 			VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
@@ -382,9 +400,16 @@ namespace Engine {
 			VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT
 		);
 
-		vk::Buffer texStaging = vk::createBuffer(
+		vk::Buffer tex0Staging = vk::createBuffer(
 			*aContext.allocator,
-			texSize,
+			tex0Size,
+			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+			VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT
+		);
+
+		vk::Buffer tex1Staging = vk::createBuffer(
+			*aContext.allocator,
+			tex1Size,
 			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 			VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT
 		);
@@ -418,12 +443,19 @@ namespace Engine {
 		std::memcpy(normPtr, rawData.normals.data(), normSize);
 		vmaUnmapMemory(aContext.allocator->allocator, normStaging.allocation);
 
-		void* texPtr = nullptr;
-		if (const auto res = vmaMapMemory(aContext.allocator->allocator, texStaging.allocation, &texPtr); VK_SUCCESS != res)
+		void* tex0Ptr = nullptr;
+		if (const auto res = vmaMapMemory(aContext.allocator->allocator, tex0Staging.allocation, &tex0Ptr); VK_SUCCESS != res)
 			throw Utils::Error("Mapping memory for writing\n vmaMapMemory() returned %s", Utils::toString(res).c_str());
 
-		std::memcpy(texPtr, rawData.texCoords.data(), texSize);
-		vmaUnmapMemory(aContext.allocator->allocator, texStaging.allocation);
+		std::memcpy(tex0Ptr, rawData.texCoords0.data(), tex0Size);
+		vmaUnmapMemory(aContext.allocator->allocator, tex0Staging.allocation);
+
+		void* tex1Ptr = nullptr;
+		if (const auto res = vmaMapMemory(aContext.allocator->allocator, tex1Staging.allocation, &tex1Ptr); VK_SUCCESS != res)
+			throw Utils::Error("Mapping memory for writing\n vmaMapMemory() returned %s", Utils::toString(res).c_str());
+
+		std::memcpy(tex1Ptr, rawData.texCoords1.data(), tex1Size);
+		vmaUnmapMemory(aContext.allocator->allocator, tex1Staging.allocation);
 
 		void* vertColPtr = nullptr;
 		if (const auto res = vmaMapMemory(aContext.allocator->allocator, vertColStaging.allocation, &vertColPtr); VK_SUCCESS != res)
@@ -473,14 +505,28 @@ namespace Engine {
 			VK_PIPELINE_STAGE_VERTEX_INPUT_BIT
 		);
 
-		VkBufferCopy texCopy{};
-		texCopy.size = texSize;
+		VkBufferCopy tex0Copy{};
+		tex0Copy.size = tex0Size;
 
-		vkCmdCopyBuffer(uploadCmdBuf, texStaging.buffer, texGPUBuf.buffer, 1, &texCopy);
+		vkCmdCopyBuffer(uploadCmdBuf, tex0Staging.buffer, tex0GPUBuf.buffer, 1, &tex0Copy);
 
 		Utils::bufferBarrier(
 			uploadCmdBuf,
-			texGPUBuf.buffer,
+			tex0GPUBuf.buffer,
+			VK_ACCESS_TRANSFER_WRITE_BIT,
+			VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,
+			VK_PIPELINE_STAGE_TRANSFER_BIT,
+			VK_PIPELINE_STAGE_VERTEX_INPUT_BIT
+		);
+
+		VkBufferCopy tex1Copy{};
+		tex1Copy.size = tex1Size;
+
+		vkCmdCopyBuffer(uploadCmdBuf, tex1Staging.buffer, tex1GPUBuf.buffer, 1, &tex1Copy);
+
+		Utils::bufferBarrier(
+			uploadCmdBuf,
+			tex1GPUBuf.buffer,
 			VK_ACCESS_TRANSFER_WRITE_BIT,
 			VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,
 			VK_PIPELINE_STAGE_TRANSFER_BIT,
@@ -519,7 +565,8 @@ namespace Engine {
 
 		vkModel.posBuffer = std::move(posGPUBuf);
 		vkModel.normBuffer = std::move(normGPUBuf);
-		vkModel.texBuffer = std::move(texGPUBuf);
+		vkModel.tex0Buffer = std::move(tex0GPUBuf);
+		vkModel.tex1Buffer = std::move(tex1GPUBuf);
 		vkModel.vertColBuffer = std::move(vertColGPUBuf);
 		vkModel.indicesBuffer = std::move(indicesGPUBuf);
 	}

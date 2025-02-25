@@ -42,7 +42,7 @@ namespace Engine {
 	void beginCommandBuffer(VkCommandBuffer aCmdBuff, VkCommandBufferUsageFlags aFlags = 0);
 	void endAndSubmitCommandBuffer(const VulkanWindow& aWindow, VkCommandBuffer aCmdBuff);
 
-	void createTextureSamplers(const VulkanWindow& aWindow, vk::Model& aModel, std::vector<vk::Sampler>& aSamplers);
+	vk::Sampler createTextureSampler(const VulkanWindow& aWindow, vk::SamplerInfo aSamplerInfo);
 
 	void waitForFences(const VulkanWindow& aWindow, std::vector<vk::Fence>& aFences, std::size_t frameIndex);
 	void resetFences(const VulkanWindow& aWindow, std::vector<vk::Fence>& aFences, std::size_t frameIndex);

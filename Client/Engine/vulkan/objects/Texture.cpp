@@ -32,7 +32,7 @@ namespace vk {
 		: image(std::exchange(aOther.image, VK_NULL_HANDLE))
 		, allocation(std::exchange(aOther.allocation, VK_NULL_HANDLE))
 		, mAllocator(std::exchange(aOther.mAllocator, VK_NULL_HANDLE))
-		, sampler(std::exchange(aOther.sampler, -1))
+		, sampler(std::exchange(aOther.sampler, VK_NULL_HANDLE))
 	{}
 
 	Texture& Texture::operator=(Texture&& aOther) noexcept
@@ -44,7 +44,7 @@ namespace vk {
 		return *this;
 	}
 
-	Texture createTexture(const VulkanContext& aContext, tinygltf::Image aTinygltfImage, VkFormat aFormat, int aSampler) {
+	Texture createTexture(const VulkanContext& aContext, tinygltf::Image aTinygltfImage, VkFormat aFormat, VkSampler aSampler) {
 		std::size_t sizeInBytes = aTinygltfImage.image.size();
 
 		vk::Buffer staging = createBuffer(

@@ -19,18 +19,21 @@ namespace vk {
 	};
 
 	enum AlphaMode {
-		ALPHA_OPAQUE,
-		ALPHA_MASK,
-		ALPHA_BLEND
+		ALPHA_OPAQUE = 0,
+		ALPHA_MASK = 1,
+		ALPHA_BLEND = 2
 	};
 
 	struct Material {
+		int index;
+
 		AlphaMode alphaMode;
 		float alphaCutoff;
 
 		glm::vec3 emissiveFactor;
 		int emissiveTextureIndex;
 		int emissiveTextureTexCoords;
+		float emissiveStrength;
 
 		int normalTextureIndex;
 		int normalTextureTexCoords;
@@ -59,6 +62,7 @@ namespace vk {
 		std::uint32_t indexCount;
 		std::uint32_t vertexCount;
 		Material& material;
+		VkDescriptorSet samplerDescriptorSet;
 		bool hasIndices;
 	};
 
@@ -84,20 +88,28 @@ namespace vk {
     struct Model {
 		std::vector<Node*> nodes;
         std::vector<Material> materials;
-        std::vector<SamplerInfo> samplerInfos;
+        std::vector<SamplerInfo> samplerInfos; // Sampler info from tinygltf
+		std::vector<Sampler> samplers; // Actual Vulkan sampler objects
+		Sampler defaultSampler; // Default sampler for when a texture doesn't reference any sampler
         std::vector<Texture> textures;
         std::vector<ImageView> imageViews;
 
 		Buffer posBuffer;
 		Buffer normBuffer;
-		Buffer texBuffer;
+		Buffer tex0Buffer;
+		Buffer tex1Buffer;
 		Buffer vertColBuffer;
 		Buffer indicesBuffer;
 
+		Buffer materialInfoBuffer;
+
 		VkIndexType indexType;
 
-        void drawModel(VkCommandBuffer aCmdBuf);
-		void drawNode(Node* node, VkCommandBuffer aCmdBuf);
+		VkDescriptorSet materialInfoSSBO;
+
+		void createDescriptorSets(const VulkanContext& aContext, VkDescriptorSetLayout aSamplerSetLayout, VkDescriptorSetLayout aMaterialInfoSetLayout);
+        void drawModel(VkCommandBuffer aCmdBuf, VkPipelineLayout aPipelineLayout);
+		void drawNode(Node* node, VkCommandBuffer aCmdBuf, VkPipelineLayout aPipelineLayout);
 		void destroy();
 	};
 
@@ -105,14 +117,16 @@ namespace vk {
 		RawData(std::uint32_t vertexCount, std::uint32_t indexCount) {
 			positions.reserve(vertexCount);
 			normals.reserve(vertexCount);
-			texCoords.reserve(vertexCount);
+			texCoords0.reserve(vertexCount);
+			texCoords1.reserve(vertexCount);
 			vertexColours.reserve(vertexCount);
 			indices.reserve(indexCount);
 		};
 
 		std::vector<glm::vec3> positions;
 		std::vector<glm::vec3> normals;
-		std::vector<glm::vec2> texCoords;
+		std::vector<glm::vec2> texCoords0;
+		std::vector<glm::vec2> texCoords1;
 		std::vector<glm::vec4> vertexColours;
 		std::vector<std::uint32_t> indices;
 	};

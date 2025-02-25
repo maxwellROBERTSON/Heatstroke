@@ -17,8 +17,7 @@ namespace Engine {
 		VkBuffer aSceneUBO,
 		glsl::SceneUniform aSceneUniform,
 		VkPipelineLayout aPipelineLayout,
-		VkDescriptorSet aSceneDescriptorSet,
-		VkDescriptorSet aMaterialDescriptorSet
+		VkDescriptorSet aSceneDescriptorSet
 	) {
 		// Begin recording
 		beginCommandBuffer(aCmdBuf, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
@@ -67,9 +66,8 @@ namespace Engine {
 		vkCmdBindPipeline(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipeline);
 
 		vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, 0, 1, &aSceneDescriptorSet, 0, nullptr);
-		vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, 1, 1, &aMaterialDescriptorSet, 0, nullptr);
-
-		model.drawModel(aCmdBuf);
+		
+		model.drawModel(aCmdBuf, aPipelineLayout);
 
 		vkCmdEndRenderPass(aCmdBuf);
 

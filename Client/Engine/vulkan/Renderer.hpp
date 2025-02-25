@@ -15,8 +15,7 @@ namespace Engine {
 		VkBuffer aSceneUBO,
 		glsl::SceneUniform aSceneUniform,
 		VkPipelineLayout aPipelineLayout,
-		VkDescriptorSet aSceneDescriptorSet,
-		VkDescriptorSet aMaterialDescriptorSet
+		VkDescriptorSet aSceneDescriptorSet
 	);
 
 }
