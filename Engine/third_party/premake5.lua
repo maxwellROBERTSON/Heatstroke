@@ -47,8 +47,8 @@ project "sodium-builtin"
         "yojimbo/sodium/**.h"   -- Include all .h files
     }
 
-    -- filter "system:not windows"
-    --     files { "yojimbo/sodium.s/**.S" }  -- Include assembly files on Linux/macOS
+    filter "system:not windows"
+        files { "yojimbo/sodium/**.S" }  -- Include assembly files on Linux/macOS
     --     buildoptions { "-Wno-unused-parameter", "-Wno-unused-function", "-Wno-unknown-pragmas", "-Wno-unused-variable", "-Wno-type-limits" }
 
     -- filter "action:gmake*"
@@ -186,7 +186,8 @@ project("imgui")
     files("imgui/backend/**.cpp")
     files("imgui/misc/cpp/**.h**")
     files("imgui/misc/debuggers/**.**")
-
+    -- files("imgui/misc/freetype/**.h**")
+    -- files("imgui/misc/freetype/**.cpp")
 
 -- project("stb")
 --     kind "StaticLib"

@@ -36,7 +36,7 @@
 #pragma warning(disable:4996)
 #endif // #ifdef _MSC_VER
 
-#include <../sodium/sodium.h>
+#include <sodium.h>
 
 #define NETCODE_SOCKET_IPV6         1
 #define NETCODE_SOCKET_IPV4         2
@@ -2958,6 +2958,7 @@ void netcode_client_process_packet( struct netcode_client_t * client, struct net
     uint64_t current_timestamp = (uint64_t) time( NULL );
 
     uint64_t sequence;
+
     void * packet = netcode_read_packet( packet_data, 
                                          packet_bytes, 
                                          &sequence, 
@@ -3051,6 +3052,7 @@ void netcode_client_receive_packets( struct netcode_client_t * client )
         for ( i = 0; i < num_packets_received; i++ )
         {
             uint64_t sequence;
+
             void * packet = netcode_read_packet( client->receive_packet_data[i], 
                                                  client->receive_packet_bytes[i], 
                                                  &sequence, 
@@ -4573,6 +4575,7 @@ void netcode_server_process_packet( struct netcode_server_t * server, struct net
         netcode_printf( NETCODE_LOG_LEVEL_DEBUG, "server could not process packet because no encryption mapping exists for %s\n", netcode_address_to_string( from, address_string ) );
         return;
     }
+
     void * packet = netcode_read_packet( packet_data, 
                                          packet_bytes, 
                                          &sequence, 
@@ -4627,6 +4630,7 @@ void netcode_server_read_and_process_packet( struct netcode_server_t * server,
         netcode_printf( NETCODE_LOG_LEVEL_DEBUG, "server could not process packet because no encryption mapping exists for %s\n", netcode_address_to_string( from, address_string ) );
         return;
     }
+
     void * packet = netcode_read_packet( packet_data, 
                                          packet_bytes, 
                                          &sequence, 

@@ -22,14 +22,14 @@
     USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "../include/yojimbo_config.h"
-#include "../include/yojimbo_allocator.h"
+#include "yojimbo_config.h"
+#include "yojimbo_allocator.h"
 
 #if YOJIMBO_DEBUG_MEMORY_LEAKS
 #include <stdio.h>
 #endif // #if YOJIMBO_DEBUG_MEMORY_LEAKS
 
-#include "../tlsf/tlsf.h"
+#include "tlsf/tlsf.h"
 
 namespace yojimbo
 {

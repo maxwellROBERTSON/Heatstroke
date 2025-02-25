@@ -25,7 +25,7 @@
 #ifndef YOJIMBO_CONSTANTS_H
 #define YOJIMBO_CONSTANTS_H
 
-#include "../serialize/serialize.h"
+#include "serialize.h"
 
 namespace yojimbo
 {
