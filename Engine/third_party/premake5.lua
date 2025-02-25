@@ -15,7 +15,7 @@ includedirs("VulkanMemoryAllocator/include")
 includedirs("glm/include")
 includedirs("tgen/include")
 includedirs("tinygltf/")
--- includedirs("stb/include")
+includedirs("imgui/")
 
 -- -- Filter for non-Windows platforms to include .s files
 -- filter "system:not windows"
@@ -175,6 +175,18 @@ project("x-tinygltf")
     location "."
 
     files("tinygltf/**.h*")
+
+project("imgui")
+    kind "StaticLib"
+    location "."
+
+    files("imgui/**.h**")
+    files("imgui/**.cpp")
+    files("imgui/backend/**.h**")
+    files("imgui/backend/**.cpp")
+    files("imgui/misc/cpp/**.h**")
+    files("imgui/misc/debuggers/**.**")
+
 
 -- project("stb")
 --     kind "StaticLib"
