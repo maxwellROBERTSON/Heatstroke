@@ -23,8 +23,8 @@ defines("GLM_FORCE_SIZE_T_LENGTH=1")
 defines("GLM_ENABLE_EXPERIMENTAL=1")
 
 filter "system:not windows"	
-	includedirs { "libsodium-stable/build/include" }
-	libdirs { "libsodium-stable/build/lib" }
+	includedirs { "libsodium-stable/include_lib/include" }
+	libdirs { "libsodium-stable/include_lib/lib" }
 	links { "sodium" }
 
 project "yojimbo"
