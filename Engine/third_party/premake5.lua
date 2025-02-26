@@ -16,16 +16,15 @@ includedirs("glm/include")
 includedirs("tgen/include")
 includedirs("tinygltf/")
 includedirs("imgui/")
-includedirs("libsodium-stable/")
 
 defines("GLM_FORCE_RADIANS=1")
 defines("GLM_FORCE_SIZE_T_LENGTH=1")
 defines("GLM_ENABLE_EXPERIMENTAL=1")
 
-filter "system:not windows"	
-	includedirs { "libsodium-stable/include_lib/include" }
-	libdirs { "libsodium-stable/include_lib/libs" }
-	links { "sodium" }
+filter "system:not windows"
+    includedirs( "libsodium-1.0.20/libsodium-build/include")
+    libdirs( "libsodium-1.0.20/libsodium-build/lib")
+    links { "sodium" }
 
 project "yojimbo"
     kind "StaticLib"
@@ -47,11 +46,11 @@ project "sodium-builtin"
     }
 
     filter "system:not windows"
-        files { "yojimbo/sodium/**.S" }  -- Include assembly files on Linux/macOS
-	buildoptions { "-Wno-unused-parameter", "-Wno-unused-function", "-Wno-unknown-pragmas", "-Wno-unused-variable", "-Wno-type-limits" }
+        files { "yojimbo/sodium.s/**.S" }  -- Include assembly files on Linux/macOS
+        buildoptions { "-Wno-unused-parameter", "-Wno-unused-function", "-Wno-unknown-pragmas", "-Wno-unused-variable", "-Wno-type-limits" }
 
-	filter "action:gmake*"
-		buildoptions { "-Wno-unused-parameter", "-Wno-unused-function", "-Wno-unknown-pragmas", "-Wno-unused-variable", "-Wno-type-limits" }
+    filter "action:gmake*"
+        buildoptions { "-Wno-unused-parameter", "-Wno-unused-function", "-Wno-unknown-pragmas", "-Wno-unused-variable", "-Wno-type-limits" }
 
 project "netcode"
     kind "StaticLib"
