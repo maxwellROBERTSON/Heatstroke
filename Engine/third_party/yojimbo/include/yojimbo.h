@@ -25,7 +25,7 @@
 #ifndef YOJIMBO_H
 #define YOJIMBO_H
 
-#include "../serialize/serialize.h"
+#include "serialize.h"
 #include "yojimbo_config.h"
 #include "yojimbo_constants.h"
 #include "yojimbo_bit_array.h"

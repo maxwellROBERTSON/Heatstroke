@@ -33,7 +33,7 @@
 namespace {
     void initialiseGame();
 
-    void runGameLoop(GameClient* client);
+    void runGameLoop();
 
     void updateSceneUniform(glsl::SceneUniform& aScene, Camera& camera, std::uint32_t aFramebufferWidth, std::uint32_t aFramebufferHeight);
 
@@ -45,7 +45,7 @@ namespace {
 }
 
 namespace {
-    void initialiseGame() try {
+    void initialiseGame() {
         // Make a registry of component types
         ComponentTypeRegistry registry = ComponentTypeRegistry::Get();
 
@@ -86,13 +86,9 @@ namespace {
 
         camera = Camera(100.0f, 0.01f, 256.0f, glm::vec3(0.0f, 0.0f, 2.0f), glm::vec3(0.0f, 0.0f, -1.0f));
 
-    } catch (const std::exception& error) {
-        std::fprintf(stderr, "\n");
-        std::fprintf(stderr, "Error thrown: %s\n", error.what());
-		exit(1);
     }
 
-    void runGameLoop(GameClient* client) try {
+    void runGameLoop() {
         // Create required objects for rendering
         std::map<std::string, Engine::vk::RenderPass> renderPasses;
         renderPasses.emplace("default", Engine::createRenderPass(*vkContext.window));
@@ -308,18 +304,12 @@ namespace {
                 recreateSwapchain = true;
             else if (VK_SUCCESS != result)
                 throw Utils::Error("Unable to present swapchain image %u\n vkQueuePresentKHR() returned %s", imageIndex, Utils::toString(result).c_str());
-            else if (client->Update() == 1)
-				throw Utils::Error("Client Disconnected");
         }
 
         vkDeviceWaitIdle(vkContext.window->device->device);
         vkContext.allocator.reset();
         vkContext.window.reset();
 
-	} catch (const std::exception& error) {
-		std::fprintf(stderr, "\n");
-		std::fprintf(stderr, "Error thrown: %s\n", error.what());
-        exit(1);
 	}
 
     void updateSceneUniform(glsl::SceneUniform& aScene, Camera& camera, std::uint32_t aFramebufferWidth, std::uint32_t aFramebufferHeight) {

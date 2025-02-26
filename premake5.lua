@@ -82,7 +82,8 @@ project "Engine"
         "Engine/vulkan/**",
         "Engine/Shaders/**",
         "Engine/Network/**",
-        "Engine/ECS/**"
+        "Engine/ECS/**",
+        "Engine/GUI/**"
     }
 
     includedirs {
@@ -105,7 +106,8 @@ project "Engine"
         "x-glm",
         "x-volk",
         "x-glfw",
-        "x-vma"
+        "x-vma",
+        "imgui"
     }
 
     dependson "Shaders"
@@ -138,7 +140,8 @@ project "Game"
         "x-glm",
         "x-volk",
         "x-glfw",
-        "x-vma"
+        "x-vma",
+        "imgui"
     }
 
     dependson "Engine"

@@ -15,6 +15,7 @@ includedirs("VulkanMemoryAllocator/include")
 includedirs("glm/include")
 includedirs("tgen/include")
 includedirs("tinygltf/")
+includedirs("imgui/")
 
 defines("GLM_FORCE_RADIANS=1")
 defines("GLM_FORCE_SIZE_T_LENGTH=1")
@@ -40,8 +41,8 @@ project "sodium-builtin"
     language "C"
 
     files {
-        "yojimbo/sodium/**.c",  -- Include all .c files
-        "yojimbo/sodium/**.h"   -- Include all .h files
+        "yojimbo/sodium/**.c",
+        "yojimbo/sodium/**.h"
     }
 
     filter "system:not windows"
@@ -172,6 +173,19 @@ project("x-tinygltf")
     location "."
 
     files("tinygltf/**.h*")
+
+project("imgui")
+    kind "StaticLib"
+    location "."
+
+    files("imgui/**.h**")
+    files("imgui/**.cpp")
+    files("imgui/backend/**.h**")
+    files("imgui/backend/**.cpp")
+    files("imgui/misc/cpp/**.h**")
+    files("imgui/misc/debuggers/**.**")
+    -- files("imgui/misc/freetype/**.h**")
+    -- files("imgui/misc/freetype/**.cpp")
 
 -- project("stb")
 --     kind "StaticLib"
