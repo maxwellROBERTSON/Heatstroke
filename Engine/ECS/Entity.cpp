@@ -14,14 +14,4 @@ Entity::Entity(EntityManager* entityManager, int entityId, std::vector<int> type
 	}
 }
 
-int Entity::HasComponent(int id)
-{
-	return componentListId[id];
-}
-
-int Entity::GetComponentIndexArray()
-{
-	return static_cast<int>(componentListId.size());
-}
-
 // Private Methods

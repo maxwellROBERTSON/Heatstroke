@@ -6,7 +6,6 @@
 
 #include "Entity.hpp"
 #include "Component.hpp"
-#include "RenderComponent.hpp"
 #include "ComponentTypeRegistry.hpp"
 
 class EntityManager
@@ -15,10 +14,29 @@ public:
 	EntityManager(ComponentTypeRegistry* registry) : registry(registry) {};
 	~EntityManager() {};
 
-	void AddComponentTypesPointers(std::vector<std::pair<void*, int>>);
-
+	// Getters
 	int GetNumberOfEntities();
+	template <typename T>
+	T* GetEntityComponent(int entityId)
+	{
+		int typeIndex = registry->GetComponentID<T>();
+		int componentId = entities[entityId].GetComponent(typeIndex);
+		if (componentId == -1)
+		{
+			return nullptr;
+		}
+		else
+		{
+			return static_cast<T*>(componentList[typeIndex].first) + componentId * sizeof(T);
+		}
+	}
+	Entity* GetEntity(int entityId)
+	{
+		return &entities[entityId];
+	}
 
+	// Setters
+	void SetComponentTypesPointers(std::vector<std::pair<void*, int>>);
 	template <typename... Types>
 	Entity* AddEntity()
 	{
@@ -36,6 +54,8 @@ private:
 	ComponentTypeRegistry* registry;
 	std::vector<Entity> entities;
 	std::vector<std::pair<void*, int>> componentList;
+
+	int localPlayerEntityId = -1;
 
 	template <typename T>
 	void addComponent(std::vector<int>& typeIndexList)

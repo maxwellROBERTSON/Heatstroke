@@ -17,12 +17,12 @@
 #include "../Engine/vulkan/objects/Buffer.hpp"
 #include "../Engine/gltf/glTF.hpp"
 
-#include "../Engine/Network/Client/GameClient.hpp"
-
 #include "../Engine/ECS/ComponentTypeRegistry.hpp"
 #include "../Engine/ECS/EntityManager.hpp"
 #include "../Engine/ECS/RenderComponent.hpp"
-#include "UserComponents/TestUserComponent.hpp"
+#include "../Engine/ECS/PhysicsComponent.hpp"
+#include "../Engine/ECS/CameraComponent.hpp"
+#include "../Engine/ECS/NetworkComponent.hpp"
 
 #include "Error.hpp"
 #include "toString.hpp"
@@ -37,42 +37,57 @@ namespace {
 
     void updateSceneUniform(glsl::SceneUniform& aScene, Camera& camera, std::uint32_t aFramebufferWidth, std::uint32_t aFramebufferHeight);
 
+    void LoadOfflineEntities();
+
     Engine::VulkanContext vkContext;
 
     Camera camera;
     bool recreateSwapchain = false;
     std::vector<Engine::vk::Model> models;
+
+    // Make a registry of component types
+    ComponentTypeRegistry registry = ComponentTypeRegistry::Get();
+
+    // Make an entity manager
+    EntityManager entityManager = EntityManager(&registry);
+
+    // Local clientId
+    int clientId = 0;
+
+    // Game mode
+	bool online = false;
+	bool switchMode = true;
 }
 
 namespace {
     void initialiseGame() {
-        // Make a registry of component types
-        ComponentTypeRegistry registry = ComponentTypeRegistry::Get();
-
-        // Make an entity manager
-		EntityManager entityManager = EntityManager(&registry);
-
-		// Register component types
-		registry.RegisterComponentTypes<RenderComponent, TestUserComponent>();
+        // Register component types
+        registry.RegisterComponentTypes<
+            RenderComponent,
+            PhysicsComponent,
+            CameraComponent,
+            NetworkComponent
+        >(); //TestUserComponent>();
 
 		// Make component arrays
 		RenderComponent* renderComponents = new RenderComponent[1];
-		TestUserComponent* testUserComponents = new TestUserComponent[1];
+        PhysicsComponent* physicsComponents = new PhysicsComponent[1];
+		CameraComponent* cameraComponents = new CameraComponent[1];
+		NetworkComponent* networkComponents = new NetworkComponent[1];
+		//TestUserComponent* testUserComponents = new TestUserComponent[1];
 
         // Make vector of pointers to each component type's data
 		std::vector<std::pair<void*, int>> componentTypePointers;
 
         // Push back the address of the component vectors
         componentTypePointers.push_back(std::make_pair(reinterpret_cast<void*>(renderComponents), 0));
-        componentTypePointers.push_back(std::make_pair(reinterpret_cast<void*>(testUserComponents), 0));
+		componentTypePointers.push_back(std::make_pair(reinterpret_cast<void*>(physicsComponents), 0));
+		componentTypePointers.push_back(std::make_pair(reinterpret_cast<void*>(cameraComponents), 0));
+		componentTypePointers.push_back(std::make_pair(reinterpret_cast<void*>(networkComponents), 0));
+        //componentTypePointers.push_back(std::make_pair(reinterpret_cast<void*>(testUserComponents), 0));
 
 		// Add component pointers to the entity manager
-		entityManager.AddComponentTypesPointers(componentTypePointers);
-
-        // Add entities
-        entityManager.AddEntity<RenderComponent>();
-        entityManager.AddEntity<TestUserComponent>();
-        entityManager.AddEntity<RenderComponent, TestUserComponent>();
+		entityManager.SetComponentTypesPointers(componentTypePointers);
 
 #ifdef CLIENT
         vkContext.window = Engine::initialiseVulkan();
@@ -85,11 +100,10 @@ namespace {
 #endif
 
         camera = Camera(100.0f, 0.01f, 256.0f, glm::vec3(0.0f, 0.0f, 2.0f), glm::vec3(0.0f, 0.0f, -1.0f));
-
     }
 
     void runGameLoop() {
-        // Create required objects for rendering
+         // Create required objects for rendering
         std::map<std::string, Engine::vk::RenderPass> renderPasses;
         renderPasses.emplace("default", Engine::createRenderPass(*vkContext.window));
 
@@ -232,6 +246,11 @@ namespace {
         while (!glfwWindowShouldClose(vkContext.getGLFWWindow())) {
             glfwPollEvents();
 
+			if (!online && switchMode) {
+				LoadOfflineEntities();
+				switchMode = false;
+			}
+
             if (recreateSwapchain) {
                 vkDeviceWaitIdle(vkContext.window->device->device);
 
@@ -281,8 +300,6 @@ namespace {
             glsl::SceneUniform sceneUniform{};
             updateSceneUniform(sceneUniform, camera, vkContext.window->swapchainExtent.width, vkContext.window->swapchainExtent.height);
 
-            sceneUniform.model = models[0].nodes[0]->getModelMatrix();
-
             Engine::renderModel(
                 models[0],
                 cmdBuffers[frameIndex],
@@ -320,5 +337,30 @@ namespace {
         aScene.view = glm::lookAt(camera.position, camera.position + camera.frontDirection, glm::vec3(0.0f, 1.0f, 0.0f));
         //aScene.model = glm::rotate(glm::mat4(1.0f), 90.0f, glm::vec3(1.0f, 0.0f, 0.0f));
         aScene.position = glm::vec4(camera.position, 1.0f);
+    }
+
+    void LoadOfflineEntities()
+    {
+		// Pointers
+        Entity* entity;
+        RenderComponent* renderComponent;
+		PhysicsComponent* physicsComponent;
+		CameraComponent* cameraComponent;
+		NetworkComponent* networkComponent;
+
+        // Player
+        entity = entityManager.AddEntity<RenderComponent, PhysicsComponent, CameraComponent, NetworkComponent>();
+		renderComponent = entityManager.GetEntityComponent<RenderComponent>(entity->GetEntityId());
+		renderComponent->SetModelIndex(0);
+		physicsComponent = entityManager.GetEntityComponent<PhysicsComponent>(entity->GetEntityId());
+		physicsComponent->SetIsPerson(true);
+		cameraComponent = entityManager.GetEntityComponent<CameraComponent>(entity->GetEntityId());
+		cameraComponent->SetCamera(camera);
+		networkComponent = entityManager.GetEntityComponent<NetworkComponent>(entity->GetEntityId());
+		networkComponent->SetClientId(clientId);
+        // Map
+		entity = entityManager.AddEntity<RenderComponent, PhysicsComponent>();
+        renderComponent = entityManager.GetEntityComponent<RenderComponent>(entity->GetEntityId());
+        renderComponent->SetModelIndex(0);
     }
 }

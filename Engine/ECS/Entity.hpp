@@ -16,17 +16,22 @@ public:
 	Entity(EntityManager*, int entityId, std::vector<int> typeIndexList);
 	~Entity() {};
 
-	int HasComponent(int);
-	int GetComponentIndexArray();
+	// Getters
+	int GetEntityId() { return entityId; }
+	glm::mat4 GetModelMatrix() { return modelMatrix; }
+	int GetComponent(int id) { return componentListId[id]; }
+	std::vector<int> GetComponentIndexArray() { return componentListId; }
+
+	// Setters
+	void SetModelMatrix(glm::mat4 aModelMatrix) { modelMatrix = aModelMatrix; }
 
 private:
 	EntityManager* entityManager;
 	int entityId;
-	bool isActive = true;
-	glm::mat4 modelToWorldTransform = glm::mat4(1.0f);
+	glm::mat4 modelMatrix = glm::mat4(1.0f);
 
-	// Holds a list of components with the type and
-	// their id in that types list in EntityManager
+	// Holds a list of components with the type = index and
+	// value = component index in that types list
 	std::vector<int> componentListId;
 
 };
