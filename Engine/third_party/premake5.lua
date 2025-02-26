@@ -24,7 +24,7 @@ defines("GLM_ENABLE_EXPERIMENTAL=1")
 
 filter "system:not windows"	
 	includedirs { "libsodium-stable/include_lib/include" }
-	libdirs { "libsodium-stable/include_lib/lib" }
+	libdirs { "libsodium-stable/include_lib/libs" }
 	links { "sodium" }
 
 project "yojimbo"

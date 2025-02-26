@@ -8,9 +8,9 @@ A initial creation of a networking solution to be used in my Master's group proj
 make
 
 <!-- To run on linux: -->
-export LD_LIBRARY_PATH=$[PATH_TO_HEATSTROKE_ROOT_DIRECTORY]/Engine/third_party/libsodium-stable/include_lib/lib
+export LD_LIBRARY_PATH=$[PATH_TO_HEATSTROKE_ROOT_DIRECTORY]/Engine/third_party/libsodium-stable/include_lib/libs
 <!-- or when current directory == Heatstroke root -->
-export LD_LIBRARY_PATH=$(pwd)/Engine/third_party/libsodium-stable/include_lib/lib
+export LD_LIBRARY_PATH=$(pwd)/Engine/third_party/libsodium-stable/include_lib/libs
 
 ./premake5 gmake2
 make
