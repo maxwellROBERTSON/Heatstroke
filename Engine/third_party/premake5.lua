@@ -15,18 +15,15 @@ includedirs("VulkanMemoryAllocator/include")
 includedirs("glm/include")
 includedirs("tgen/include")
 includedirs("tinygltf/")
--- includedirs("stb/include")
-
--- -- Filter for non-Windows platforms to include .s files
--- filter "system:not windows"
---     -- Here, we add the .s files to the files list for non-Windows systems
---     files {
---         "yojimbo/sodium.s/*.s"
---     }
 
 defines("GLM_FORCE_RADIANS=1")
 defines("GLM_FORCE_SIZE_T_LENGTH=1")
 defines("GLM_ENABLE_EXPERIMENTAL=1")
+
+filter "system:not windows"
+    includedirs( "libsodium-1.0.20/libsodium-build/include")
+    libdirs( "libsodium-1.0.20/libsodium-build/lib")
+    links { "sodium" }
 
 project "yojimbo"
     kind "StaticLib"
@@ -47,12 +44,12 @@ project "sodium-builtin"
         "yojimbo/sodium/**.h"   -- Include all .h files
     }
 
-    -- filter "system:not windows"
-    --     files { "yojimbo/sodium.s/**.S" }  -- Include assembly files on Linux/macOS
-    --     buildoptions { "-Wno-unused-parameter", "-Wno-unused-function", "-Wno-unknown-pragmas", "-Wno-unused-variable", "-Wno-type-limits" }
+    filter "system:not windows"
+        files { "yojimbo/sodium.s/**.S" }  -- Include assembly files on Linux/macOS
+        buildoptions { "-Wno-unused-parameter", "-Wno-unused-function", "-Wno-unknown-pragmas", "-Wno-unused-variable", "-Wno-type-limits" }
 
-    -- filter "action:gmake*"
-    --     buildoptions { "-Wno-unused-parameter", "-Wno-unused-function", "-Wno-unknown-pragmas", "-Wno-unused-variable", "-Wno-type-limits" }
+    filter "action:gmake*"
+        buildoptions { "-Wno-unused-parameter", "-Wno-unused-function", "-Wno-unknown-pragmas", "-Wno-unused-variable", "-Wno-type-limits" }
 
 project "netcode"
     kind "StaticLib"

@@ -4,7 +4,8 @@
 bin/
 build/
 Makefile
-lib/
+lib/*
+!libsodium-build/lib/
 Shaders/bin
 *.vcxproj
 *.vcxproj.user
