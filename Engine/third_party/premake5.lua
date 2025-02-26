@@ -182,10 +182,8 @@ project("imgui")
     files("imgui/**.cpp")
     files("imgui/backend/**.h**")
     files("imgui/backend/**.cpp")
-    files("imgui/misc/cpp/**.h**")
-    files("imgui/misc/debuggers/**.**")
-    -- files("imgui/misc/freetype/**.h**")
-    -- files("imgui/misc/freetype/**.cpp")
+    files("imgui/misc/**/**.h**")
+    files("imgui/misc/**/**.cpp")
 
 -- project("stb")
 --     kind "StaticLib"
