@@ -1,7 +1,7 @@
 #include <iostream>
 
 #include "GameClient.hpp"
-#include "../../../Game/GameLoop.cpp"
+//#include "../../../Game/GameLoop.hpp"
 
 static const uint8_t DEFAULT_PRIVATE_KEY[yojimbo::KeyBytes] = { 0 };
 
@@ -34,7 +34,7 @@ void GameClient::Connect(yojimbo::Address serverAddress)
 
 void GameClient::Run()
 {
-	initialiseGame();
+	//initialiseGame();
 	//runGameLoop(this);
 
 	//float fixedDt = 1.0f / 120.0f;

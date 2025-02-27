@@ -1,6 +1,6 @@
-#include <yojimbo.h>
+#include "GameLoop.hpp"
 
-#include "GameLoop.cpp"
+#include <yojimbo.h>
 
 #include "../Engine/Network/Helpers/GameAdapter.hpp"
 #include "../Engine/Network/Helpers/GameConfig.hpp"
@@ -10,10 +10,16 @@
 
 int main() try {
     // This manual scope is very important, it ensures the objects in models have their associated
-    // objects' destructors called BEFORE we destroy the vulkan device.
+    // objects' destructors called BEFORE we destroy the vulkan device. Do not move the models vector
+    // out of this scope unless you also handle the object lifetimes from them.
     {
+        std::vector<Engine::vk::Model> models;
         initialiseGame();
-        runGameLoop();
+        initialiseModels(models);
+        runGameLoop(models);
+
+        for (Engine::vk::Model& model : models)
+            model.destroy();
     }
 
     // vkContext would get destroyed after main exits
