@@ -43,6 +43,7 @@ namespace Engine {
 	void VulkanDevice::createDescriptorPool() {
 		const VkDescriptorPoolSize pools[] = {
 			{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2048},
+			{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1},
 			{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1},
 			{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2048}
 		};

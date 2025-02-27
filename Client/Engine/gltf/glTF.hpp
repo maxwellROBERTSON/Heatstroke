@@ -18,7 +18,7 @@ namespace Engine {
 
 	void getCounts(tinygltf::Model& model, tinygltf::Node& node, std::uint32_t& indicesCount, std::uint32_t& verticesCount);
 
-	void loadNodeMeshes(vk::Node* parent, tinygltf::Node& node, tinygltf::Model& model, std::uint32_t nodeIndex, vk::RawData& rawData, vk::Model& vkModel);
+	void loadNodeMeshes(vk::Node* parent, tinygltf::Node& node, tinygltf::Model& model, std::uint32_t nodeIndex, vk::Model& vkModel);
 
-	void createVulkanBuffers(const VulkanContext& aContext, vk::Model& vkModel, vk::RawData& rawData);
+	void createVulkanBuffers(const VulkanContext& aContext, vk::Model& vkModel);
 }

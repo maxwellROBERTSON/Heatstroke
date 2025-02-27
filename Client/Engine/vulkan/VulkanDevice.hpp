@@ -31,6 +31,8 @@ namespace Engine {
 		VkDevice device = VK_NULL_HANDLE;
 		VkCommandPool cPool = VK_NULL_HANDLE;
 		VkDescriptorPool dPool = VK_NULL_HANDLE;
+
+		VkDeviceSize minUBOAlignment = 0;
 	};
 
 	VkCommandBuffer createCommandBuffer(const VulkanWindow& aWindow);

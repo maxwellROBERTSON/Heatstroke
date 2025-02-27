@@ -7,8 +7,8 @@
 
 namespace Engine {
 
-	void renderModel(
-		vk::Model& model,
+	void renderModels(
+		std::vector<vk::Model>& models,
 		VkCommandBuffer aCmdBuf,
 		VkRenderPass aRenderPass,
 		VkFramebuffer aFramebuffer,
@@ -17,11 +17,13 @@ namespace Engine {
 		VkBuffer aSceneUBO,
 		glsl::SceneUniform aSceneUniform,
 		VkPipelineLayout aPipelineLayout,
-		VkDescriptorSet aSceneDescriptorSet
+		VkDescriptorSet aSceneDescriptorSet,
+		VkDescriptorSet modelMatricesDescriptor,
+		std::uint32_t dynamicOffset
 	) {
 		// Begin recording
 		beginCommandBuffer(aCmdBuf, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-	
+
 		Utils::bufferBarrier(
 			aCmdBuf,
 			aSceneUBO,
@@ -66,13 +68,19 @@ namespace Engine {
 		vkCmdBindPipeline(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipeline);
 
 		vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, 0, 1, &aSceneDescriptorSet, 0, nullptr);
-		
-		model.drawModel(aCmdBuf, aPipelineLayout);
+
+		for (std::size_t i = 0; i < models.size(); i++) {
+			std::uint32_t offset = i * dynamicOffset;
+			vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, 3, 1, &modelMatricesDescriptor, 1, &offset);
+
+			models[i].drawModel(aCmdBuf, aPipelineLayout);
+		}
 
 		vkCmdEndRenderPass(aCmdBuf);
 
 		if (const auto res = vkEndCommandBuffer(aCmdBuf); VK_SUCCESS != res)
 			throw Utils::Error("Unable to end command buffer\n vkEndCommandBuffer() returned %s", Utils::toString(res).c_str());
+		
 	}
 
 }

@@ -7,8 +7,11 @@ namespace glsl {
     struct SceneUniform {
         glm::mat4 projection;
         glm::mat4 view;
-        glm::mat4 model;
         glm::vec4 position;
+    };
+
+    struct ModelMatricesUniform {
+        glm::mat4* model;
     };
 
     // Laying out the struct in groups of their

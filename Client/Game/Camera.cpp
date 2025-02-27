@@ -48,6 +48,8 @@ void Camera::updateCamera(GLFWwindow* aWindow, float timeDelta) {
 		}
 	}
 
+	//std::fprintf(stdout, "Pos: %f %f %f\n", this->position.x, this->position.y, this->position.z);
+
 	if (this->firstClick) {
 		int winX, winY;
 		glfwGetFramebufferSize(aWindow, &winX, &winY);

@@ -83,6 +83,7 @@ project "Engine"
     links "x-volk"
     links "x-glfw"
     links "x-vma"
+    links "x-tgen"
 
     dependson "x-glm"
 

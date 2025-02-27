@@ -1,6 +1,7 @@
 #include "glTF.hpp"
 
 #include <glm/gtc/type_ptr.inl>
+#include <tgen.h>
 
 #include "Error.hpp"
 #include "toString.hpp"
@@ -60,15 +61,13 @@ namespace Engine {
 		for (std::size_t i = 0; i < model.nodes.size(); i++)
 			getCounts(model, model.nodes[i], indicesCount, verticesCount);
 
-		vk::RawData rawData(verticesCount, indicesCount);
-
 		// Load the node meshes into Vulkan objects
 		for (std::size_t i = 0; i < model.nodes.size(); i++) {
 			tinygltf::Node node = model.nodes[i];
-			loadNodeMeshes(nullptr, node, model, i, rawData, vkModel);
+			loadNodeMeshes(nullptr, node, model, i, vkModel);
 		}
 
-		createVulkanBuffers(aContext, vkModel, rawData);
+		createVulkanBuffers(aContext, vkModel);
 
 		return vkModel;
 	}
@@ -136,6 +135,10 @@ namespace Engine {
 	}
 
 	void loadTextures(const VulkanContext& aContext, tinygltf::Model& model, vk::Model& vkModel) {
+		// Create dummy texture for materials that are missing some textures
+		vkModel.dummyTexture = vk::createDummyTexture(aContext, vkModel.defaultSampler.handle);
+		vkModel.dummyImageView = vk::createImageView(*aContext.window, vkModel.dummyTexture.image, VK_FORMAT_R8G8B8A8_UNORM);
+
 		for (std::size_t i = 0; i < model.textures.size(); i++) {
 			tinygltf::Texture texture = model.textures[i];
 
@@ -181,7 +184,7 @@ namespace Engine {
 		}
 	}
 
-	void loadNodeMeshes(vk::Node* parent, tinygltf::Node& node, tinygltf::Model& model, std::uint32_t nodeIndex, vk::RawData& rawData, vk::Model& vkModel) {
+	void loadNodeMeshes(vk::Node* parent, tinygltf::Node& node, tinygltf::Model& model, std::uint32_t nodeIndex, vk::Model& vkModel) {
 		vk::Node* newNode = new vk::Node();
 		newNode->index = nodeIndex;
 		newNode->parent = parent;
@@ -207,11 +210,6 @@ namespace Engine {
 		if (node.matrix.size() == 16)
 			newNode->nodeMatrix = glm::make_mat4x4(node.matrix.data());
 
-		if (!node.children.empty()) {
-			for (std::size_t i = 0; i < node.children.size(); i++)
-				loadNodeMeshes(newNode, model.nodes[node.children[i]], model, node.children[i], rawData, vkModel);
-		}
-
 		if (node.mesh > -1) {
 			const tinygltf::Mesh mesh = model.meshes[node.mesh];
 			vk::Mesh* newMesh = new vk::Mesh(newNode->nodeMatrix);
@@ -219,17 +217,19 @@ namespace Engine {
 			for (std::size_t i = 0; i < mesh.primitives.size(); i++) {
 				const tinygltf::Primitive& primitive = mesh.primitives[i];
 
-				// std::uint32_t indexStart, vertexStart;
 				std::uint32_t indexCount = 0, vertexCount = 0;
 				bool hasIndices = primitive.indices > -1;
+				bool getTangentsFromTgen = false;
 
 				const float* bufferPos = nullptr;
 				const float* normalsPos = nullptr;
+				const float* tangentPos = nullptr;
 				const float* texCoords0Pos = nullptr;
 				const float* texCoords1Pos = nullptr;
 				const float* colourPos = nullptr;
 				int positionByteStride;
 				int normalsByteStride;
+				int tangentByteStride;
 				int texCoords0ByteStride;
 				int texCoords1ByteStride;
 				int colourByteStride;
@@ -246,6 +246,17 @@ namespace Engine {
 					const tinygltf::BufferView& normalBufView = model.bufferViews[normalAccessor.bufferView];
 					normalsPos = reinterpret_cast<const float*>(&(model.buffers[normalBufView.buffer].data[normalAccessor.byteOffset + normalBufView.byteOffset]));
 					normalsByteStride = normalAccessor.ByteStride(normalBufView) ? (normalAccessor.ByteStride(normalBufView) / sizeof(float)) : tinygltf::GetNumComponentsInType(TINYGLTF_TYPE_VEC3);
+				}
+
+				// Get tangents
+				if (primitive.attributes.find("TANGENT") != primitive.attributes.end()) {
+					const tinygltf::Accessor& tangentAccessor = model.accessors[primitive.attributes.find("TANGENT")->second];
+					const tinygltf::BufferView& tangentBufView = model.bufferViews[tangentAccessor.bufferView];
+					tangentPos = reinterpret_cast<const float*>(&(model.buffers[tangentBufView.buffer].data[tangentAccessor.byteOffset + tangentBufView.byteOffset]));
+					tangentByteStride = tangentAccessor.ByteStride(tangentBufView) ? (tangentAccessor.ByteStride(tangentBufView) / sizeof(float)) : tinygltf::GetNumComponentsInType(TINYGLTF_TYPE_VEC4);
+				}
+				else {
+					getTangentsFromTgen = true;
 				}
 				
 				// Get texCoords
@@ -268,56 +279,105 @@ namespace Engine {
 					const tinygltf::Accessor& colourAccessor = model.accessors[primitive.attributes.find("COLOR_0")->second];
 					const tinygltf::BufferView& colourBufView = model.bufferViews[colourAccessor.bufferView];
 					colourPos = reinterpret_cast<const float*>(&(model.buffers[colourBufView.buffer].data[colourAccessor.byteOffset + colourBufView.byteOffset]));
-					colourByteStride = colourAccessor.ByteStride(colourBufView) ? (colourAccessor.ByteStride(colourBufView) / sizeof(float)) : tinygltf::GetNumComponentsInType(TINYGLTF_TYPE_VEC3);
+					colourByteStride = colourAccessor.ByteStride(colourBufView) ? (colourAccessor.ByteStride(colourBufView) / sizeof(float)) : tinygltf::GetNumComponentsInType(TINYGLTF_TYPE_VEC4);
 				}
 
-				for (std::size_t j = 0; j < positionAccessor.count; j++) {
+				if (!hasIndices)
+					throw Utils::Error("Warning: A glTF primitive detected to not have any indices. We have no compatability for index-less meshes!\n");
+
+				const tinygltf::Accessor& indicesAccessor = model.accessors[primitive.indices > -1 ? primitive.indices : 0];
+				const tinygltf::BufferView& indicesBufferView = model.bufferViews[indicesAccessor.bufferView];
+				const tinygltf::Buffer& indicesBuffer = model.buffers[indicesBufferView.buffer];
+
+				indexCount = indicesAccessor.count;
+
+				// Reserve space in rawData struct
+				vk::RawData rawData(vertexCount, indexCount);
+
+				// Populate per-vertex attributes
+				for (std::size_t j = 0; j < vertexCount; j++) {
 					rawData.positions.emplace_back(glm::make_vec3(&bufferPos[j * positionByteStride]));
 					rawData.normals.emplace_back(glm::normalize(glm::vec3(normalsPos ? glm::make_vec3(&normalsPos[j * normalsByteStride]) : glm::vec3(0.0f))));
+					rawData.tangents.emplace_back(glm::vec4(tangentPos ? glm::make_vec4(&tangentPos[j * tangentByteStride]) : glm::vec4(0.0f)));
 					rawData.texCoords0.emplace_back(texCoords0Pos ? glm::make_vec2(&texCoords0Pos[j * texCoords0ByteStride]) : glm::vec2(0.0f));
 					rawData.texCoords1.emplace_back(texCoords1Pos ? glm::make_vec2(&texCoords1Pos[j * texCoords1ByteStride]) : glm::vec2(0.0f));
 					rawData.vertexColours.emplace_back(colourPos ? glm::make_vec4(&colourPos[j * colourByteStride]) : glm::vec4(1.0f));
 				}
 
-				if (hasIndices) {
-					const tinygltf::Accessor& indicesAccessor = model.accessors[primitive.indices > -1 ? primitive.indices : 0];
-					const tinygltf::BufferView& indicesBufferView = model.bufferViews[indicesAccessor.bufferView];
-					const tinygltf::Buffer& indicesBuffer = model.buffers[indicesBufferView.buffer];
+				const void* dataPtr = &(indicesBuffer.data[indicesAccessor.byteOffset + indicesBufferView.byteOffset]);
 
-					indexCount = indicesAccessor.count;
-					const void* dataPtr = &(indicesBuffer.data[indicesAccessor.byteOffset + indicesBufferView.byteOffset]);
-
-					switch (indicesAccessor.componentType) {
-						case TINYGLTF_PARAMETER_TYPE_UNSIGNED_INT: {
-							const std::uint32_t* buffer = (const std::uint32_t*)dataPtr;
-							for (std::size_t k = 0; k < indicesAccessor.count; k++)
-								rawData.indices.push_back(buffer[k]);
-							vkModel.indexType = VK_INDEX_TYPE_UINT32;
-							break;
-						}
-						case TINYGLTF_PARAMETER_TYPE_UNSIGNED_SHORT: {
-							const std::uint16_t* buffer = (const std::uint16_t*)dataPtr;
-							for (std::size_t k = 0; k < indicesAccessor.count; k++)
-								rawData.indices.push_back(buffer[k]);
-							vkModel.indexType = VK_INDEX_TYPE_UINT16;
-							break;
-						}
-						case TINYGLTF_PARAMETER_TYPE_UNSIGNED_BYTE: {
-							const std::uint8_t* buffer = (const std::uint8_t*)dataPtr;
-							for (std::size_t k = 0; k < indicesAccessor.count; k++)
-								rawData.indices.push_back(buffer[k]);
-							break;
-						}
-						default:
-							throw Utils::Error("Index component type %d not supported.\n", indicesAccessor.componentType);
-							return;
+				// Populate indices
+				switch (indicesAccessor.componentType) {
+					case TINYGLTF_PARAMETER_TYPE_UNSIGNED_INT: {
+						const std::uint32_t* buffer = (const std::uint32_t*)dataPtr;
+						for (std::size_t k = 0; k < indicesAccessor.count; k++)
+							rawData.indices.push_back(buffer[k]);
+						vkModel.indexType = VK_INDEX_TYPE_UINT32;
+						break;
 					}
+					case TINYGLTF_PARAMETER_TYPE_UNSIGNED_SHORT: {
+						const std::uint16_t* buffer = (const std::uint16_t*)dataPtr;
+						for (std::size_t k = 0; k < indicesAccessor.count; k++)
+							rawData.indices.push_back(buffer[k]);
+						vkModel.indexType = VK_INDEX_TYPE_UINT16;
+						break;
+					}
+					// 1 byte indices require an extension for Vulkan to correctly handle them
+					case TINYGLTF_PARAMETER_TYPE_UNSIGNED_BYTE: {
+						//const std::uint8_t* buffer = (const std::uint8_t*)dataPtr;
+						//for (std::size_t k = 0; k < indicesAccessor.count; k++)
+						//	rawData.indices.push_back(buffer[k]);
+						break;
+					}
+					default:
+						throw Utils::Error("Index component type %d not supported.\n", indicesAccessor.componentType);
+						return;
 				}
 
-				vk::Primitive* newPrimitive = new vk::Primitive(0, indexCount, vertexCount, primitive.material > -1 ? vkModel.materials[primitive.material] : vkModel.materials.back());
-				newMesh->primitives.push_back(newPrimitive);
+				if (getTangentsFromTgen) {
+					std::vector<tgen::VIndexT> newIndices(rawData.indices.begin(), rawData.indices.end());
 
+					std::vector<tgen::RealT> tgenVertices, tgenTexCoords, tgenNormals;
+					
+					for (glm::vec3 vertex : rawData.positions) {
+						tgenVertices.push_back(vertex.x);
+						tgenVertices.push_back(vertex.y);
+						tgenVertices.push_back(vertex.z);
+					}
+
+					// Hopefully the tex coords tgen needs are the ones from texCoords0
+					for (glm::vec2 texCoord : rawData.texCoords0) {
+						tgenTexCoords.push_back(texCoord.x);
+						tgenTexCoords.push_back(texCoord.y);
+					}
+
+					for (glm::vec3 normal : rawData.normals) {
+						tgenNormals.push_back(normal.x);
+						tgenNormals.push_back(normal.y);
+						tgenNormals.push_back(normal.z);
+					}
+
+					// Tangent and Bitangent destination vectors
+					std::vector<tgen::RealT> cornerTangents, cornerBitangents;
+					std::vector<tgen::RealT> vertexTangents, vertexBitangents;
+
+					// Final tangent result vector
+					std::vector<tgen::RealT> tangents;
+
+					tgen::computeCornerTSpace(newIndices, newIndices, tgenVertices, tgenTexCoords, cornerTangents, cornerBitangents);
+					tgen::computeVertexTSpace(newIndices, cornerTangents, cornerBitangents, newIndices.size(), vertexTangents, vertexBitangents);
+					tgen::orthogonalizeTSpace(tgenNormals, vertexTangents, vertexBitangents);
+					tgen::computeTangent4D(tgenNormals, vertexTangents, vertexBitangents, tangents);
+
+					for (std::size_t l = 0, m = 0; l < tangents.size(); l += 4, m++)
+						rawData.tangents[m] = glm::vec4(tangents[l], tangents[l + 1], tangents[l + 2], tangents[l + 3]);
+				}
+
+				vk::Material& material = primitive.material > -1 ? vkModel.materials[primitive.material] : vkModel.materials.back();
+				vk::Primitive* newPrimitive = new vk::Primitive(0, indexCount, vertexCount, rawData, material);
+				newMesh->primitives.push_back(newPrimitive);
 			}
+
 			newNode->mesh = newMesh;
 		}
 
@@ -327,248 +387,311 @@ namespace Engine {
 			vkModel.nodes.push_back(newNode);
 	}
 
-	void createVulkanBuffers(const VulkanContext& aContext, vk::Model& vkModel, vk::RawData& rawData) {
-		// Pre-calculate sizes for less code duplication
-		std::size_t posSize = rawData.positions.size() * sizeof(glm::vec3);
-		std::size_t normSize = rawData.normals.size() * sizeof(glm::vec3);
-		std::size_t tex0Size = rawData.texCoords0.size() * sizeof(glm::vec2);
-		std::size_t tex1Size = rawData.texCoords1.size() * sizeof(glm::vec2);
-		std::size_t vertColSize = rawData.vertexColours.size() * sizeof(glm::vec4);
-		std::size_t indicesSize = rawData.indices.size() * (vkModel.indexType == VK_INDEX_TYPE_UINT32 ? sizeof(std::uint32_t) : sizeof(std::uint32_t));
+	void createVulkanBuffers(const VulkanContext& aContext, vk::Model& vkModel) {
+		// We need to create the buffers for every vertex attribute and indices for every primitive
+		for (vk::Node* node : vkModel.nodes) {
 
-		// GPU sided buffers
-		vk::Buffer posGPUBuf = vk::createBuffer(
-			*aContext.allocator,
-			posSize,
-			VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-			0,
-			VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
-		);
+			if (!node->mesh) continue;
 
-		vk::Buffer normGPUBuf = vk::createBuffer(
-			*aContext.allocator,
-			normSize,
-			VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-			0,
-			VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
-		);
+			for (vk::Primitive* primitive : node->mesh->primitives) {
+				vk::RawData& rawData = primitive->rawData;
 
-		vk::Buffer tex0GPUBuf = vk::createBuffer(
-			*aContext.allocator,
-			tex0Size,
-			VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-			0,
-			VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
-		);
+				// Pre-calculate sizes for less code duplication
+				std::size_t posSize = rawData.positions.size() * sizeof(glm::vec3);
+				std::size_t normSize = rawData.normals.size() * sizeof(glm::vec3);
+				std::size_t tangentSize = rawData.tangents.size() * sizeof(glm::vec4);
+				std::size_t tex0Size = rawData.texCoords0.size() * sizeof(glm::vec2);
+				std::size_t tex1Size = rawData.texCoords1.size() * sizeof(glm::vec2);
+				std::size_t vertColSize = rawData.vertexColours.size() * sizeof(glm::vec4);
+				std::size_t indicesSize = rawData.indices.size() * (vkModel.indexType == VK_INDEX_TYPE_UINT32 ? sizeof(std::uint32_t) : sizeof(std::uint32_t));
 
-		vk::Buffer tex1GPUBuf = vk::createBuffer(
-			*aContext.allocator,
-			tex1Size,
-			VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-			0,
-			VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
-		);
+				// GPU sided buffers
+				vk::Buffer posGPUBuf = vk::createBuffer(
+					"posGPU",
+					*aContext.allocator,
+					posSize,
+					VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+					0,
+					VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
+				);
 
-		vk::Buffer vertColGPUBuf = vk::createBuffer(
-			*aContext.allocator,
-			vertColSize,
-			VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-			0,
-			VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
-		);
+				vk::Buffer normGPUBuf = vk::createBuffer(
+					"normGPU",
+					*aContext.allocator,
+					normSize,
+					VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+					0,
+					VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
+				);
 
-		vk::Buffer indicesGPUBuf = vk::createBuffer(
-			*aContext.allocator,
-			indicesSize,
-			VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-			0,
-			VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
-		);
+				vk::Buffer tangentGPUBuf = vk::createBuffer(
+					"tangGPU",
+					*aContext.allocator,
+					tangentSize,
+					VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+					0,
+					VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
+				);
 
-		// Staging buffers
-		vk::Buffer posStaging = vk::createBuffer(
-			*aContext.allocator,
-			posSize,
-			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-			VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT
-		);
+				vk::Buffer tex0GPUBuf = vk::createBuffer(
+					"tex0GPU",
+					*aContext.allocator,
+					tex0Size,
+					VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+					0,
+					VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
+				);
 
-		vk::Buffer normStaging = vk::createBuffer(
-			*aContext.allocator,
-			normSize,
-			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-			VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT
-		);
+				vk::Buffer tex1GPUBuf = vk::createBuffer(
+					"tex1GPU",
+					*aContext.allocator,
+					tex1Size,
+					VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+					0,
+					VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
+				);
 
-		vk::Buffer tex0Staging = vk::createBuffer(
-			*aContext.allocator,
-			tex0Size,
-			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-			VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT
-		);
+				vk::Buffer vertColGPUBuf = vk::createBuffer(
+					"vertColGPU",
+					*aContext.allocator,
+					vertColSize,
+					VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+					0,
+					VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
+				);
 
-		vk::Buffer tex1Staging = vk::createBuffer(
-			*aContext.allocator,
-			tex1Size,
-			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-			VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT
-		);
+				vk::Buffer indicesGPUBuf = vk::createBuffer(
+					"indicesGPU",
+					*aContext.allocator,
+					indicesSize,
+					VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+					0,
+					VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
+				);
 
-		vk::Buffer vertColStaging = vk::createBuffer(
-			*aContext.allocator,
-			vertColSize,
-			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-			VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT
-		);
+				// Staging buffers
+				vk::Buffer posStaging = vk::createBuffer(
+					"posStaging",
+					*aContext.allocator,
+					posSize,
+					VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+					VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT
+				);
 
-		vk::Buffer indicesStaging = vk::createBuffer(
-			*aContext.allocator,
-			indicesSize,
-			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-			VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT
-		);
+				vk::Buffer normStaging = vk::createBuffer(
+					"normStaging",
+					*aContext.allocator,
+					normSize,
+					VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+					VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT
+				);
 
-		// Copy to ptr
-		void* posPtr = nullptr;
-		if (const auto res = vmaMapMemory(aContext.allocator->allocator, posStaging.allocation, &posPtr); VK_SUCCESS != res)
-			throw Utils::Error("Mapping memory for writing\n vmaMapMemory() returned %s", Utils::toString(res).c_str());
+				vk::Buffer tangentStaging = vk::createBuffer(
+					"tangStaging",
+					*aContext.allocator,
+					tangentSize,
+					VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+					VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT
+				);
 
-		std::memcpy(posPtr, rawData.positions.data(), posSize);
-		vmaUnmapMemory(aContext.allocator->allocator, posStaging.allocation);
+				vk::Buffer tex0Staging = vk::createBuffer(
+					"tex0Staging",
+					*aContext.allocator,
+					tex0Size,
+					VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+					VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT
+				);
 
-		void* normPtr = nullptr;
-		if (const auto res = vmaMapMemory(aContext.allocator->allocator, normStaging.allocation, &normPtr); VK_SUCCESS != res)
-			throw Utils::Error("Mapping memory for writing\n vmaMapMemory() returned %s", Utils::toString(res).c_str());
+				vk::Buffer tex1Staging = vk::createBuffer(
+					"tex1Staging",
+					*aContext.allocator,
+					tex1Size,
+					VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+					VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT
+				);
 
-		std::memcpy(normPtr, rawData.normals.data(), normSize);
-		vmaUnmapMemory(aContext.allocator->allocator, normStaging.allocation);
+				vk::Buffer vertColStaging = vk::createBuffer(
+					"vertColStaging",
+					*aContext.allocator,
+					vertColSize,
+					VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+					VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT
+				);
 
-		void* tex0Ptr = nullptr;
-		if (const auto res = vmaMapMemory(aContext.allocator->allocator, tex0Staging.allocation, &tex0Ptr); VK_SUCCESS != res)
-			throw Utils::Error("Mapping memory for writing\n vmaMapMemory() returned %s", Utils::toString(res).c_str());
+				vk::Buffer indicesStaging = vk::createBuffer(
+					"indicesStaging",
+					*aContext.allocator,
+					indicesSize,
+					VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+					VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT
+				);
 
-		std::memcpy(tex0Ptr, rawData.texCoords0.data(), tex0Size);
-		vmaUnmapMemory(aContext.allocator->allocator, tex0Staging.allocation);
+				// Copy to ptr
+				void* posPtr = nullptr;
+				if (const auto res = vmaMapMemory(aContext.allocator->allocator, posStaging.allocation, &posPtr); VK_SUCCESS != res)
+					throw Utils::Error("Mapping memory for writing\n vmaMapMemory() returned %s", Utils::toString(res).c_str());
 
-		void* tex1Ptr = nullptr;
-		if (const auto res = vmaMapMemory(aContext.allocator->allocator, tex1Staging.allocation, &tex1Ptr); VK_SUCCESS != res)
-			throw Utils::Error("Mapping memory for writing\n vmaMapMemory() returned %s", Utils::toString(res).c_str());
+				std::memcpy(posPtr, rawData.positions.data(), posSize);
+				vmaUnmapMemory(aContext.allocator->allocator, posStaging.allocation);
 
-		std::memcpy(tex1Ptr, rawData.texCoords1.data(), tex1Size);
-		vmaUnmapMemory(aContext.allocator->allocator, tex1Staging.allocation);
+				void* normPtr = nullptr;
+				if (const auto res = vmaMapMemory(aContext.allocator->allocator, normStaging.allocation, &normPtr); VK_SUCCESS != res)
+					throw Utils::Error("Mapping memory for writing\n vmaMapMemory() returned %s", Utils::toString(res).c_str());
 
-		void* vertColPtr = nullptr;
-		if (const auto res = vmaMapMemory(aContext.allocator->allocator, vertColStaging.allocation, &vertColPtr); VK_SUCCESS != res)
-			throw Utils::Error("Mapping memory for writing\n vmaMapMemory() returned %s", Utils::toString(res).c_str());
+				std::memcpy(normPtr, rawData.normals.data(), normSize);
+				vmaUnmapMemory(aContext.allocator->allocator, normStaging.allocation);
 
-		std::memcpy(vertColPtr, rawData.vertexColours.data(), vertColSize);
-		vmaUnmapMemory(aContext.allocator->allocator, vertColStaging.allocation);
+				void* tangentPtr = nullptr;
+				if (const auto res = vmaMapMemory(aContext.allocator->allocator, tangentStaging.allocation, &tangentPtr); VK_SUCCESS != res)
+					throw Utils::Error("Mapping memory for writing\n vmaMapMemory() returned %s", Utils::toString(res).c_str());
 
-		void* indicesPtr = nullptr;
-		if (const auto res = vmaMapMemory(aContext.allocator->allocator, indicesStaging.allocation, &indicesPtr); VK_SUCCESS != res)
-			throw Utils::Error("Mapping memory for writing\n vmaMapMemory() returned %s", Utils::toString(res).c_str());
+				std::memcpy(tangentPtr, rawData.tangents.data(), tangentSize);
+				vmaUnmapMemory(aContext.allocator->allocator, tangentStaging.allocation);
 
-		std::memcpy(indicesPtr, rawData.indices.data(), indicesSize);
-		vmaUnmapMemory(aContext.allocator->allocator, indicesStaging.allocation);
-		
-		vk::Fence uploadComplete = createFence(*aContext.window);
+				void* tex0Ptr = nullptr;
+				if (const auto res = vmaMapMemory(aContext.allocator->allocator, tex0Staging.allocation, &tex0Ptr); VK_SUCCESS != res)
+					throw Utils::Error("Mapping memory for writing\n vmaMapMemory() returned %s", Utils::toString(res).c_str());
 
-		VkCommandBuffer uploadCmdBuf = createCommandBuffer(*aContext.window);
+				std::memcpy(tex0Ptr, rawData.texCoords0.data(), tex0Size);
+				vmaUnmapMemory(aContext.allocator->allocator, tex0Staging.allocation);
 
-		beginCommandBuffer(uploadCmdBuf);
+				void* tex1Ptr = nullptr;
+				if (const auto res = vmaMapMemory(aContext.allocator->allocator, tex1Staging.allocation, &tex1Ptr); VK_SUCCESS != res)
+					throw Utils::Error("Mapping memory for writing\n vmaMapMemory() returned %s", Utils::toString(res).c_str());
 
-		VkBufferCopy posCopy{};
-		posCopy.size = posSize;
+				std::memcpy(tex1Ptr, rawData.texCoords1.data(), tex1Size);
+				vmaUnmapMemory(aContext.allocator->allocator, tex1Staging.allocation);
 
-		vkCmdCopyBuffer(uploadCmdBuf, posStaging.buffer, posGPUBuf.buffer, 1, &posCopy);
+				void* vertColPtr = nullptr;
+				if (const auto res = vmaMapMemory(aContext.allocator->allocator, vertColStaging.allocation, &vertColPtr); VK_SUCCESS != res)
+					throw Utils::Error("Mapping memory for writing\n vmaMapMemory() returned %s", Utils::toString(res).c_str());
 
-		Utils::bufferBarrier(
-			uploadCmdBuf,
-			posGPUBuf.buffer,
-			VK_ACCESS_TRANSFER_WRITE_BIT,
-			VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,
-			VK_PIPELINE_STAGE_TRANSFER_BIT,
-			VK_PIPELINE_STAGE_VERTEX_INPUT_BIT
-		);
+				std::memcpy(vertColPtr, rawData.vertexColours.data(), vertColSize);
+				vmaUnmapMemory(aContext.allocator->allocator, vertColStaging.allocation);
 
-		VkBufferCopy normCopy{};
-		normCopy.size = normSize;
+				void* indicesPtr = nullptr;
+				if (const auto res = vmaMapMemory(aContext.allocator->allocator, indicesStaging.allocation, &indicesPtr); VK_SUCCESS != res)
+					throw Utils::Error("Mapping memory for writing\n vmaMapMemory() returned %s", Utils::toString(res).c_str());
 
-		vkCmdCopyBuffer(uploadCmdBuf, normStaging.buffer, normGPUBuf.buffer, 1, &normCopy);
+				std::memcpy(indicesPtr, rawData.indices.data(), indicesSize);
+				vmaUnmapMemory(aContext.allocator->allocator, indicesStaging.allocation);
 
-		Utils::bufferBarrier(
-			uploadCmdBuf,
-			normGPUBuf.buffer,
-			VK_ACCESS_TRANSFER_WRITE_BIT,
-			VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,
-			VK_PIPELINE_STAGE_TRANSFER_BIT,
-			VK_PIPELINE_STAGE_VERTEX_INPUT_BIT
-		);
+				vk::Fence uploadComplete = createFence(*aContext.window);
 
-		VkBufferCopy tex0Copy{};
-		tex0Copy.size = tex0Size;
+				VkCommandBuffer uploadCmdBuf = createCommandBuffer(*aContext.window);
 
-		vkCmdCopyBuffer(uploadCmdBuf, tex0Staging.buffer, tex0GPUBuf.buffer, 1, &tex0Copy);
+				beginCommandBuffer(uploadCmdBuf);
 
-		Utils::bufferBarrier(
-			uploadCmdBuf,
-			tex0GPUBuf.buffer,
-			VK_ACCESS_TRANSFER_WRITE_BIT,
-			VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,
-			VK_PIPELINE_STAGE_TRANSFER_BIT,
-			VK_PIPELINE_STAGE_VERTEX_INPUT_BIT
-		);
+				VkBufferCopy posCopy{};
+				posCopy.size = posSize;
 
-		VkBufferCopy tex1Copy{};
-		tex1Copy.size = tex1Size;
+				vkCmdCopyBuffer(uploadCmdBuf, posStaging.buffer, posGPUBuf.buffer, 1, &posCopy);
 
-		vkCmdCopyBuffer(uploadCmdBuf, tex1Staging.buffer, tex1GPUBuf.buffer, 1, &tex1Copy);
+				Utils::bufferBarrier(
+					uploadCmdBuf,
+					posGPUBuf.buffer,
+					VK_ACCESS_TRANSFER_WRITE_BIT,
+					VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,
+					VK_PIPELINE_STAGE_TRANSFER_BIT,
+					VK_PIPELINE_STAGE_VERTEX_INPUT_BIT
+				);
 
-		Utils::bufferBarrier(
-			uploadCmdBuf,
-			tex1GPUBuf.buffer,
-			VK_ACCESS_TRANSFER_WRITE_BIT,
-			VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,
-			VK_PIPELINE_STAGE_TRANSFER_BIT,
-			VK_PIPELINE_STAGE_VERTEX_INPUT_BIT
-		);
+				VkBufferCopy normCopy{};
+				normCopy.size = normSize;
 
-		VkBufferCopy vertColCopy{};
-		vertColCopy.size = vertColSize;
+				vkCmdCopyBuffer(uploadCmdBuf, normStaging.buffer, normGPUBuf.buffer, 1, &normCopy);
 
-		vkCmdCopyBuffer(uploadCmdBuf, vertColStaging.buffer, vertColGPUBuf.buffer, 1, &vertColCopy);
+				Utils::bufferBarrier(
+					uploadCmdBuf,
+					normGPUBuf.buffer,
+					VK_ACCESS_TRANSFER_WRITE_BIT,
+					VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,
+					VK_PIPELINE_STAGE_TRANSFER_BIT,
+					VK_PIPELINE_STAGE_VERTEX_INPUT_BIT
+				);
 
-		Utils::bufferBarrier(
-			uploadCmdBuf,
-			vertColGPUBuf.buffer,
-			VK_ACCESS_TRANSFER_WRITE_BIT,
-			VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,
-			VK_PIPELINE_STAGE_TRANSFER_BIT,
-			VK_PIPELINE_STAGE_VERTEX_INPUT_BIT
-		);
+				VkBufferCopy tangentCopy{};
+				tangentCopy.size = tangentSize;
 
-		VkBufferCopy indicesCopy{};
-		indicesCopy.size = indicesSize;
+				vkCmdCopyBuffer(uploadCmdBuf, tangentStaging.buffer, tangentGPUBuf.buffer, 1, &tangentCopy);
 
-		vkCmdCopyBuffer(uploadCmdBuf, indicesStaging.buffer, indicesGPUBuf.buffer, 1, &indicesCopy);
+				Utils::bufferBarrier(
+					uploadCmdBuf,
+					tangentGPUBuf.buffer,
+					VK_ACCESS_TRANSFER_WRITE_BIT,
+					VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,
+					VK_PIPELINE_STAGE_TRANSFER_BIT,
+					VK_PIPELINE_STAGE_VERTEX_INPUT_BIT
+				);
 
-		Utils::bufferBarrier(
-			uploadCmdBuf,
-			indicesGPUBuf.buffer,
-			VK_ACCESS_TRANSFER_WRITE_BIT,
-			VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,
-			VK_PIPELINE_STAGE_TRANSFER_BIT,
-			VK_PIPELINE_STAGE_VERTEX_INPUT_BIT
-		);
+				VkBufferCopy tex0Copy{};
+				tex0Copy.size = tex0Size;
 
-		endAndSubmitCommandBuffer(*aContext.window, uploadCmdBuf);
+				vkCmdCopyBuffer(uploadCmdBuf, tex0Staging.buffer, tex0GPUBuf.buffer, 1, &tex0Copy);
 
-		vkModel.posBuffer = std::move(posGPUBuf);
-		vkModel.normBuffer = std::move(normGPUBuf);
-		vkModel.tex0Buffer = std::move(tex0GPUBuf);
-		vkModel.tex1Buffer = std::move(tex1GPUBuf);
-		vkModel.vertColBuffer = std::move(vertColGPUBuf);
-		vkModel.indicesBuffer = std::move(indicesGPUBuf);
+				Utils::bufferBarrier(
+					uploadCmdBuf,
+					tex0GPUBuf.buffer,
+					VK_ACCESS_TRANSFER_WRITE_BIT,
+					VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,
+					VK_PIPELINE_STAGE_TRANSFER_BIT,
+					VK_PIPELINE_STAGE_VERTEX_INPUT_BIT
+				);
+
+				VkBufferCopy tex1Copy{};
+				tex1Copy.size = tex1Size;
+
+				vkCmdCopyBuffer(uploadCmdBuf, tex1Staging.buffer, tex1GPUBuf.buffer, 1, &tex1Copy);
+
+				Utils::bufferBarrier(
+					uploadCmdBuf,
+					tex1GPUBuf.buffer,
+					VK_ACCESS_TRANSFER_WRITE_BIT,
+					VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,
+					VK_PIPELINE_STAGE_TRANSFER_BIT,
+					VK_PIPELINE_STAGE_VERTEX_INPUT_BIT
+				);
+
+				VkBufferCopy vertColCopy{};
+				vertColCopy.size = vertColSize;
+
+				vkCmdCopyBuffer(uploadCmdBuf, vertColStaging.buffer, vertColGPUBuf.buffer, 1, &vertColCopy);
+
+				Utils::bufferBarrier(
+					uploadCmdBuf,
+					vertColGPUBuf.buffer,
+					VK_ACCESS_TRANSFER_WRITE_BIT,
+					VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,
+					VK_PIPELINE_STAGE_TRANSFER_BIT,
+					VK_PIPELINE_STAGE_VERTEX_INPUT_BIT
+				);
+
+				VkBufferCopy indicesCopy{};
+				indicesCopy.size = indicesSize;
+
+				vkCmdCopyBuffer(uploadCmdBuf, indicesStaging.buffer, indicesGPUBuf.buffer, 1, &indicesCopy);
+
+				Utils::bufferBarrier(
+					uploadCmdBuf,
+					indicesGPUBuf.buffer,
+					VK_ACCESS_TRANSFER_WRITE_BIT,
+					VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,
+					VK_PIPELINE_STAGE_TRANSFER_BIT,
+					VK_PIPELINE_STAGE_VERTEX_INPUT_BIT
+				);
+
+				endAndSubmitCommandBuffer(*aContext.window, uploadCmdBuf);
+
+				primitive->posBuffer = std::move(posGPUBuf);
+				primitive->normBuffer = std::move(normGPUBuf);
+				primitive->tangentBuffer = std::move(tangentGPUBuf);
+				primitive->tex0Buffer = std::move(tex0GPUBuf);
+				primitive->tex1Buffer = std::move(tex1GPUBuf);
+				primitive->vertColBuffer = std::move(vertColGPUBuf);
+				primitive->indicesBuffer = std::move(indicesGPUBuf);
+
+			}
+		}
 	}
 
 }

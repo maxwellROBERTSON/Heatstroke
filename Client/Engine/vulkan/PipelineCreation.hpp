@@ -1,7 +1,10 @@
 #pragma once
 
+#include "VulkanContext.hpp"
 #include "objects/VkObjects.hpp"
 #include "objects/Texture.hpp"
+#include "objects/Buffer.hpp"
+#include "Uniforms.hpp"
 
 namespace Engine {
 	
@@ -22,6 +25,7 @@ namespace Engine {
 	// need to double check just substituting different stage flags is fine)
 	vk::DescriptorSetLayout createUBOLayout(const VulkanWindow& aWindow);
 	vk::DescriptorSetLayout createSSBOLayout(const VulkanWindow& aWindow);
+	vk::DescriptorSetLayout createDynamicUBOLayout(const VulkanWindow& aWindow);
 
 	vk::PipelineLayout createPipelineLayout(const VulkanWindow& aWindow, std::vector<VkDescriptorSetLayout>& layouts, bool aNeedPushConstant = false);
 
@@ -33,5 +37,8 @@ namespace Engine {
 
 	VkDescriptorSet createSceneDescriptor(const VulkanWindow& aWindow, VkDescriptorSetLayout aSetLayout, VkBuffer aBuffer);
 	VkDescriptorSet createMaterialInfoDescriptor(const VulkanWindow& aWindow, VkDescriptorSetLayout aSetLayout, VkBuffer aBuffer);
+	VkDescriptorSet createModelMatricesDescriptor(const VulkanWindow& aWindow, VkDescriptorSetLayout aSetLayout, VkBuffer aBuffer, VkDeviceSize dynamicAlignment);
+
+	vk::Buffer setupDynamicUBO(const VulkanContext& aContext, std::size_t modelSize, std::size_t dynamicAlignment, glsl::ModelMatricesUniform& aModelMatrices);
 
 }

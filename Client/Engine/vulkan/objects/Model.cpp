@@ -11,10 +11,14 @@ namespace Engine {
 namespace vk {
 
 	glm::mat4 Node::getModelMatrix() {
-		return glm::translate(glm::mat4(1.0f), translation) * glm::mat4(rotation) * glm::scale(glm::mat4(1.0f), scale) * this->nodeMatrix;
+		return this->postTransform * (glm::translate(glm::mat4(1.0f), translation) * glm::mat4(rotation) * glm::scale(glm::mat4(1.0f), scale) * this->nodeMatrix);
 	}
 
-	void Model::createDescriptorSets(const VulkanContext& aContext, VkDescriptorSetLayout aSamplerSetLayout, VkDescriptorSetLayout aMaterialInfoSetLayout) {
+	void Model::createDescriptorSets(
+        const VulkanContext& aContext, 
+        VkDescriptorSetLayout aSamplerSetLayout, 
+        VkDescriptorSetLayout aMaterialInfoSetLayout) 
+    {
         std::vector<glsl::MaterialInfoBuffer> materialInfos;
         
         for (Node* node : nodes) {
@@ -29,10 +33,12 @@ namespace vk {
                 {
                     VkWriteDescriptorSet desc[5]{};
 
+                    VkImageView baseColourImageView = material.baseColourTextureIndex != -1 ? imageViews[material.baseColourTextureIndex].handle : dummyImageView.handle;
+                    VkSampler baseColourSampler = material.baseColourTextureIndex != -1 ? textures[material.baseColourTextureIndex].sampler : defaultSampler.handle;
                     VkDescriptorImageInfo baseColourInfo{};
                     baseColourInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                    baseColourInfo.imageView = imageViews[material.baseColourTextureIndex].handle;
-                    baseColourInfo.sampler = textures[material.baseColourTextureIndex].sampler;
+                    baseColourInfo.imageView = baseColourImageView;
+                    baseColourInfo.sampler = baseColourSampler;
 
                     desc[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
                     desc[0].dstSet = materialDescriptors;
@@ -41,10 +47,12 @@ namespace vk {
                     desc[0].descriptorCount = 1;
                     desc[0].pImageInfo = &baseColourInfo;
 
+                    VkImageView metallicRoughnessImageView = material.metallicRoughnessTextureIndex != -1 ? imageViews[material.metallicRoughnessTextureIndex].handle : dummyImageView.handle;
+                    VkSampler metallicRoughnessSampler = material.metallicRoughnessTextureIndex != -1 ? textures[material.metallicRoughnessTextureIndex].sampler : defaultSampler.handle;
                     VkDescriptorImageInfo metallicRoughnessInfo{};
                     metallicRoughnessInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                    metallicRoughnessInfo.imageView = imageViews[material.metallicRoughnessTextureIndex].handle;
-                    metallicRoughnessInfo.sampler = textures[material.metallicRoughnessTextureIndex].sampler;
+                    metallicRoughnessInfo.imageView = metallicRoughnessImageView;
+                    metallicRoughnessInfo.sampler = metallicRoughnessSampler;
 
                     desc[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
                     desc[1].dstSet = materialDescriptors;
@@ -53,10 +61,12 @@ namespace vk {
                     desc[1].descriptorCount = 1;
                     desc[1].pImageInfo = &metallicRoughnessInfo;
 
+                    VkImageView emissiveImageView = material.emissiveTextureIndex != -1 ? imageViews[material.emissiveTextureIndex].handle : dummyImageView.handle;
+                    VkSampler emissiveSampler = material.emissiveTextureIndex != -1 ? textures[material.emissiveTextureIndex].sampler : defaultSampler.handle;
                     VkDescriptorImageInfo emissiveInfo{};
                     emissiveInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                    emissiveInfo.imageView = imageViews[material.emissiveTextureIndex].handle;
-                    emissiveInfo.sampler = textures[material.emissiveTextureIndex].sampler;
+                    emissiveInfo.imageView = emissiveImageView;
+                    emissiveInfo.sampler = emissiveSampler;
 
                     desc[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
                     desc[2].dstSet = materialDescriptors;
@@ -65,10 +75,12 @@ namespace vk {
                     desc[2].descriptorCount = 1;
                     desc[2].pImageInfo = &emissiveInfo;
 
+                    VkImageView occlusionImageView = material.occlusionTextureIndex != -1 ? imageViews[material.occlusionTextureIndex].handle : dummyImageView.handle;
+                    VkSampler occlusionSampler = material.occlusionTextureIndex != -1 ? textures[material.occlusionTextureIndex].sampler : defaultSampler.handle;
                     VkDescriptorImageInfo occlusionInfo{};
                     occlusionInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                    occlusionInfo.imageView = imageViews[material.occlusionTextureIndex].handle;
-                    occlusionInfo.sampler = textures[material.occlusionTextureIndex].sampler;
+                    occlusionInfo.imageView = occlusionImageView;
+                    occlusionInfo.sampler = occlusionSampler;
 
                     desc[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
                     desc[3].dstSet = materialDescriptors;
@@ -77,10 +89,12 @@ namespace vk {
                     desc[3].descriptorCount = 1;
                     desc[3].pImageInfo = &occlusionInfo;
 
+                    VkImageView normalImageView = material.normalTextureIndex != -1 ? imageViews[material.normalTextureIndex].handle : dummyImageView.handle;
+                    VkSampler normalSampler = material.normalTextureIndex != -1 ? textures[material.normalTextureIndex].sampler : defaultSampler.handle;
                     VkDescriptorImageInfo normalMapInfo{};
                     normalMapInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                    normalMapInfo.imageView = imageViews[material.normalTextureIndex].handle;
-                    normalMapInfo.sampler = textures[material.normalTextureIndex].sampler;
+                    normalMapInfo.imageView = normalImageView;
+                    normalMapInfo.sampler = normalSampler;
 
                     desc[4].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
                     desc[4].dstSet = materialDescriptors;
@@ -122,6 +136,7 @@ namespace vk {
 
         // GPU sided buffer
         vk::Buffer matInfoGPUBuf = vk::createBuffer(
+            "matInfoGPU",
             *aContext.allocator,
             materialInfoSize,
             VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
@@ -131,6 +146,7 @@ namespace vk {
 
         // Staging buffer
         vk::Buffer matInfoStaging = vk::createBuffer(
+            "matInfoStaging",
             *aContext.allocator,
             materialInfoSize,
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
@@ -185,20 +201,6 @@ namespace vk {
 
 	void Model::drawModel(VkCommandBuffer aCmdBuf, VkPipelineLayout aPipelineLayout) {
 
-		VkBuffer vBuffers[5] = {
-			posBuffer.buffer,
-			normBuffer.buffer,
-			tex0Buffer.buffer,
-			tex1Buffer.buffer,
-			vertColBuffer.buffer
-		};
-		VkBuffer iBuffer = indicesBuffer.buffer;
-		VkDeviceSize vOffsets[5]{};
-		VkDeviceSize iOffset{};
-
-		vkCmdBindVertexBuffers(aCmdBuf, 0, 5, vBuffers, vOffsets);
-		vkCmdBindIndexBuffer(aCmdBuf, iBuffer, 0, VK_INDEX_TYPE_UINT32);
-
         vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, 2, 1, &materialInfoSSBO, 0, nullptr);
 
 		for (Node* node : nodes) {
@@ -210,24 +212,42 @@ namespace vk {
 	void Model::drawNode(Node* aNode, VkCommandBuffer aCmdBuf, VkPipelineLayout aPipelineLayout) {
 		if (aNode->mesh) {
             for (Primitive* primitive : aNode->mesh->primitives) {
+
                 vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, 1, 1, &primitive->samplerDescriptorSet, 0, nullptr);
-                
                 vkCmdPushConstants(aCmdBuf, aPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(std::uint32_t), &primitive->material.index);
+
+                VkBuffer vBuffers[6] = {
+                    primitive->posBuffer.buffer,
+                    primitive->normBuffer.buffer,
+                    primitive->tangentBuffer.buffer,
+                    primitive->tex0Buffer.buffer,
+                    primitive->tex1Buffer.buffer,
+                    primitive->vertColBuffer.buffer
+                };
+                VkBuffer iBuffer = primitive->indicesBuffer.buffer;
+                VkDeviceSize vOffsets[6]{};
+                VkDeviceSize iOffset{};
+
+                vkCmdBindVertexBuffers(aCmdBuf, 0, 6, vBuffers, vOffsets);
+                vkCmdBindIndexBuffer(aCmdBuf, iBuffer, 0, VK_INDEX_TYPE_UINT32);
 
                 vkCmdDrawIndexed(aCmdBuf, primitive->indexCount, 1, primitive->firstIndex, 0, 0);
             }
 		}
 
-		for (Node* child : aNode->children) {
-			drawNode(child, aCmdBuf, aPipelineLayout);
-		}
+		//for (Node* child : aNode->children) {
+		//	drawNode(child, aCmdBuf, aPipelineLayout);
+		//}
 	}
 
 	void Model::destroy() {
-		// We shouldn't need to have or use this function since
-		// everything in Model has its own clean up after it all
-		// goes out of scope, but in the case we do need to manually
-		// clean up / destroy anything, we have this function ready.
+        for (Node* node : nodes) {
+
+            if (!node->mesh) continue;
+
+            for (Primitive* primitive : node->mesh->primitives)
+                primitive->~Primitive();
+        }
 	}
 
 }

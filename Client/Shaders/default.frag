@@ -4,9 +4,10 @@
 
 layout(location = 0) in vec3 outPosition;
 layout(location = 1) in vec3 outNormal;
-layout(location = 2) in vec2 outTexCoord0;
-layout(location = 3) in vec2 outTexCoord1;
-layout(location = 4) in vec4 outVertexColour;
+layout(location = 2) in vec4 outTangent;
+layout(location = 3) in vec2 outTexCoord0;
+layout(location = 4) in vec2 outTexCoord1;
+layout(location = 5) in vec4 outVertexColour;
 
 layout(set = 0, binding = 0) uniform SceneUBO {
 	mat4 projection;
@@ -97,8 +98,8 @@ float GeometryFunction(vec3 normal, vec3 halfwayVector, vec3 viewDir, vec3 light
 vec3 brdf(vec3 lightDir, vec3 viewDir, vec3 normal, float metallicFactor, float roughnessFactor) {
     vec3 halfwayVector = normalize(viewDir + lightDir);
 
-    float metalness = texture(metallicRoughness, outTexCoord0).g * metallicFactor;
-    float roughness_sqrt = texture(metallicRoughness, outTexCoord0).b * roughnessFactor;
+    float metalness = texture(metallicRoughness, outTexCoord0).b * metallicFactor;
+    float roughness_sqrt = texture(metallicRoughness, outTexCoord0).g * roughnessFactor;
     float roughness = roughness_sqrt * roughness_sqrt;
 
     float ndf = DistributionFunction(normal, halfwayVector, roughness);
@@ -115,14 +116,9 @@ vec3 brdf(vec3 lightDir, vec3 viewDir, vec3 normal, float metallicFactor, float 
 vec3 getNormal() {
     vec3 tangentNormal = texture(normalMap, outTexCoord0).xyz * 2.0f - 1.0f;
 
-    vec3 q1 = dFdx(outPosition);
-    vec3 q2 = dFdy(outPosition);
-    vec2 st1 = dFdx(outTexCoord0);
-    vec2 st2 = dFdy(outTexCoord0);
-
     vec3 N = normalize(outNormal);
-    vec3 T = normalize(q1 * st2.t - q2 * st1.t);
-    vec3 B = -normalize(cross(N, T));
+    vec3 T = normalize(outTangent.xyz);
+    vec3 B = normalize(cross(N, T) * outTangent.w);
     mat3 TBN = mat3(T, B, N);
 
     return normalize(TBN * tangentNormal);
@@ -132,11 +128,10 @@ void main() {
     MaterialInfo matInfo = materialInfo[pushConstants.materialIndex];
 
     vec3 lightCol = vec3(1.0f);
-    vec3 lightPos = vec3(5.0f, 10.0f, 2.0f);
+    vec3 lightPos = vec3(0.0f, 3.0f, 0.0f);
 
     vec3 lightDir = normalize(lightPos - outPosition);
     vec3 viewDir = normalize(sceneUbo.position.rgb - outPosition);
-    //vec3 normal = normalize(outNormal);
     vec3 normal = getNormal();
 
     vec4 albedo;

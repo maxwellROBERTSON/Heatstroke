@@ -39,6 +39,8 @@ namespace vk {
 	};
 
 	Texture createTexture(const VulkanContext& aContext, tinygltf::Image aTinygltfImage, VkFormat aFormat, VkSampler aSampler);
+	Texture createDummyTexture(const VulkanContext& aContext, VkSampler aSampler);
+
 	ImageView createImageView(const VulkanWindow& aWindow, VkImage aImage, VkFormat aFormat);
 
 	std::uint32_t computeMipLevels(std::uint32_t width, std::uint32_t height);

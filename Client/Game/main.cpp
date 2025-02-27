@@ -26,6 +26,7 @@ namespace {
     void runGameLoop(std::vector<Engine::vk::Model>& models);
 
     void updateSceneUniform(glsl::SceneUniform& aScene, Camera& camera, std::uint32_t aFramebufferWidth, std::uint32_t aFramebufferHeight);
+    void updateModelMatrices(const Engine::VulkanContext& aContext, glsl::ModelMatricesUniform& aModelMatrices, Engine::vk::Buffer& aBuffer, std::vector<Engine::vk::Model>& aModels, std::size_t dynamicAlignment);
 
     Engine::VulkanContext vkContext;
 
@@ -40,8 +41,11 @@ int main() try {
         std::vector<Engine::vk::Model> models;
         initialiseGame(models);
         runGameLoop(models);
-    }
 
+        for (Engine::vk::Model& model : models) {
+            model.destroy();
+        }
+    }
     // vkContext would get destroyed after main exits
     // and Vulkan doesnt like objects being destroyed
     // past main, so we manually call those object 
@@ -65,10 +69,15 @@ namespace {
         Engine::registerCallbacks(vkContext.getGLFWWindow());
 
         // Here we would load all relevant glTF models and put them in the models vector
-        tinygltf::Model tinygltfmodel = Engine::loadFromFile("DamagedHelmet.gltf");
-        models.emplace_back(Engine::makeVulkanModel(vkContext, tinygltfmodel));
+        tinygltf::Model sponza = Engine::loadFromFile("assets/Sponza/glTF/Sponza.gltf");
+        tinygltf::Model helmet = Engine::loadFromFile("assets/DamagedHelmet.gltf");
+        tinygltf::Model cube = Engine::loadFromFile("assets/Cube.gltf");
+        models.emplace_back(Engine::makeVulkanModel(vkContext, sponza));
+        models.emplace_back(Engine::makeVulkanModel(vkContext, helmet));
+        models.emplace_back(Engine::makeVulkanModel(vkContext, cube));
 
-        camera = Camera(100.0f, 0.01f, 256.0f, glm::vec3(0.0f, 0.0f, 2.0f), glm::vec3(0.0f, 0.0f, -1.0f));
+        // Move the starting camera position to the left and look in the +x direction
+        camera = Camera(100.0f, 0.01f, 256.0f, glm::vec3(-3.0f, 2.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f));
     }
 
     void runGameLoop(std::vector<Engine::vk::Model>& models) {
@@ -81,11 +90,13 @@ namespace {
         descriptorLayouts.emplace("sceneLayout", Engine::createSceneLayout(*vkContext.window));
         descriptorLayouts.emplace("materialLayout", Engine::createMaterialLayout(*vkContext.window));
         descriptorLayouts.emplace("materialInfoLayout", Engine::createSSBOLayout(*vkContext.window));
+        descriptorLayouts.emplace("modelMatricesLayout", Engine::createDynamicUBOLayout(*vkContext.window));
 
         std::vector<VkDescriptorSetLayout> sceneDescriptorLayouts;
         sceneDescriptorLayouts.emplace_back(descriptorLayouts["sceneLayout"].handle);
         sceneDescriptorLayouts.emplace_back(descriptorLayouts["materialLayout"].handle);
         sceneDescriptorLayouts.emplace_back(descriptorLayouts["materialInfoLayout"].handle);
+        sceneDescriptorLayouts.emplace_back(descriptorLayouts["modelMatricesLayout"].handle);
 
         std::map<std::string, Engine::vk::PipelineLayout> pipelineLayouts;
         pipelineLayouts.emplace("default", Engine::createPipelineLayout(*vkContext.window, sceneDescriptorLayouts, true));
@@ -114,10 +125,18 @@ namespace {
         }
 
         // Create uniform buffers
-        Engine::vk::Buffer sceneUBO = Engine::vk::createBuffer(*vkContext.allocator, sizeof(glsl::SceneUniform), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, 0, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
+        Engine::vk::Buffer sceneUBO = Engine::vk::createBuffer("sceneUBO", *vkContext.allocator, sizeof(glsl::SceneUniform), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, 0, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
+        
+        // Dynamic UBO's need to be correctly aligned (maybe move most of this out of the game loop method and put somewhere else)
+        std::size_t uboAlignment = vkContext.window->device->minUBOAlignment;
+        std::size_t dynamicAlignment = (sizeof(glm::mat4) + uboAlignment - 1) & ~(uboAlignment - 1);
+        glsl::ModelMatricesUniform modelMatrices;
+        Engine::vk::Buffer modelMatricesBuf = Engine::setupDynamicUBO(vkContext, models.size(), dynamicAlignment, modelMatrices);
+        vmaMapMemory(vkContext.allocator->allocator, modelMatricesBuf.allocation, &modelMatricesBuf.mapped);
 
         std::map<std::string, VkDescriptorSet> descriptorSets;
         descriptorSets.emplace("sceneDescriptors", Engine::createSceneDescriptor(*vkContext.window, descriptorLayouts["sceneLayout"].handle, sceneUBO.buffer));
+        descriptorSets.emplace("modelMatricesDescriptor", Engine::createModelMatricesDescriptor(*vkContext.window, descriptorLayouts["modelMatricesLayout"].handle, modelMatricesBuf.buffer, dynamicAlignment));
 
         // For each model create its descriptor sets
         for (Engine::vk::Model& model : models) {
@@ -174,14 +193,28 @@ namespace {
             previous = now;
 
             camera.updateCamera(vkContext.getGLFWWindow(), timeDelta);
+
+            // Set up the transform matrix for the helmet
+            glm::mat4 transform(1.0f);
+            transform = glm::translate(transform, glm::vec3(0.0f, 2.0f, 0.0f));
+            transform = glm::rotate(transform, glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+            transform = glm::scale(transform, glm::vec3(0.5f, 0.5f, 0.5f));
+
+            // Transform the helmet (this will need to be changed as to not refer to the first node at some point)
+            models[1].nodes[0]->setPostTransform(transform);
+
+            glm::mat4 cubeTransform(1.0f);
+            cubeTransform = glm::translate(cubeTransform, glm::vec3(0.0f, 1.0f, -1.0f));
+
+            models[2].nodes[0]->setPostTransform(cubeTransform);
             
             glsl::SceneUniform sceneUniform{};
             updateSceneUniform(sceneUniform, camera, vkContext.window->swapchainExtent.width, vkContext.window->swapchainExtent.height);
+            updateModelMatrices(vkContext, modelMatrices, modelMatricesBuf, models, dynamicAlignment);
 
-            sceneUniform.model = models[0].nodes[0]->getModelMatrix();
 
-            Engine::renderModel(
-                models[0],
+            Engine::renderModels(
+                models,
                 cmdBuffers[frameIndex], 
                 renderPasses["default"].handle,
                 framebuffers[imageIndex].handle, 
@@ -190,7 +223,9 @@ namespace {
                 sceneUBO.buffer,
                 sceneUniform,
                 pipelineLayouts["default"].handle,
-                descriptorSets["sceneDescriptors"]
+                descriptorSets["sceneDescriptors"],
+                descriptorSets["modelMatricesDescriptor"],
+                dynamicAlignment
             );
 
             assert(std::size_t(frameIndex) < renderFinished.size());
@@ -203,15 +238,31 @@ namespace {
         }
 
         vkDeviceWaitIdle(vkContext.window->device->device);
+
+        vmaUnmapMemory(vkContext.allocator->allocator, modelMatricesBuf.allocation);
     }
 
     void updateSceneUniform(glsl::SceneUniform& aScene, Camera& camera, std::uint32_t aFramebufferWidth, std::uint32_t aFramebufferHeight) {
-        const float aspectRatio = float(aFramebufferWidth / aFramebufferHeight);
+        const float aspectRatio = aFramebufferWidth / float(aFramebufferHeight);
 
         aScene.projection = glm::perspective(glm::radians(camera.fov), aspectRatio, camera.nearPlane, camera.farPlane);
         aScene.projection[1][1] *= -1.0f;
         aScene.view = glm::lookAt(camera.position, camera.position + camera.frontDirection, glm::vec3(0.0f, 1.0f, 0.0f));
-        //aScene.model = glm::rotate(glm::mat4(1.0f), 90.0f, glm::vec3(1.0f, 0.0f, 0.0f));
         aScene.position = glm::vec4(camera.position, 1.0f);
+    }
+
+    void updateModelMatrices(const Engine::VulkanContext& aContext, glsl::ModelMatricesUniform& aModelMatrices, Engine::vk::Buffer& aBuffer, std::vector<Engine::vk::Model>& aModels, std::size_t dynamicAlignment) {
+    
+        for (std::size_t i = 0; i < aModels.size(); i++) {
+            glm::mat4* modelMatrix = (glm::mat4*)((std::uint64_t)aModelMatrices.model + (i * dynamicAlignment));
+            
+            // This will need to be changed to get a 'parent' model matrix, not
+            // just the first node's model matrix.
+            *modelMatrix = aModels[i].nodes[0]->getModelMatrix();
+        }
+
+        std::memcpy(aBuffer.mapped, aModelMatrices.model, aModels.size() * dynamicAlignment);
+
+        vmaFlushAllocation(aContext.allocator->allocator, aBuffer.allocation, 0, aModels.size() * dynamicAlignment);
     }
 }
