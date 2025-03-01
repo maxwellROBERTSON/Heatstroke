@@ -32,7 +32,7 @@ namespace vk {
 		: image(std::exchange(aOther.image, VK_NULL_HANDLE))
 		, allocation(std::exchange(aOther.allocation, VK_NULL_HANDLE))
 		, mAllocator(std::exchange(aOther.mAllocator, VK_NULL_HANDLE))
-		, sampler(std::exchange(aOther.sampler, -1))
+		, sampler(std::exchange(aOther.sampler, VK_NULL_HANDLE))
 	{}
 
 	Texture& Texture::operator=(Texture&& aOther) noexcept
@@ -44,10 +44,11 @@ namespace vk {
 		return *this;
 	}
 
-	Texture createTexture(const VulkanContext& aContext, tinygltf::Image aTinygltfImage, VkFormat aFormat, int aSampler) {
+	Texture createTexture(const VulkanContext& aContext, tinygltf::Image aTinygltfImage, VkFormat aFormat, VkSampler aSampler) {
 		std::size_t sizeInBytes = aTinygltfImage.image.size();
 
 		vk::Buffer staging = createBuffer(
+			"texture " + aTinygltfImage.name,
 			*aContext.allocator,
 			sizeInBytes,
 			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
@@ -159,6 +160,83 @@ namespace vk {
 		endAndSubmitCommandBuffer(*aContext.window, cmdBuff);
 
 		// Save which sampler this texture references
+		texture.sampler = aSampler;
+
+		return texture;
+	}
+
+	Texture createDummyTexture(const VulkanContext& aContext, VkSampler aSampler) {
+		std::uint8_t data[4] = { std::uint8_t(255), std::uint8_t(255), std::uint8_t(255), std::uint8_t(255) };
+
+		auto staging = createBuffer(
+			"dummyTexture",
+			*aContext.allocator,
+			4, // 1 byte
+			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+			VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT
+		);
+
+		void* sptr = nullptr;
+		if (const auto res = vmaMapMemory(aContext.allocator->allocator, staging.allocation, &sptr); VK_SUCCESS != res)
+			throw Utils::Error("Unable to map memory\n vmaMapMemory() returned %s", Utils::toString(res).c_str());
+
+		std::memcpy(sptr, data, 4);
+		vmaUnmapMemory(aContext.allocator->allocator, staging.allocation);
+		
+		VkImageUsageFlags usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+		Texture texture = createVkImage(aContext, 1, 1, VK_FORMAT_R8G8B8A8_UNORM, 1, usage);
+
+		VkCommandBuffer cmdBuff = createCommandBuffer(*aContext.window);
+		beginCommandBuffer(cmdBuff);
+
+		Utils::imageBarrier(
+			cmdBuff,
+			texture.image,
+			0,
+			VK_ACCESS_TRANSFER_WRITE_BIT,
+			VK_IMAGE_LAYOUT_UNDEFINED,
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+			VK_PIPELINE_STAGE_TRANSFER_BIT,
+			VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 }
+		);
+
+		VkBufferImageCopy copy;
+		copy.bufferOffset = 0;
+		copy.bufferRowLength = 0;
+		copy.bufferImageHeight = 0;
+		copy.imageSubresource = VkImageSubresourceLayers{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 };
+		copy.imageOffset = VkOffset3D{ 0, 0, 0 };
+		copy.imageExtent = VkExtent3D{ 1, 1, 1 };
+
+		vkCmdCopyBufferToImage(cmdBuff, staging.buffer, texture.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
+
+		Utils::imageBarrier(
+			cmdBuff,
+			texture.image,
+			VK_ACCESS_TRANSFER_WRITE_BIT,
+			VK_ACCESS_TRANSFER_READ_BIT,
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+			VK_PIPELINE_STAGE_TRANSFER_BIT,
+			VK_PIPELINE_STAGE_TRANSFER_BIT,
+			VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 }
+		);
+
+		Utils::imageBarrier(
+			cmdBuff,
+			texture.image,
+			VK_ACCESS_TRANSFER_READ_BIT,
+			VK_ACCESS_SHADER_READ_BIT,
+			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			VK_PIPELINE_STAGE_TRANSFER_BIT,
+			VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+			VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1}
+		);
+
+		endAndSubmitCommandBuffer(*aContext.window, cmdBuff);
+
 		texture.sampler = aSampler;
 
 		return texture;

@@ -49,23 +49,14 @@ workspace "Heatstroke"
         targetextension ".exe"
 
     filter "*"
-
+    
     filter "Debug"
-		symbols "On"
-		defines { "_DEBUG=1" }
-
-	filter "Release"
-		optimize "On"
-		defines { "NDEBUG=1" }
-    
-    filter "configurations:Debug"
         symbols "On"
-        defines {"DEBUG", "YOJIMBO_DEBUG", "NETCODE_DEBUG", "RELIABLE_DEBUG"}
+        defines {"_DEBUG=1", "YOJIMBO_DEBUG", "NETCODE_DEBUG", "RELIABLE_DEBUG"}
     
-    filter "configurations:Release"
-        symbols "Off"
+    filter "Release"
         optimize "On"
-        defines {"YOJIMBO_RELEASE", "NETCODE_RELEASE", "RELIABLE_RELEASE"}
+        defines {"NDEBUG=1", "YOJIMBO_RELEASE", "NETCODE_RELEASE", "RELIABLE_RELEASE"}
 
     filter "*"
 
@@ -107,7 +98,8 @@ project "Engine"
         "x-volk",
         "x-glfw",
         "x-vma",
-        "imgui"
+        "imgui",
+        "x-tgen"
     }
 
     dependson "Shaders"
