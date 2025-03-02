@@ -5,10 +5,13 @@
 #include "VulkanUtils.hpp"
 #include "VulkanDevice.hpp"
 
+#include "../ECS/RenderComponent.hpp"
+
 namespace Engine {
 
-	void renderModel(
-		vk::Model& model,
+	void renderModels(
+		EntityManager& entityManager,
+		std::vector<vk::Model>& models,
 		VkCommandBuffer aCmdBuf,
 		VkRenderPass aRenderPass,
 		VkFramebuffer aFramebuffer,
@@ -18,11 +21,12 @@ namespace Engine {
 		glsl::SceneUniform aSceneUniform,
 		VkPipelineLayout aPipelineLayout,
 		VkDescriptorSet aSceneDescriptorSet,
-		VkDescriptorSet aMaterialDescriptorSet
+		VkDescriptorSet modelMatricesDescriptor,
+		std::uint32_t dynamicOffset
 	) {
 		// Begin recording
 		beginCommandBuffer(aCmdBuf, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-	
+
 		Utils::bufferBarrier(
 			aCmdBuf,
 			aSceneUBO,
@@ -67,14 +71,25 @@ namespace Engine {
 		vkCmdBindPipeline(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipeline);
 
 		vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, 0, 1, &aSceneDescriptorSet, 0, nullptr);
-		vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, 1, 1, &aMaterialDescriptorSet, 0, nullptr);
 
-		model.drawModel(aCmdBuf);
+		std::pair<void*, int> renderComponents = entityManager.GetComponents<RenderComponent>();
+		int j;
+		for (std::size_t i = 0; i < renderComponents.second; i++) {
+			RenderComponent r = reinterpret_cast<RenderComponent*>(renderComponents.first)[i];
+			int z = 0;
+		}
+		for (std::size_t i = 0; i < renderComponents.second; i++) {
+			std::uint32_t offset = i * dynamicOffset;
+			vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, 3, 1, &modelMatricesDescriptor, 1, &offset);
+			j = reinterpret_cast<RenderComponent*>(renderComponents.first)[i].GetModelIndex();
+			models[reinterpret_cast<RenderComponent*>(renderComponents.first)[i].GetModelIndex()].drawModel(aCmdBuf, aPipelineLayout);
+		}
 
 		vkCmdEndRenderPass(aCmdBuf);
 
 		if (const auto res = vkEndCommandBuffer(aCmdBuf); VK_SUCCESS != res)
 			throw Utils::Error("Unable to end command buffer\n vkEndCommandBuffer() returned %s", Utils::toString(res).c_str());
+		
 	}
 
 }

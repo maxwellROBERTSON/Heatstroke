@@ -10,6 +10,11 @@ class CameraComponent : public Component<CameraComponent>
 public:
 	CameraComponent() {};
 
+	virtual void operator=(const CameraComponent& other) override
+	{
+		this->camera = other.camera;
+	}
+
 	// Getters
 	Camera GetCamera() { return camera; }
 

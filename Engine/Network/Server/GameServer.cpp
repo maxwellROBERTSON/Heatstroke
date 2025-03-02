@@ -1,5 +1,5 @@
 #include "GameServer.hpp"
-#include "../../../Game/GameLoop.cpp"
+#include "../../../Game/GameLoop.hpp"
 
 static const uint8_t DEFAULT_PRIVATE_KEY[yojimbo::KeyBytes] = { 0 };
 
@@ -32,7 +32,7 @@ void GameServer::Start()
 {
 	// Start server
 	server->Start(maxClients);
-	initialiseGame();
+	//initialiseGame();
 	Run();
 }
 

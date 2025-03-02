@@ -7,6 +7,7 @@
 #include "Entity.hpp"
 #include "Component.hpp"
 #include "ComponentTypeRegistry.hpp"
+#include "RenderComponent.hpp"
 
 class EntityManager
 {
@@ -27,16 +28,35 @@ public:
 		}
 		else
 		{
-			return static_cast<T*>(componentList[typeIndex].first) + componentId * sizeof(T);
+			return static_cast<T*>(componentList[typeIndex].first) + componentId;
 		}
 	}
 	Entity* GetEntity(int entityId)
 	{
 		return &entities[entityId];
 	}
+	template <typename T>
+	int GetComponentTypeSize()
+	{
+		int typeIndex = registry->GetComponentID<T>();
+		return componentList[typeIndex].second;
+	}
+	template <typename T>
+	std::pair<void*, int> GetComponents()
+	{
+		int typeIndex = registry->GetComponentID<T>();
+		return componentList[typeIndex];
+	}
+	template <typename T>
+	std::vector<int> GetEntitiesWithComponent()
+	{
+		int typeIndex = registry->GetComponentID<T>();
+		return entitiesWithType[typeIndex];
+	}
 
 	// Setters
 	void SetComponentTypesPointers(std::vector<std::pair<void*, int>>);
+	void SetEntitiesWithType();
 	template <typename... Types>
 	Entity* AddEntity()
 	{
@@ -47,12 +67,22 @@ public:
 
 		Entity entity = Entity(this, entities.size(), typeIndexList);
 		entities.push_back(entity);
+
+		for (int i = 0; i < numberOfComponentTypes; i++)
+		{
+			if (typeIndexList[i] != -1)
+			{
+				entitiesWithType[i].push_back(entities.size() - 1);
+			}
+		}
+
 		return &entities[entities.size() - 1];
 	}
 
 private:
 	ComponentTypeRegistry* registry;
 	std::vector<Entity> entities;
+	std::vector<std::vector<int>> entitiesWithType;
 	std::vector<std::pair<void*, int>> componentList;
 
 	int localPlayerEntityId = -1;

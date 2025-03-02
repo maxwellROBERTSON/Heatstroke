@@ -12,4 +12,9 @@ void EntityManager::SetComponentTypesPointers(std::vector<std::pair<void*, int>>
 	componentList = componentTypePointers;
 }
 
+void EntityManager::SetEntitiesWithType()
+{
+	entitiesWithType = std::vector<std::vector<int>>(registry->GetNumberOfComponentTypes());
+}
+
 // Private Methods

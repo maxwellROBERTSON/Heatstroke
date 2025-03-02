@@ -201,10 +201,13 @@ namespace Engine {
 		if (VK_NULL_HANDLE == window.get()->physicalDevice)
 			throw Utils::Error("No suitable physical device found!");
 
+		VkDeviceSize minUBOAlignment;
+
 		{
 			VkPhysicalDeviceProperties props;
 			vkGetPhysicalDeviceProperties(window.get()->physicalDevice, &props);
 			std::fprintf(stderr, "Selected device: %s (%d.%d.%d)\n", props.deviceName, VK_API_VERSION_MAJOR(props.apiVersion), VK_API_VERSION_MINOR(props.apiVersion), VK_API_VERSION_PATCH(props.apiVersion));
+			minUBOAlignment = props.limits.minUniformBufferOffsetAlignment;
 		}
 
 		// Create a logical device
@@ -242,6 +245,8 @@ namespace Engine {
 		}
 
 		window.get()->device = createDevice(*window.get(), window.get()->physicalDevice, queueFamilyIndices, enabledDevExensions);
+
+		window.get()->device->minUBOAlignment = minUBOAlignment;
 
 		// Retrieve VkQueues
 		vkGetDeviceQueue(window.get()->device->device, window.get()->graphicsFamilyIndex, 0, &window.get()->graphicsQueue);

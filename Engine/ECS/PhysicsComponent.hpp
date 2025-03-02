@@ -8,6 +8,11 @@ class PhysicsComponent : public Component<PhysicsComponent>
 {
 public:
 	PhysicsComponent() {};
+
+	virtual void operator=(const PhysicsComponent& other) override
+	{
+		this->isPerson = other.isPerson;
+	}
 	
 	// Getters
 	int GetIsPerson() { return isPerson; }

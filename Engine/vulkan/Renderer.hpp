@@ -2,11 +2,13 @@
 
 #include "objects/Model.hpp"
 #include "Uniforms.hpp"
+#include "../ECS/EntityManager.hpp"
 
 namespace Engine {
 
-	void renderModel(
-		vk::Model& model, 
+	void renderModels(
+		EntityManager& entityManager,
+		std::vector<vk::Model>& models, 
 		VkCommandBuffer aCmdBuf,
 		VkRenderPass aRenderPass,
 		VkFramebuffer aFramebuffer,
@@ -16,7 +18,8 @@ namespace Engine {
 		glsl::SceneUniform aSceneUniform,
 		VkPipelineLayout aPipelineLayout,
 		VkDescriptorSet aSceneDescriptorSet,
-		VkDescriptorSet aMaterialDescriptorSet
+		VkDescriptorSet modelMatricesDescriptor,
+		std::uint32_t dynamicOffset
 	);
 
 }

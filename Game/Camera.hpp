@@ -13,6 +13,22 @@ public:
 	Camera(float fov, float near, float far, glm::vec3 position, glm::vec3 frontDirection);
 	~Camera() = default;
 
+	void operator=(const Camera& other)
+	{
+		this->fov = other.fov;
+		this->nearPlane = other.nearPlane;
+		this->farPlane = other.farPlane;
+		this->position = other.position;
+		this->frontDirection = other.frontDirection;
+
+		this->firstClick = other.firstClick;
+
+		this->yaw = other.yaw;
+		this->pitch = other.pitch;
+		this->lastX = other.lastX;
+		this->lastY = other.lastY;
+	}
+
 	void updateCamera(GLFWwindow* aWindow, float timeDelta);
 
 	float fov;
