@@ -42,20 +42,14 @@ void initialiseGame(ComponentTypeRegistry& registry, EntityManager& entityManage
         NetworkComponent
     >();
 
-	// Make component arrays
-	RenderComponent* renderComponents = new RenderComponent[1];
-    PhysicsComponent* physicsComponents = new PhysicsComponent[1];
-	CameraComponent* cameraComponents = new CameraComponent[1];
-	NetworkComponent* networkComponents = new NetworkComponent[1];
-
     // Make vector of pointers to each component type's data
     std::vector<std::pair<void*, int>> componentTypePointers;
 
     // Push back the address of the component vectors
-    componentTypePointers.push_back(std::make_pair(reinterpret_cast<void*>(renderComponents), 0));
-	componentTypePointers.push_back(std::make_pair(reinterpret_cast<void*>(physicsComponents), 0));
-	componentTypePointers.push_back(std::make_pair(reinterpret_cast<void*>(cameraComponents), 0));
-	componentTypePointers.push_back(std::make_pair(reinterpret_cast<void*>(networkComponents), 0));
+    componentTypePointers.push_back(std::make_pair(nullptr, 0));
+	componentTypePointers.push_back(std::make_pair(nullptr, 0));
+	componentTypePointers.push_back(std::make_pair(nullptr, 0));
+	componentTypePointers.push_back(std::make_pair(nullptr, 0));
 
 	// Add component pointers to the entity manager
 	entityManager.SetComponentTypesPointers(componentTypePointers);

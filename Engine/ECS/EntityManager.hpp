@@ -13,7 +13,13 @@ class EntityManager
 {
 public:
 	EntityManager(ComponentTypeRegistry* registry) : registry(registry) {};
-	~EntityManager() {};
+	~EntityManager()
+	{
+		for (int i = 0; i < componentList.size(); i++)
+		{
+			delete[] componentList[i].first;
+		}
+	}
 
 	// Getters
 	int GetNumberOfEntities();
@@ -77,6 +83,17 @@ public:
 		}
 
 		return &entities[entities.size() - 1];
+	}
+	void ClearManager()
+	{
+		entities.clear();
+		for (int i = 0; i < entitiesWithType.size(); i++)
+		{
+			entitiesWithType[i] = std::vector<int>();
+			delete[] componentList[i].first;
+			componentList[i].first = nullptr;
+			componentList[i].second = 0;
+		}
 	}
 
 private:
