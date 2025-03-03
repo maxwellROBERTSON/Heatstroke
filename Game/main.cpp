@@ -18,6 +18,12 @@ int main() try {
         PhysicsWorld physicsWorld;
 		physicsWorld.init();
 
+#ifdef BUILD_TYPE
+        std::cout << "Build Type: " << BUILD_TYPE << std::endl;
+#else
+        std::cout << "BUILD_TYPE not defined" << std::endl;
+#endif
+
         std::vector<Engine::vk::Model> models;
 		ComponentTypeRegistry registry = ComponentTypeRegistry::Get();
 		EntityManager entityManager = EntityManager(&registry);

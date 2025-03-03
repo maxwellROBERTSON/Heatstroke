@@ -1,7 +1,5 @@
 -- Adapted from COMP5892M (Advanced Rendering)
 
-build_type = ""
-
 workspace "Heatstroke"
     language "C++"
     cppdialect "C++20"
@@ -52,15 +50,11 @@ workspace "Heatstroke"
 
     filter "*"
     
-    filter "Debug"
-        runtime "Debug"
-        build_type = "debug/"
+    filter "configurations:Debug"
         symbols "On"
         defines {"_DEBUG=1", "YOJIMBO_DEBUG", "NETCODE_DEBUG", "RELIABLE_DEBUG"}
     
-    filter "Release"
-        runtime "Release"
-        build_type = ""
+    filter "configurations:Release"
         optimize "On"
         defines {"NDEBUG=1", "YOJIMBO_RELEASE", "NETCODE_RELEASE", "RELIABLE_RELEASE"}
 
@@ -77,6 +71,7 @@ os.execute('"' .. batchFile .. '"')
 
 -- Projects
 project "Engine"
+    print("Project variable value: " .. my_variable)
     local sources = {
         "Engine/glfw/**",
         "Engine/gltf/**",
@@ -89,8 +84,8 @@ project "Engine"
     }
 
     includedirs { "Engine/third_party/vcpkg/packages/physx_x64-windows/include" }
-    libdirs { "Engine/third_party/vcpkg/packages/physx_x64-windows/" .. build_type .. "lib" }
-    links { os.matchfiles("Engine/third_party/vcpkg/packages/physx_x64-windows/" .. build_type .. "lib/*.lib") }
+    libdirs { "Engine/third_party/vcpkg/packages/physx_x64-windows/lib" }
+    links { os.matchfiles("Engine/third_party/vcpkg/packages/physx_x64-windows/lib/*.lib") }
 
     includedirs {
         "Engine/Utils/"
@@ -125,8 +120,8 @@ project "Game"
     }
 
     includedirs { "Engine/third_party/vcpkg/packages/physx_x64-windows/include" }
-    libdirs { "Engine/third_party/vcpkg/packages/physx_x64-windows/" .. build_type .. "lib" }
-    links { os.matchfiles("Engine/third_party/vcpkg/packages/physx_x64-windows/" .. build_type .. "lib/*.lib") }
+    libdirs { "Engine/third_party/vcpkg/packages/physx_x64-windows/lib" }
+    links { os.matchfiles("Engine/third_party/vcpkg/packages/physx_x64-windows/lib/*.lib") }
 
     includedirs {
         ".",
