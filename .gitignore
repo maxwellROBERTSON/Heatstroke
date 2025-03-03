@@ -13,7 +13,8 @@ Shaders/bin
 *.make
 *.sln
 *.spv
-vcpkg/buildtrees/
-vcpkg/downloads/
-vcpkg/packages/
+Engine/third_party/vcpkg/buildtrees/
+Engine/third_party/vcpkg/downloads/
+Engine/third_party/vcpkg/installed/
+Engine/third_party/vcpkg/packages/
 compile_commands.json

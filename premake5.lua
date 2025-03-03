@@ -1,5 +1,7 @@
 -- Adapted from COMP5892M (Advanced Rendering)
 
+build_type = ""
+
 workspace "Heatstroke"
     language "C++"
     cppdialect "C++20"
@@ -51,10 +53,14 @@ workspace "Heatstroke"
     filter "*"
     
     filter "Debug"
+        runtime "Debug"
+        build_type = "debug/"
         symbols "On"
         defines {"_DEBUG=1", "YOJIMBO_DEBUG", "NETCODE_DEBUG", "RELIABLE_DEBUG"}
     
     filter "Release"
+        runtime "Release"
+        build_type = ""
         optimize "On"
         defines {"NDEBUG=1", "YOJIMBO_RELEASE", "NETCODE_RELEASE", "RELIABLE_RELEASE"}
 
@@ -65,6 +71,10 @@ include "Engine/third_party"
 -- GLSLC helpers
 dofile("Engine/Utils/glslc.lua")
 
+local cwd = os.getcwd()
+local batchFile = cwd .. "/Engine/third_party/vcpkg/vcpkg_setup.bat"
+os.execute('"' .. batchFile .. '"')
+
 -- Projects
 project "Engine"
     local sources = {
@@ -74,8 +84,13 @@ project "Engine"
         "Engine/Shaders/**",
         "Engine/Network/**",
         "Engine/ECS/**",
-        "Engine/GUI/**"
+        "Engine/GUI/**",
+        "Engine/Physics/**"
     }
+
+    includedirs { "Engine/third_party/vcpkg/packages/physx_x64-windows/include" }
+    libdirs { "Engine/third_party/vcpkg/packages/physx_x64-windows/" .. build_type .. "lib" }
+    links { os.matchfiles("Engine/third_party/vcpkg/packages/physx_x64-windows/" .. build_type .. "lib/*.lib") }
 
     includedirs {
         "Engine/Utils/"
@@ -108,6 +123,10 @@ project "Game"
     local sources = {
         "Game/**"
     }
+
+    includedirs { "Engine/third_party/vcpkg/packages/physx_x64-windows/include" }
+    libdirs { "Engine/third_party/vcpkg/packages/physx_x64-windows/" .. build_type .. "lib" }
+    links { os.matchfiles("Engine/third_party/vcpkg/packages/physx_x64-windows/" .. build_type .. "lib/*.lib") }
 
     includedirs {
         ".",

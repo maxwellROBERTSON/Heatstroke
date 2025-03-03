@@ -8,11 +8,16 @@
 #include "../Engine/Network/Server/GameServer.hpp"
 #include "../Engine/Network/Client/GameClient.hpp"
 
+#include "../Engine/Physics/PhysicsWorld.hpp"
+
 int main() try {
     // This manual scope is very important, it ensures the objects in models have their associated
     // objects' destructors called BEFORE we destroy the vulkan device. Do not move the models vector
     // out of this scope unless you also handle the object lifetimes from them.
     {
+        PhysicsWorld physicsWorld;
+		physicsWorld.init();
+
         std::vector<Engine::vk::Model> models;
 		ComponentTypeRegistry registry = ComponentTypeRegistry::Get();
 		EntityManager entityManager = EntityManager(&registry);

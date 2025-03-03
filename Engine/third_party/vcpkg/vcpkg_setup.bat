@@ -5,7 +5,7 @@ if exist "packages\*\lib" (
     exit /b
 )
 
-cd vcpkg
+cd Engine/third_party/vcpkg
 if not exist "vcpkg.exe" (
     echo Running bootstrap-vcpkg.bat...
     call bootstrap-vcpkg.bat
