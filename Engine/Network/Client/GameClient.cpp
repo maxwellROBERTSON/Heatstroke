@@ -34,7 +34,7 @@ void GameClient::Connect(yojimbo::Address serverAddress)
 
 void GameClient::Run()
 {
-	initialiseGame();
+	//initialiseGame();
 	//runGameLoop(this);
 
 	//float fixedDt = 1.0f / 120.0f;

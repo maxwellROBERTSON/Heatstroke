@@ -14,9 +14,12 @@ int main() try {
     // out of this scope unless you also handle the object lifetimes from them.
     {
         std::vector<Engine::vk::Model> models;
-        initialiseGame();
+		ComponentTypeRegistry registry = ComponentTypeRegistry::Get();
+		EntityManager entityManager = EntityManager(&registry);
+
+		initialiseGame(registry, entityManager);
         initialiseModels(models);
-        runGameLoop(models);
+		runGameLoop(models, registry, entityManager);
 
         for (Engine::vk::Model& model : models)
             model.destroy();

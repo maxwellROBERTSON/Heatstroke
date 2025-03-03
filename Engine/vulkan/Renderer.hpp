@@ -2,10 +2,12 @@
 
 #include "objects/Model.hpp"
 #include "Uniforms.hpp"
+#include "../ECS/EntityManager.hpp"
 
 namespace Engine {
 
 	void renderModels(
+		EntityManager& entityManager,
 		std::vector<vk::Model>& models, 
 		VkCommandBuffer aCmdBuf,
 		VkRenderPass aRenderPass,

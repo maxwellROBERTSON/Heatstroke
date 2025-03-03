@@ -12,12 +12,13 @@
 
 #include "Camera.hpp"
 
-void initialiseGame();
+void initialiseGame(ComponentTypeRegistry& registry, EntityManager& entityManager);
 void initialiseModels(std::vector<Engine::vk::Model>& models);
-void runGameLoop(std::vector<Engine::vk::Model>& models);
+void runGameLoop(std::vector<Engine::vk::Model>& models, ComponentTypeRegistry& registry, EntityManager& entityManager);
 
 void updateSceneUniform(glsl::SceneUniform& aScene, Camera& camera, std::uint32_t aFramebufferWidth, std::uint32_t aFramebufferHeight);
-void updateModelMatrices(const Engine::VulkanContext& aContext, glsl::ModelMatricesUniform& aModelMatrices, Engine::vk::Buffer& aBuffer, std::vector<Engine::vk::Model>& aModels, std::size_t dynamicAlignment);
+void updateModelMatrices(const Engine::VulkanContext& aContext, glsl::ModelMatricesUniform& aModelMatrices, Engine::vk::Buffer& aBuffer, EntityManager& entityManager, std::size_t dynamicAlignment);
+void loadOfflineEntities(ComponentTypeRegistry& registry, EntityManager& entityManager);
 
 extern Engine::VulkanContext vkContext;
 extern Camera camera;

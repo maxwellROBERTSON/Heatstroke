@@ -6,19 +6,63 @@
 
 #include "Entity.hpp"
 #include "Component.hpp"
-#include "RenderComponent.hpp"
 #include "ComponentTypeRegistry.hpp"
+#include "RenderComponent.hpp"
 
 class EntityManager
 {
 public:
 	EntityManager(ComponentTypeRegistry* registry) : registry(registry) {};
-	~EntityManager() {};
+	~EntityManager()
+	{
+		for (int i = 0; i < componentList.size(); i++)
+		{
+			delete[] componentList[i].first;
+		}
+	}
 
-	void AddComponentTypesPointers(std::vector<std::pair<void*, int>>);
-
+	// Getters
 	int GetNumberOfEntities();
+	template <typename T>
+	T* GetEntityComponent(int entityId)
+	{
+		int typeIndex = registry->GetComponentID<T>();
+		int componentId = entities[entityId].GetComponent(typeIndex);
+		if (componentId == -1)
+		{
+			return nullptr;
+		}
+		else
+		{
+			return static_cast<T*>(componentList[typeIndex].first) + componentId;
+		}
+	}
+	Entity* GetEntity(int entityId)
+	{
+		return &entities[entityId];
+	}
+	template <typename T>
+	int GetComponentTypeSize()
+	{
+		int typeIndex = registry->GetComponentID<T>();
+		return componentList[typeIndex].second;
+	}
+	template <typename T>
+	std::pair<void*, int> GetComponents()
+	{
+		int typeIndex = registry->GetComponentID<T>();
+		return componentList[typeIndex];
+	}
+	template <typename T>
+	std::vector<int> GetEntitiesWithComponent()
+	{
+		int typeIndex = registry->GetComponentID<T>();
+		return entitiesWithType[typeIndex];
+	}
 
+	// Setters
+	void SetComponentTypesPointers(std::vector<std::pair<void*, int>>);
+	void SetEntitiesWithType();
 	template <typename... Types>
 	Entity* AddEntity()
 	{
@@ -29,13 +73,36 @@ public:
 
 		Entity entity = Entity(this, entities.size(), typeIndexList);
 		entities.push_back(entity);
+
+		for (int i = 0; i < numberOfComponentTypes; i++)
+		{
+			if (typeIndexList[i] != -1)
+			{
+				entitiesWithType[i].push_back(entities.size() - 1);
+			}
+		}
+
 		return &entities[entities.size() - 1];
+	}
+	void ClearManager()
+	{
+		entities.clear();
+		for (int i = 0; i < entitiesWithType.size(); i++)
+		{
+			entitiesWithType[i] = std::vector<int>();
+			delete[] componentList[i].first;
+			componentList[i].first = nullptr;
+			componentList[i].second = 0;
+		}
 	}
 
 private:
 	ComponentTypeRegistry* registry;
 	std::vector<Entity> entities;
+	std::vector<std::vector<int>> entitiesWithType;
 	std::vector<std::pair<void*, int>> componentList;
+
+	int localPlayerEntityId = -1;
 
 	template <typename T>
 	void addComponent(std::vector<int>& typeIndexList)

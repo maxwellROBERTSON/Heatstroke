@@ -14,7 +14,9 @@
 #include "../Engine/ECS/ComponentTypeRegistry.hpp"
 #include "../Engine/ECS/EntityManager.hpp"
 #include "../Engine/ECS/RenderComponent.hpp"
-#include "UserComponents/TestUserComponent.hpp"
+#include "../Engine/ECS/PhysicsComponent.hpp"
+#include "../Engine/ECS/CameraComponent.hpp"
+#include "../Engine/ECS/NetworkComponent.hpp"
 
 #include "Error.hpp"
 #include "toString.hpp"
@@ -24,34 +26,36 @@ Engine::VulkanContext vkContext;
 Camera camera;
 bool recreateSwapchain = false;
 
-void initialiseGame() {
-    // Make a registry of component types
-    ComponentTypeRegistry registry = ComponentTypeRegistry::Get();
+// Local clientId
+int clientId = 0;
 
-    // Make an entity manager
-    EntityManager entityManager = EntityManager(&registry);
+// Game mode
+bool online = false;
+bool switchMode = true;
 
+void initialiseGame(ComponentTypeRegistry& registry, EntityManager& entityManager) {
     // Register component types
-    registry.RegisterComponentTypes<RenderComponent, TestUserComponent>();
-
-    // Make component arrays
-    RenderComponent* renderComponents = new RenderComponent[1];
-    TestUserComponent* testUserComponents = new TestUserComponent[1];
+    registry.RegisterComponentTypes<
+        RenderComponent,
+        PhysicsComponent,
+        CameraComponent,
+        NetworkComponent
+    >();
 
     // Make vector of pointers to each component type's data
     std::vector<std::pair<void*, int>> componentTypePointers;
 
     // Push back the address of the component vectors
-    componentTypePointers.push_back(std::make_pair(reinterpret_cast<void*>(renderComponents), 0));
-    componentTypePointers.push_back(std::make_pair(reinterpret_cast<void*>(testUserComponents), 0));
+    componentTypePointers.push_back(std::make_pair(nullptr, 0));
+	componentTypePointers.push_back(std::make_pair(nullptr, 0));
+	componentTypePointers.push_back(std::make_pair(nullptr, 0));
+	componentTypePointers.push_back(std::make_pair(nullptr, 0));
 
-    // Add component pointers to the entity manager
-    entityManager.AddComponentTypesPointers(componentTypePointers);
+	// Add component pointers to the entity manager
+	entityManager.SetComponentTypesPointers(componentTypePointers);
 
-    // Add entities
-    entityManager.AddEntity<RenderComponent>();
-    entityManager.AddEntity<TestUserComponent>();
-    entityManager.AddEntity<RenderComponent, TestUserComponent>();
+	// Allocate entities with type vectors
+	entityManager.SetEntitiesWithType();
 
 #ifdef CLIENT
     vkContext.window = Engine::initialiseVulkan();
@@ -68,12 +72,17 @@ void initialiseModels(std::vector<Engine::vk::Model>& models) {
     tinygltf::Model sponza = Engine::loadFromFile("Game/assets/Sponza/glTF/Sponza.gltf");
     tinygltf::Model helmet = Engine::loadFromFile("Game/assets/DamagedHelmet.gltf");
     tinygltf::Model cube = Engine::loadFromFile("Game/assets/Cube.gltf");
+    tinygltf::Model character = Engine::loadFromFile("Game/assets/Character/scene.gltf");
     models.emplace_back(Engine::makeVulkanModel(vkContext, sponza));
     models.emplace_back(Engine::makeVulkanModel(vkContext, helmet));
     models.emplace_back(Engine::makeVulkanModel(vkContext, cube));
+	models.emplace_back(Engine::makeVulkanModel(vkContext, character));
 }
 
-void runGameLoop(std::vector<Engine::vk::Model>& models) {
+void runGameLoop(std::vector<Engine::vk::Model>& models, ComponentTypeRegistry& registry, EntityManager& entityManager) {
+    // Offline mode only for now
+	loadOfflineEntities(registry, entityManager);
+
     // Create required objects for rendering
     std::map<std::string, Engine::vk::RenderPass> renderPasses;
     renderPasses.emplace("default", Engine::createRenderPass(*vkContext.window));
@@ -123,7 +132,7 @@ void runGameLoop(std::vector<Engine::vk::Model>& models) {
     std::size_t uboAlignment = vkContext.window->device->minUBOAlignment;
     std::size_t dynamicAlignment = (sizeof(glm::mat4) + uboAlignment - 1) & ~(uboAlignment - 1);
     glsl::ModelMatricesUniform modelMatrices;
-    Engine::vk::Buffer modelMatricesBuf = Engine::setupDynamicUBO(vkContext, models.size(), dynamicAlignment, modelMatrices);
+    Engine::vk::Buffer modelMatricesBuf = Engine::setupDynamicUBO(vkContext, entityManager.GetComponentTypeSize<RenderComponent>(), dynamicAlignment, modelMatrices);
     vmaMapMemory(vkContext.allocator->allocator, modelMatricesBuf.allocation, &modelMatricesBuf.mapped);
 
     std::map<std::string, VkDescriptorSet> descriptorSets;
@@ -185,27 +194,13 @@ void runGameLoop(std::vector<Engine::vk::Model>& models) {
         previous = now;
 
         camera.updateCamera(vkContext.getGLFWWindow(), timeDelta);
-
-        // Set up the transform matrix for the helmet
-        glm::mat4 transform(1.0f);
-        transform = glm::translate(transform, glm::vec3(0.0f, 2.0f, 0.0f));
-        transform = glm::rotate(transform, glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-        transform = glm::scale(transform, glm::vec3(0.5f, 0.5f, 0.5f));
-
-        // Transform the helmet (this will need to be changed as to not refer to the first node at some point)
-        models[1].nodes[0]->setPostTransform(transform);
-
-        glm::mat4 cubeTransform(1.0f);
-        cubeTransform = glm::translate(cubeTransform, glm::vec3(0.0f, 1.0f, -1.0f));
-
-        models[2].nodes[0]->setPostTransform(cubeTransform);
         
         glsl::SceneUniform sceneUniform{};
         updateSceneUniform(sceneUniform, camera, vkContext.window->swapchainExtent.width, vkContext.window->swapchainExtent.height);
-        updateModelMatrices(vkContext, modelMatrices, modelMatricesBuf, models, dynamicAlignment);
-
+        updateModelMatrices(vkContext, modelMatrices, modelMatricesBuf, entityManager, dynamicAlignment);
 
         Engine::renderModels(
+			entityManager,
             models,
             cmdBuffers[frameIndex], 
             renderPasses["default"].handle,
@@ -243,17 +238,85 @@ void updateSceneUniform(glsl::SceneUniform& aScene, Camera& camera, std::uint32_
     aScene.position = glm::vec4(camera.position, 1.0f);
 }
 
-void updateModelMatrices(const Engine::VulkanContext& aContext, glsl::ModelMatricesUniform& aModelMatrices, Engine::vk::Buffer& aBuffer, std::vector<Engine::vk::Model>& aModels, std::size_t dynamicAlignment) {
+void updateModelMatrices(const Engine::VulkanContext& aContext, glsl::ModelMatricesUniform& aModelMatrices, Engine::vk::Buffer& aBuffer, EntityManager& entityManager, std::size_t dynamicAlignment) {
 
-    for (std::size_t i = 0; i < aModels.size(); i++) {
+	std::vector<int> aModels = entityManager.GetEntitiesWithComponent<RenderComponent>();
+	for (std::size_t i = 0; i < aModels.size(); i++) {
         glm::mat4* modelMatrix = (glm::mat4*)((std::uint64_t)aModelMatrices.model + (i * dynamicAlignment));
-        
+
         // This will need to be changed to get a 'parent' model matrix, not
         // just the first node's model matrix.
-        *modelMatrix = aModels[i].nodes[0]->getModelMatrix();
+		*modelMatrix = entityManager.GetEntity(aModels[i])->GetModelMatrix();
     }
 
-    std::memcpy(aBuffer.mapped, aModelMatrices.model, aModels.size() * dynamicAlignment);
+	int size = entityManager.GetComponentTypeSize<RenderComponent>() * dynamicAlignment;
 
-    vmaFlushAllocation(aContext.allocator->allocator, aBuffer.allocation, 0, aModels.size() * dynamicAlignment);
+    std::memcpy(aBuffer.mapped, aModelMatrices.model, size);
+
+    vmaFlushAllocation(aContext.allocator->allocator, aBuffer.allocation, 0, size);
+}
+
+void loadOfflineEntities(ComponentTypeRegistry& registry, EntityManager& entityManager)
+{
+	// Pointers
+    Entity* entity;
+    RenderComponent* renderComponent;
+	PhysicsComponent* physicsComponent;
+	CameraComponent* cameraComponent;
+	NetworkComponent* networkComponent;
+
+    // Map
+	entity = entityManager.AddEntity<RenderComponent, PhysicsComponent>();
+    glm::mat4 mapTransform(1.0f);
+    mapTransform = glm::scale(mapTransform, glm::vec3(0.01f, 0.01f, 0.01f));
+	entity->SetModelMatrix(mapTransform);
+    renderComponent = entityManager.GetEntityComponent<RenderComponent>(entity->GetEntityId());
+    renderComponent->SetModelIndex(0);
+
+	// Helmet
+	entity = entityManager.AddEntity<RenderComponent, PhysicsComponent>();
+    glm::mat4 helmetTransform(1.0f);
+    helmetTransform = glm::translate(helmetTransform, glm::vec3(0.0f, 2.0f, 0.0f));
+    helmetTransform = glm::rotate(helmetTransform, glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    helmetTransform = glm::scale(helmetTransform, glm::vec3(0.2f, 0.2f, 0.2f));
+    entity->SetModelMatrix(helmetTransform);
+	renderComponent = entityManager.GetEntityComponent<RenderComponent>(entity->GetEntityId());
+	renderComponent->SetModelIndex(1);
+
+	// Cube
+	entity = entityManager.AddEntity<RenderComponent, PhysicsComponent>();
+    glm::mat4 cubeTransform(1.0f);
+    cubeTransform = glm::translate(cubeTransform, glm::vec3(0.3f, 1.0f, -1.0f));
+    cubeTransform = glm::scale(cubeTransform, glm::vec3(0.2f, 0.2f, 0.2f));
+	entity->SetModelMatrix(cubeTransform);
+	renderComponent = entityManager.GetEntityComponent<RenderComponent>(entity->GetEntityId());
+	renderComponent->SetModelIndex(2);
+
+    // Player 1
+    entity = entityManager.AddEntity<RenderComponent, PhysicsComponent, CameraComponent, NetworkComponent>();
+    glm::mat4 player1Transform(1.0f);
+    player1Transform = glm::translate(player1Transform, glm::vec3(-5.0f, 1.0f, -1.0f));
+    player1Transform = glm::rotate(player1Transform, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    player1Transform = glm::scale(player1Transform, glm::vec3(1.0f, 1.0f, 1.0f));
+    entity->SetModelMatrix(player1Transform);
+    renderComponent = entityManager.GetEntityComponent<RenderComponent>(entity->GetEntityId());
+    renderComponent->SetModelIndex(3);
+    physicsComponent = entityManager.GetEntityComponent<PhysicsComponent>(entity->GetEntityId());
+    physicsComponent->SetIsPerson(true);
+    cameraComponent = entityManager.GetEntityComponent<CameraComponent>(entity->GetEntityId());
+    cameraComponent->SetCamera(camera);
+    networkComponent = entityManager.GetEntityComponent<NetworkComponent>(entity->GetEntityId());
+    networkComponent->SetClientId(clientId);
+
+    // Player 2
+    entity = entityManager.AddEntity<RenderComponent, PhysicsComponent, CameraComponent, NetworkComponent>();
+    glm::mat4 player2Transform(1.0f);
+    player2Transform = glm::translate(player2Transform, glm::vec3(5.0f, 1.0f, -1.0f));
+    player2Transform = glm::rotate(player2Transform, glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    player2Transform = glm::scale(player2Transform, glm::vec3(1.0f, 1.0f, 1.0f));
+    entity->SetModelMatrix(player2Transform);
+    renderComponent = entityManager.GetEntityComponent<RenderComponent>(entity->GetEntityId());
+    renderComponent->SetModelIndex(3);
+    physicsComponent = entityManager.GetEntityComponent<PhysicsComponent>(entity->GetEntityId());
+    physicsComponent->SetIsPerson(true);
 }

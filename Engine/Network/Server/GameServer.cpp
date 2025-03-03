@@ -32,7 +32,7 @@ void GameServer::Start()
 {
 	// Start server
 	server->Start(maxClients);
-	initialiseGame();
+	//initialiseGame();
 	Run();
 }
 
