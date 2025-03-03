@@ -3,6 +3,10 @@
 #include <glm/mat4x4.hpp>
 #include <glm/vec4.hpp>
 
+#include "../Engine/Events/Event.h"
+#include "../Engine/Events/KeyEvent.h"
+#include "../Engine/Events/MouseEvent.h"
+
 struct GLFWwindow;
 
 // We put the camera implementation on the game side but do we want to have 
@@ -14,6 +18,7 @@ public:
 	~Camera() = default;
 
 	void updateCamera(GLFWwindow* aWindow, float timeDelta);
+	void OnEvent(Engine::Event& e);
 
 	float fov;
 	float nearPlane;
