@@ -13,4 +13,7 @@ Shaders/bin
 *.make
 *.sln
 *.spv
+vcpkg/buildtrees/
+vcpkg/downloads/
+vcpkg/packages/
 compile_commands.json
