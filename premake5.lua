@@ -12,6 +12,8 @@ workspace "Heatstroke"
 
     startproject "Game"
 
+    defines { "CLIENT" }
+
     debugdir "%{wks.location}"
     objdir "build/%{cfg.buildcfg}-%{cfg.platform}-%{cfg.toolset}"
     targetsuffix "-%{cfg.buildcfg}-%{cfg.platform}-%{cfg.toolset}"
@@ -32,9 +34,11 @@ workspace "Heatstroke"
 
     filter "system:linux"
         links "dl"
+        defines {"OS_LINUX"}
 
     filter "system:windows"
-
+        defines {"OS_WINDOWS"}
+    
     filter "*"
 
     filter "kind:StaticLib"
@@ -45,30 +49,36 @@ workspace "Heatstroke"
         targetextension ".exe"
 
     filter "*"
-
+    
     filter "Debug"
-		symbols "On"
-		defines { "_DEBUG=1" }
-
-	filter "Release"
-		optimize "On"
-		defines { "NDEBUG=1" }
+        symbols "On"
+        defines {"_DEBUG=1", "YOJIMBO_DEBUG", "NETCODE_DEBUG", "RELIABLE_DEBUG"}
+    
+    filter "Release"
+        optimize "On"
+        defines {"NDEBUG=1", "YOJIMBO_RELEASE", "NETCODE_RELEASE", "RELIABLE_RELEASE"}
 
     filter "*"
 
-include "third_party"
+include "Engine/third_party"
 
 -- GLSLC helpers
-dofile("Utils/glslc.lua")
+dofile("Engine/Utils/glslc.lua")
 
 -- Projects
 project "Engine"
     local sources = {
-        "Engine/**"
+        "Engine/glfw/**",
+        "Engine/gltf/**",
+        "Engine/vulkan/**",
+        "Engine/Shaders/**",
+        "Engine/Network/**",
+        "Engine/ECS/**",
+        "Engine/GUI/**"
     }
 
     includedirs {
-        "Utils/"
+        "Engine/Utils/"
     }
 
     kind "StaticLib"
@@ -77,16 +87,22 @@ project "Engine"
     files(sources)
     removefiles("**.vcxproj*")
 
+    links {
+        "Utils",
+        "yojimbo",
+        "sodium-builtin",
+        "netcode",
+        "reliable",
+        "tlsf",
+        "x-glm",
+        "x-volk",
+        "x-glfw",
+        "x-vma",
+        "imgui",
+        "x-tgen"
+    }
+
     dependson "Shaders"
-
-    links "Utils"
-    links "x-volk"
-    links "x-glfw"
-    links "x-vma"
-	links "x-imgui"
-
-
-    dependson "x-glm"
 
 project "Game"
     local sources = {
@@ -96,7 +112,7 @@ project "Game"
     includedirs {
         ".",
         "../",
-        "Utils/"
+        "Engine/Utils"
     }
 
     kind "ConsoleApp"
@@ -105,42 +121,66 @@ project "Game"
     files(sources)
     removefiles("**.vcxproj*")
     
-    links "Engine"
-    links "Utils"
-    links "x-volk"
-    links "x-glfw"
-    links "x-vma"
-	links "x-imgui"
-
+    links {
+        "Engine",
+        "Utils",
+        "yojimbo",
+        "sodium-builtin",
+        "netcode",
+        "reliable",
+        "tlsf",
+        "x-glm",
+        "x-volk",
+        "x-glfw",
+        "x-vma",
+        "imgui"
+    }
 
     dependson "Engine"
 
 project "Shaders"
     local sources = {
-        "Shaders/**.vert",
-        "Shaders/**.frag",
-        "Shaders/**.geom",
-        "Shaders/**.tesc",
-        "Shaders/**.tese",
-        "Shaders/**.comp"
+        "Engine/Shaders/**.vert",
+        "Engine/Shaders/**.frag",
+        "Engine/Shaders/**.geom",
+        "Engine/Shaders/**.tesc",
+        "Engine/Shaders/**.tese",
+        "Engine/Shaders/**.comp"
     }
 
     kind "Utility"
-    location "Shaders"
+    location "Engine/Shaders"
 
     files(sources)
 
-    handle_glsl_files(glslcOptions, "Shaders/spv", {})
+    handle_glsl_files(glslcOptions, "Engine/Shaders/spv", {})
 
 project "Utils"
     local sources = {
-        "Utils/**.cpp",
-        "Utils/**.h*"
+        "Engine/Utils/**.cpp",
+        "Engine/Utils/**.h*"
     }
 
     kind "StaticLib"
-    location "Utils"
+    location "Engine/Utils"
 
     files(sources)
 
 project()
+
+-- Custom Clean Action
+newaction {
+    trigger = "clean",
+    description = "Remove all generated binaries and intermediate files",
+    execute = function()
+        print("Cleaning project...")
+        os.rmdir("bin")
+        os.rmdir("build")
+        os.rmdir("lib")
+        os.remove("**.make")  -- Remove Makefiles
+        os.remove("**.workspace")  -- Remove workspace files
+        os.remove("**.sln")  -- Remove Visual Studio solution
+        os.remove("**.vcxproj*")  -- Remove Visual Studio project files
+        print("Clean complete!")
+    end
+}

@@ -7,9 +7,13 @@
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 
-#include "../VulkanContext.hpp"
+#include "VkObjects.hpp"
 
 namespace Engine {
+
+	struct VulkanContext;
+	class VulkanWindow;
+
 namespace vk {
 
 	class Texture {
@@ -28,13 +32,15 @@ namespace vk {
 		VkImage image = VK_NULL_HANDLE;
 		VmaAllocation allocation = VK_NULL_HANDLE;
 
-		int sampler = -1;
+		VkSampler sampler = VK_NULL_HANDLE;
 
 	private:
 		VmaAllocator mAllocator = VK_NULL_HANDLE;
 	};
 
-	Texture createTexture(const VulkanContext& aContext, tinygltf::Image aTinygltfImage, VkFormat aFormat, int aSampler);
+	Texture createTexture(const VulkanContext& aContext, tinygltf::Image aTinygltfImage, VkFormat aFormat, VkSampler aSampler);
+	Texture createDummyTexture(const VulkanContext& aContext, VkSampler aSampler);
+
 	ImageView createImageView(const VulkanWindow& aWindow, VkImage aImage, VkFormat aFormat);
 
 	std::uint32_t computeMipLevels(std::uint32_t width, std::uint32_t height);

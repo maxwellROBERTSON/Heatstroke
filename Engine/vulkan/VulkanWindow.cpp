@@ -15,11 +15,12 @@
 
 #include <volk/volk.h>
 
-#include "VulkanAllocator.hpp"
+#include "VulkanContext.hpp"
 #include "VulkanDevice.hpp"
 #include "Error.hpp"
 #include "toString.hpp"
 #include "ContextHelper.hpp"
+#include "PipelineCreation.hpp"
 
 namespace Engine {
 
@@ -52,11 +53,14 @@ namespace Engine {
 			glfwTerminate();
 		}
 
+		if (device->dPool != VK_NULL_HANDLE) {
+			vkDestroyDescriptorPool(device->device, device->dPool, nullptr);
+		}
+
 		if (device->cPool != VK_NULL_HANDLE) {
 			vkDestroyCommandPool(device->device, device->cPool, nullptr);
 		}
 
-		std::fprintf(stdout, "Destroying device\n");
 		if (device->device != VK_NULL_HANDLE) {
 			vkDestroyDevice(device->device, nullptr);
 		}
@@ -197,10 +201,13 @@ namespace Engine {
 		if (VK_NULL_HANDLE == window.get()->physicalDevice)
 			throw Utils::Error("No suitable physical device found!");
 
+		VkDeviceSize minUBOAlignment;
+
 		{
 			VkPhysicalDeviceProperties props;
 			vkGetPhysicalDeviceProperties(window.get()->physicalDevice, &props);
 			std::fprintf(stderr, "Selected device: %s (%d.%d.%d)\n", props.deviceName, VK_API_VERSION_MAJOR(props.apiVersion), VK_API_VERSION_MINOR(props.apiVersion), VK_API_VERSION_PATCH(props.apiVersion));
+			minUBOAlignment = props.limits.minUniformBufferOffsetAlignment;
 		}
 
 		// Create a logical device
@@ -238,6 +245,8 @@ namespace Engine {
 		}
 
 		window.get()->device = createDevice(*window.get(), window.get()->physicalDevice, queueFamilyIndices, enabledDevExensions);
+
+		window.get()->device->minUBOAlignment = minUBOAlignment;
 
 		// Retrieve VkQueues
 		vkGetDeviceQueue(window.get()->device->device, window.get()->graphicsFamilyIndex, 0, &window.get()->graphicsQueue);
@@ -636,6 +645,37 @@ namespace Engine {
 		presentInfo.pResults = nullptr;
 
 		return vkQueuePresentKHR(aWindow.presentQueue, &presentInfo);
+	}
+
+	// Maybe these 3 recreate functions could go in PipelineCreation.cpp?
+
+	void recreateFormatDependents(const VulkanWindow& aWindow, std::map<std::string, vk::RenderPass>& aRenderPasses) {
+		for (auto& [name, renderPass] : aRenderPasses) {
+			renderPass = createRenderPass(aWindow);
+		}
+	}
+
+	void recreateSizeDependents(
+		const VulkanContext& aContext, 
+		std::map<std::string, vk::RenderPass>& aRenderPasses,
+		std::map<std::string, vk::PipelineLayout>& aPipelineLayouts,
+		std::map<std::string, std::tuple<vk::Texture, vk::ImageView>>& aBuffers, 
+		std::map<std::string, vk::Pipeline>& aPipelines) 
+	{
+		aBuffers["depthBuffer"] = createDepthBuffer(*aContext.window, *aContext.allocator);
+
+		aPipelines["default"] = createPipeline(*aContext.window, aRenderPasses["default"].handle, aPipelineLayouts["default"].handle);
+	}
+
+	void recreateOthers(
+		const VulkanWindow& aWindow, 
+		std::map<std::string, vk::RenderPass>& aRenderPasses, 
+		std::map<std::string, std::tuple<vk::Texture, vk::ImageView>>& buffers, 
+		std::vector<vk::Framebuffer>& aFramebuffers, 
+		std::map<std::string, VkDescriptorSet>& aDescriptorSets) 
+	{
+		aFramebuffers.clear();
+		Engine::createFramebuffers(aWindow, aFramebuffers, aRenderPasses["default"].handle, std::get<1>(buffers["depthBuffer"]).handle);
 	}
 
 }

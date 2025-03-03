@@ -31,6 +31,8 @@ namespace Engine {
 		VkDevice device = VK_NULL_HANDLE;
 		VkCommandPool cPool = VK_NULL_HANDLE;
 		VkDescriptorPool dPool = VK_NULL_HANDLE;
+
+		VkDeviceSize minUBOAlignment = 0;
 	};
 
 	VkCommandBuffer createCommandBuffer(const VulkanWindow& aWindow);
@@ -42,9 +44,11 @@ namespace Engine {
 	void beginCommandBuffer(VkCommandBuffer aCmdBuff, VkCommandBufferUsageFlags aFlags = 0);
 	void endAndSubmitCommandBuffer(const VulkanWindow& aWindow, VkCommandBuffer aCmdBuff);
 
-	void createTextureSamplers(const VulkanWindow& aWindow, vk::Model& aModel, std::vector<vk::Sampler>& aSamplers);
+	vk::Sampler createTextureSampler(const VulkanWindow& aWindow, vk::SamplerInfo aSamplerInfo);
 
 	void waitForFences(const VulkanWindow& aWindow, std::vector<vk::Fence>& aFences, std::size_t frameIndex);
 	void resetFences(const VulkanWindow& aWindow, std::vector<vk::Fence>& aFences, std::size_t frameIndex);
-	void acquireNextSwapchainImage(const VulkanWindow& aWindow, std::vector<vk::Semaphore>& aSemaphores, std::size_t frameIndex, std::uint32_t& imageIndex);
+
+	// Returns whether swapchain should be recreated
+	bool acquireNextSwapchainImage(const VulkanWindow& aWindow, std::vector<vk::Semaphore>& aSemaphores, std::size_t frameIndex, std::uint32_t& imageIndex);
 }

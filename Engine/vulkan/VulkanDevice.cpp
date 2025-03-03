@@ -19,12 +19,13 @@ namespace Engine {
 	VulkanDevice::VulkanDevice(VulkanDevice&& aOther) noexcept
 		: device(std::exchange(aOther.device, VK_NULL_HANDLE))
 		, cPool(std::exchange(aOther.cPool, VK_NULL_HANDLE))
-	{
-	}
+		, dPool(std::exchange(aOther.dPool, VK_NULL_HANDLE))
+	{}
 
 	VulkanDevice& VulkanDevice::operator=(VulkanDevice&& aOther) noexcept {
 		std::swap(device, aOther.device);
 		std::swap(cPool, aOther.cPool);
+		std::swap(dPool, aOther.dPool);
 		return *this;
 	}
 
@@ -42,6 +43,8 @@ namespace Engine {
 	void VulkanDevice::createDescriptorPool() {
 		const VkDescriptorPoolSize pools[] = {
 			{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2048},
+			{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1},
+			{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1},
 			{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2048}
 		};
 
@@ -138,25 +141,23 @@ namespace Engine {
 		vkFreeCommandBuffers(aWindow.device->device, aWindow.device.get()->cPool, 1, &aCmdBuff);
 	}
 
-	void createTextureSamplers(const VulkanWindow& aWindow, vk::Model& aModel, std::vector<vk::Sampler>& aSamplers) {
-		for (vk::Texture& texture : aModel.textures) {
-			VkSamplerCreateInfo samplerInfo{};
-			samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-			samplerInfo.magFilter = texture.sampler > -1 ? aModel.samplerInfos[texture.sampler].magFilter : VK_FILTER_LINEAR;
-			samplerInfo.minFilter = texture.sampler > -1 ? aModel.samplerInfos[texture.sampler].minFilter : VK_FILTER_LINEAR;
-			samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-			samplerInfo.addressModeU = texture.sampler > -1 ? aModel.samplerInfos[texture.sampler].addressModeU : VK_SAMPLER_ADDRESS_MODE_REPEAT;
-			samplerInfo.addressModeV = texture.sampler > -1 ? aModel.samplerInfos[texture.sampler].addressModeV : VK_SAMPLER_ADDRESS_MODE_REPEAT;
-			samplerInfo.minLod = 0.0f;
-			samplerInfo.maxLod = VK_LOD_CLAMP_NONE;
-			samplerInfo.mipLodBias = 0.0f;
+	vk::Sampler createTextureSampler(const VulkanWindow& aWindow, vk::SamplerInfo aSamplerInfo) {
+		VkSamplerCreateInfo samplerInfo{};
+		samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+		samplerInfo.magFilter = aSamplerInfo.magFilter;
+		samplerInfo.minFilter = aSamplerInfo.minFilter;
+		samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+		samplerInfo.addressModeU = aSamplerInfo.addressModeU;
+		samplerInfo.addressModeV = aSamplerInfo.addressModeV;
+		samplerInfo.minLod = 0.0f;
+		samplerInfo.maxLod = VK_LOD_CLAMP_NONE;
+		samplerInfo.mipLodBias = 0.0f;
 
-			VkSampler sampler = VK_NULL_HANDLE;
-			if (const auto res = vkCreateSampler(aWindow.device->device, &samplerInfo, nullptr, &sampler); VK_SUCCESS != res)
-				throw Utils::Error("Unable to create sampler\n vkCreateSampler() returned %s", Utils::toString(res).c_str());
+		VkSampler sampler = VK_NULL_HANDLE;
+		if (const auto res = vkCreateSampler(aWindow.device->device, &samplerInfo, nullptr, &sampler); VK_SUCCESS != res)
+			throw Utils::Error("Unable to create sampler\n vkCreateSampler() returned %s", Utils::toString(res).c_str());
 
-			aSamplers.emplace_back(vk::Sampler(aWindow.device->device, sampler));
-		}
+		return vk::Sampler(aWindow.device->device, sampler);
 	}
 
 	void waitForFences(const VulkanWindow& aWindow, std::vector<vk::Fence>& aFences, std::size_t frameIndex) {
@@ -169,7 +170,7 @@ namespace Engine {
 			throw Utils::Error("Unable to reset frame fence %u\n vkResetFences() returned %s", frameIndex, Utils::toString(res).c_str());
 	}
 
-	void acquireNextSwapchainImage(const VulkanWindow& aWindow, std::vector<vk::Semaphore>& aSemaphores, std::size_t frameIndex, std::uint32_t& imageIndex) {
+	bool acquireNextSwapchainImage(const VulkanWindow& aWindow, std::vector<vk::Semaphore>& aSemaphores, std::size_t frameIndex, std::uint32_t& imageIndex) {
 		const VkResult acquireResult = vkAcquireNextImageKHR(
 			aWindow.device->device,
 			aWindow.swapchain,
@@ -179,8 +180,13 @@ namespace Engine {
 			&imageIndex
 		);
 
+		if (acquireResult == VK_SUBOPTIMAL_KHR || acquireResult == VK_ERROR_OUT_OF_DATE_KHR)
+			return true;
+
 		if (acquireResult != VK_SUCCESS)
 			throw Utils::Error("Unable to acquire next swapchain image\n vkAcquireNextImageKHR() returned %s", Utils::toString(acquireResult).c_str());
+
+		return false;
 	}
 
 }

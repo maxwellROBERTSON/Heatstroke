@@ -6,6 +6,7 @@
 #include "toString.hpp"
 #include "ShaderPaths.hpp"
 #include "VulkanDevice.hpp"
+#include "Utils.hpp"
 
 namespace Engine {
 
@@ -184,13 +185,79 @@ namespace Engine {
 		return vk::DescriptorSetLayout(aWindow.device->device, layout);
 	}
 
-	vk::PipelineLayout createPipelineLayout(const VulkanWindow& aWindow, std::vector<VkDescriptorSetLayout>& aDescriptorSetLayouts) {
+	vk::DescriptorSetLayout createUBOLayout(const VulkanWindow& aWindow) {
+		VkDescriptorSetLayoutBinding bindings[1]{};
+		bindings[0].binding = 0;
+		bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		bindings[0].descriptorCount = 1;
+		bindings[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+		VkDescriptorSetLayoutCreateInfo layoutInfo{};
+		layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+		layoutInfo.bindingCount = sizeof(bindings) / sizeof(bindings[0]);
+		layoutInfo.pBindings = bindings;
+
+		VkDescriptorSetLayout layout = VK_NULL_HANDLE;
+		if (const auto res = vkCreateDescriptorSetLayout(aWindow.device->device, &layoutInfo, nullptr, &layout); VK_SUCCESS != res)
+			throw Utils::Error("Unable to create descriptor set layout\n vkCreateDescriptorSetLayout() returned %s", Utils::toString(res).c_str());
+
+		return vk::DescriptorSetLayout(aWindow.device->device, layout);
+	}
+
+	vk::DescriptorSetLayout createSSBOLayout(const VulkanWindow& aWindow) {
+		VkDescriptorSetLayoutBinding bindings[1]{};
+		bindings[0].binding = 0;
+		bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		bindings[0].descriptorCount = 1;
+		bindings[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+		VkDescriptorSetLayoutCreateInfo layoutInfo{};
+		layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+		layoutInfo.bindingCount = sizeof(bindings) / sizeof(bindings[0]);
+		layoutInfo.pBindings = bindings;
+
+		VkDescriptorSetLayout layout = VK_NULL_HANDLE;
+		if (const auto res = vkCreateDescriptorSetLayout(aWindow.device->device, &layoutInfo, nullptr, &layout); VK_SUCCESS != res)
+			throw Utils::Error("Unable to create descriptor set layout\n vkCreateDescriptorSetLayout() returned %s", Utils::toString(res).c_str());
+
+		return vk::DescriptorSetLayout(aWindow.device->device, layout);
+	}
+
+	vk::DescriptorSetLayout createDynamicUBOLayout(const VulkanWindow& aWindow) {
+		VkDescriptorSetLayoutBinding bindings[1]{};
+		bindings[0].binding = 0;
+		bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+		bindings[0].descriptorCount = 1;
+		bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+		VkDescriptorSetLayoutCreateInfo layoutInfo{};
+		layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+		layoutInfo.bindingCount = sizeof(bindings) / sizeof(bindings[0]);
+		layoutInfo.pBindings = bindings;
+
+		VkDescriptorSetLayout layout = VK_NULL_HANDLE;
+		if (const auto res = vkCreateDescriptorSetLayout(aWindow.device->device, &layoutInfo, nullptr, &layout); VK_SUCCESS != res)
+			throw Utils::Error("Unable to create descriptor set layout\n vkCreateDescriptorSetLayout() returned %s", Utils::toString(res).c_str());
+
+		return vk::DescriptorSetLayout(aWindow.device->device, layout);
+	}
+
+	vk::PipelineLayout createPipelineLayout(const VulkanWindow& aWindow, std::vector<VkDescriptorSetLayout>& aDescriptorSetLayouts, bool aNeedPushConstant) {
+		VkPushConstantRange pushConstantRange{};
+		
+		if (aNeedPushConstant) {
+			// This always assumes our push constant will be 1 integer in the fragment shader. Until
+			// we need a different push constant this should be fine for now.
+			pushConstantRange.size = sizeof(std::uint32_t);
+			pushConstantRange.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+		}
+
 		VkPipelineLayoutCreateInfo layoutInfo{};
 		layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 		layoutInfo.setLayoutCount = aDescriptorSetLayouts.size();
 		layoutInfo.pSetLayouts = aDescriptorSetLayouts.data();
-		layoutInfo.pushConstantRangeCount = 0;
-		layoutInfo.pPushConstantRanges = nullptr;
+		layoutInfo.pushConstantRangeCount = aNeedPushConstant ? 1 : 0;
+		layoutInfo.pPushConstantRanges = &pushConstantRange;
 
 		VkPipelineLayout layout = VK_NULL_HANDLE;
 		if (const auto res = vkCreatePipelineLayout(aWindow.device->device, &layoutInfo, nullptr, &layout); VK_SUCCESS != res) {
@@ -218,12 +285,17 @@ namespace Engine {
 		// Vertex attributes:
 		// 1. Positions
 		// 2. Normals
-		// 3. Texture coordinates
-		// 4. Vertex colours (vertex colours is a valid glTF vertex attribute but will most likely not exist
+		// 3. Tangents
+		// 4. Texture coordinates 0
+		// 5. Texture coordinates 1 (in glTF some textures refer to a different set of texture coordinates
+		//	  so we have to account for multiple sets of texture coordinates. In theory any number
+		//	  of texture coordinates could be defined, but in practice with our current models only
+		//    one other texture coordinate set is referred to)
+		// 6. Vertex colours (vertex colours is a valid glTF vertex attribute but will most likely not exist
 		//    at the same time as texture coordinates, so a optimisation would be to dynamically create render passes
 		//    based on only the attributes that exist in the glTF file, so that we are not sending both at the same time
 		//    as one will just be default values)
-		VkVertexInputBindingDescription vertexInputs[4]{};
+		VkVertexInputBindingDescription vertexInputs[6]{};
 		vertexInputs[0].binding = 0;
 		vertexInputs[0].stride = sizeof(float) * 3;
 		vertexInputs[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
@@ -231,13 +303,19 @@ namespace Engine {
 		vertexInputs[1].stride = sizeof(float) * 3;
 		vertexInputs[1].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 		vertexInputs[2].binding = 2;
-		vertexInputs[2].stride = sizeof(float) * 2;
+		vertexInputs[2].stride = sizeof(float) * 4;
 		vertexInputs[2].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 		vertexInputs[3].binding = 3;
-		vertexInputs[3].stride = sizeof(float) * 4;
+		vertexInputs[3].stride = sizeof(float) * 2;
 		vertexInputs[3].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+		vertexInputs[4].binding = 4;
+		vertexInputs[4].stride = sizeof(float) * 2;
+		vertexInputs[4].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+		vertexInputs[5].binding = 5;
+		vertexInputs[5].stride = sizeof(float) * 4;
+		vertexInputs[5].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
-		VkVertexInputAttributeDescription vertexAttributes[4]{};
+		VkVertexInputAttributeDescription vertexAttributes[6]{};
 		vertexAttributes[0].binding = 0;
 		vertexAttributes[0].location = 0;
 		vertexAttributes[0].format = VK_FORMAT_R32G32B32_SFLOAT;
@@ -248,18 +326,26 @@ namespace Engine {
 		vertexAttributes[1].offset = 0;
 		vertexAttributes[2].binding = 2;
 		vertexAttributes[2].location = 2;
-		vertexAttributes[2].format = VK_FORMAT_R32G32_SFLOAT;
+		vertexAttributes[2].format = VK_FORMAT_R32G32B32A32_SFLOAT;
 		vertexAttributes[2].offset = 0;
 		vertexAttributes[3].binding = 3;
 		vertexAttributes[3].location = 3;
-		vertexAttributes[3].format = VK_FORMAT_R32G32B32A32_SFLOAT;
+		vertexAttributes[3].format = VK_FORMAT_R32G32_SFLOAT;
 		vertexAttributes[3].offset = 0;
+		vertexAttributes[4].binding = 4;
+		vertexAttributes[4].location = 4;
+		vertexAttributes[4].format = VK_FORMAT_R32G32_SFLOAT;
+		vertexAttributes[4].offset = 0;
+		vertexAttributes[5].binding = 5;
+		vertexAttributes[5].location = 5;
+		vertexAttributes[5].format = VK_FORMAT_R32G32B32A32_SFLOAT;
+		vertexAttributes[5].offset = 0;
 
 		VkPipelineVertexInputStateCreateInfo inputInfo{};
 		inputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-		inputInfo.vertexBindingDescriptionCount = 4;
+		inputInfo.vertexBindingDescriptionCount = 6;
 		inputInfo.pVertexBindingDescriptions = vertexInputs;
-		inputInfo.vertexAttributeDescriptionCount = 4;
+		inputInfo.vertexAttributeDescriptionCount = 6;
 		inputInfo.pVertexAttributeDescriptions = vertexAttributes;
 
 		VkPipelineInputAssemblyStateCreateInfo assemblyInfo{};
@@ -411,6 +497,85 @@ namespace Engine {
 		}
 
 		assert(aWindow.swapViews.size() == aFramebuffers.size());
+	}
+
+	// Could probably combine these two into a single generic method to make single binding UBO descriptors
+	VkDescriptorSet createSceneDescriptor(const VulkanWindow& aWindow, VkDescriptorSetLayout aSetLayout, VkBuffer aBuffer) {
+		VkDescriptorSet sceneDescriptors = Engine::allocateDescriptorSet(aWindow, aWindow.device->dPool, aSetLayout);
+		{
+			VkWriteDescriptorSet desc[1]{};
+
+			VkDescriptorBufferInfo sceneUboInfo{};
+			sceneUboInfo.buffer = aBuffer;
+			sceneUboInfo.range = VK_WHOLE_SIZE;
+
+			desc[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			desc[0].dstSet = sceneDescriptors;
+			desc[0].dstBinding = 0;
+			desc[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			desc[0].descriptorCount = 1;
+			desc[0].pBufferInfo = &sceneUboInfo;
+
+			constexpr auto numSets = sizeof(desc) / sizeof(desc[0]);
+			vkUpdateDescriptorSets(aWindow.device->device, numSets, desc, 0, nullptr);
+		}
+
+		return sceneDescriptors;
+	}
+
+	VkDescriptorSet createMaterialInfoDescriptor(const VulkanWindow& aWindow, VkDescriptorSetLayout aSetLayout, VkBuffer aBuffer) {
+		VkDescriptorSet materialInfoDescriptors = Engine::allocateDescriptorSet(aWindow, aWindow.device->dPool, aSetLayout);
+		{
+			VkWriteDescriptorSet desc[1]{};
+
+			VkDescriptorBufferInfo materialUboInfo{};
+			materialUboInfo.buffer = aBuffer;
+			materialUboInfo.range = VK_WHOLE_SIZE;
+
+			desc[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			desc[0].dstSet = materialInfoDescriptors;
+			desc[0].dstBinding = 0;
+			desc[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			desc[0].descriptorCount = 1;
+			desc[0].pBufferInfo = &materialUboInfo;
+
+			constexpr auto numSets = sizeof(desc) / sizeof(desc[0]);
+			vkUpdateDescriptorSets(aWindow.device->device, numSets, desc, 0, nullptr);
+		}
+
+		return materialInfoDescriptors;
+	}
+
+	VkDescriptorSet createModelMatricesDescriptor(const VulkanWindow& aWindow, VkDescriptorSetLayout aSetLayout, VkBuffer aBuffer, VkDeviceSize dynamicAlignment) {
+		// Create dynamic UBO for model matrices
+		VkDescriptorSet modelMatricesDescriptor = allocateDescriptorSet(aWindow, aWindow.device->dPool, aSetLayout);
+		{
+			VkWriteDescriptorSet desc[1]{};
+
+			VkDescriptorBufferInfo modelMatricesInfo{};
+			modelMatricesInfo.buffer = aBuffer;
+			modelMatricesInfo.range = dynamicAlignment;
+
+			desc[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			desc[0].dstSet = modelMatricesDescriptor;
+			desc[0].dstBinding = 0;
+			desc[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+			desc[0].descriptorCount = 1;
+			desc[0].pBufferInfo = &modelMatricesInfo;
+
+			constexpr auto numSets = sizeof(desc) / sizeof(desc[0]);
+			vkUpdateDescriptorSets(aWindow.device->device, numSets, desc, 0, nullptr);
+		}
+
+		return modelMatricesDescriptor;
+	}
+
+	vk::Buffer setupDynamicUBO(const VulkanContext& aContext, std::size_t modelSize, std::size_t dynamicAlignment, glsl::ModelMatricesUniform& aModelMatrices) {
+		VkDeviceSize bufferSize = dynamicAlignment * modelSize;
+
+		aModelMatrices.model = (glm::mat4*)Utils::allocAligned(bufferSize, dynamicAlignment);
+
+		return vk::createBuffer("dynamicUBO", *aContext.allocator, bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT);
 	}
 
 }
