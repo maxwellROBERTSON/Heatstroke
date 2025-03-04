@@ -3,7 +3,6 @@
 workspace "Heatstroke"
     language "C++"
     cppdialect "C++20"
-
     platforms { "x64" }
     configurations { "Debug", "Release" }
 
@@ -80,6 +79,8 @@ project "Engine"
         "Engine/ECS/**",
         "Engine/GUI/**",
         "Engine/Physics/**"
+        "Engine/GUI/**",
+        "Engine/Physics/**",
     }
 
     includedirs { "Engine/third_party/vcpkg/packages/physx_x64-windows/include" }
@@ -87,7 +88,12 @@ project "Engine"
     links { os.matchfiles("Engine/third_party/vcpkg/packages/physx_x64-windows/lib/*.lib") }
 
     includedirs {
-        "Engine/Utils/"
+        "Engine/Utils/",
+        "Engine/third_party/physx/include",
+    }
+
+    libdirs {
+        "Engine/third_party/physx/debug/lib",
     }
 
     kind "StaticLib"
@@ -109,8 +115,20 @@ project "Engine"
         "x-vma",
         "imgui",
         "x-tgen"
+
+
     }
 
+
+    filter { "configurations:Debug" }
+        links(os.matchfiles("Engine/third_party/physx/debug/lib/*.lib"))
+        
+        postbuildcommands {
+            '{COPY} "%{wks.location}/Engine/third_party/physx/debug/bin/PhysXFoundation_64.dll" "%{wks.location}/bin"',
+            '{COPY} "%{wks.location}/Engine/third_party/physx/debug/bin/PhysXCommon_64.dll" "%{wks.location}/bin"',
+            '{COPY} "%{wks.location}/Engine/third_party/physx/debug/bin/PhysX_64.dll" "%{wks.location}/bin"'
+        }
+        
     dependson "Shaders"
 
 project "Game"
@@ -118,14 +136,11 @@ project "Game"
         "Game/**"
     }
 
-    includedirs { "Engine/third_party/vcpkg/packages/physx_x64-windows/include" }
-    libdirs { "Engine/third_party/vcpkg/packages/physx_x64-windows/lib" }
-    links { os.matchfiles("Engine/third_party/vcpkg/packages/physx_x64-windows/lib/*.lib") }
-
     includedirs {
         ".",
         "../",
-        "Engine/Utils"
+        "Engine/Utils",
+        "Engine/third_party/physx/include"
     }
 
     kind "ConsoleApp"

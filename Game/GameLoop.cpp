@@ -17,6 +17,7 @@
 #include "../Engine/ECS/PhysicsComponent.hpp"
 #include "../Engine/ECS/CameraComponent.hpp"
 #include "../Engine/ECS/NetworkComponent.hpp"
+#include "../Engine/Physics/PhysicsWorld.hpp"
 
 #include "Error.hpp"
 #include "toString.hpp"
@@ -34,6 +35,12 @@ bool online = false;
 bool switchMode = true;
 
 void initialiseGame(ComponentTypeRegistry& registry, EntityManager& entityManager) {
+
+    PhysicsWorld p;
+    p.init();
+
+
+
     // Register component types
     registry.RegisterComponentTypes<
         RenderComponent,

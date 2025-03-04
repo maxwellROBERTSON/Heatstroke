@@ -1,7 +1,7 @@
 .cache
 .vscode
 .vs
-bin/
+/bin/
 build/
 Makefile
 lib/*
@@ -18,3 +18,4 @@ Engine/third_party/vcpkg/downloads/
 Engine/third_party/vcpkg/installed/
 Engine/third_party/vcpkg/packages/
 compile_commands.json
+Engine/third_party/physx/tools/PhysXGpu_64.dll
