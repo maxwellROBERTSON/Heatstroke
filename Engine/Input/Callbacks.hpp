@@ -9,5 +9,5 @@ namespace Engine {
 	void onKeyPress(GLFWwindow*, int, int, int, int);
 	void onMouseButton(GLFWwindow*, int, int, int);
 	void onMouseMove(GLFWwindow*, double, double);
-
+	void joyStickCallback(int, int);
 }

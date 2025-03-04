@@ -2,25 +2,25 @@
 
 // Adapted from: COMP5892M (Advanced Rendering)
 
-#include <memory>
-#include <tuple>
-#include <limits>
-#include <vector>
-#include <utility>
-#include <optional>
 #include <algorithm>
-#include <unordered_set>
-#include <cstdio>
 #include <cassert>
+#include <cstdio>
+#include <limits>
+#include <memory>
+#include <optional>
+#include <tuple>
+#include <unordered_set>
+#include <utility>
+#include <vector>
 
 #include <volk/volk.h>
 
+#include "ContextHelper.hpp"
+#include "Error.hpp"
+#include "PipelineCreation.hpp"
+#include "toString.hpp"
 #include "VulkanContext.hpp"
 #include "VulkanDevice.hpp"
-#include "Error.hpp"
-#include "toString.hpp"
-#include "ContextHelper.hpp"
-#include "PipelineCreation.hpp"
 
 namespace Engine {
 
@@ -64,7 +64,7 @@ namespace Engine {
 		if (device->device != VK_NULL_HANDLE) {
 			vkDestroyDevice(device->device, nullptr);
 		}
-		
+
 		if (debugMessenger != VK_NULL_HANDLE) {
 			vkDestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
 		}
@@ -90,7 +90,8 @@ namespace Engine {
 		, swapViews(std::move(aOther.swapViews))
 		, swapchainFormat(aOther.swapchainFormat)
 		, swapchainExtent(aOther.swapchainExtent)
-	{}
+	{
+	}
 
 	VulkanWindow& VulkanWindow::operator=(VulkanWindow&& aOther) noexcept
 	{
@@ -112,7 +113,7 @@ namespace Engine {
 		return *this;
 	}
 
-	std::unique_ptr<VulkanWindow> initialiseVulkan() {
+	std::unique_ptr<VulkanWindow> initialiseVulkan(const std::string& name, int width, int height) {
 		std::unique_ptr<VulkanWindow> window = std::make_unique<VulkanWindow>();
 
 		// Initialize Volk
@@ -185,7 +186,7 @@ namespace Engine {
 		// Get VkSurfaceKHR from the window
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
-		window.get()->window = glfwCreateWindow(1280, 720, "Heatstroke", nullptr, nullptr); // Again, name not final
+		window.get()->window = glfwCreateWindow(width, height, name.c_str(), nullptr, nullptr); // Again, name not final
 		if (!window.get()->window) {
 			const char* errMsg = nullptr;
 			glfwGetError(&errMsg);
@@ -656,11 +657,11 @@ namespace Engine {
 	}
 
 	void recreateSizeDependents(
-		const VulkanContext& aContext, 
+		const VulkanContext& aContext,
 		std::map<std::string, vk::RenderPass>& aRenderPasses,
 		std::map<std::string, vk::PipelineLayout>& aPipelineLayouts,
-		std::map<std::string, std::tuple<vk::Texture, vk::ImageView>>& aBuffers, 
-		std::map<std::string, vk::Pipeline>& aPipelines) 
+		std::map<std::string, std::tuple<vk::Texture, vk::ImageView>>& aBuffers,
+		std::map<std::string, vk::Pipeline>& aPipelines)
 	{
 		aBuffers["depthBuffer"] = createDepthBuffer(*aContext.window, *aContext.allocator);
 
@@ -668,11 +669,11 @@ namespace Engine {
 	}
 
 	void recreateOthers(
-		const VulkanWindow& aWindow, 
-		std::map<std::string, vk::RenderPass>& aRenderPasses, 
-		std::map<std::string, std::tuple<vk::Texture, vk::ImageView>>& buffers, 
-		std::vector<vk::Framebuffer>& aFramebuffers, 
-		std::map<std::string, VkDescriptorSet>& aDescriptorSets) 
+		const VulkanWindow& aWindow,
+		std::map<std::string, vk::RenderPass>& aRenderPasses,
+		std::map<std::string, std::tuple<vk::Texture, vk::ImageView>>& buffers,
+		std::vector<vk::Framebuffer>& aFramebuffers,
+		std::map<std::string, VkDescriptorSet>& aDescriptorSets)
 	{
 		aFramebuffers.clear();
 		Engine::createFramebuffers(aWindow, aFramebuffers, aRenderPasses["default"].handle, std::get<1>(buffers["depthBuffer"]).handle);

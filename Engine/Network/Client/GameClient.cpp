@@ -1,9 +1,11 @@
 #include <iostream>
 
+#include "../Core/Game.h"
 #include "GameClient.hpp"
-#include "../../../Game/GameLoop.hpp"
 
 static const uint8_t DEFAULT_PRIVATE_KEY[yojimbo::KeyBytes] = { 0 };
+
+// TODO: should inherit from game class?
 
 GameClient::GameClient(
 	yojimbo::ClientServerConfig* config,
@@ -87,53 +89,53 @@ int GameClient::Update()
 		return 1;
 	}
 
-    // update client
+	// update client
 	double currentTime = yojimbo_time();
 	if (client->GetTime() >= currentTime)
 	{
 		return 0;
 	}
 
-    client->AdvanceTime(client->GetTime() + dt);
-    client->ReceivePackets();
+	client->AdvanceTime(client->GetTime() + dt);
+	client->ReceivePackets();
 
-    if (client->IsConnected())
-    {
-        ProcessMessages();
+	if (client->IsConnected())
+	{
+		ProcessMessages();
 
-        // ... do connected stuff ...
+		// ... do connected stuff ...
 
-        // send a message when space is pressed
-        /*if (KeyIsDown(Key::SPACE)) {
-            TestMessage* message = (TestMessage*)m_client.CreateMessage((int)GameMessageType::TEST);
-            message->m_data = 42;
-            m_client.SendMessage((int)GameChannel::RELIABLE, message);
-        }*/
-        yojimbo::Message* message = adapter->factory->CreateMessage(1);
+		// send a message when space is pressed
+		/*if (KeyIsDown(Key::SPACE)) {
+			TestMessage* message = (TestMessage*)m_client.CreateMessage((int)GameMessageType::TEST);
+			message->m_data = 42;
+			m_client.SendMessage((int)GameChannel::RELIABLE, message);
+		}*/
+		yojimbo::Message* message = adapter->factory->CreateMessage(1);
 		client->SendMessage(0, message);
-    }
+	}
 
-    client->SendPackets();
+	client->SendPackets();
 	return 0;
 }
 
 void GameClient::ProcessMessages()
 {
-    for (int i = 0; i < config->numChannels; i++)
-    {
-        yojimbo::Message* message = client->ReceiveMessage(i);
-        while (message != NULL)
-        {
-            ProcessMessage(message);
-            client->ReleaseMessage(message);
-            message = client->ReceiveMessage(i);
-        }
-    }
+	for (int i = 0; i < config->numChannels; i++)
+	{
+		yojimbo::Message* message = client->ReceiveMessage(i);
+		while (message != NULL)
+		{
+			ProcessMessage(message);
+			client->ReleaseMessage(message);
+			message = client->ReceiveMessage(i);
+		}
+	}
 }
 
 void GameClient::ProcessMessage(yojimbo::Message* message)
 {
-    std::cout << "Processing message from server with messageID " << message->GetId() << std::endl;
+	std::cout << "Processing message from server with messageID " << message->GetId() << std::endl;
 }
 
 void GameClient::CleanUp()
