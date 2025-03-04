@@ -71,7 +71,6 @@ os.execute('"' .. batchFile .. '"')
 
 -- Projects
 project "Engine"
-    print("Project variable value: " .. my_variable)
     local sources = {
         "Engine/glfw/**",
         "Engine/gltf/**",
