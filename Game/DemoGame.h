@@ -8,7 +8,11 @@
 #include "../Engine/ECS/ComponentTypeRegistry.hpp"
 #include "../Engine/ECS/EntityManager.hpp"
 #include "../Engine/ECS/RenderComponent.hpp"
-#include "UserComponents/TestUserComponent.hpp"
+#include "../Engine/ECS/PhysicsComponent.hpp"
+#include "../Engine/ECS/CameraComponent.hpp"
+#include "../Engine/ECS/NetworkComponent.hpp"
+
+#include "../Engine/Physics/PhysicsWorld.hpp"
 
 #include "../Engine/vulkan/VulkanContext.hpp"
 
@@ -32,7 +36,8 @@ public:
 
 	void registerComponents();
 	void initialiseModels();
-	void Render();
+	void RenderGUI();
+	void RenderScene();
 
 	~FPSTest() {
 		for (Engine::vk::Model& model : models)
@@ -42,13 +47,17 @@ public:
 		this->GetContext().window.reset();
 	};
 
-
-
 public:
-	Camera camera;
+	Camera* camera;
 	std::vector<Engine::vk::Model> models;
 	bool recreateSwapchain;
+	ComponentTypeRegistry registry = ComponentTypeRegistry::Get();
+	EntityManager entityManager = EntityManager(&registry);
+	int clientId = -1;
+	bool online = false;
+	bool offline = true;
 };
 
 void updateSceneUniform(glsl::SceneUniform& aScene, Camera& camera, std::uint32_t aFramebufferWidth, std::uint32_t aFramebufferHeight);
-void updateModelMatrices(const Engine::VulkanContext& aContext, glsl::ModelMatricesUniform& aModelMatrices, Engine::vk::Buffer& aBuffer, std::vector<Engine::vk::Model>& aModels, std::size_t dynamicAlignment);
+void updateModelMatrices(const Engine::VulkanContext& aContext, glsl::ModelMatricesUniform& aModelMatrices, Engine::vk::Buffer& aBuffer, EntityManager& entityManager, std::size_t dynamicAlignment);
+void loadOfflineEntities(ComponentTypeRegistry& registry, EntityManager& entityManager);

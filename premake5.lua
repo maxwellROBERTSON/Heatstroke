@@ -71,6 +71,7 @@ os.execute('"' .. batchFile .. '"')
 -- Projects
 project "Engine"
     local sources = {
+        "Engine/Core/**",
         "Engine/glfw/**",  -- TO BE REMOVED
         "Engine/Input/**", 
         "Engine/Events/**", 
