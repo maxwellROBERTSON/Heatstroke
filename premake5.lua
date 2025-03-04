@@ -79,13 +79,7 @@ project "Engine"
         "Engine/ECS/**",
         "Engine/GUI/**",
         "Engine/Physics/**"
-        "Engine/GUI/**",
-        "Engine/Physics/**",
     }
-
-    includedirs { "Engine/third_party/vcpkg/packages/physx_x64-windows/include" }
-    libdirs { "Engine/third_party/vcpkg/packages/physx_x64-windows/lib" }
-    links { os.matchfiles("Engine/third_party/vcpkg/packages/physx_x64-windows/lib/*.lib") }
 
     includedirs {
         "Engine/Utils/",
@@ -115,10 +109,7 @@ project "Engine"
         "x-vma",
         "imgui",
         "x-tgen"
-
-
     }
-
 
     filter { "configurations:Debug" }
         links(os.matchfiles("Engine/third_party/physx/debug/lib/*.lib"))
