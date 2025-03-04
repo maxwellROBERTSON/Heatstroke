@@ -11,8 +11,8 @@
 * This entire class will probably need reworking, its not the best implementation of a first person camera
 * but is one that somewhat works that isn't the janky one from Advanced Rendering's Assignment 2.
 */
-Camera::Camera(float fov, float near, float far, glm::vec3 position, glm::vec3 frontDirection) : 
-	fov(fov), nearPlane(near), farPlane(far), position(position), frontDirection(frontDirection) {}
+Camera::Camera(float fov, float _near, float _far, glm::vec3 position, glm::vec3 frontDirection) : 
+	fov(fov), nearPlane(_near), farPlane(_far), position(position), frontDirection(frontDirection) {}
 
 void Camera::updateCamera(GLFWwindow* aWindow, float timeDelta) {
 	if (glfwGetInputMode(aWindow, GLFW_CURSOR) != GLFW_CURSOR_DISABLED)
