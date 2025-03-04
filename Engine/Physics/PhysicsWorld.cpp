@@ -1,5 +1,7 @@
 #include "PhysicsWorld.hpp"
 
+physx::PxDefaultErrorCallback PhysicsWorld::gErrorCallback;
+
 void PhysicsWorld::init() {
 	//gFoundation = PxCreateFoundation(PX_PHYSICS_VERSION, gAllocator, gErrorCallback);
 	//gPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *gFoundation, PxTolerancesScale(), true);
