@@ -33,7 +33,7 @@ workspace "Heatstroke"
 
     local cwd = os.getcwd()
     local shellScript = cwd .. "/Engine/third_party/vcpkg/vcpkg_setup.sh"
-    local batchFile = cwd .. "/Engine/third_party/vcpkg/vcpkg_setup.sh"
+    local batchFile = cwd .. "/Engine/third_party/vcpkg/vcpkg_setup.bat"
 
     if os.istarget("linux") then
         os.execute('sh "' .. shellScript .. '"')
