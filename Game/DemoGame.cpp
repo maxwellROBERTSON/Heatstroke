@@ -18,7 +18,7 @@ void FPSTest::Init()
 	std::cout << "FPS TEST INIT" << std::endl;
 	registerComponents();
 	initialiseModels();
-	initialisePhyscis();
+	initialisePhysics(physics_world);
 }
 
 void FPSTest::Update()
@@ -81,7 +81,8 @@ void FPSTest::initialiseModels()
 	models.emplace_back(Engine::makeVulkanModel(this->GetContext(), character));
 }
 
-void FPSTest::initialisePhysics(PhysicsWorld& pworld) {
+void FPSTest::initialisePhysics(PhysicsWorld& pworld) 
+{
 	pworld.init();
 }
 
@@ -101,7 +102,9 @@ void FPSTest::RenderScene()
 	else if (offline)
 	{
 		// Offline mode
-		loadOfflineEntities(registry, entityManager);
+		std::cout << "before loadoff: " << physics_world.gScene->getNbActors(PxActorTypeFlag::eRIGID_STATIC) << std::endl;
+		loadOfflineEntities(registry, entityManager, physics_world);
+		std::cout << "after loadoff: " << physics_world.gScene->getNbActors(PxActorTypeFlag::eRIGID_STATIC) << std::endl;
 		clientId = 0;
 	}
 
@@ -289,7 +292,7 @@ void updateModelMatrices(const Engine::VulkanContext& aContext, glsl::ModelMatri
 	vmaFlushAllocation(aContext.allocator->allocator, aBuffer.allocation, 0, size);
 }
 
-void loadOfflineEntities(ComponentTypeRegistry& registry, EntityManager& entityManager)
+void loadOfflineEntities(ComponentTypeRegistry& registry, EntityManager& entityManager, PhysicsWorld& pworld)
 {
 	// Pointers
 	Entity* entity;
@@ -299,7 +302,7 @@ void loadOfflineEntities(ComponentTypeRegistry& registry, EntityManager& entityM
 	NetworkComponent* networkComponent;
 
 	// Map
-	entity = entityManager.AddEntity<RenderComponent, PhysicsComponent>();
+	entity = entityManager.AddEntity<RenderComponent>();
 	glm::mat4 mapTransform(1.0f);
 	mapTransform = glm::scale(mapTransform, glm::vec3(0.01f, 0.01f, 0.01f));
 	entity->SetModelMatrix(mapTransform);
@@ -315,6 +318,9 @@ void loadOfflineEntities(ComponentTypeRegistry& registry, EntityManager& entityM
 	entity->SetModelMatrix(helmetTransform);
 	renderComponent = entityManager.GetEntityComponent<RenderComponent>(entity->GetEntityId());
 	renderComponent->SetModelIndex(1);
+	// configure physics component
+	physicsComponent = entityManager.GetEntityComponent<PhysicsComponent>(entity->GetEntityId());
+	physicsComponent->init(pworld, PhysicsComponent::PhysicsType::STATIC, helmetTransform);
 
 	// Cube
 	entity = entityManager.AddEntity<RenderComponent, PhysicsComponent>();
@@ -324,9 +330,12 @@ void loadOfflineEntities(ComponentTypeRegistry& registry, EntityManager& entityM
 	entity->SetModelMatrix(cubeTransform);
 	renderComponent = entityManager.GetEntityComponent<RenderComponent>(entity->GetEntityId());
 	renderComponent->SetModelIndex(2);
+	// configure physics component
+	physicsComponent = entityManager.GetEntityComponent<PhysicsComponent>(entity->GetEntityId());
+	physicsComponent->init(pworld, PhysicsComponent::PhysicsType::STATIC, cubeTransform);
 
 	// Player 1
-	entity = entityManager.AddEntity<RenderComponent, PhysicsComponent, CameraComponent, NetworkComponent>();
+	entity = entityManager.AddEntity<RenderComponent, CameraComponent, NetworkComponent>();
 	glm::mat4 player1Transform(1.0f);
 	player1Transform = glm::translate(player1Transform, glm::vec3(-5.0f, 1.0f, -1.0f));
 	player1Transform = glm::rotate(player1Transform, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
@@ -334,15 +343,15 @@ void loadOfflineEntities(ComponentTypeRegistry& registry, EntityManager& entityM
 	entity->SetModelMatrix(player1Transform);
 	renderComponent = entityManager.GetEntityComponent<RenderComponent>(entity->GetEntityId());
 	renderComponent->SetModelIndex(3);
-	physicsComponent = entityManager.GetEntityComponent<PhysicsComponent>(entity->GetEntityId());
-	physicsComponent->SetIsPerson(true);
+	//physicsComponent = entityManager.GetEntityComponent<PhysicsComponent>(entity->GetEntityId());
+	//physicsComponent->SetIsPerson(true);
 	cameraComponent = entityManager.GetEntityComponent<CameraComponent>(entity->GetEntityId());
 	cameraComponent->SetCamera(Camera(100.0f, 0.01f, 256.0f, glm::vec3(-3.0f, 2.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
 	networkComponent = entityManager.GetEntityComponent<NetworkComponent>(entity->GetEntityId());
 	networkComponent->SetClientId(0);
 
 	// Player 2
-	entity = entityManager.AddEntity<RenderComponent, PhysicsComponent, CameraComponent, NetworkComponent>();
+	entity = entityManager.AddEntity<RenderComponent, CameraComponent, NetworkComponent>();
 	glm::mat4 player2Transform(1.0f);
 	player2Transform = glm::translate(player2Transform, glm::vec3(5.0f, 1.0f, -1.0f));
 	player2Transform = glm::rotate(player2Transform, glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
@@ -350,6 +359,6 @@ void loadOfflineEntities(ComponentTypeRegistry& registry, EntityManager& entityM
 	entity->SetModelMatrix(player2Transform);
 	renderComponent = entityManager.GetEntityComponent<RenderComponent>(entity->GetEntityId());
 	renderComponent->SetModelIndex(3);
-	physicsComponent = entityManager.GetEntityComponent<PhysicsComponent>(entity->GetEntityId());
-	physicsComponent->SetIsPerson(true);
+	//physicsComponent = entityManager.GetEntityComponent<PhysicsComponent>(entity->GetEntityId());
+	//physicsComponent->SetIsPerson(true);
 }

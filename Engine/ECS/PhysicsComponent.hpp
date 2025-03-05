@@ -36,9 +36,6 @@ public:
 
 	void init(PhysicsWorld& pworld,PhysicsType physicsType, glm::mat4& transform) {
 
-		//PxPhysics*& physics;
-		//PxScene*& scene,
-		// 
 		// parse mat4
 		glm::vec3 translation;
 		glm::quat rotation;

@@ -11,14 +11,14 @@ namespace Engine
 	}
 	void Game::Run()
 	{
-		while (isRunning)
-		{
-			//float currTime = (float)glfwGetTime();
-			//deltaTime = currTime - lastTime;
-			//lastTime = currTime;
+		//while (isRunning)
+		//{
+		//	//float currTime = (float)glfwGetTime();
+		//	//deltaTime = currTime - lastTime;
+		//	//lastTime = currTime;
 
-			this->Update();
-		}
+		this->Update();
+		//}
 	}
 
 	void Game::OnEvent(Event& e)
