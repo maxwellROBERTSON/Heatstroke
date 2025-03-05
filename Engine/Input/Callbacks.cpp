@@ -15,19 +15,16 @@ namespace Engine {
 	}
 
 	void onKeyPress(GLFWwindow* aWindow, int aKey, int aScanCode, int aAction, int aModifiers) {
-		if (aAction == GLFW_PRESS)
-		{
-			switch (aKey) {
-			case GLFW_KEY_ESCAPE:
-				glfwSetWindowShouldClose(aWindow, true);
-				break;
-			case GLFW_KEY_SPACE:
-				std::cout << "SPACE" << std::endl;
-				break;
-			default:
-				std::cout << glfwGetKeyName(aKey, aScanCode) << std::endl;
-			}
+		switch (aKey) {
+		case GLFW_KEY_ESCAPE:
+			glfwSetWindowShouldClose(aWindow, true);
+			break;
 		}
+
+		if (aAction == GLFW_PRESS)
+			Keyboard::setKey(aKey, std::pair(true, aModifiers));
+		else if (aAction == GLFW_RELEASE)
+			Keyboard::setKey(aKey, std::pair(false, aModifiers));
 	}
 
 	void onMouseButton(GLFWwindow* aWindow, int aButton, int aAction, int aModifiers) {
