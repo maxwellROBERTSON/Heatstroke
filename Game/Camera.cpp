@@ -1,18 +1,19 @@
 #include "Camera.hpp"
 
-#include <glm/detail/func_trigonometric.inl>
 #include <GLFW/glfw3.h>
+#include <glm/detail/func_trigonometric.inl>
 
-#include "../Engine/glfw/Mouse.hpp"
-#include "../Engine/glfw/Keyboard.hpp"
+#include "../Engine/Input/Keyboard.hpp"
+#include "../Engine/Input/Mouse.hpp"
 
 
 /*
 * This entire class will probably need reworking, its not the best implementation of a first person camera
 * but is one that somewhat works that isn't the janky one from Advanced Rendering's Assignment 2.
 */
-Camera::Camera(float fov, float near, float far, glm::vec3 position, glm::vec3 frontDirection) : 
-	fov(fov), nearPlane(near), farPlane(far), position(position), frontDirection(frontDirection) {}
+Camera::Camera(float fov, float near, float far, glm::vec3 position, glm::vec3 frontDirection) :
+	fov(fov), nearPlane(near), farPlane(far), position(position), frontDirection(frontDirection) {
+}
 
 void Camera::updateCamera(GLFWwindow* aWindow, float timeDelta) {
 	if (glfwGetInputMode(aWindow, GLFW_CURSOR) != GLFW_CURSOR_DISABLED)
@@ -81,4 +82,8 @@ void Camera::updateCamera(GLFWwindow* aWindow, float timeDelta) {
 	newDir.y = std::sin(glm::radians(this->pitch));
 	newDir.z = std::sin(glm::radians(this->yaw)) * std::cos(glm::radians(this->pitch));
 	this->frontDirection = glm::normalize(newDir);
+}
+
+void Camera::OnEvent(Engine::Event& e)
+{
 }
