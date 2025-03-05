@@ -1,5 +1,4 @@
 #include "GameServer.hpp"
-#include "../../../Game/GameLoop.hpp"
 
 static const uint8_t DEFAULT_PRIVATE_KEY[yojimbo::KeyBytes] = { 0 };
 
@@ -7,7 +6,9 @@ GameServer::GameServer(
 	yojimbo::ClientServerConfig* config,
 	GameAdapter* adapter,
 	yojimbo::Address address,
-	int maxClients)
+	int maxClients,
+	Engine::Game* game
+)
 	:
 	config(config),
 	adapter(adapter),
@@ -24,7 +25,7 @@ GameServer::GameServer(
 		time);
 
 	adapter->SetServer(server);
-
+	mGame = game;
 	Start();
 }
 
@@ -32,7 +33,7 @@ void GameServer::Start()
 {
 	// Start server
 	server->Start(maxClients);
-	//initialiseGame();
+	//mGame->Init();
 	Run();
 }
 

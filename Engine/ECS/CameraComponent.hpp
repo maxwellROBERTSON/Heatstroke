@@ -16,7 +16,7 @@ public:
 	}
 
 	// Getters
-	Camera GetCamera() { return camera; }
+	Camera* GetCamera() { return &camera; }
 
 	// Setters
 	void SetCamera(Camera aCamera) { camera = aCamera; }

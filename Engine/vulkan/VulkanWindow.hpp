@@ -2,12 +2,12 @@
 
 // Adapted from: COMP5892M (Advanced Rendering)
 
-#include <vector>
 #include <cstdint>
-#include <unordered_set>
-#include <optional>
-#include <memory>
 #include <map>
+#include <memory>
+#include <optional>
+#include <unordered_set>
+#include <vector>
 
 #include <volk/volk.h>
 #if !defined(GLFW_INCLUDE_NONE)
@@ -63,7 +63,7 @@ namespace Engine {
 		bool changedFormat : 1;
 	};
 
-	std::unique_ptr<VulkanWindow> initialiseVulkan();
+	std::unique_ptr<VulkanWindow> initialiseVulkan(const std::string& name = "Heatstroke", int width = 1280, int height = 720);
 	SwapChanges recreateSwapchain(VulkanWindow&);
 
 	// The device selection process has changed somewhat w.r.t. the one used 

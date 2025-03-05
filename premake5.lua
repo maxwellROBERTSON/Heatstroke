@@ -31,6 +31,17 @@ workspace "Heatstroke"
     -- default options for GLSLC
     glslcOptions = "-O --target-env=vulkan1.2"
 
+    local cwd = os.getcwd()
+    local shellScript = cwd .. "/Engine/third_party/vcpkg/vcpkg_setup.sh"
+    local batchFile = cwd .. "/Engine/third_party/vcpkg/vcpkg_setup.bat"
+
+    if os.istarget("linux") then
+        os.execute('sh "' .. shellScript .. '"')
+    end
+    if os.istarget("windows") then
+        os.execute('"' .. batchFile .. '"')
+    end
+
     filter "system:linux"
         links "dl"
         defines {"OS_LINUX"}
@@ -49,11 +60,11 @@ workspace "Heatstroke"
 
     filter "*"
     
-    filter "Debug"
+    filter "configurations:Debug"
         symbols "On"
         defines {"_DEBUG=1", "YOJIMBO_DEBUG", "NETCODE_DEBUG", "RELIABLE_DEBUG"}
     
-    filter "Release"
+    filter "configurations:Release"
         optimize "On"
         defines {"NDEBUG=1", "YOJIMBO_RELEASE", "NETCODE_RELEASE", "RELIABLE_RELEASE"}
 
@@ -67,30 +78,71 @@ dofile("Engine/Utils/glslc.lua")
 -- Projects
 project "Engine"
     local sources = {
-        "Engine/glfw/**",
+        "Engine/Core/**",
+        "Engine/glfw/**",  -- TO BE REMOVED
+        "Engine/Input/**", 
+        "Engine/Events/**", 
         "Engine/gltf/**",
         "Engine/vulkan/**",
         "Engine/Shaders/**",
         "Engine/Network/**",
         "Engine/ECS/**",
         "Engine/GUI/**",
-        "Engine/Physics/**",
+        "Engine/Physics/**"
     }
 
     includedirs {
-        "Engine/Utils/",
-        "Engine/third_party/physx/include/physx",
+        "Engine/Utils/"
     }
-
-    libdirs {
-        "Engine/third_party/physx/debug/lib",
-    }
-
+    
     kind "StaticLib"
     location "Engine"
 
+    -- includedirs { "Engine/third_party/vcpkg/packages/physx_x64-linux/include/physx" }
+
+    filter "*"
+
+    filter "system:linux"
+        includedirs { "Engine/third_party/vcpkg/packages/physx_x64-linux/include/physx" }
+
+    filter "system:windows"
+        includedirs { "Engine/third_party/vcpkg/packages/physx_x64-windows/include/physx" }
+
+    filter "*"
+    
     files(sources)
     removefiles("**.vcxproj*")
+
+    libdirs { "Engine/third_party/vcpkg/packages/physx_x64-linux/debug/lib" }
+    links(os.matchfiles("Engine/third_party/vcpkg/packages/physx_x64-linux/debug/lib/*.lib"))
+
+    filter "*"
+        
+    filter { "system:linux", "configurations:Debug" }
+        libdirs { "Engine/third_party/vcpkg/packages/physx_x64-linux/debug/lib" }
+        links(os.matchfiles("Engine/third_party/vcpkg/packages/physx_x64-linux/debug/lib/*.lib"))
+    filter { "system:linux", "configurations:Release" }
+        libdirs { "Engine/third_party/vcpkg/packages/physx_x64-linux/lib" }
+        links(os.matchfiles("Engine/third_party/vcpkg/packages/physx_x64-linux/lib/*.lib"))
+
+    filter { "system:windows", "configurations:Debug" }
+        libdirs { "Engine/third_party/vcpkg/packages/physx_x64-windows/debug/lib" }
+        links(os.matchfiles("Engine/third_party/vcpkg/packages/physx_x64-windows/debug/lib/*.lib"))
+        postbuildcommands {
+            '{COPY} "%{wks.location}Engine/third_party/vcpkg/packages/physx_x64-windows/debug/bin/PhysXFoundation_64.dll" "%{wks.location}/bin"',
+            '{COPY} "%{wks.location}Engine/third_party/vcpkg/packages/physx_x64-windows/debug/bin/PhysXCommon_64.dll" "%{wks.location}/bin"',
+            '{COPY} "%{wks.location}Engine/third_party/vcpkg/packages/physx_x64-windows/debug/bin/PhysX_64.dll" "%{wks.location}/bin"'
+        }
+    filter { "system:windows", "configurations:Release" }
+        libdirs { "Engine/third_party/vcpkg/packages/physx_x64-windows/lib" }
+        links(os.matchfiles("Engine/third_party/vcpkg/packages/physx_x64-windows/lib/*.lib"))
+        postbuildcommands {
+            '{COPY} "%{wks.location}Engine/third_party/vcpkg/packages/physx_x64-windows/bin/PhysXFoundation_64.dll" "%{wks.location}/bin"',
+            '{COPY} "%{wks.location}Engine/third_party/vcpkg/packages/physx_x64-windows/bin/PhysXCommon_64.dll" "%{wks.location}/bin"',
+            '{COPY} "%{wks.location}Engine/third_party/vcpkg/packages/physx_x64-windows/bin/PhysX_64.dll" "%{wks.location}/bin"'
+        }
+
+    filter "*"
 
     links {
         "Utils",
@@ -105,19 +157,7 @@ project "Engine"
         "x-vma",
         "imgui",
         "x-tgen"
-
-
     }
-
-
-    filter { "configurations:Debug" }
-        links(os.matchfiles("Engine/third_party/physx/debug/lib/*.lib"))
-        
-        postbuildcommands {
-            '{COPY} "%{wks.location}/Engine/third_party/physx/debug/bin/PhysXFoundation_64.dll" "%{wks.location}/bin"',
-            '{COPY} "%{wks.location}/Engine/third_party/physx/debug/bin/PhysXCommon_64.dll" "%{wks.location}/bin"',
-            '{COPY} "%{wks.location}/Engine/third_party/physx/debug/bin/PhysX_64.dll" "%{wks.location}/bin"'
-        }
         
     dependson "Shaders"
 
@@ -129,12 +169,21 @@ project "Game"
     includedirs {
         ".",
         "../",
-        "Engine/Utils",
-        "Engine/third_party/physx/include/physx"
+        "Engine/Utils"
     }
 
     kind "ConsoleApp"
     location "Game"
+
+    filter "*"
+
+    filter "system:linux"
+        includedirs { "Engine/third_party/vcpkg/packages/physx_x64-linux/include/physx" }
+
+    filter "system:windows"
+        includedirs { "Engine/third_party/vcpkg/packages/physx_x64-windows/include/physx" }
+
+    filter "*"
 
     files(sources)
     removefiles("**.vcxproj*")
@@ -151,7 +200,8 @@ project "Game"
         "x-volk",
         "x-glfw",
         "x-vma",
-        "imgui"
+        "imgui",
+        "x-tgen"
     }
 
     dependson "Engine"

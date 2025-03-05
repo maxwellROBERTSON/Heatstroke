@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../Core/Game.h"
 #include "../Helpers/GameAdapter.hpp"
 
 class GameServer
@@ -9,7 +10,8 @@ public:
 		yojimbo::ClientServerConfig* config,
 		GameAdapter* adapter,
 		yojimbo::Address address,
-		int maxClients
+		int maxClients,
+		Engine::Game* game
 	);
 	~GameServer() {}
 
@@ -29,4 +31,6 @@ private:
 
 	yojimbo::ClientServerConfig* config;
 	GameAdapter* adapter;
+
+	Engine::Game* mGame;
 };
