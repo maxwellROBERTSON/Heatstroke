@@ -79,7 +79,7 @@ project "Engine"
 
     includedirs {
         "Engine/Utils/",
-        "Engine/third_party/physx/include",
+        "Engine/third_party/physx/include/physx",
     }
 
     libdirs {
@@ -130,7 +130,7 @@ project "Game"
         ".",
         "../",
         "Engine/Utils",
-        "Engine/third_party/physx/include"
+        "Engine/third_party/physx/include/physx"
     }
 
     kind "ConsoleApp"

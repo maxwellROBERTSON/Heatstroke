@@ -17,9 +17,13 @@ int main() try {
 		ComponentTypeRegistry registry = ComponentTypeRegistry::Get();
 		EntityManager entityManager = EntityManager(&registry);
 
+        // Physics world instance
+        PhysicsWorld physics_world;
+
 		initialiseGame(registry, entityManager);
         initialiseModels(models);
-		runGameLoop(models, registry, entityManager);
+        initialisePhysics(physics_world);
+		runGameLoop(models, registry, entityManager, physics_world);
 
         for (Engine::vk::Model& model : models)
             model.destroy();

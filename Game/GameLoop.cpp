@@ -19,9 +19,11 @@
 #include "../Engine/ECS/NetworkComponent.hpp"
 #include "../Engine/Physics/PhysicsWorld.hpp"
 
+
 #include "Error.hpp"
 #include "toString.hpp"
 #include "Uniforms.hpp"
+#include "cooking/PxCooking.h"
 
 Engine::VulkanContext vkContext;
 Camera camera;
@@ -34,11 +36,9 @@ int clientId = 0;
 bool online = false;
 bool switchMode = true;
 
+
+
 void initialiseGame(ComponentTypeRegistry& registry, EntityManager& entityManager) {
-
-    PhysicsWorld p;
-    p.init();
-
 
 
     // Register component types
@@ -86,9 +86,94 @@ void initialiseModels(std::vector<Engine::vk::Model>& models) {
 	models.emplace_back(Engine::makeVulkanModel(vkContext, character));
 }
 
-void runGameLoop(std::vector<Engine::vk::Model>& models, ComponentTypeRegistry& registry, EntityManager& entityManager) {
+void initialisePhysics(PhysicsWorld& pworld) {
+    pworld.init();
+
+    //tinygltf::Model sponza = Engine::loadFromFile("Game/assets/Sponza/glTF/Sponza.gltf");
+    //std::vector<PxVec3> vertices;
+    //std::vector<uint32_t> indices;
+
+    //for (const auto& node : sponza.nodes) {
+    //    if (node.mesh < 0)
+    //        continue;
+    //    const tinygltf::Mesh& mesh = sponza.meshes[node.mesh];
+    //    for (const tinygltf::Primitive& primitive : mesh.primitives) {
+    //        // 提取 POSITION 数据
+    //        const tinygltf::Accessor& posAccessor = sponza.accessors.at(primitive.attributes.at("POSITION"));
+    //        const tinygltf::BufferView& posBufferView = sponza.bufferViews[posAccessor.bufferView];
+    //        const tinygltf::Buffer& posBuffer = sponza.buffers[posBufferView.buffer];
+    //        const float* positions = reinterpret_cast<const float*>(&posBuffer.data[posBufferView.byteOffset]);
+    //        size_t vertexCount = posAccessor.count;
+    //        for (size_t i = 0; i < vertexCount; i++) {
+    //            float x = positions[i * 3 + 0];
+    //            float y = positions[i * 3 + 1];
+    //            float z = positions[i * 3 + 2];
+    //            vertices.push_back(PxVec3(x, y, z));
+    //        }
+    //        // 提取索引数据（如果存在）
+    //        if (primitive.indices >= 0) {
+    //            const tinygltf::Accessor& idxAccessor = sponza.accessors.at(primitive.indices);
+    //            const tinygltf::BufferView& idxBufferView = sponza.bufferViews[idxAccessor.bufferView];
+    //            const tinygltf::Buffer& idxBuffer = sponza.buffers[idxBufferView.buffer];
+    //            if (idxAccessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT) {
+    //                const uint16_t* indicesData = reinterpret_cast<const uint16_t*>(
+    //                    &idxBuffer.data[idxBufferView.byteOffset]
+    //                    );
+    //                indices.insert(indices.end(), indicesData, indicesData + idxAccessor.count);
+    //            }
+    //            else if (idxAccessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT) {
+    //                const uint32_t* indicesData = reinterpret_cast<const uint32_t*>(
+    //                    &idxBuffer.data[idxBufferView.byteOffset]
+    //                    );
+    //                indices.insert(indices.end(), indicesData, indicesData + idxAccessor.count);
+    //            }
+    //        }
+    //    }
+    //}
+
+    //// 2. 构造 PxTriangleMeshDesc
+    //PxTriangleMeshDesc meshDesc;
+    //meshDesc.points.count = static_cast<PxU32>(vertices.size());
+    //meshDesc.points.stride = sizeof(PxVec3);
+    //meshDesc.points.data = vertices.data();
+
+    //meshDesc.triangles.count = static_cast<PxU32>(indices.size() / 3);
+    //meshDesc.triangles.stride = 3 * sizeof(PxU32);
+    //meshDesc.triangles.data = indices.data();
+
+    //// 3. 使用 PxCookTriangleMesh 将网格烹饪到内存流中
+    //PxDefaultMemoryOutputStream memoryOutputStream;
+    //PxTriangleMeshCookingResult::Enum meshCookingResult;
+    //PxCookingParams cookingParams(pworld.gPhysics->getTolerancesScale());
+    //// 这里使用官网文档中提供的函数：
+    //// bool PxCookTriangleMesh(const PxCookingParams&, const PxTriangleMeshDesc&, PxOutputStream&, PxTriangleMeshCookingResult::Enum*)
+    //bool status = PxCookTriangleMesh(cookingParams, meshDesc, memoryOutputStream, &meshCookingResult);
+    //if (!status) {
+    //    std::cerr << "PxCookTriangleMesh failed! Result: " << meshCookingResult << std::endl;
+    //    return;
+    //}
+
+    //// 4. 从内存流中创建 PxTriangleMesh
+    //PxDefaultMemoryInputData memoryInputStream(memoryOutputStream.getData(), memoryOutputStream.getSize());
+    //PxTriangleMesh* triangleMesh = pworld.gPhysics->createTriangleMesh(memoryInputStream);
+    //if (!triangleMesh) {
+    //    std::cerr << "Failed to create PxTriangleMesh from cooked data!" << std::endl;
+    //    return;
+    //}
+
+    //// 5. 创建静态刚体，并附加此三角网格碰撞体
+    //PxRigidStatic* staticActor = pworld.gPhysics->createRigidStatic(PxTransform(PxIdentity));
+    //PxMaterial* material = pworld.gPhysics->createMaterial(0.5f, 0.5f, 0.6f);
+    //PxShape* shape = pworld.gPhysics->createShape(PxTriangleMeshGeometry(triangleMesh), *material);
+    //staticActor->attachShape(*shape);
+    //pworld.gScene->addActor(*staticActor);
+
+
+}
+
+void runGameLoop(std::vector<Engine::vk::Model>& models, ComponentTypeRegistry& registry, EntityManager& entityManager, PhysicsWorld& pworld) {
     // Offline mode only for now
-	loadOfflineEntities(registry, entityManager);
+	loadOfflineEntities(registry, entityManager, pworld);
 
     // Create required objects for rendering
     std::map<std::string, Engine::vk::RenderPass> renderPasses;
@@ -200,6 +285,11 @@ void runGameLoop(std::vector<Engine::vk::Model>& models, ComponentTypeRegistry& 
         const auto timeDelta = std::chrono::duration_cast<std::chrono::duration<float, std::ratio<1>>>(now - previous).count();
         previous = now;
 
+
+
+        // update physics
+        pworld.gScene->simulate(timeDelta);
+        pworld.gScene->fetchResults(true);
         camera.updateCamera(vkContext.getGLFWWindow(), timeDelta);
         
         glsl::SceneUniform sceneUniform{};
@@ -263,7 +353,7 @@ void updateModelMatrices(const Engine::VulkanContext& aContext, glsl::ModelMatri
     vmaFlushAllocation(aContext.allocator->allocator, aBuffer.allocation, 0, size);
 }
 
-void loadOfflineEntities(ComponentTypeRegistry& registry, EntityManager& entityManager)
+void loadOfflineEntities(ComponentTypeRegistry& registry, EntityManager& entityManager, PhysicsWorld& pworld)
 {
 	// Pointers
     Entity* entity;
@@ -273,7 +363,7 @@ void loadOfflineEntities(ComponentTypeRegistry& registry, EntityManager& entityM
 	NetworkComponent* networkComponent;
 
     // Map
-	entity = entityManager.AddEntity<RenderComponent, PhysicsComponent>();
+	entity = entityManager.AddEntity<RenderComponent>();
     glm::mat4 mapTransform(1.0f);
     mapTransform = glm::scale(mapTransform, glm::vec3(0.01f, 0.01f, 0.01f));
 	entity->SetModelMatrix(mapTransform);
@@ -289,6 +379,10 @@ void loadOfflineEntities(ComponentTypeRegistry& registry, EntityManager& entityM
     entity->SetModelMatrix(helmetTransform);
 	renderComponent = entityManager.GetEntityComponent<RenderComponent>(entity->GetEntityId());
 	renderComponent->SetModelIndex(1);
+    // configure physics component
+    physicsComponent = entityManager.GetEntityComponent<PhysicsComponent>(entity->GetEntityId());
+    physicsComponent->init(pworld.gPhysics, pworld.gScene, PhysicsComponent::PhysicsType::STATIC, helmetTransform);
+
 
 	// Cube
 	entity = entityManager.AddEntity<RenderComponent, PhysicsComponent>();
@@ -298,9 +392,14 @@ void loadOfflineEntities(ComponentTypeRegistry& registry, EntityManager& entityM
 	entity->SetModelMatrix(cubeTransform);
 	renderComponent = entityManager.GetEntityComponent<RenderComponent>(entity->GetEntityId());
 	renderComponent->SetModelIndex(2);
+    // configure physics component
+    physicsComponent = entityManager.GetEntityComponent<PhysicsComponent>(entity->GetEntityId());
+
+    physicsComponent->init(pworld.gPhysics, pworld.gScene, PhysicsComponent::PhysicsType::STATIC, cubeTransform);
+
 
     // Player 1
-    entity = entityManager.AddEntity<RenderComponent, PhysicsComponent, CameraComponent, NetworkComponent>();
+    entity = entityManager.AddEntity<RenderComponent, CameraComponent, NetworkComponent>();
     glm::mat4 player1Transform(1.0f);
     player1Transform = glm::translate(player1Transform, glm::vec3(-5.0f, 1.0f, -1.0f));
     player1Transform = glm::rotate(player1Transform, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
@@ -308,15 +407,15 @@ void loadOfflineEntities(ComponentTypeRegistry& registry, EntityManager& entityM
     entity->SetModelMatrix(player1Transform);
     renderComponent = entityManager.GetEntityComponent<RenderComponent>(entity->GetEntityId());
     renderComponent->SetModelIndex(3);
-    physicsComponent = entityManager.GetEntityComponent<PhysicsComponent>(entity->GetEntityId());
-    physicsComponent->SetIsPerson(true);
+    //physicsComponent = entityManager.GetEntityComponent<PhysicsComponent>(entity->GetEntityId());
+    //physicsComponent->SetIsPerson(true);
     cameraComponent = entityManager.GetEntityComponent<CameraComponent>(entity->GetEntityId());
     cameraComponent->SetCamera(camera);
     networkComponent = entityManager.GetEntityComponent<NetworkComponent>(entity->GetEntityId());
     networkComponent->SetClientId(clientId);
 
     // Player 2
-    entity = entityManager.AddEntity<RenderComponent, PhysicsComponent, CameraComponent, NetworkComponent>();
+    entity = entityManager.AddEntity<RenderComponent, CameraComponent, NetworkComponent>();
     glm::mat4 player2Transform(1.0f);
     player2Transform = glm::translate(player2Transform, glm::vec3(5.0f, 1.0f, -1.0f));
     player2Transform = glm::rotate(player2Transform, glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
@@ -324,6 +423,7 @@ void loadOfflineEntities(ComponentTypeRegistry& registry, EntityManager& entityM
     entity->SetModelMatrix(player2Transform);
     renderComponent = entityManager.GetEntityComponent<RenderComponent>(entity->GetEntityId());
     renderComponent->SetModelIndex(3);
-    physicsComponent = entityManager.GetEntityComponent<PhysicsComponent>(entity->GetEntityId());
-    physicsComponent->SetIsPerson(true);
+    //physicsComponent = entityManager.GetEntityComponent<PhysicsComponent>(entity->GetEntityId());
+    //physicsComponent->SetIsPerson(true);
+
 }

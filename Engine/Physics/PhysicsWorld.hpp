@@ -1,13 +1,14 @@
 #pragma once
 
-#include "physx/PxPhysicsAPI.h"
+#include "PxPhysicsAPI.h"
 #include <iostream>
 #include <conio.h>
-
+#include <vector>
 using namespace physx;
 
 class PhysicsWorld {
 public:
+	std::vector<PxRigidStatic*> staticBodies;
 	PxFoundation* gFoundation = nullptr;
 	PxPhysics* gPhysics = nullptr;
 	PxScene* gScene = nullptr;
