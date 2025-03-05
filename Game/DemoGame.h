@@ -56,6 +56,7 @@ public:
 	int clientId = -1;
 	bool online = false;
 	bool offline = true;
+	bool isChange = true;
 };
 
 void updateSceneUniform(glsl::SceneUniform& aScene, Camera& camera, std::uint32_t aFramebufferWidth, std::uint32_t aFramebufferHeight);

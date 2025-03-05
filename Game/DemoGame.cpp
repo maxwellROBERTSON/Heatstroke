@@ -11,8 +11,6 @@
 #include "Error.hpp"
 #include "toString.hpp"
 
-
-
 void FPSTest::Init()
 {
 	std::cout << "FPS TEST INIT" << std::endl;
@@ -89,13 +87,14 @@ void FPSTest::RenderGUI()
 
 void FPSTest::RenderScene()
 {
-	if (online)
+	if (online && isChange)
 	{
 		// Online mode
 	}
-	else if (offline)
+	else if (offline && isChange)
 	{
 		// Offline mode
+		isChange = false;
 		loadOfflineEntities(registry, entityManager);
 		clientId = 0;
 	}
