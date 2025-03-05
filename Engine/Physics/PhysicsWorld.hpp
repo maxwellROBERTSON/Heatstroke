@@ -4,6 +4,7 @@
 #include <iostream>
 #include <conio.h>
 #include <vector>
+#include "../ECS/EntityManager.hpp"
 using namespace physx;
 
 class PhysicsWorld {
@@ -17,6 +18,8 @@ public:
 	static PxDefaultErrorCallback gErrorCallback;
 	PxMaterial* gMaterial = nullptr;
 
+	PxU32 numDynamicRigid = 0;
+
 	// CapsuleController
 	PxCapsuleController* gCapsuleController = nullptr;
 
@@ -29,10 +32,16 @@ public:
 
 	void init();
 
+	void updateObjects(EntityManager& entityManager, std::vector<Engine::vk::Model>& models);
+
 	void createCapsuleController();
 
 	void createStaticBox();
 
 	void cleanupPhysX();
+
+	glm::mat4 ConvertPxTransformToGlmMat4(const PxTransform& transform);
+
+private:
 
 };

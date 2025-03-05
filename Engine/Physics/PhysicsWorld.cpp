@@ -1,5 +1,10 @@
 #include "PhysicsWorld.hpp"
-
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/quaternion.hpp>
+#include "../vulkan/objects/Model.hpp"
+#include "../ECS/EntityManager.hpp"
+#include "../ECS/PhysicsComponent.hpp"
 physx::PxDefaultErrorCallback PhysicsWorld::gErrorCallback;
 
 void PhysicsWorld::init() {
@@ -76,6 +81,37 @@ void PhysicsWorld::init() {
 	
 
 }
+
+void PhysicsWorld::updateObjects(EntityManager& entityManager, std::vector<Engine::vk::Model>& models)
+{
+	std::pair<void*, int> physicsComponents = entityManager.GetComponents<PhysicsComponent>();
+
+	for (std::size_t i = 0; i < physicsComponents.second; i++) {
+		PhysicsComponent p = reinterpret_cast<PhysicsComponent*>(physicsComponents.first)[i];
+		if (p.type == PhysicsComponent::PhysicsType::DYNAMIC)
+		{
+			models[p.GetModelIndex()].setMat(ConvertPxTransformToGlmMat4(p.dynamicBody->getGlobalPose()));
+		}
+	}
+	// update Mat4 for all dynamic objects
+	//std::vector<PxActor*> actors(numDynamicRigid);
+
+	//this->gScene->getActors(PxActorTypeFlag::eRIGID_DYNAMIC, actors.data(), numDynamicRigid); // 获取所有动态刚体
+
+
+	//for (int i = ) {
+	//PxRigidDynamic* dynamicBody = static_cast<PxRigidDynamic*>(actor);
+	////glm::mat4 result = glm::mat4(1.0f);
+	//glm::mat trans = ConvertPxTransformToGlmMat4(dynamicBody->getGlobalPose(), models[]);
+
+}
+
+	//for (PxActor* actor : actors) {
+	//	PxRigidDynamic* dynamicBody = static_cast<PxRigidDynamic*>(actor);
+	//	//glm::mat4 result = glm::mat4(1.0f);
+	//	glm::mat trans = ConvertPxTransformToGlmMat4(dynamicBody->getGlobalPose(), models[]);
+
+	//}
 
 void PhysicsWorld::createCapsuleController()
 {
@@ -167,4 +203,20 @@ void PhysicsWorld::createStaticBox()
 	gScene->addActor(*boxActor);
 
 
+}
+
+glm::mat4 PhysicsWorld::ConvertPxTransformToGlmMat4(const PxTransform& transform) {
+	// 1. 将 PhysX 四元数 (PxQuat) 转换为 GLM 四元数 (glm::quat)
+	glm::quat rotation(transform.q.w, transform.q.x, transform.q.y, transform.q.z);
+
+	// 2. 将 PhysX 位置向量 (PxVec3) 转换为 GLM 位置向量 (glm::vec3)
+	glm::vec3 translation(transform.p.x, transform.p.y, transform.p.z);
+
+	// 3. 使用 GLM 计算旋转矩阵
+	glm::mat4 rotationMatrix = glm::mat4_cast(rotation);
+
+	// 4. 设置平移部分 (修改 4×4 矩阵的最后一列)
+	rotationMatrix[3] = glm::vec4(translation, 1.0f);
+
+	return rotationMatrix;
 }

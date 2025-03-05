@@ -290,6 +290,9 @@ void runGameLoop(std::vector<Engine::vk::Model>& models, ComponentTypeRegistry& 
         // update physics
         pworld.gScene->simulate(timeDelta);
         pworld.gScene->fetchResults(true);
+        pworld.updateObjects(entityManager, models);
+       
+        
         camera.updateCamera(vkContext.getGLFWWindow(), timeDelta);
         
         glsl::SceneUniform sceneUniform{};
@@ -381,7 +384,8 @@ void loadOfflineEntities(ComponentTypeRegistry& registry, EntityManager& entityM
 	renderComponent->SetModelIndex(1);
     // configure physics component
     physicsComponent = entityManager.GetEntityComponent<PhysicsComponent>(entity->GetEntityId());
-    physicsComponent->init(pworld.gPhysics, pworld.gScene, PhysicsComponent::PhysicsType::STATIC, helmetTransform);
+    physicsComponent->init(pworld, PhysicsComponent::PhysicsType::STATIC, helmetTransform);    renderComponent->SetModelIndex(0);
+    physicsComponent->SetModelIndex(1);
 
 
 	// Cube
@@ -394,8 +398,8 @@ void loadOfflineEntities(ComponentTypeRegistry& registry, EntityManager& entityM
 	renderComponent->SetModelIndex(2);
     // configure physics component
     physicsComponent = entityManager.GetEntityComponent<PhysicsComponent>(entity->GetEntityId());
-
-    physicsComponent->init(pworld.gPhysics, pworld.gScene, PhysicsComponent::PhysicsType::STATIC, cubeTransform);
+    physicsComponent->init(pworld, PhysicsComponent::PhysicsType::STATIC, cubeTransform);
+    physicsComponent->SetModelIndex(2);
 
 
     // Player 1
