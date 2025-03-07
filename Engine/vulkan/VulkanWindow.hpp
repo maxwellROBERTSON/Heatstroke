@@ -3,6 +3,7 @@
 // Adapted from: COMP5892M (Advanced Rendering)
 
 #include <cstdint>
+#include <functional>
 #include <map>
 #include <memory>
 #include <optional>
@@ -17,6 +18,10 @@
 
 #include "objects/VkObjects.hpp"
 #include "objects/Texture.hpp"
+#include "../Events/Event.h"
+#include "../Events/KeyEvent.h"
+#include "../Events/MouseEvent.h"
+#include "../Events/WindowEvent.h"
 
 namespace Engine {
 
@@ -45,6 +50,10 @@ namespace Engine {
 		VkDebugUtilsMessengerEXT debugMessenger = VK_NULL_HANDLE;
 
 		GLFWwindow* window = nullptr;
+		std::function<void(Event&)> EventCallback;
+		inline void SetEventCallback(const std::function<void(Event&)>& callback) { EventCallback = callback; }
+		void RegisterCallbacks();
+
 		VkSurfaceKHR surface = VK_NULL_HANDLE;
 
 		std::uint32_t presentFamilyIndex = 0;
@@ -56,6 +65,9 @@ namespace Engine {
 
 		VkFormat swapchainFormat;
 		VkExtent2D swapchainExtent;
+
+
+
 	};
 
 	struct SwapChanges {

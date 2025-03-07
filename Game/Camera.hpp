@@ -18,7 +18,7 @@ public:
 	~Camera() = default;
 
 	void updateCamera(GLFWwindow* aWindow, float timeDelta);
-	void OnEvent(Engine::Event& e);
+	void OnEvent(GLFWwindow* aWindow, Engine::Event& e);
 
 	float fov;
 	float nearPlane;
@@ -32,4 +32,6 @@ public:
 	float pitch = 0.0f;
 	float lastX = 0.0f;
 	float lastY = 0.0f;
+
+
 };

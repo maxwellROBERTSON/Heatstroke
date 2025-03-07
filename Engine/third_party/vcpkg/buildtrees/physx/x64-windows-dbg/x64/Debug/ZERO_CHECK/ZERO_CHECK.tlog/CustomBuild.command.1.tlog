@@ -1,0 +1,10 @@
+^C:\DEV\HEATSTROKE\ENGINE\THIRD_PARTY\VCPKG\BUILDTREES\PHYSX\X64-WINDOWS-DBG\CMAKEFILES\959C70FE51136CD4CA2696842BA6E337\GENERATE.STAMP.RULE
+setlocal
+C:\dev\Heatstroke\Engine\third_party\vcpkg\downloads\tools\cmake-3.30.1-windows\cmake-3.30.1-windows-i386\bin\cmake.exe -SC:/dev/Heatstroke/Engine/third_party/vcpkg/buildtrees/physx/src/hysx-5.5.0-86566ce8b0.clean/physx/compiler/public -BC:/dev/Heatstroke/Engine/third_party/vcpkg/buildtrees/physx/x64-windows-dbg --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file C:/dev/Heatstroke/Engine/third_party/vcpkg/buildtrees/physx/x64-windows-dbg/PhysXSDK.sln
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

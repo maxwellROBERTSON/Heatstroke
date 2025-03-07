@@ -1,0 +1,5 @@
+Package : physxdevice
+Maintainers : sschirm@nvidia.com, aborovicka@nvidia.com
+Description : physxdevice
+SWIPAT NvBug : 
+Repository : P4://sw/physx/PhysXDevice/

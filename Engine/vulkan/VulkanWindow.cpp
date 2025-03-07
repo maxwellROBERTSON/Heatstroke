@@ -113,6 +113,60 @@ namespace Engine {
 		return *this;
 	}
 
+	void VulkanWindow::RegisterCallbacks()
+	{
+
+		glfwSetWindowCloseCallback(window, [](GLFWwindow* aWindow)
+			{
+				VulkanWindow& engineWindow = *(VulkanWindow*)glfwGetWindowUserPointer(aWindow);
+				Engine::WindowCloseEvent event;
+				engineWindow.EventCallback(event);
+			});
+
+
+		glfwSetKeyCallback(window, [](GLFWwindow* aWindow, int aKey, int aScancode, int aAction, int aModifiers)
+			{
+				VulkanWindow& engineWindow = *(VulkanWindow*)glfwGetWindowUserPointer(aWindow);
+				switch (aAction)
+				{
+				case GLFW_PRESS:
+				{
+					Engine::KeyPressedEvent event(aKey, 0);
+					engineWindow.EventCallback(event);
+					break;
+				}
+				case GLFW_RELEASE:
+				{
+					KeyReleasedEvent event(aKey);
+					engineWindow.EventCallback(event);
+					break;
+				}
+				}
+			});
+
+		glfwSetMouseButtonCallback(window, [](GLFWwindow* aWindow, int aButton, int aAction, int aModifiers)
+			{
+				VulkanWindow& engineWindow = *(VulkanWindow*)glfwGetWindowUserPointer(aWindow);
+
+				switch (aAction)
+				{
+				case GLFW_PRESS:
+				{
+					MouseButtonPressedEvent event(aButton);
+					engineWindow.EventCallback(event);
+					break;
+				}
+				case GLFW_RELEASE:
+				{
+					MouseButtonReleasedEvent event(aButton);
+					engineWindow.EventCallback(event);
+					break;
+				}
+				}
+
+			});
+	}
+
 	std::unique_ptr<VulkanWindow> initialiseVulkan(const std::string& name, int width, int height) {
 		std::unique_ptr<VulkanWindow> window = std::make_unique<VulkanWindow>();
 
@@ -183,7 +237,6 @@ namespace Engine {
 			window.get()->debugMessenger = Utils::createDebugMessenger(window.get()->instance);
 
 		// Create GLFW window
-		// Get VkSurfaceKHR from the window
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
 		window.get()->window = glfwCreateWindow(width, height, name.c_str(), nullptr, nullptr); // Again, name not final
@@ -194,6 +247,31 @@ namespace Engine {
 			throw Utils::Error("Unable to create GLFW window\n Last error = %s", errMsg);
 		}
 
+		// Set window user pointer (for events)
+		glfwSetWindowUserPointer(window.get()->window, window.get());
+
+		// Register Callbacks
+		//glfwSetKeyCallback(window.get()->window, [](GLFWwindow* aWindow, int key, int scancode, int action, int mods)
+		//	{
+		//		VulkanWindow& engineWindow = *(VulkanWindow*)glfwGetWindowUserPointer(aWindow);
+		//		switch (action)
+		//		{
+		//		case GLFW_PRESS:
+		//		{
+		//			Engine::KeyPressedEvent event(key, 0);
+		//			engineWindow.EventCallback(event);
+		//			break;
+		//		}
+		//		case GLFW_RELEASE:
+		//		{
+		//			KeyReleasedEvent event(key);
+		//			engineWindow.EventCallback(event);
+		//			break;
+		//		}
+		//		}
+		//	});
+		window.get()->RegisterCallbacks();
+		// Get VkSurfaceKHR from the window
 		if (const auto res = glfwCreateWindowSurface(window.get()->instance, window.get()->window, nullptr, &window.get()->surface); VK_SUCCESS != res)
 			throw Utils::Error("Unable to create VkSurfaceKHR\n glfwCreateWindowSurface() returned %s", Utils::toString(res).c_str());
 

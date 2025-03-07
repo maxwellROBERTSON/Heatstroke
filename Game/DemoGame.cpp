@@ -28,14 +28,15 @@ void FPSTest::Update()
 
 void FPSTest::OnEvent(Engine::Event& e)
 {
+	Engine::Game::OnEvent(e);
+	camera.OnEvent(this->GetContext().getGLFWWindow(), e);
 	Engine::EventDispatcher dispatcher(e);
 
 	dispatcher.Dispatch<Engine::KeyPressedEvent>(
 		[&](Engine::KeyPressedEvent& event)
 		{
-			std::cout << event.GetKeyCode() << std::endl;
+			std::cout << "DemoGame::OnEvent - " << event.GetKeyCode() << std::endl;
 			return true;
-
 		}
 	);
 }
@@ -75,12 +76,14 @@ void FPSTest::registerComponents()
 void FPSTest::initialiseModels()
 {
 	// Here we would load all relevant glTF models and put them in the models vector
-	tinygltf::Model sponza = Engine::loadFromFile("Game/assets/Sponza/glTF/Sponza.gltf");
-	tinygltf::Model helmet = Engine::loadFromFile("Game/assets/DamagedHelmet.gltf");
-	tinygltf::Model cube = Engine::loadFromFile("Game/assets/Cube.gltf");
-	models.emplace_back(Engine::makeVulkanModel(this->GetContext(), sponza));
-	models.emplace_back(Engine::makeVulkanModel(this->GetContext(), helmet));
-	models.emplace_back(Engine::makeVulkanModel(this->GetContext(), cube));
+	//tinygltf::Model sponza = Engine::loadFromFile("Game/assets/Sponza/glTF/Sponza.gltf");
+	//tinygltf::Model helmet = Engine::loadFromFile("Game/assets/DamagedHelmet.gltf");
+	//tinygltf::Model cube = Engine::loadFromFile("Game/assets/Cube.gltf");
+	tinygltf::Model testMap = Engine::loadFromFile("Game/assets/Assets/maps/chamberOfSecrets/Scene.gltf");
+	//models.emplace_back(Engine::makeVulkanModel(this->GetContext(), sponza));
+	//models.emplace_back(Engine::makeVulkanModel(this->GetContext(), helmet));
+	//models.emplace_back(Engine::makeVulkanModel(this->GetContext(), cube));
+	models.emplace_back(Engine::makeVulkanModel(this->GetContext(), testMap));
 }
 
 void FPSTest::Render()
@@ -203,13 +206,13 @@ void FPSTest::Render()
 		transform = glm::rotate(transform, glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		transform = glm::scale(transform, glm::vec3(0.5f, 0.5f, 0.5f));
 
-		// Transform the helmet (this will need to be changed as to not refer to the first node at some point)
-		models[1].nodes[0]->setPostTransform(transform);
+		//// Transform the helmet (this will need to be changed as to not refer to the first node at some point)
+		//models[1].nodes[0]->setPostTransform(transform);
 
-		glm::mat4 cubeTransform(1.0f);
-		cubeTransform = glm::translate(cubeTransform, glm::vec3(0.0f, 1.0f, -1.0f));
+		//glm::mat4 cubeTransform(1.0f);
+		//cubeTransform = glm::translate(cubeTransform, glm::vec3(0.0f, 1.0f, -1.0f));
 
-		models[2].nodes[0]->setPostTransform(cubeTransform);
+		//models[2].nodes[0]->setPostTransform(cubeTransform);
 
 		glsl::SceneUniform sceneUniform{};
 		updateSceneUniform(sceneUniform, camera, this->GetContext().window->swapchainExtent.width, this->GetContext().window->swapchainExtent.height);

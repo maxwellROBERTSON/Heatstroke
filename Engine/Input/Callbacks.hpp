@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../vulkan/VulkanContext.hpp"
 #include <GLFW/glfw3.h>
 
 namespace Engine {

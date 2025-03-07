@@ -5,6 +5,11 @@
 
 #include <iostream>
 
+#include "../Events/Event.h"
+#include "../Events/KeyEvent.h"
+#include "../Events/MouseEvent.h"
+#include "../Events/WindowEvent.h"
+
 namespace Engine {
 
 	void registerCallbacks(GLFWwindow* aWindow) {
@@ -13,25 +18,35 @@ namespace Engine {
 		glfwSetCursorPosCallback(aWindow, &onMouseMove);
 		glfwSetJoystickCallback(&joyStickCallback);
 	}
-
 	void onKeyPress(GLFWwindow* aWindow, int aKey, int aScanCode, int aAction, int aModifiers) {
-		if (aAction == GLFW_PRESS)
-		{
-			switch (aKey) {
-			case GLFW_KEY_ESCAPE:
-				glfwSetWindowShouldClose(aWindow, true);
-				break;
-			case GLFW_KEY_SPACE:
-				std::cout << "SPACE" << std::endl;
-				break;
-			default:
-				std::cout << glfwGetKeyName(aKey, aScanCode) << std::endl;
-			}
-		}
+		//if (aAction == GLFW_PRESS)
+		//{
+		//	//switch (aKey) {
+		//	//case GLFW_KEY_ESCAPE:
+		//	//	glfwSetWindowShouldClose(aWindow, true);
+		//	//	break;
+		//	//case GLFW_KEY_SPACE:
+		//	//	std::cout << "SPACE" << std::endl;
+		//	//	break;
+		//	//default:
+		//	std::cout << glfwGetKeyName(aKey, aScanCode) << std::endl;
+		//	//}
+		//}
 	}
 
 	void onMouseButton(GLFWwindow* aWindow, int aButton, int aAction, int aModifiers) {
-
+		switch (aButton) {
+		case GLFW_MOUSE_BUTTON_RIGHT:
+			if (aAction == GLFW_PRESS) {
+				if (glfwGetInputMode(aWindow, GLFW_CURSOR) == GLFW_CURSOR_NORMAL) {
+					glfwSetInputMode(aWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+				}
+				else if (glfwGetInputMode(aWindow, GLFW_CURSOR) == GLFW_CURSOR_DISABLED) {
+					glfwSetInputMode(aWindow, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+				}
+			}
+			break;
+		}
 	}
 
 	void onMouseMove(GLFWwindow* aWindow, double x, double y) {
@@ -93,7 +108,7 @@ namespace Engine {
 // 			break;
 // 		}
 // 	}
-	
+
 // 	void onMouseMove(GLFWwindow* aWindow, double x, double y) {
 // 		Mouse::setMousePosition(x, y);
 // 	}

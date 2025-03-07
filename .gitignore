@@ -14,3 +14,9 @@ Shaders/bin
 *.sln
 *.spv
 compile_commands.json
+
+# temporary
+Engine/third_party/vcpkg/downloads/PhysXGpu.7z
+Engine/third_party/vcpkg/installed/x64-windows/tools/PhysXGpu_64.dll
+Engine/third_party/vcpkg/packages/physx_x64-windows/tools/PhysXGpu_64.dll
+

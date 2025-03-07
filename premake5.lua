@@ -68,7 +68,7 @@ dofile("Engine/Utils/glslc.lua")
 -- Projects
 project "Engine"
     local sources = {
-        "Engine/glfw/**",  -- TO BE REMOVED
+        "Engine/Core/**",
         "Engine/Input/**", 
         "Engine/Events/**", 
         "Engine/gltf/**",

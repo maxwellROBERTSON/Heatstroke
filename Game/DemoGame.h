@@ -18,13 +18,14 @@
 #include "../Engine/Events/Event.h"
 #include "../Engine/Events/KeyEvent.h"
 #include "../Engine/Events/MouseEvent.h"
+#include "../Engine/Events/WindowEvent.h"
 
 class FPSTest : public Engine::Game
 {
 public:
 	FPSTest() : Engine::Game("FPS Test Game")
 	{
-		this->Init();
+		Init();
 	}
 	virtual void Init() override;
 	virtual void Update() override;

@@ -2,6 +2,7 @@
 
 #include "../Events/Event.h"
 #include "../Events/KeyEvent.h"
+#include "../Events/MouseEvent.h"
 #include "../Events/WindowEvent.h"
 #include "../Input/Callbacks.hpp"
 #include "../Input/InputCodes.h"
@@ -19,10 +20,11 @@ namespace Engine
 			std::cout << "ENGINE INIT" << std::endl;
 		}
 		virtual void Update() {}
-		void Run();
+		virtual void Run();
 		virtual void OnEvent(Event& e);
 		inline VulkanContext& GetContext() { return mContext; }
 		inline static Game& Get() { return *game; }
+		bool OnWindowClose(WindowCloseEvent& e);
 
 	private:
 		bool isRunning = true;
@@ -31,7 +33,6 @@ namespace Engine
 
 		float deltaTime = 0.0f, lastTime = 0.0f;
 
-		bool OnWindowClose(WindowCloseEvent& e);
 	};
 }
 

@@ -3,8 +3,12 @@
 #include <GLFW/glfw3.h>
 #include <glm/detail/func_trigonometric.inl>
 
+#include <iostream>
+
 #include "../Engine/Input/Keyboard.hpp"
 #include "../Engine/Input/Mouse.hpp"
+#include "../Input/InputCodes.h"
+#include "Engine/Events/Event.h"
 
 
 /*
@@ -84,6 +88,25 @@ void Camera::updateCamera(GLFWwindow* aWindow, float timeDelta) {
 	this->frontDirection = glm::normalize(newDir);
 }
 
-void Camera::OnEvent(Engine::Event& e)
+void Camera::OnEvent(GLFWwindow* aWindow, Engine::Event& e)
 {
+	//std::cout << "Camera::OnEvent" << std::endl;
+	Engine::EventDispatcher dispatcher(e);
+
+	dispatcher.Dispatch<Engine::MouseButtonPressedEvent>(
+		[&](Engine::MouseButtonPressedEvent& event)
+		{
+			if (event.GetMouseButton() == HS_MOUSE_BUTTON_RIGHT)
+			{
+				if (glfwGetInputMode(aWindow, GLFW_CURSOR) == GLFW_CURSOR_NORMAL) {
+					glfwSetInputMode(aWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+				}
+				else if (glfwGetInputMode(aWindow, GLFW_CURSOR) == GLFW_CURSOR_DISABLED) {
+					glfwSetInputMode(aWindow, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+				}
+			}
+			return true;
+
+		}
+	);
 }
