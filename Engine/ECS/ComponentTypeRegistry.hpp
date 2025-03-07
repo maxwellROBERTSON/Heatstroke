@@ -9,30 +9,11 @@
 class ComponentTypeRegistry
 {
 public:
+    // Getters
     static ComponentTypeRegistry& Get()
     {
         static ComponentTypeRegistry instance;
         return instance;
-    }
-
-    int GetNumberOfComponentTypes() const
-    {
-        return static_cast<int>(typeToId.size());
-    }
-
-	template <typename ... Types>
-	void RegisterComponentTypes()
-	{
-		(RegisterComponentType<Types>(), ...);
-	}
-
-    template <typename T>
-    void RegisterComponentType()
-    {
-        std::type_index typeIndex(typeid(T));
-        int newId = nextId++;
-		typeToId.insert({ typeIndex, newId });
-		idToType.insert({ newId, typeIndex });
     }
 
     template <typename T>
@@ -46,8 +27,8 @@ public:
         }
         else
         {
-			RegisterComponentType<T>();
-			return nextId - 1;
+            RegisterComponentType<T>();
+            return nextId - 1;
         }
     }
 
@@ -58,7 +39,28 @@ public:
         {
             return it->second;
         }
-		return std::type_index(typeid(void));  // Invalid type
+        return std::type_index(typeid(void));  // Invalid type
+    }
+
+    int GetNumberOfComponentTypes() const
+    {
+        return static_cast<int>(typeToId.size());
+    }
+
+	// Setters
+	template <typename ... Types>
+	void RegisterComponentTypes()
+	{
+		(RegisterComponentType<Types>(), ...);
+	}
+
+    template <typename T>
+    void RegisterComponentType()
+    {
+        std::type_index typeIndex(typeid(T));
+        int newId = nextId++;
+		typeToId.insert({ typeIndex, newId });
+		idToType.insert({ newId, typeIndex });
     }
 
 private:

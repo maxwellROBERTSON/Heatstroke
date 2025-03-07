@@ -1,0 +1,183 @@
+#include "PhysicsWorld.hpp"
+
+physx::PxDefaultErrorCallback PhysicsWorld::gErrorCallback;
+
+void PhysicsWorld::init() {
+	//gFoundation = PxCreateFoundation(PX_PHYSICS_VERSION, gAllocator, gErrorCallback);
+	//gPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *gFoundation, PxTolerancesScale(), true);
+	//PxSceneDesc sceneDesc(gPhysics->getTolerancesScale());
+	//sceneDesc.gravity = PxVec3(0.0f, -9.81f, 0.0f);
+	//gDispatcher = PxDefaultCpuDispatcherCreate(2);
+	//sceneDesc.cpuDispatcher = gDispatcher;
+	//sceneDesc.filterShader = PxDefaultSimulationFilterShader;
+	//gScene = gPhysics->createScene(sceneDesc);
+
+	// gFoundation
+	gFoundation = PxCreateFoundation(PX_PHYSICS_VERSION, gAllocator, gErrorCallback);
+	if (!gFoundation)
+	{
+		std::cerr << "PxCreateFoundation failed!" << std::endl;
+		std::exit(-1);
+	}
+
+	// Pvd
+	gPvd = PxCreatePvd(*gFoundation);
+	if (!gPvd)
+	{
+		std::cerr << "PxCreatePvd failed!" << std::endl;
+		std::exit(-1);
+	}
+	gTransport = PxDefaultPvdSocketTransportCreate("127.0.0.1", 5425, 10);
+	if (!gTransport)
+	{
+		std::cerr << "PxDefaultPvdSocketTransportCreate failed!" << std::endl;
+		std::exit(-1);
+	}
+	bool isConnected = gPvd->connect(*gTransport, PxPvdInstrumentationFlag::eALL);
+	if (!isConnected)
+	{
+		std::cerr << "PVD not connected. Is PhysX Visual Debugger running and listening?\n";
+	}
+
+	gPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *gFoundation, PxTolerancesScale(), true, gPvd);
+	if (!gPhysics)
+	{
+		std::cerr << "PxCreatePhysics failed!" << std::endl;
+		std::exit(-1);
+	}
+
+	// create Scene
+	PxSceneDesc sceneDesc(gPhysics->getTolerancesScale());
+	sceneDesc.gravity = PxVec3(0.0f, -9.81f, 0.0f);
+
+	PxDefaultCpuDispatcher* mCpuDispatcher = PxDefaultCpuDispatcherCreate(1);
+	if (!mCpuDispatcher)
+		std::cerr << "PxDefaultCpuDispatcherCreate failed!" << std::endl;
+
+	sceneDesc.cpuDispatcher = mCpuDispatcher;
+	sceneDesc.filterShader = PxDefaultSimulationFilterShader;
+	gScene = gPhysics->createScene(sceneDesc);
+	if (!gScene)
+	{
+		std::cerr << "createScene failed!" << std::endl;
+		std::exit(-1);
+	}
+	// set parameters for the scene
+	gScene->setVisualizationParameter(PxVisualizationParameter::eSCALE, 1.0f);
+	//gScene->setVisualizationParameter(PxVisualizationParameter::eCOLLISION_SHAPES, 1.0f);
+
+	// material
+	gMaterial = gPhysics->createMaterial(0.5f, 0.5f, 0.5f);
+	if (!gMaterial)
+	{
+		std::cerr << "createMaterial failed!" << std::endl;
+		std::exit(-1);
+	}
+
+	// ControllerManager
+	gControllerManager = PxCreateControllerManager(*gScene);
+	if (!gControllerManager)
+	{
+		std::cerr << "PxCreateControllerManager failed!" << std::endl;
+		std::exit(-1);
+	}
+
+	// testplane!
+	{
+		PxRigidStatic* groundPlane = PxCreatePlane(*gPhysics, PxPlane(0, 0, 1, 0), *gMaterial);
+		gScene->addActor(*groundPlane);
+	}
+
+}
+
+void PhysicsWorld::createCapsuleController()
+{
+	PxCapsuleControllerDesc desc;
+	desc.radius = 0.5f;
+	desc.height = 1.8f;
+	desc.material = gMaterial;
+	desc.contactOffset = 0.1f;
+	desc.position = PxExtendedVec3(0.0, 0.0, desc.height / 2.f + desc.contactOffset + desc.radius);
+	desc.slopeLimit = 0.0f;
+	desc.stepOffset = 0.5f;
+	desc.upDirection = PxVec3(0, 0, 1);
+
+	gCapsuleController = static_cast<PxCapsuleController*>(gControllerManager->createController(desc));
+	if (!gCapsuleController)
+	{
+		std::cerr << "createCapsuleController failed!" << std::endl;
+		std::exit(-1);
+	}
+}
+
+void PhysicsWorld::cleanupPhysX()
+{
+	if (gControllerManager)
+	{
+		gControllerManager->release();
+		gControllerManager = nullptr;
+	}
+
+	if (gScene)
+	{
+		gScene->release();
+		gScene = nullptr;
+	}
+
+	if (gPhysics)
+	{
+		gPhysics->release();
+		gPhysics = nullptr;
+	}
+
+	// disconnect PVD
+	if (gPvd)
+	{
+		PxPvdTransport* transport = gPvd->getTransport();
+		if (transport)
+		{
+			transport->disconnect();
+			transport->release();
+		}
+		gPvd->release();
+		gPvd = nullptr;
+	}
+
+	if (gFoundation)
+	{
+		gFoundation->release();
+		gFoundation = nullptr;
+	}
+}
+
+void PhysicsWorld::createStaticBox()
+{
+	PxVec3 pos = PxVec3(2.0f, 2.0f, 1.f);
+	float angle = PxPi * 0.25f; // 45 degrees
+	PxQuat rotation(angle, PxVec3(0.f, 0.f, 1.f)); // (angle, axis)
+
+	PxTransform boxTransform(pos, rotation);
+
+	PxRigidStatic* boxActor = gPhysics->createRigidStatic(boxTransform);
+	if (!boxActor)
+	{
+		std::cerr << "createRigidStatic for box failed!\n";
+		return;
+	}
+
+	PxBoxGeometry boxGeom(1.0f, 1.0f, 1.0f);
+
+	//
+	PxShape* boxShape = PxRigidActorExt::createExclusiveShape(*boxActor, boxGeom, *gMaterial);
+
+	if (!boxShape)
+	{
+		std::cerr << "createExclusiveShape for box failed!\n";
+		return;
+	}
+
+	// add actor to the scene
+	gScene->addActor(*boxActor);
+
+
+}

@@ -1,6 +1,10 @@
 #include "Utils.hpp"
 
+#ifdef OS_WINDOWS
 #include <corecrt_malloc.h>
+#else
+#include <cstdlib>
+#endif
 
 namespace Utils {
 

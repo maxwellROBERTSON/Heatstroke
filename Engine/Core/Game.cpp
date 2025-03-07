@@ -9,17 +9,10 @@ namespace Engine
 		mContext.window.get()->SetEventCallback(std::bind(&Game::OnEvent, this, std::placeholders::_1));
 		this->Init();
 	}
-	//void Game::Run()
-	//{
-	//	//while (isRunning)
-	//	//{
-	//	//	//float currTime = (float)glfwGetTime();
-	//	//	//deltaTime = currTime - lastTime;
-	//	//	//lastTime = currTime;
-	//	//	//this->Update();
-	//	//	Update();
-	//	//}
-	//}
+	void Game::Run()
+	{
+		this->Update();
+	}
 
 	void Game::OnEvent(Event& e)
 	{

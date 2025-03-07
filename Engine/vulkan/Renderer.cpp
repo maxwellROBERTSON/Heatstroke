@@ -5,9 +5,12 @@
 #include "VulkanUtils.hpp"
 #include "VulkanDevice.hpp"
 
+#include "../ECS/RenderComponent.hpp"
+
 namespace Engine {
 
 	void renderModels(
+		EntityManager& entityManager,
 		std::vector<vk::Model>& models,
 		VkCommandBuffer aCmdBuf,
 		VkRenderPass aRenderPass,
@@ -69,11 +72,17 @@ namespace Engine {
 
 		vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, 0, 1, &aSceneDescriptorSet, 0, nullptr);
 
-		for (std::size_t i = 0; i < models.size(); i++) {
+		std::pair<void*, int> renderComponents = entityManager.GetComponents<RenderComponent>();
+		int j;
+		for (std::size_t i = 0; i < renderComponents.second; i++) {
+			RenderComponent r = reinterpret_cast<RenderComponent*>(renderComponents.first)[i];
+			int z = 0;
+		}
+		for (std::size_t i = 0; i < renderComponents.second; i++) {
 			std::uint32_t offset = i * dynamicOffset;
 			vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, 3, 1, &modelMatricesDescriptor, 1, &offset);
-
-			models[i].drawModel(aCmdBuf, aPipelineLayout);
+			j = reinterpret_cast<RenderComponent*>(renderComponents.first)[i].GetModelIndex();
+			models[reinterpret_cast<RenderComponent*>(renderComponents.first)[i].GetModelIndex()].drawModel(aCmdBuf, aPipelineLayout);
 		}
 
 		vkCmdEndRenderPass(aCmdBuf);
