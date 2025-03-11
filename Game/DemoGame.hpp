@@ -3,26 +3,31 @@
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#include "../Engine/Core/Game.h"
+#include "../Engine/Core/Game.hpp"
 
+#include "../Engine/ECS/CameraComponent.hpp"
 #include "../Engine/ECS/ComponentTypeRegistry.hpp"
 #include "../Engine/ECS/EntityManager.hpp"
-#include "../Engine/ECS/RenderComponent.hpp"
-#include "../Engine/ECS/PhysicsComponent.hpp"
-#include "../Engine/ECS/CameraComponent.hpp"
 #include "../Engine/ECS/NetworkComponent.hpp"
+#include "../Engine/ECS/PhysicsComponent.hpp"
+#include "../Engine/ECS/RenderComponent.hpp"
 
 #include "../Engine/Physics/PhysicsWorld.hpp"
 
 #include "../Engine/vulkan/VulkanContext.hpp"
+#include "../Engine/vulkan/VulkanDevice.hpp"
 
 #include "Camera.hpp"
 #include "Uniforms.hpp"
 
-#include "../Engine/Events/Event.h"
-#include "../Engine/Events/KeyEvent.h"
-#include "../Engine/Events/MouseEvent.h"
-#include "../Engine/Events/WindowEvent.h"
+#include "../Engine/Events/Event.hpp"
+#include "../Engine/Events/KeyEvent.hpp"
+#include "../Engine/Events/MouseEvent.hpp"
+#include "../Engine/Events/WindowEvent.hpp"
+
+#include "../Input/Input.hpp"
+#include "../Input/InputCodes.hpp"
+#include "../Input/Joystick.hpp"
 
 class FPSTest : public Engine::Game
 {
@@ -41,8 +46,11 @@ public:
 	void RenderScene();
 
 	~FPSTest() {
-		for (Engine::vk::Model& model : models)
-			model.destroy();
+
+		{
+			for (Engine::vk::Model& model : models)
+				model.destroy();
+		}
 
 		this->GetContext().allocator.reset();
 		this->GetContext().window.reset();

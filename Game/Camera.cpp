@@ -7,8 +7,8 @@
 
 #include "../Engine/Input/Keyboard.hpp"
 #include "../Engine/Input/Mouse.hpp"
-#include "../Input/InputCodes.h"
-#include "Engine/Events/Event.h"
+#include "../Input/InputCodes.hpp"
+#include "Engine/Events/Event.hpp"
 
 
 /*
@@ -23,36 +23,36 @@ void Camera::updateCamera(GLFWwindow* aWindow, float timeDelta) {
 	if (glfwGetInputMode(aWindow, GLFW_CURSOR) != GLFW_CURSOR_DISABLED)
 		return;
 
-	for (const auto& [key, state] : Engine::Keyboard::getKeyStates()) {
-		if (state.first) { // Key was pressed down
+	auto& keyboard = Engine::InputManager::getKeyboard();
+	auto& mouse = Engine::InputManager::getMouse();
+	float speedModifier = 1.0f;
+	if (keyboard.isPressed(HS_KEY_LEFT_SHIFT)) speedModifier = 3.0f;
+	float distance = 1.0f * speedModifier * timeDelta;
 
-			float speedModifier = 1.0f;
-			if (state.second == GLFW_MOD_SHIFT) speedModifier = 3.0f;
-			float distance = 1.0f * speedModifier * timeDelta;
-
-			switch (key) {
-			case GLFW_KEY_W:
-				this->position += distance * this->frontDirection;
-				break;
-			case GLFW_KEY_S:
-				this->position -= distance * this->frontDirection;
-				break;
-			case GLFW_KEY_D:
-				this->position += glm::normalize(glm::cross(this->frontDirection, glm::vec3(0.0f, 1.0f, 0.0f))) * distance;
-				break;
-			case GLFW_KEY_A:
-				this->position -= glm::normalize(glm::cross(this->frontDirection, glm::vec3(0.0f, 1.0f, 0.0f))) * distance;
-				break;
-			case GLFW_KEY_E:
-				this->position += distance * glm::vec3(0.0f, 1.0f, 0.0f);
-				break;
-			case GLFW_KEY_Q:
-				this->position -= distance * glm::vec3(0.0f, 1.0f, 0.0f);
-				break;
-			}
-		}
+	if (keyboard.isPressed(HS_KEY_W))
+	{
+		this->position += distance * this->frontDirection;
 	}
-
+	if (keyboard.isPressed(HS_KEY_S))
+	{
+		this->position -= distance * this->frontDirection;
+	}
+	if (keyboard.isPressed(HS_KEY_D))
+	{
+		this->position += glm::normalize(glm::cross(this->frontDirection, glm::vec3(0.0f, 1.0f, 0.0f))) * distance;
+	}
+	if (keyboard.isPressed(HS_KEY_A))
+	{
+		this->position -= glm::normalize(glm::cross(this->frontDirection, glm::vec3(0.0f, 1.0f, 0.0f))) * distance;
+	}
+	if (keyboard.isPressed(HS_KEY_E))
+	{
+		this->position += distance * glm::vec3(0.0f, 1.0f, 0.0f);
+	}
+	if (keyboard.isPressed(HS_KEY_Q))
+	{
+		this->position -= distance * glm::vec3(0.0f, 1.0f, 0.0f);
+	}
 	//std::fprintf(stdout, "Pos: %f %f %f\n", this->position.x, this->position.y, this->position.z);
 
 	if (this->firstClick) {
@@ -64,11 +64,11 @@ void Camera::updateCamera(GLFWwindow* aWindow, float timeDelta) {
 		this->firstClick = false;
 	}
 
-	float xOffset = Engine::Mouse::getX() - this->lastX;
-	float yOffset = this->lastY - Engine::Mouse::getY();
+	float xOffset = mouse.getXPos() - this->lastX;
+	float yOffset = this->lastY - mouse.getYPos();
 
-	this->lastX = Engine::Mouse::getX();
-	this->lastY = Engine::Mouse::getY();
+	this->lastX = mouse.getXPos();
+	this->lastY = mouse.getYPos();
 
 	xOffset *= 0.1f; // Sensitivity multiplier
 	yOffset *= 0.1f;
@@ -90,7 +90,6 @@ void Camera::updateCamera(GLFWwindow* aWindow, float timeDelta) {
 
 void Camera::OnEvent(GLFWwindow* aWindow, Engine::Event& e)
 {
-	//std::cout << "Camera::OnEvent" << std::endl;
 	Engine::EventDispatcher dispatcher(e);
 
 	dispatcher.Dispatch<Engine::MouseButtonPressedEvent>(

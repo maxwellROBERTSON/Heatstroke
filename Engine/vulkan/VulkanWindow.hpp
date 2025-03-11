@@ -18,10 +18,7 @@
 
 #include "objects/VkObjects.hpp"
 #include "objects/Texture.hpp"
-#include "../Events/Event.h"
-#include "../Events/KeyEvent.h"
-#include "../Events/MouseEvent.h"
-#include "../Events/WindowEvent.h"
+#include "../Events/Event.hpp"
 
 namespace Engine {
 
@@ -52,7 +49,6 @@ namespace Engine {
 		GLFWwindow* window = nullptr;
 		std::function<void(Event&)> EventCallback;
 		inline void SetEventCallback(const std::function<void(Event&)>& callback) { EventCallback = callback; }
-		void RegisterCallbacks();
 
 		VkSurfaceKHR surface = VK_NULL_HANDLE;
 

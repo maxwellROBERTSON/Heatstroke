@@ -3,9 +3,11 @@
 #include <glm/mat4x4.hpp>
 #include <glm/vec4.hpp>
 
-#include "../Engine/Events/Event.h"
-#include "../Engine/Events/KeyEvent.h"
-#include "../Engine/Events/MouseEvent.h"
+#include "../Engine/Events/Event.hpp"
+#include "../Engine/Events/KeyEvent.hpp"
+#include "../Engine/Events/MouseEvent.hpp"
+#include "../Input/Input.hpp"
+#include "../Input/InputCodes.hpp"
 
 struct GLFWwindow;
 
@@ -48,6 +50,5 @@ public:
 	float pitch = 0.0f;
 	float lastX = 0.0f;
 	float lastY = 0.0f;
-
 
 };

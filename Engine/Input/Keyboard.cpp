@@ -1,17 +1,24 @@
 #include "Keyboard.hpp"
 
 namespace Engine {
-namespace Keyboard {
-
-	std::map<int, std::pair<bool, int>> keys;
-
-	void setKey(int key, std::pair<bool, int> actionAndModifiers) {
-		keys[key] = actionAndModifiers;
+	const std::string& Keyboard::getDeviceName() const
+	{
+		return "Keyboard";
 	}
 
-	std::map<int, std::pair<bool, int>>& getKeyStates() {
-		return keys;
+	std::map<int, ButtonState>& Keyboard::getKeyboardState()
+	{
+		return mKeyStates;
 	}
 
-}
+	bool Keyboard::isPressed(int aKey)
+	{
+		return (mKeyStates[aKey] == ButtonState::PRESSED);
+	}
+
+	void Keyboard::setKey(int aKey, ButtonState aButtonState)
+	{
+		mKeyStates[aKey] = aButtonState;
+	}
+
 }

@@ -8,8 +8,8 @@
 #include "../Engine/Network/Helpers/GetLocalIPAddress.hpp"
 #include "../Engine/Network/Server/GameServer.hpp"
 
-#include "DemoGame.h"
 #include "../Engine/Physics/PhysicsWorld.hpp"
+#include "DemoGame.hpp"
 
 //int main() try {
 //    // This manual scope is very important, it ensures the objects in models have their associated
@@ -33,6 +33,8 @@ int main() try
 {
 	std::unique_ptr<FPSTest> game = std::make_unique<FPSTest>();
 	game->Run();
+	game.get()->GetContext().allocator.reset();
+	game.get()->GetContext().window.reset();
 	return 0;
 }
 catch (const std::exception& error) {

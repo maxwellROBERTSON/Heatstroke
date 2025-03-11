@@ -16,6 +16,8 @@ void FPSTest::Init()
 	std::cout << "FPS TEST INIT" << std::endl;
 	registerComponents();
 	initialiseModels();
+	// getHID
+
 }
 
 void FPSTest::Update()
@@ -25,15 +27,19 @@ void FPSTest::Update()
 
 void FPSTest::OnEvent(Engine::Event& e)
 {
+	Game::OnEvent(e);
+
+	camera->OnEvent(this->GetContext().getGLFWWindow(), e);
 	Engine::EventDispatcher dispatcher(e);
 
-	dispatcher.Dispatch<Engine::KeyPressedEvent>(
-		[&](Engine::KeyPressedEvent& event)
-		{
-			std::cout << event.GetKeyCode() << std::endl;
-			return true;
-		}
-	);
+	//dispatcher.Dispatch<Engine::KeyPressedEvent>(
+	//	[&](Engine::KeyPressedEvent& event)
+	//	{
+	//		std::cout << event.GetKeyCode() << std::endl;
+	//		return true;
+	//	}
+	//);
+
 }
 
 void FPSTest::registerComponents()
@@ -174,7 +180,15 @@ void FPSTest::RenderScene()
 	auto previous = std::chrono::steady_clock::now();
 
 	while (!glfwWindowShouldClose(this->GetContext().getGLFWWindow())) {
-		glfwPollEvents();
+		Engine::InputManager::Update();
+		if (!Engine::InputManager::mJoysticks.empty())
+		{
+			if (Engine::InputManager::getJoystick(0).isPressed(HS_GAMEPAD_BUTTON_A))
+			{
+				std::cout << "A BUTTON PRESSED" << std::endl;
+			}
+		}
+
 
 		if (recreateSwapchain) {
 			vkDeviceWaitIdle(this->GetContext().window->device->device);
@@ -252,8 +266,9 @@ void FPSTest::RenderScene()
 	}
 
 	vkDeviceWaitIdle(this->GetContext().window->device->device);
-
 	vmaUnmapMemory(this->GetContext().allocator->allocator, modelMatricesBuf.allocation);
+
+
 }
 
 void updateSceneUniform(glsl::SceneUniform& aScene, Camera& camera, std::uint32_t aFramebufferWidth, std::uint32_t aFramebufferHeight) {
