@@ -157,7 +157,7 @@ namespace Engine {
 
 			VkSampler sampler = texture.sampler > -1 ? vkModel.samplers[texture.sampler].handle : vkModel.defaultSampler.handle;
 
-			vk::Texture vkTexture = vk::createTexture(aContext, image, format, sampler);
+			vk::Texture vkTexture = vk::createTexture(aContext, "glTF texture", image, format, sampler);
 			vk::ImageView vkImageView = vk::createImageView(*aContext.window, vkTexture.image, format);
 
 			vkModel.textures.emplace_back(std::move(vkTexture));

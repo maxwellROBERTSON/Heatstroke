@@ -116,5 +116,8 @@ namespace Engine {
 		const VulkanWindow& aWindow,
 		std::map<std::string, vk::RenderPass>& aRenderPasses,
 		std::map<std::string, std::tuple<vk::Texture, vk::ImageView>>& buffers,
-		std::vector<vk::Framebuffer>& aFramebuffers, std::map<std::string, VkDescriptorSet>& aDescriptorSets);
+		std::vector<vk::Framebuffer>& aFramebuffers,
+		std::vector<vk::Framebuffer>& aDeferredFramebuffers,
+		std::map<std::string, vk::DescriptorSetLayout>& aDescriptorLayouts,
+		std::map<std::string, VkDescriptorSet>& aDescriptorSets);
 }

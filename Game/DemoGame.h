@@ -42,9 +42,6 @@ public:
 	~FPSTest() {
 		for (Engine::vk::Model& model : models)
 			model.destroy();
-
-		this->GetContext().allocator.reset();
-		this->GetContext().window.reset();
 	};
 
 public:

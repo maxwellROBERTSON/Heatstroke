@@ -21,13 +21,15 @@ namespace vk {
 		Texture() noexcept = default;
 		~Texture();
 
-		explicit Texture(VmaAllocator, VkImage = VK_NULL_HANDLE, VmaAllocation = VK_NULL_HANDLE) noexcept;
+		explicit Texture(VmaAllocator, std::string name, VkImage = VK_NULL_HANDLE, VmaAllocation = VK_NULL_HANDLE) noexcept;
 
 		Texture(const Texture&) = delete;
 		Texture& operator= (const Texture&) = delete;
 
 		Texture(Texture&&) noexcept;
 		Texture& operator= (Texture&&) noexcept;
+
+		std::string name = "";
 
 		VkImage image = VK_NULL_HANDLE;
 		VmaAllocation allocation = VK_NULL_HANDLE;
@@ -38,14 +40,14 @@ namespace vk {
 		VmaAllocator mAllocator = VK_NULL_HANDLE;
 	};
 
-	Texture createTexture(const VulkanContext& aContext, tinygltf::Image aTinygltfImage, VkFormat aFormat, VkSampler aSampler);
+	Texture createTexture(const VulkanContext& aContext, std::string name, tinygltf::Image aTinygltfImage, VkFormat aFormat, VkSampler aSampler);
 	Texture createDummyTexture(const VulkanContext& aContext, VkSampler aSampler);
 
 	ImageView createImageView(const VulkanWindow& aWindow, VkImage aImage, VkFormat aFormat);
 
 	std::uint32_t computeMipLevels(std::uint32_t width, std::uint32_t height);
 
-	Texture createVkImage(const VulkanContext&, std::uint32_t, std::uint32_t, VkFormat, std::uint32_t, VkImageUsageFlags);
+	Texture createVkImage(const VulkanContext&, std::string, std::uint32_t, std::uint32_t, VkFormat, std::uint32_t, VkImageUsageFlags);
 
 }
 }
