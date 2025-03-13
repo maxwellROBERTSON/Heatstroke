@@ -110,142 +110,20 @@ void FPSTest::RenderScene()
 		}
 	}
 
-	// Create required objects for rendering
-	std::map<std::string, Engine::vk::RenderPass> renderPasses;
-	renderPasses.emplace("default", Engine::createRenderPass(*this->GetContext().window));
-	renderPasses.emplace("deferred", Engine::createDeferredRenderPass(*this->GetContext().window));
-
-	std::map<std::string, Engine::vk::DescriptorSetLayout> descriptorLayouts;
-	descriptorLayouts.emplace("sceneLayout", Engine::createSceneLayout(*this->GetContext().window));
-	descriptorLayouts.emplace("materialLayout", Engine::createMaterialLayout(*this->GetContext().window));
-	descriptorLayouts.emplace("SSBOLayout", Engine::createSSBOLayout(*this->GetContext().window));
-	descriptorLayouts.emplace("modelMatricesLayout", Engine::createDynamicUBOLayout(*this->GetContext().window));
-	descriptorLayouts.emplace("deferredLayout", Engine::createDeferredLayout(*this->GetContext().window));
-	descriptorLayouts.emplace("fragUBOLayout", Engine::createUBOLayout(*this->GetContext().window));
-
-	std::vector<VkDescriptorSetLayout> sceneDescriptorLayouts;
-	sceneDescriptorLayouts.emplace_back(descriptorLayouts["sceneLayout"].handle);
-	sceneDescriptorLayouts.emplace_back(descriptorLayouts["materialLayout"].handle);
-	sceneDescriptorLayouts.emplace_back(descriptorLayouts["SSBOLayout"].handle);
-	sceneDescriptorLayouts.emplace_back(descriptorLayouts["modelMatricesLayout"].handle);
-
-	std::vector<VkDescriptorSetLayout> deferredShadingLayouts;
-	deferredShadingLayouts.emplace_back(descriptorLayouts["deferredLayout"].handle);
-	deferredShadingLayouts.emplace_back(descriptorLayouts["sceneLayout"].handle);
-	deferredShadingLayouts.emplace_back(descriptorLayouts["fragUBOLayout"].handle);
-
-	std::map<std::string, Engine::vk::PipelineLayout> pipelineLayouts;
-	pipelineLayouts.emplace("default", Engine::createPipelineLayout(*this->GetContext().window, sceneDescriptorLayouts, true));
-	pipelineLayouts.emplace("deferred", Engine::createPipelineLayout(*this->GetContext().window, deferredShadingLayouts, false));
-
-	std::tuple<Engine::vk::Pipeline, Engine::vk::Pipeline> deferredPipelines = Engine::createDeferredPipelines(*this->GetContext().window, renderPasses["deferred"].handle, pipelineLayouts["default"].handle, pipelineLayouts["deferred"].handle);
-
-	std::map<std::string, Engine::vk::Pipeline> pipelines;
-	pipelines.emplace("default", Engine::createPipeline(*this->GetContext().window, renderPasses["default"].handle, pipelineLayouts["default"].handle));
-	pipelines.emplace("gBufWrite", std::move(std::get<0>(deferredPipelines)));
-	pipelines.emplace("deferred", std::move(std::get<1>(deferredPipelines)));
-
-	std::map<std::string, std::tuple<Engine::vk::Texture, Engine::vk::ImageView>> buffers;
-	buffers.emplace("depthBuffer", Engine::createDepthBuffer(*this->GetContext().window, *this->GetContext().allocator));
-	buffers.emplace("normalsBuffer", Engine::createNormalsBuffer(*this->GetContext().window, *this->GetContext().allocator));
-	buffers.emplace("albedoBuffer", Engine::createAlbedoBuffer(*this->GetContext().window, *this->GetContext().allocator));
-	buffers.emplace("emissiveBuffer", Engine::createEmissiveBuffer(*this->GetContext().window, *this->GetContext().allocator));
-
-	// Create basic swapchain framebuffers
-	std::vector<Engine::vk::Framebuffer> framebuffers;
-	Engine::createFramebuffers(*this->GetContext().window, framebuffers, renderPasses["default"].handle, std::get<1>(buffers["depthBuffer"]).handle);
-	std::vector<Engine::vk::Framebuffer> deferredFramebuffers;
-	Engine::createDeferredFramebuffers(*this->GetContext().window, deferredFramebuffers, renderPasses["deferred"].handle, std::get<1>(buffers["depthBuffer"]).handle, std::get<1>(buffers["normalsBuffer"]).handle, std::get<1>(buffers["albedoBuffer"]).handle, std::get<1>(buffers["emissiveBuffer"]).handle);
-
-	// Setup synchronisation
-	std::size_t frameIndex = 0;
-	std::vector<VkCommandBuffer> cmdBuffers;
-	std::vector<Engine::vk::Fence> frameDone;
-	std::vector<Engine::vk::Semaphore> imageAvailable, renderFinished;
-
-	for (std::size_t i = 0; i < framebuffers.size(); i++) {
-		cmdBuffers.emplace_back(Engine::createCommandBuffer(*this->GetContext().window));
-		frameDone.emplace_back(Engine::createFence(*this->GetContext().window, VK_FENCE_CREATE_SIGNALED_BIT));
-		imageAvailable.emplace_back(Engine::createSemaphore(*this->GetContext().window));
-		renderFinished.emplace_back(Engine::createSemaphore(*this->GetContext().window));
-	}
-
-	// Create uniform buffers
-	Engine::vk::Buffer sceneUBO = Engine::vk::createBuffer("sceneUBO", *this->GetContext().allocator, sizeof(glsl::SceneUniform), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, 0, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
-	Engine::vk::Buffer lightsUBO = Engine::vk::createBuffer("lightsUBO", *this->GetContext().allocator, sizeof(glsl::LightsUniform), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, 0, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
-	// Dynamic UBO's need to be correctly aligned (maybe move most of this out of the game loop method and put somewhere else)
-	std::size_t uboAlignment = this->GetContext().window->device->minUBOAlignment;
-	std::size_t dynamicAlignment = (sizeof(glm::mat4) + uboAlignment - 1) & ~(uboAlignment - 1);
-	glsl::ModelMatricesUniform modelMatrices;
-	Engine::vk::Buffer modelMatricesBuf = Engine::setupDynamicUBO(this->GetContext(), entityManager.GetComponentTypeSize<RenderComponent>(), dynamicAlignment, modelMatrices);
-	vmaMapMemory(this->GetContext().allocator->allocator, modelMatricesBuf.allocation, &modelMatricesBuf.mapped);
-
-	std::map<std::string, VkDescriptorSet> descriptorSets;
-	descriptorSets.emplace("sceneDescriptors", Engine::createUBODescriptor(*this->GetContext().window, descriptorLayouts["sceneLayout"].handle, sceneUBO.buffer));
-	descriptorSets.emplace("lightsDescriptors", Engine::createUBODescriptor(*this->GetContext().window, descriptorLayouts["fragUBOLayout"].handle, lightsUBO.buffer));
-	descriptorSets.emplace("modelMatricesDescriptor", Engine::createModelMatricesDescriptor(*this->GetContext().window, descriptorLayouts["modelMatricesLayout"].handle, modelMatricesBuf.buffer, dynamicAlignment));
-	descriptorSets.emplace("deferredShadingDescriptor", Engine::createDeferredShadingDescriptor(*this->GetContext().window, descriptorLayouts["deferredLayout"].handle, std::get<1>(buffers["depthBuffer"]).handle, std::get<1>(buffers["normalsBuffer"]).handle, std::get<1>(buffers["albedoBuffer"]).handle, std::get<1>(buffers["emissiveBuffer"]).handle));
-
-	// For each model create its descriptor sets
-	for (Engine::vk::Model& model : models) {
-		model.createDescriptorSets(this->GetContext(), descriptorLayouts["materialLayout"].handle, descriptorLayouts["SSBOLayout"].handle);
-	}
-
-	glsl::LightsUniform lights{};
-	lights.light[0].pos = glm::vec4(0.0f, 3.0f, 0.0f, 0.0f);
-	lights.light[1].pos = glm::vec4(-6.0f, 1.6f, -2.1f, 0.0f);
-	lights.light[2].pos = glm::vec4(-6.0f, 1.6f, 1.5f, 0.0f);
-	lights.light[3].pos = glm::vec4(4.8f, 1.6f, -2.1f, 0.0f);
-	lights.light[4].pos = glm::vec4(4.8f, 1.6f, 1.5f, 0.0f);
-	lights.light[0].color = glm::vec4(1.0f, 1.0f, 1.0f, 0.0f);
-	lights.light[1].color = glm::vec4(1.0f, 0.0f, 0.0f, 0.0f);
-	lights.light[2].color = glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
-	lights.light[3].color = glm::vec4(0.0f, 0.0f, 1.0f, 0.0f);
-	lights.light[4].color = glm::vec4(1.0f, 0.0f, 1.0f, 0.0f);
+	this->renderer.initialiseRenderer();
+	this->renderer.attachCamera(camera);
+	this->renderer.initialiseModelDescriptors(models);	
 
 	auto previous = std::chrono::steady_clock::now();
 
 	while (!glfwWindowShouldClose(this->GetContext().getGLFWWindow())) {
 		glfwPollEvents();
 
-		if (recreateSwapchain) {
-			vkDeviceWaitIdle(this->GetContext().window->device->device);
-
-			const auto changes = Engine::recreateSwapchain(*this->GetContext().window);
-
-			if (changes.changedFormat)
-				Engine::recreateFormatDependents(*this->GetContext().window, renderPasses);
-
-			if (changes.changedSize)
-				Engine::recreateSizeDependents(this->GetContext(), renderPasses, pipelineLayouts, buffers, pipelines);
-
-			Engine::recreateOthers(*this->GetContext().window, renderPasses, buffers, framebuffers, deferredFramebuffers, descriptorLayouts, descriptorSets);
-
-			std::fprintf(stdout, "size: %d - format: %d\n", changes.changedSize, changes.changedFormat);
-
-			recreateSwapchain = false;
+		if (this->renderer.checkSwapchain())
 			continue;
-		}
 
-		frameIndex++;
-		frameIndex %= cmdBuffers.size();
-
-		Engine::waitForFences(*this->GetContext().window, frameDone, frameIndex);
-
-		std::uint32_t imageIndex = 0;
-		if (Engine::acquireNextSwapchainImage(*this->GetContext().window, imageAvailable, frameIndex, imageIndex)) {
-			recreateSwapchain = true;
-
-			--frameIndex;
-			frameIndex %= cmdBuffers.size();
-
+		if (this->renderer.acquireSwapchainImage())
 			continue;
-		}
-
-		Engine::resetFences(*this->GetContext().window, frameDone, frameIndex);
-
-		assert(std::size_t(frameIndex) < cmdBuffers.size());
-		assert(std::size_t(imageIndex) < framebuffers.size());
 
 		// Calculate time delta
 		const auto now = std::chrono::steady_clock::now();
@@ -254,87 +132,14 @@ void FPSTest::RenderScene()
 
 		camera->updateCamera(this->GetContext().getGLFWWindow(), timeDelta);
 
-		glsl::SceneUniform sceneUniform{};
-		updateSceneUniform(sceneUniform, *camera, this->GetContext().window->swapchainExtent.width, this->GetContext().window->swapchainExtent.height);
-		updateModelMatrices(this->GetContext(), modelMatrices, modelMatricesBuf, entityManager, dynamicAlignment);
+		this->renderer.updateUniforms();
 
-		/*Engine::renderModels(
-			entityManager,
-			models,
-			cmdBuffers[frameIndex],
-			renderPasses["default"].handle,
-			framebuffers[imageIndex].handle,
-			pipelines["default"].handle,
-			this->GetContext().window->swapchainExtent,
-			sceneUBO.buffer,
-			sceneUniform,
-			pipelineLayouts["default"].handle,
-			descriptorSets["sceneDescriptors"],
-			descriptorSets["modelMatricesDescriptor"],
-			dynamicAlignment
-		);*/
+		this->renderer.render(Engine::RenderMode::DEFERRED, models);
 
-		Engine::renderModelsDeferred(
-			entityManager,
-			models,
-			cmdBuffers[frameIndex],
-			renderPasses["deferred"].handle,
-			deferredFramebuffers[imageIndex].handle,
-			pipelines["gBufWrite"].handle,
-			pipelines["deferred"].handle,
-			this->GetContext().window->swapchainExtent,
-			sceneUBO.buffer,
-			lightsUBO.buffer,
-			sceneUniform,
-			lights,
-			pipelineLayouts["default"].handle,
-			pipelineLayouts["deferred"].handle,
-			descriptorSets["sceneDescriptors"],
-			descriptorSets["modelMatricesDescriptor"],
-			descriptorSets["deferredShadingDescriptor"],
-			descriptorSets["lightsDescriptors"],
-			dynamicAlignment
-		);
-
-		assert(std::size_t(frameIndex) < renderFinished.size());
-
-		const VkResult result = Engine::submitAndPresent(*this->GetContext().window, cmdBuffers, frameDone, imageAvailable, renderFinished, frameIndex, imageIndex);
-		if (VK_SUBOPTIMAL_KHR == result || VK_ERROR_OUT_OF_DATE_KHR == result)
-			recreateSwapchain = true;
-		else if (VK_SUCCESS != result)
-			throw Utils::Error("Unable to present swapchain image %u\n vkQueuePresentKHR() returned %s", imageIndex, Utils::toString(result).c_str());
+		this->renderer.submitRender();
 	}
 
-	vkDeviceWaitIdle(this->GetContext().window->device->device);
-
-	vmaUnmapMemory(this->GetContext().allocator->allocator, modelMatricesBuf.allocation);
-}
-
-void updateSceneUniform(glsl::SceneUniform& aScene, Camera& camera, std::uint32_t aFramebufferWidth, std::uint32_t aFramebufferHeight) {
-	const float aspectRatio = aFramebufferWidth / float(aFramebufferHeight);
-
-	aScene.projection = glm::perspective(glm::radians(camera.fov), aspectRatio, camera.nearPlane, camera.farPlane);
-	aScene.projection[1][1] *= -1.0f;
-	aScene.view = glm::lookAt(camera.position, camera.position + camera.frontDirection, glm::vec3(0.0f, 1.0f, 0.0f));
-	aScene.position = glm::vec4(camera.position, 1.0f);
-}
-
-void updateModelMatrices(const Engine::VulkanContext& aContext, glsl::ModelMatricesUniform& aModelMatrices, Engine::vk::Buffer& aBuffer, EntityManager& entityManager, std::size_t dynamicAlignment) {
-
-	std::vector<int> aModels = entityManager.GetEntitiesWithComponent<RenderComponent>();
-	for (std::size_t i = 0; i < aModels.size(); i++) {
-		glm::mat4* modelMatrix = (glm::mat4*)((std::uint64_t)aModelMatrices.model + (i * dynamicAlignment));
-
-		// This will need to be changed to get a 'parent' model matrix, not
-		// just the first node's model matrix.
-		*modelMatrix = entityManager.GetEntity(aModels[i])->GetModelMatrix();
-	}
-
-	int size = entityManager.GetComponentTypeSize<RenderComponent>() * dynamicAlignment;
-
-	std::memcpy(aBuffer.mapped, aModelMatrices.model, size);
-
-	vmaFlushAllocation(aContext.allocator->allocator, aBuffer.allocation, 0, size);
+	this->renderer.finishRendering();
 }
 
 void loadOfflineEntities(ComponentTypeRegistry& registry, EntityManager& entityManager)

@@ -24,8 +24,10 @@ layout(location = 3) out vec2 v2fTexCoord1;
 layout(location = 4) out vec4 v2fVertexColour;
 
 void main() {
-	v2fNormal = normalize(transpose(inverse(mat3(modelMatrix.model))) * iNormal);
-	v2fTangent = iTangent;
+	mat3 normalMatrix = transpose(inverse(mat3(modelMatrix.model)));
+
+	v2fNormal = normalize(normalMatrix * iNormal);
+	v2fTangent = vec4(normalMatrix * iTangent.rgb, iTangent.w);
 	v2fTexCoord0 = iTexCoord0;
 	v2fTexCoord1 = iTexCoord1;
 	v2fVertexColour = iVertexColour;

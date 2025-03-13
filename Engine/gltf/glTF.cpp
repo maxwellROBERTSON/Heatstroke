@@ -217,6 +217,8 @@ namespace Engine {
 			for (std::size_t i = 0; i < mesh.primitives.size(); i++) {
 				const tinygltf::Primitive& primitive = mesh.primitives[i];
 
+				glm::vec3 bbMin;
+				glm::vec3 bbMax;
 				std::uint32_t indexCount = 0, vertexCount = 0;
 				bool hasIndices = primitive.indices > -1;
 				bool getTangentsFromTgen = false;
@@ -237,6 +239,8 @@ namespace Engine {
 				const tinygltf::Accessor& positionAccessor = model.accessors[primitive.attributes.find("POSITION")->second];
 				const tinygltf::BufferView& positionBufView = model.bufferViews[positionAccessor.bufferView];
 				bufferPos = reinterpret_cast<const float*>(&(model.buffers[positionBufView.buffer].data[positionAccessor.byteOffset + positionBufView.byteOffset]));
+				bbMin = glm::vec3(positionAccessor.minValues[0], positionAccessor.minValues[1], positionAccessor.minValues[2]);
+				bbMax = glm::vec3(positionAccessor.maxValues[0], positionAccessor.maxValues[1], positionAccessor.maxValues[2]);
 				vertexCount = positionAccessor.count;
 				positionByteStride = positionAccessor.ByteStride(positionBufView) ? (positionAccessor.ByteStride(positionBufView) / sizeof(float)) : tinygltf::GetNumComponentsInType(TINYGLTF_TYPE_VEC3);
 
@@ -375,6 +379,7 @@ namespace Engine {
 
 				vk::Material& material = primitive.material > -1 ? vkModel.materials[primitive.material] : vkModel.materials.back();
 				vk::Primitive* newPrimitive = new vk::Primitive(0, indexCount, vertexCount, rawData, material);
+				newPrimitive->setBounds(bbMin, bbMax);
 				newMesh->primitives.push_back(newPrimitive);
 			}
 
