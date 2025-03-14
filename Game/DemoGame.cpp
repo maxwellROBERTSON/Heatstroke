@@ -102,7 +102,7 @@ void FPSTest::RenderScene()
 		// Offline mode
 		isChange = false;
 		std::cout << "before loadoff: " << physics_world.gScene->getNbActors(PxActorTypeFlag::eRIGID_STATIC) << std::endl;
-		loadOfflineEntities(registry, entityManager);
+		loadOfflineEntities(registry, entityManager,physics_world);
 		std::cout << "after loadoff: " << physics_world.gScene->getNbActors(PxActorTypeFlag::eRIGID_STATIC) << std::endl;
 		clientId = 0;
 	}

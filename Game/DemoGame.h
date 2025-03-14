@@ -62,4 +62,4 @@ public:
 	bool isChange = true;
 };
 
-void loadOfflineEntities(ComponentTypeRegistry& registry, EntityManager& entityManager);
+void loadOfflineEntities(ComponentTypeRegistry& registry, EntityManager& entityManager, PhysicsWorld& pworld);
