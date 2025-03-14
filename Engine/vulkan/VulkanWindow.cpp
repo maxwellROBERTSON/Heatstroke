@@ -647,36 +647,4 @@ namespace Engine {
 
 		return vkQueuePresentKHR(aWindow.presentQueue, &presentInfo);
 	}
-
-	// Maybe these 3 recreate functions could go in PipelineCreation.cpp?
-
-	void recreateFormatDependents(const VulkanWindow& aWindow, std::map<std::string, vk::RenderPass>& aRenderPasses) {
-		for (auto& [name, renderPass] : aRenderPasses) {
-			renderPass = createRenderPass(aWindow);
-		}
-	}
-
-	void recreateSizeDependents(
-		const VulkanContext& aContext,
-		std::map<std::string, vk::RenderPass>& aRenderPasses,
-		std::map<std::string, vk::PipelineLayout>& aPipelineLayouts,
-		std::map<std::string, std::tuple<vk::Texture, vk::ImageView>>& aBuffers,
-		std::map<std::string, vk::Pipeline>& aPipelines)
-	{
-		aBuffers["depthBuffer"] = createDepthBuffer(*aContext.window, *aContext.allocator);
-
-		aPipelines["default"] = createPipeline(*aContext.window, aRenderPasses["default"].handle, aPipelineLayouts["default"].handle);
-	}
-
-	void recreateOthers(
-		const VulkanWindow& aWindow,
-		std::map<std::string, vk::RenderPass>& aRenderPasses,
-		std::map<std::string, std::tuple<vk::Texture, vk::ImageView>>& buffers,
-		std::vector<vk::Framebuffer>& aFramebuffers,
-		std::map<std::string, VkDescriptorSet>& aDescriptorSets)
-	{
-		aFramebuffers.clear();
-		Engine::createFramebuffers(aWindow, aFramebuffers, aRenderPasses["default"].handle, std::get<1>(buffers["depthBuffer"]).handle);
-	}
-
 }

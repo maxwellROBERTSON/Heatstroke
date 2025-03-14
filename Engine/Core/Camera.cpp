@@ -3,8 +3,8 @@
 #include <GLFW/glfw3.h>
 #include <glm/detail/func_trigonometric.inl>
 
-#include "../Engine/Input/Keyboard.hpp"
-#include "../Engine/Input/Mouse.hpp"
+#include "../Input/Keyboard.hpp"
+#include "../Input/Mouse.hpp"
 
 
 /*

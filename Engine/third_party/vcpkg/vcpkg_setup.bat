@@ -7,7 +7,7 @@ if not exist "vcpkg.exe" (
     call bootstrap-vcpkg.bat
 )
 
-set VCPKG_ROOT=%cd%\vcpkg
+set "VCPKG_ROOT=%CD%"
 set PATH=%VCPKG_ROOT%;%PATH%
 
 echo Installing PhysX using vcpkg...

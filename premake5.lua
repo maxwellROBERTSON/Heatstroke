@@ -129,17 +129,17 @@ project "Engine"
         libdirs { "Engine/third_party/vcpkg/packages/physx_x64-windows/debug/lib" }
         links(os.matchfiles("Engine/third_party/vcpkg/packages/physx_x64-windows/debug/lib/*.lib"))
         postbuildcommands {
-            '{COPY} "%{wks.location}Engine/third_party/vcpkg/packages/physx_x64-windows/debug/bin/PhysXFoundation_64.dll" "%{wks.location}/bin"',
-            '{COPY} "%{wks.location}Engine/third_party/vcpkg/packages/physx_x64-windows/debug/bin/PhysXCommon_64.dll" "%{wks.location}/bin"',
-            '{COPY} "%{wks.location}Engine/third_party/vcpkg/packages/physx_x64-windows/debug/bin/PhysX_64.dll" "%{wks.location}/bin"'
+            '{COPY} "%{wks.location}Engine/third_party/vcpkg/packages/physx_x64-windows/debug/bin/PhysXFoundation_64.dll" "%{wks.location}bin"',
+            '{COPY} "%{wks.location}Engine/third_party/vcpkg/packages/physx_x64-windows/debug/bin/PhysXCommon_64.dll" "%{wks.location}bin"',
+            '{COPY} "%{wks.location}Engine/third_party/vcpkg/packages/physx_x64-windows/debug/bin/PhysX_64.dll" "%{wks.location}bin"'
         }
     filter { "system:windows", "configurations:Release" }
         libdirs { "Engine/third_party/vcpkg/packages/physx_x64-windows/lib" }
         links(os.matchfiles("Engine/third_party/vcpkg/packages/physx_x64-windows/lib/*.lib"))
         postbuildcommands {
-            '{COPY} "%{wks.location}Engine/third_party/vcpkg/packages/physx_x64-windows/bin/PhysXFoundation_64.dll" "%{wks.location}/bin"',
-            '{COPY} "%{wks.location}Engine/third_party/vcpkg/packages/physx_x64-windows/bin/PhysXCommon_64.dll" "%{wks.location}/bin"',
-            '{COPY} "%{wks.location}Engine/third_party/vcpkg/packages/physx_x64-windows/bin/PhysX_64.dll" "%{wks.location}/bin"'
+            '{COPY} "%{wks.location}Engine/third_party/vcpkg/packages/physx_x64-windows/bin/PhysXFoundation_64.dll" "%{wks.location}bin"',
+            '{COPY} "%{wks.location}Engine/third_party/vcpkg/packages/physx_x64-windows/bin/PhysXCommon_64.dll" "%{wks.location}bin"',
+            '{COPY} "%{wks.location}Engine/third_party/vcpkg/packages/physx_x64-windows/bin/PhysX_64.dll" "%{wks.location}bin"'
         }
 
     filter "*"
