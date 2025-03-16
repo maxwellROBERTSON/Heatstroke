@@ -96,6 +96,17 @@ namespace vk {
 		Buffer indicesBuffer;
 
 		VkDescriptorSet samplerDescriptorSet;
+
+		// Bounding box should be able to be created with these values.
+		// They should represent the two opposite corners of the box that
+		// contains every vertex of this primitive
+		glm::vec3 min;
+		glm::vec3 max;
+
+		void setBounds(glm::vec3 min, glm::vec3 max) {
+			this->min = min;
+			this->max = max;
+		}
 	};
 
 	struct Mesh {

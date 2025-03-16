@@ -15,8 +15,9 @@
 #include "../Engine/Physics/PhysicsWorld.hpp"
 
 #include "../Engine/vulkan/VulkanContext.hpp"
+#include "../Engine/vulkan/Renderer.hpp"
 
-#include "Camera.hpp"
+#include "../Engine/Core/Camera.hpp"
 #include "Uniforms.hpp"
 
 #include "../Engine/Events/Event.h"
@@ -28,6 +29,7 @@ class FPSTest : public Engine::Game
 public:
 	FPSTest() : Engine::Game("FPS Test Game")
 	{
+		this->renderer = Engine::Renderer(&this->GetContext(), &this->entityManager);
 		this->Init();
 	}
 	virtual void Init() override;
@@ -42,9 +44,6 @@ public:
 	~FPSTest() {
 		for (Engine::vk::Model& model : models)
 			model.destroy();
-
-		this->GetContext().allocator.reset();
-		this->GetContext().window.reset();
 	};
 
 public:
@@ -53,12 +52,11 @@ public:
 	bool recreateSwapchain;
 	ComponentTypeRegistry registry = ComponentTypeRegistry::Get();
 	EntityManager entityManager = EntityManager(&registry);
+	Engine::Renderer renderer;
 	int clientId = -1;
 	bool online = false;
 	bool offline = true;
 	bool isChange = true;
 };
 
-void updateSceneUniform(glsl::SceneUniform& aScene, Camera& camera, std::uint32_t aFramebufferWidth, std::uint32_t aFramebufferHeight);
-void updateModelMatrices(const Engine::VulkanContext& aContext, glsl::ModelMatricesUniform& aModelMatrices, Engine::vk::Buffer& aBuffer, EntityManager& entityManager, std::size_t dynamicAlignment);
 void loadOfflineEntities(ComponentTypeRegistry& registry, EntityManager& entityManager);
