@@ -25,32 +25,33 @@ public:
 	};
 
 	PhysicsType type;
+	glm::vec3 scale;
 
 
-
-	// constructor
 	PhysicsComponent() {};
 
-	// destructor
-	~PhysicsComponent() {}
+	void init(PhysicsWorld& pworld,PhysicsType physicsType, glm::mat4& transform, int index) {
 
-	void init(PhysicsWorld& pworld,PhysicsType physicsType, glm::mat4& transform) {
+		entityId = index;
 
 		// parse mat4
 		glm::vec3 translation;
 		glm::quat rotation;
-		glm::vec3 scale;
 		if (!DecomposeTransform(transform, translation, rotation, scale)) {
 			std::cout << "DecomposeTransform failed!" << std::endl;
 			return;
 		}
+		scale.x = glm::length(glm::vec3(transform[0]));
+		scale.y = glm::length(glm::vec3(transform[1]));
+		scale.z = glm::length(glm::vec3(transform[2]));
+
+
 		PxTransform pxTransform(
 			PxVec3(translation.x, translation.y, translation.z),
 			PxQuat(rotation.x, rotation.y, rotation.z, rotation.w)
 		);
 		PxMaterial* material = pworld.gPhysics->createMaterial(0.5f, 0.5f, 0.5f);
-
-		// TODO: apply scale to the object
+		material->setRestitution(0.0f);
 		type = physicsType;
 
 		switch (type) {
@@ -59,7 +60,7 @@ public:
 			staticBody = pworld.gPhysics->createRigidStatic(pxTransform);
 			if (staticBody) {
 				PxShape* shape = PxRigidActorExt::createExclusiveShape(
-					*staticBody, PxBoxGeometry(0.2f, 0.2f, 0.2f), *material
+					*staticBody, PxBoxGeometry(scale.x, scale.y, scale.z), *material
 				);
 
 				pworld.gScene->addActor(*staticBody);
@@ -72,7 +73,7 @@ public:
 			
 			if (dynamicBody) {
 				PxShape* shape = PxRigidActorExt::createExclusiveShape(
-					*dynamicBody, PxBoxGeometry(0.2f, 0.2f, 0.2f), *material
+					*dynamicBody, PxBoxGeometry(scale.x, scale.y, scale.z), *material
 				);
 
 				pworld.gScene->addActor(*dynamicBody);
@@ -88,44 +89,31 @@ public:
 
 	virtual void operator=(const PhysicsComponent& other) override
 	{
+		this->staticBody = other.staticBody;
+		this->dynamicBody = other.dynamicBody;
+		this->controller = other.controller;
+		this->type = other.type;
+		this->scale = other.scale;
 		this->isPerson = other.isPerson;
+		this->entityId = other.entityId;
 	}
-
-
 
 	// Getters
 	int GetIsPerson() { return isPerson; }
-	int GetModelIndex() { return modelIndex; }
-	// get physics component position
-	glm::mat4 GetTrans() const {
-		//switch (type) {
-		//case PhysicsType::DYNAMIC:
-		//	return dynamicBody ? dynamicBody->getGlobalPose().p : PxVec3(0, 0, 0);
-		//case PhysicsType::STATIC:
-		//	return staticBody ? staticBody->getGlobalPose().p : PxVec3(0, 0, 0);
-		//case PhysicsType::CONTROLLER:
-		//	return controller ? PxVec3(controller->getPosition().x, controller->getPosition().y, controller->getPosition().z) : PxVec3(0, 0, 0);
-		//default:
-		//	return PxVec3(0, 0, 0);
-
-			return glm::mat4();
-	}
+	//int GetModelIndex() { return modelIndex; }
+	int GetEntityId() { return entityId; }
 
 	// Setters
 	void SetIsPerson(bool aIsPerson) { isPerson = aIsPerson; }
-	void SetModelIndex(int index) { modelIndex = index; }
+	//void SetModelIndex(int index) { modelIndex = index; }
 
-	//void updateObjects() {
-	//	std::pair<void*, int> renderComponents = entityManager.GetComponents<RenderComponent>();
 
-	//}
 
 private:
 
 	bool isPerson = false;
 
-	int modelIndex = -1;
-
+	int entityId = -1;
 
 	bool DecomposeTransform(const glm::mat4& matrix, glm::vec3& translation, glm::quat& rotation, glm::vec3& scale)
 	{
@@ -137,8 +125,6 @@ private:
 		}
 		return success;
 	}
-
-
 
 };
 

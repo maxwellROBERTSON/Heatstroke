@@ -17,7 +17,7 @@ namespace Engine
 		//	//deltaTime = currTime - lastTime;
 		//	//lastTime = currTime;
 
-		this->Update();
+			this->Update();
 		//}
 	}
 
