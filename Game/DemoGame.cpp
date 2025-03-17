@@ -184,7 +184,7 @@ void loadOfflineEntities(ComponentTypeRegistry& registry, EntityManager& entityM
 	renderComponent->SetModelIndex(1);
 	// configure physics component
 	physicsComponent = entityManager.GetEntityComponent<PhysicsComponent>(entity->GetEntityId());
-	physicsComponent->init(pworld, PhysicsComponent::PhysicsType::STATIC, helmetTransform, entity->GetEntityId());
+	physicsComponent->init(pworld, PhysicsComponent::PhysicsType::DYNAMIC, helmetTransform, entity->GetEntityId());
 
 	// Cube
 	entity = entityManager.AddEntity<RenderComponent, PhysicsComponent>();
@@ -196,7 +196,7 @@ void loadOfflineEntities(ComponentTypeRegistry& registry, EntityManager& entityM
 	renderComponent->SetModelIndex(2);
 	// configure physics component
 	physicsComponent = entityManager.GetEntityComponent<PhysicsComponent>(entity->GetEntityId());
-	physicsComponent->init(pworld, PhysicsComponent::PhysicsType::STATIC, cubeTransform, entity->GetEntityId());
+	physicsComponent->init(pworld, PhysicsComponent::PhysicsType::DYNAMIC, cubeTransform, entity->GetEntityId());
 
 
 	// Player 1
