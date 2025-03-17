@@ -9,6 +9,7 @@ namespace Shaders {
 	constexpr const char* gBufWriteFrag = "Engine/Shaders/spv/gBufWrite.frag.spv";
 	constexpr const char* deferredVert = "Engine/Shaders/spv/deferred.vert.spv";
 	constexpr const char* deferredFrag = "Engine/Shaders/spv/deferred.frag.spv";
+	constexpr const char* shadowVert = "Engine/Shaders/spv/shadowOffscreen.vert.spv";
 
 }
 }
