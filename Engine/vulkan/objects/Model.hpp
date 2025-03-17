@@ -155,6 +155,14 @@ namespace vk {
 
 		VkDescriptorSet materialInfoSSBO;
 
+		// set all nodes transform
+		void setMat(glm::mat4 mat) {
+			for (Node* node : nodes)
+			{
+				node->setPostTransform(mat);
+			}
+		};
+
 		void createDescriptorSets(
 			const VulkanContext& aContext, 
 			VkDescriptorSetLayout aSamplerSetLayout, 

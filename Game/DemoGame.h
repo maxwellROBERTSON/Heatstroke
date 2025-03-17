@@ -38,6 +38,7 @@ public:
 
 	void registerComponents();
 	void initialiseModels();
+	void initialisePhysics(PhysicsWorld& pworld);
 	void RenderGUI();
 	void RenderScene();
 
@@ -53,10 +54,12 @@ public:
 	ComponentTypeRegistry registry = ComponentTypeRegistry::Get();
 	EntityManager entityManager = EntityManager(&registry);
 	Engine::Renderer renderer;
+	PhysicsWorld physics_world;
+
 	int clientId = -1;
 	bool online = false;
 	bool offline = true;
 	bool isChange = true;
 };
 
-void loadOfflineEntities(ComponentTypeRegistry& registry, EntityManager& entityManager);
+void loadOfflineEntities(ComponentTypeRegistry& registry, EntityManager& entityManager, PhysicsWorld& pworld);
