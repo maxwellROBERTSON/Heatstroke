@@ -1,2 +1,0 @@
-C:/dev/Heatstroke/Engine/third_party/vcpkg/buildtrees/detect_compiler/x64-windows-rel/CMakeFiles/edit_cache.dir
-C:/dev/Heatstroke/Engine/third_party/vcpkg/buildtrees/detect_compiler/x64-windows-rel/CMakeFiles/rebuild_cache.dir
