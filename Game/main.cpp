@@ -33,8 +33,6 @@ int main() try
 {
 	std::unique_ptr<FPSTest> game = std::make_unique<FPSTest>();
 	game->Run();
-	game.get()->GetContext().allocator.reset();
-	game.get()->GetContext().window.reset();
 	return 0;
 }
 catch (const std::exception& error) {

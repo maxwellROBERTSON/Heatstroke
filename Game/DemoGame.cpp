@@ -13,7 +13,6 @@
 
 void FPSTest::Init()
 {
-	std::cout << "FPS TEST INIT" << std::endl;
 	registerComponents();
 	initialiseModels();
 	initialisePhysics(physics_world);
@@ -29,24 +28,24 @@ void FPSTest::OnEvent(Engine::Event& e)
 	Game::OnEvent(e);
 
 	camera->OnEvent(this->GetContext().getGLFWWindow(), e);
-	Engine::EventDispatcher dispatcher(e);
+	//Engine::EventDispatcher dispatcher(e);
 
-	dispatcher.Dispatch<Engine::KeyPressedEvent>(
-		[&](Engine::KeyPressedEvent& event)
-		{
-			std::cout << event.GetKeyCode() << std::endl;
-			return true;
-		}
-	);
+	//dispatcher.Dispatch<Engine::KeyPressedEvent>(
+	//	[&](Engine::KeyPressedEvent& event)
+	//	{
+	//		std::cout << event.GetKeyCode() << std::endl;
+	//		return true;
+	//	}
+	//);
 
-	dispatcher.Dispatch<Engine::MouseButtonPressedEvent>(
-		[&](Engine::MouseButtonPressedEvent& event)
-		{
+	//dispatcher.Dispatch<Engine::MouseButtonPressedEvent>(
+	//	[&](Engine::MouseButtonPressedEvent& event)
+	//	{
 
-			std::cout << event.GetMouseButton() << std::endl;
-			return true;
-		}
-	);
+	//		std::cout << event.GetMouseButton() << std::endl;
+	//		return true;
+	//	}
+	//);
 
 }
 
@@ -91,7 +90,7 @@ void FPSTest::initialiseModels()
 	models.emplace_back(Engine::makeVulkanModel(this->GetContext(), character));
 }
 
-void FPSTest::initialisePhysics(PhysicsWorld& pworld) 
+void FPSTest::initialisePhysics(PhysicsWorld& pworld)
 {
 	pworld.init();
 }
@@ -113,7 +112,7 @@ void FPSTest::RenderScene()
 	{
 		// Offline mode
 		isChange = false;
-		loadOfflineEntities(registry, entityManager,physics_world);
+		loadOfflineEntities(registry, entityManager, physics_world);
 		clientId = 0;
 	}
 
@@ -130,7 +129,7 @@ void FPSTest::RenderScene()
 
 	this->renderer.initialiseRenderer();
 	this->renderer.attachCamera(camera);
-	this->renderer.initialiseModelDescriptors(models);	
+	this->renderer.initialiseModelDescriptors(models);
 
 	auto previous = std::chrono::steady_clock::now();
 
@@ -220,7 +219,7 @@ void loadOfflineEntities(ComponentTypeRegistry& registry, EntityManager& entityM
 
 
 	// Player 1
-	entity = entityManager.AddEntity<RenderComponent, CameraComponent ,NetworkComponent>();
+	entity = entityManager.AddEntity<RenderComponent, CameraComponent, NetworkComponent>();
 	glm::mat4 player1Transform(1.0f);
 	player1Transform = glm::translate(player1Transform, glm::vec3(-5.0f, 1.0f, -1.0f));
 	player1Transform = glm::rotate(player1Transform, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
