@@ -1,4 +1,4 @@
-#include "DemoGame.h"
+#include "DemoGame.hpp"
 
 #include <chrono>
 
@@ -13,7 +13,6 @@
 
 void FPSTest::Init()
 {
-	std::cout << "FPS TEST INIT" << std::endl;
 	registerComponents();
 	initialiseModels();
 	initialisePhysics(physics_world);
@@ -26,15 +25,28 @@ void FPSTest::Update()
 
 void FPSTest::OnEvent(Engine::Event& e)
 {
-	Engine::EventDispatcher dispatcher(e);
+	Game::OnEvent(e);
 
-	dispatcher.Dispatch<Engine::KeyPressedEvent>(
-		[&](Engine::KeyPressedEvent& event)
-		{
-			std::cout << event.GetKeyCode() << std::endl;
-			return true;
-		}
-	);
+	camera->OnEvent(this->GetContext().getGLFWWindow(), e);
+	//Engine::EventDispatcher dispatcher(e);
+
+	//dispatcher.Dispatch<Engine::KeyPressedEvent>(
+	//	[&](Engine::KeyPressedEvent& event)
+	//	{
+	//		std::cout << event.GetKeyCode() << std::endl;
+	//		return true;
+	//	}
+	//);
+
+	//dispatcher.Dispatch<Engine::MouseButtonPressedEvent>(
+	//	[&](Engine::MouseButtonPressedEvent& event)
+	//	{
+
+	//		std::cout << event.GetMouseButton() << std::endl;
+	//		return true;
+	//	}
+	//);
+
 }
 
 void FPSTest::registerComponents()
@@ -78,7 +90,7 @@ void FPSTest::initialiseModels()
 	models.emplace_back(Engine::makeVulkanModel(this->GetContext(), character));
 }
 
-void FPSTest::initialisePhysics(PhysicsWorld& pworld) 
+void FPSTest::initialisePhysics(PhysicsWorld& pworld)
 {
 	pworld.init();
 }
@@ -100,7 +112,7 @@ void FPSTest::RenderScene()
 	{
 		// Offline mode
 		isChange = false;
-		loadOfflineEntities(registry, entityManager,physics_world);
+		loadOfflineEntities(registry, entityManager, physics_world);
 		clientId = 0;
 	}
 
@@ -117,12 +129,20 @@ void FPSTest::RenderScene()
 
 	this->renderer.initialiseRenderer();
 	this->renderer.attachCamera(camera);
-	this->renderer.initialiseModelDescriptors(models);	
+	this->renderer.initialiseModelDescriptors(models);
 
 	auto previous = std::chrono::steady_clock::now();
 
 	while (!glfwWindowShouldClose(this->GetContext().getGLFWWindow())) {
-		glfwPollEvents();
+		Engine::InputManager::Update();
+		if (!Engine::InputManager::mJoysticks.empty())
+		{
+			if (Engine::InputManager::getJoystick(0).isPressed(HS_GAMEPAD_BUTTON_A))
+			{
+				std::cout << "A BUTTON PRESSED" << std::endl;
+			}
+		}
+
 
 		if (this->renderer.checkSwapchain())
 			continue;
@@ -151,7 +171,6 @@ void FPSTest::RenderScene()
 
 		this->renderer.submitRender();
 	}
-
 	this->renderer.finishRendering();
 }
 
@@ -200,7 +219,7 @@ void loadOfflineEntities(ComponentTypeRegistry& registry, EntityManager& entityM
 
 
 	// Player 1
-	entity = entityManager.AddEntity<RenderComponent, CameraComponent ,NetworkComponent>();
+	entity = entityManager.AddEntity<RenderComponent, CameraComponent, NetworkComponent>();
 	glm::mat4 player1Transform(1.0f);
 	player1Transform = glm::translate(player1Transform, glm::vec3(-5.0f, 1.0f, -1.0f));
 	player1Transform = glm::rotate(player1Transform, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));

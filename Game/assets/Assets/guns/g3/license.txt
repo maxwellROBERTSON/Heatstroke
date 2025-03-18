@@ -1,0 +1,11 @@
+Model Information:
+* title:	G3 Reload Animation
+* source:	https://sketchfab.com/3d-models/g3-reload-animation-80f23ea6f39d435cb12eeb6949c36692
+* author:	Stavich (https://sketchfab.com/wichowiczs)
+
+Model License:
+* license type:	CC-BY-NC-4.0 (http://creativecommons.org/licenses/by-nc/4.0/)
+* requirements:	Author must be credited. No commercial use.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "G3 Reload Animation" (https://sketchfab.com/3d-models/g3-reload-animation-80f23ea6f39d435cb12eeb6949c36692) by Stavich (https://sketchfab.com/wichowiczs) licensed under CC-BY-NC-4.0 (http://creativecommons.org/licenses/by-nc/4.0/)

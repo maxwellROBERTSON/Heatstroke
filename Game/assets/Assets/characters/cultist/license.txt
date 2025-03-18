@@ -1,0 +1,11 @@
+Model Information:
+* title:	Cultist armed
+* source:	https://sketchfab.com/3d-models/cultist-armed-63af0c04ad5d4d6180c15dd0c09d6a3a
+* author:	DJMaesen (https://sketchfab.com/bumstrum)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Cultist armed" (https://sketchfab.com/3d-models/cultist-armed-63af0c04ad5d4d6180c15dd0c09d6a3a) by DJMaesen (https://sketchfab.com/bumstrum) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

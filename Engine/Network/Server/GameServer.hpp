@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../Core/Game.h"
+#include "../Core/Game.hpp"
 #include "../Helpers/GameAdapter.hpp"
 
 class GameServer
