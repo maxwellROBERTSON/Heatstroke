@@ -23,7 +23,7 @@
 //		ComponentTypeRegistry registry = ComponentTypeRegistry::Get();
 //		EntityManager entityManager = EntityManager(&registry);
 //
-//		initialiseGame(registry, entityManager);
+//		initialiseGame(registry, entityManager);	
 //        initialiseModels(models);
 //		runGameLoop(models, registry, entityManager);
 

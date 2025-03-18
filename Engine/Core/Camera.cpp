@@ -4,19 +4,18 @@
 #include <glm/detail/func_trigonometric.inl>
 
 #include <iostream>
-
-#include "../Engine/Input/Keyboard.hpp"
-#include "../Engine/Input/Mouse.hpp"
 #include "../Input/InputCodes.hpp"
-#include "Engine/Events/Event.hpp"
+#include "../Events/Event.hpp"
+#include "../Input/Keyboard.hpp"
+#include "../Input/Mouse.hpp"
 
 
 /*
 * This entire class will probably need reworking, its not the best implementation of a first person camera
 * but is one that somewhat works that isn't the janky one from Advanced Rendering's Assignment 2.
 */
-Camera::Camera(float fov, float near, float far, glm::vec3 position, glm::vec3 frontDirection) :
-	fov(fov), nearPlane(near), farPlane(far), position(position), frontDirection(frontDirection) {
+Camera::Camera(float fov, float _near, float _far, glm::vec3 position, glm::vec3 frontDirection) :
+	fov(fov), nearPlane(_near), farPlane(_far), position(position), frontDirection(frontDirection) {
 }
 
 void Camera::updateCamera(GLFWwindow* aWindow, float timeDelta) {

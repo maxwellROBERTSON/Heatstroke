@@ -3,11 +3,11 @@
 #include <glm/mat4x4.hpp>
 #include <glm/vec4.hpp>
 
-#include "../Engine/Events/Event.hpp"
-#include "../Engine/Events/KeyEvent.hpp"
-#include "../Engine/Events/MouseEvent.hpp"
 #include "../Input/Input.hpp"
 #include "../Input/InputCodes.hpp"
+#include "../Events/Event.h"
+#include "../Events/KeyEvent.h"
+#include "../Events/MouseEvent.h"
 
 struct GLFWwindow;
 

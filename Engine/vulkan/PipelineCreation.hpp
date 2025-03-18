@@ -11,34 +11,36 @@ namespace Engine {
 	class VulkanWindow;
 	class VulkanAllocator;
 
+	struct DescriptorSetting {
+		VkDescriptorType descriptorType;
+		VkShaderStageFlags shaderStageFlags;
+	};
+
+	struct TextureBufferSetting {
+		VkFormat imageFormat;
+		VkImageUsageFlags imageUsage;
+		VkImageAspectFlags imageAspectFlags;
+	};
+
 	vk::ShaderModule loadShaderModule(const VulkanWindow& aWindow, const char* aSpirvPath);
 
 	// Default render pass. Just swapchain and depth attachments
 	vk::RenderPass createRenderPass(const VulkanWindow& aWindow);
+	// Deferred render pass
+	vk::RenderPass createDeferredRenderPass(const VulkanWindow& aWindow);
 	
-	// Descriptor layout for projection, view, and model matrices
-	vk::DescriptorSetLayout createSceneLayout(const VulkanWindow& aWindow);
-	// Descriptor layout for materials
-	vk::DescriptorSetLayout createMaterialLayout(const VulkanWindow& aWindow);
-	// General descriptor layout for UBO's
-	// (might be able to get rid of scene layout and just use this method, but
-	// need to double check just substituting different stage flags is fine)
-	vk::DescriptorSetLayout createUBOLayout(const VulkanWindow& aWindow);
-	vk::DescriptorSetLayout createSSBOLayout(const VulkanWindow& aWindow);
-	vk::DescriptorSetLayout createDynamicUBOLayout(const VulkanWindow& aWindow);
+	vk::DescriptorSetLayout createDescriptorLayout(const VulkanWindow& aWindow, std::vector<DescriptorSetting> aDescriptorSettings);
 
 	vk::PipelineLayout createPipelineLayout(const VulkanWindow& aWindow, std::vector<VkDescriptorSetLayout>& layouts, bool aNeedPushConstant = false);
 
 	vk::Pipeline createPipeline(const VulkanWindow& aWindow, VkRenderPass aRenderPass, VkPipelineLayout aPipelineLayout);
+	std::tuple<vk::Pipeline, vk::Pipeline> createDeferredPipelines(const VulkanWindow& aWindow, VkRenderPass aRenderPass, VkPipelineLayout aGBufWriteLayout, VkPipelineLayout aShadingLayout);
 
-	std::tuple<vk::Texture, vk::ImageView> createDepthBuffer(const VulkanWindow& aWindow, const VulkanAllocator& aAllocator);
+	std::pair<vk::Texture, vk::ImageView> createTextureBuffer(const VulkanContext& aContext, TextureBufferSetting aBufferSetting);
 
-	void createFramebuffers(const VulkanWindow& aWindow, std::vector<vk::Framebuffer>& aFramebuffers, VkRenderPass aRenderPass, VkImageView aDepthView);
+	void createFramebuffers(const VulkanWindow& aWindow, std::vector<vk::Framebuffer>& aFramebuffers, VkRenderPass aRenderPass, std::vector<VkImageView>& aImageViews);
 
-	VkDescriptorSet createSceneDescriptor(const VulkanWindow& aWindow, VkDescriptorSetLayout aSetLayout, VkBuffer aBuffer);
-	VkDescriptorSet createMaterialInfoDescriptor(const VulkanWindow& aWindow, VkDescriptorSetLayout aSetLayout, VkBuffer aBuffer);
+	VkDescriptorSet createUBODescriptor(const VulkanWindow& aWindow, VkDescriptorSetLayout aSetLayout, VkBuffer aBuffer);
 	VkDescriptorSet createModelMatricesDescriptor(const VulkanWindow& aWindow, VkDescriptorSetLayout aSetLayout, VkBuffer aBuffer, VkDeviceSize dynamicAlignment);
-
-	vk::Buffer setupDynamicUBO(const VulkanContext& aContext, std::size_t modelSize, std::size_t dynamicAlignment, glsl::ModelMatricesUniform& aModelMatrices);
-
+	VkDescriptorSet createDeferredShadingDescriptor(const VulkanWindow& aWindow, VkDescriptorSetLayout aSetLayout, VkImageView aDepthView, VkImageView aNormalsView, VkImageView aAlbedoView, VkImageView aEmissiveView);
 }
