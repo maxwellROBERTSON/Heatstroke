@@ -9,11 +9,20 @@
 
 #include "Utils.hpp"
 
+#include <imgui.h>
+#include <backends/imgui_impl_glfw.h>
+#include <backends/imgui_impl_vulkan.h>
+
 namespace Engine {
 
 	Renderer::Renderer(VulkanContext* aContext, EntityManager* entityManager) {
 		this->context = aContext;
 		this->entityManager = entityManager;
+	}
+
+	VkRenderPass& Renderer::GetRenderPass(std::string s)
+	{
+		return this->renderPasses[s].handle;
 	}
 
 	void Renderer::initialiseRenderer() {
@@ -127,11 +136,6 @@ namespace Engine {
 				VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 				0,
 				VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE));
-		this->uniformBuffers.emplace("modelMatrices",
-			this->createDynamicUniformBuffer());
-
-		// Map memory for model matrices dynamic buffer
-		vmaMapMemory(context->allocator->allocator, this->uniformBuffers["modelMatrices"].allocation, &this->uniformBuffers["modelMatrices"].mapped);
 
 		// Descriptor sets
 		this->descriptorSets.emplace("scene", 
@@ -144,12 +148,6 @@ namespace Engine {
 				*context->window, 
 				this->descriptorLayouts["fragUBOLayout"].handle, 
 				this->uniformBuffers["lights"].buffer));
-		this->descriptorSets.emplace("modelMatrices", 
-			createModelMatricesDescriptor(
-				*context->window, 
-				this->descriptorLayouts["modelMatricesLayout"].handle, 
-				this->uniformBuffers["modelMatrices"].buffer, 
-				this->dynamicUBOAlignment));
 		this->descriptorSets.emplace("deferredShading", 
 			createDeferredShadingDescriptor(
 				*context->window, 
@@ -170,6 +168,34 @@ namespace Engine {
 		this->uniforms.lightsUniform.light[2].color = glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
 		this->uniforms.lightsUniform.light[3].color = glm::vec4(0.0f, 0.0f, 1.0f, 0.0f);
 		this->uniforms.lightsUniform.light[4].color = glm::vec4(1.0f, 0.0f, 1.0f, 0.0f);
+	}
+
+	void Renderer::initialiseModelMatrices()
+	{
+		this->uniformBuffers.emplace("modelMatrices",
+			this->createDynamicUniformBuffer());
+
+		// Map memory for model matrices dynamic buffer
+		vmaMapMemory(context->allocator->allocator, this->uniformBuffers["modelMatrices"].allocation, &this->uniformBuffers["modelMatrices"].mapped);
+
+		this->descriptorSets.emplace("modelMatrices",
+			createModelMatricesDescriptor(
+				*context->window,
+				this->descriptorLayouts["modelMatricesLayout"].handle,
+				this->uniformBuffers["modelMatrices"].buffer,
+				this->dynamicUBOAlignment));
+
+		isSceneLoaded = true;
+	}
+
+	void Renderer::cleanModelMatrices()
+	{
+		vmaUnmapMemory(context->allocator->allocator, this->uniformBuffers["modelMatrices"].allocation);
+
+		//this->descriptorSets.erase("sceneDescriptors");
+		this->descriptorSets.erase("modelMatricesDescriptor");
+
+		isSceneLoaded = false;
 	}
 
 	vk::Buffer Renderer::createDynamicUniformBuffer() {
@@ -246,6 +272,12 @@ namespace Engine {
 		this->uniforms.sceneUniform.view = glm::lookAt(this->camera->position, this->camera->position + this->camera->frontDirection, glm::vec3(0.0f, 1.0f, 0.0f));
 		this->uniforms.sceneUniform.position = glm::vec4(this->camera->position, 1.0f);
 
+		if (isSceneLoaded)
+			updateModelMatrices();
+	}
+
+	void Renderer::updateModelMatrices()
+	{
 		// Update model matrices
 		std::vector<int> models = this->entityManager->GetEntitiesWithComponent<RenderComponent>();
 		for (std::size_t i = 0; i < models.size(); i++) {
@@ -263,12 +295,15 @@ namespace Engine {
 		vmaFlushAllocation(context->allocator->allocator, this->uniformBuffers["modelMatrices"].allocation, 0, size);
 	}
 
-	void Renderer::render(RenderMode aRenderMode, std::vector<vk::Model>& models) {
+	void Renderer::render(Engine::RenderMode aRenderMode, std::vector<vk::Model>& models) {
 		switch (aRenderMode) {
-		case RenderMode::FORWARD:
+		case Engine::RenderMode::GUIX:
+			this->renderGUI();
+			break;
+		case Engine::RenderMode::FORWARD:
 			this->renderForward(models);
 			break;
-		case RenderMode::DEFERRED:
+		case Engine::RenderMode::DEFERRED:
 			this->renderDeferred(models);
 			break;
 		}
@@ -287,6 +322,42 @@ namespace Engine {
 		vkDeviceWaitIdle(context->window->device->device);
 
 		vmaUnmapMemory(context->allocator->allocator, this->uniformBuffers["modelMatrices"].allocation);
+	}
+
+	void Renderer::renderGUI()
+	{
+		VkCommandBuffer cmdBuf = this->cmdBuffers[this->frameIndex];
+
+		// Begin recording
+		beginCommandBuffer(cmdBuf, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+
+		// Clear attachments
+		VkClearValue clearValues[2]{};
+		clearValues[0].color.float32[0] = 0.1f;
+		clearValues[0].color.float32[1] = 0.1f;
+		clearValues[0].color.float32[2] = 0.1f;
+		clearValues[0].color.float32[3] = 1.0f;
+
+		clearValues[1].depthStencil.depth = 1.0f;
+
+		// Initialise render pass
+		VkRenderPassBeginInfo passInfo{};
+		passInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		passInfo.renderPass = this->renderPasses["default"].handle;
+		passInfo.framebuffer = this->defaultFramebuffers[this->imageIndex].handle;
+		passInfo.renderArea.offset = VkOffset2D{ 0, 0 };
+		passInfo.renderArea.extent = context->window->swapchainExtent;
+		passInfo.clearValueCount = 2;
+		passInfo.pClearValues = clearValues;
+
+		vkCmdBeginRenderPass(cmdBuf, &passInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmdBuf);
+
+		vkCmdEndRenderPass(cmdBuf);
+
+		if (const auto res = vkEndCommandBuffer(cmdBuf); VK_SUCCESS != res)
+			throw Utils::Error("Unable to end command buffer\n vkEndCommandBuffer() returned %s", Utils::toString(res).c_str());
 	}
 
 	void Renderer::renderForward(std::vector<vk::Model>& models) {
@@ -350,6 +421,10 @@ namespace Engine {
 			int j = reinterpret_cast<RenderComponent*>(renderComponents.first)[i].GetModelIndex();
 			models[j].drawModel(cmdBuf, this->pipelineLayouts["default"].handle);
 		}
+
+#ifdef _DEBUG
+		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmdBuf);
+#endif
 
 		vkCmdEndRenderPass(cmdBuf);
 
@@ -462,6 +537,10 @@ namespace Engine {
 		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["deferred"].handle, 2, 1, &this->descriptorSets["lights"], 0, nullptr);
 
 		vkCmdDraw(cmdBuf, 3, 1, 0, 0);
+
+#ifdef _DEBUG
+		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmdBuf);
+#endif
 
 		vkCmdEndRenderPass(cmdBuf);
 

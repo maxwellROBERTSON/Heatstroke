@@ -29,7 +29,6 @@ class FPSTest : public Engine::Game
 public:
 	FPSTest() : Engine::Game("FPS Test Game")
 	{
-		this->renderer = Engine::Renderer(&this->GetContext(), &this->entityManager);
 		this->Init();
 	}
 	virtual void Init() override;
@@ -38,28 +37,22 @@ public:
 
 	void registerComponents();
 	void initialiseModels();
-	void initialisePhysics(PhysicsWorld& pworld);
+	void initialisePhysics();
+
 	void RenderGUI();
 	void RenderScene();
 
+	void loadOfflineEntities();
+
 	~FPSTest() {
-		for (Engine::vk::Model& model : models)
+		for (Engine::vk::Model& model : GetModels())
 			model.destroy();
 	};
 
-public:
-	Camera* camera;
-	std::vector<Engine::vk::Model> models;
-	bool recreateSwapchain;
-	ComponentTypeRegistry registry = ComponentTypeRegistry::Get();
-	EntityManager entityManager = EntityManager(&registry);
-	Engine::Renderer renderer;
-	PhysicsWorld physics_world;
-
-	int clientId = -1;
+	int clientId = 0;
 	bool online = false;
 	bool offline = true;
 	bool isChange = true;
 };
 
-void loadOfflineEntities(ComponentTypeRegistry& registry, EntityManager& entityManager, PhysicsWorld& pworld);
+//void loadOfflineEntities(ComponentTypeRegistry& registry, EntityManager& entityManager, PhysicsWorld& pworld);

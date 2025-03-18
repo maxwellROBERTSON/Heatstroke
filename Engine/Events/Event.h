@@ -12,7 +12,8 @@ namespace Engine
 		KeyPressed, KeyReleased, // KeyRepeat,
 		MouseButtonPressed, MouseButtonReleased, MouseScrolled, MouseMoved,
 		// TODO: add controller events
-		WindowClose
+		WindowClose,
+		GameMode
 
 	};
 

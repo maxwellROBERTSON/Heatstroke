@@ -2,8 +2,10 @@
 
 #include "objects/Model.hpp"
 #include "Uniforms.hpp"
+#include "Utils.hpp"
 #include "../ECS/EntityManager.hpp"
 #include "../Core/Camera.hpp"
+//#include "../GUI/GUI.hpp"
 
 namespace Engine {
 
@@ -15,6 +17,7 @@ namespace Engine {
 	};
 
 	enum RenderMode {
+		GUIX,
 		FORWARD,
 		DEFERRED
 	};
@@ -24,12 +27,19 @@ namespace Engine {
 		Renderer(VulkanContext* aContext, EntityManager* entityManager);
 		Renderer() = default;
 
+		VkRenderPass& GetRenderPass(std::string s);
+		Camera* GetCamera() { return camera; }
+		bool GetIsSceneLoaded() { return isSceneLoaded; }
+
 		void initialiseRenderer();
+		void initialiseModelMatrices();
+		void cleanModelMatrices();
 		void attachCamera(Camera* camera);
 		void initialiseModelDescriptors(std::vector<vk::Model>& models);
 		bool checkSwapchain();
 		bool acquireSwapchainImage();
 		void updateUniforms();
+		void updateModelMatrices();
 		void render(RenderMode renderMode, std::vector<vk::Model>& models);
 		void submitRender();
 		void finishRendering();
@@ -63,8 +73,11 @@ namespace Engine {
 
 		Uniforms uniforms;
 
+		bool isSceneLoaded = false;
+
 		bool recreateSwapchain = false;
 
+		void renderGUI();
 		void renderForward(std::vector<vk::Model>& models);
 		void renderDeferred(std::vector<vk::Model>& models);
 

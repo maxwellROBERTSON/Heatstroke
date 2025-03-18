@@ -1,13 +1,13 @@
 #include "Callbacks.hpp"
 
-#include "Keyboard.hpp"
-#include "Mouse.hpp"
-
 #include <iostream>
 
 namespace Engine {
 
-	void registerCallbacks(GLFWwindow* aWindow) {
+	void registerCallbacks(GLFWwindow* aWindow, Engine::Game* game) {
+
+		glfwSetWindowUserPointer(aWindow, game);
+
 		glfwSetKeyCallback(aWindow, &onKeyPress);
 		glfwSetMouseButtonCallback(aWindow, &onMouseButton);
 		glfwSetCursorPosCallback(aWindow, &onMouseMove);
@@ -15,10 +15,19 @@ namespace Engine {
 	}
 
 	void onKeyPress(GLFWwindow* aWindow, int aKey, int aScanCode, int aAction, int aModifiers) {
-		switch (aKey) {
-		case GLFW_KEY_ESCAPE:
-			glfwSetWindowShouldClose(aWindow, true);
-			break;
+		Engine::Game* game = static_cast<Engine::Game*>(glfwGetWindowUserPointer(aWindow));
+
+		if (aAction == GLFW_PRESS)
+		{
+			switch (aKey) {
+			case GLFW_KEY_ESCAPE:
+				//glfwSetWindowShouldClose(aWindow, true);
+				if (game->GetRenderMode() != GUIX)
+					game->GetRenderMode() = GUIX;
+				else
+					game->GetRenderMode() = FORWARD;
+				break;
+			}
 		}
 
 		if (aAction == GLFW_PRESS)

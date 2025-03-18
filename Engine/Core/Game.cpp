@@ -6,7 +6,9 @@ namespace Engine
 	{
 		mContext.window = initialiseVulkan(name, width, height);
 		mContext.allocator = createVulkanAllocator(*mContext.window.get());
-		registerCallbacks(this->GetContext().getGLFWWindow());
+		registerCallbacks(this->GetContext().getGLFWWindow(), this);
+		renderer = std::make_unique<Renderer>(&this->GetContext(), &this->entityManager);
+		gui = std::make_unique<GUI>(this);
 		this->Init();
 	}
 	void Game::Run()
@@ -39,6 +41,7 @@ namespace Engine
 		);
 
 	}
+
 	bool Game::OnWindowClose(WindowCloseEvent& e)
 	{
 		isRunning = false;
