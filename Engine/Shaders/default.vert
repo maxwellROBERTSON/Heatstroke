@@ -17,25 +17,35 @@ layout(set = 3, binding = 0) uniform modelMatrices {
 	mat4 model;
 } modelMatrix;
 
-layout(location = 0) out vec3 outPosition;
-layout(location = 1) out vec3 outNormal;
-layout(location = 2) out vec4 outTangent;
-layout(location = 3) out vec2 outTexCoord0;
-layout(location = 4) out vec2 outTexCoord1;
-layout(location = 5) out vec4 outVertexColour;
+layout(set = 4, binding = 0) uniform Depth {
+	mat4 depthMVP;
+} depth;
+
+layout(location = 0) out vec3 v2fPosition;
+layout(location = 1) out vec3 v2fNormal;
+layout(location = 2) out vec4 v2fTangent;
+layout(location = 3) out vec2 v2fTexCoord0;
+layout(location = 4) out vec2 v2fTexCoord1;
+layout(location = 5) out vec4 v2fVertexColour;
+layout(location = 6) out vec4 v2fLightSpacePosition;
+
+const mat4 biasMat = mat4( 
+	0.5, 0.0, 0.0, 0.0,
+	0.0, 0.5, 0.0, 0.0,
+	0.0, 0.0, 1.0, 0.0,
+	0.5, 0.5, 0.0, 1.0 );
 
 void main() {
-	outPosition = vec3(modelMatrix.model * vec4(iPosition, 1.0f));
-	// We obviously transform the normals here since we may have transformed
-	// the vertex positions and as such we need to also transform their normals,
-	// however this may then invalidate the corresponding tangents that were
-	// calculated on the CPU using the non-transformed normals, although objects
-	// still look correct as far as I can tell so it may be fine.
-	outNormal = normalize(transpose(inverse(mat3(modelMatrix.model))) * iNormal);
-	outTangent = iTangent;
-	outTexCoord0 = iTexCoord0;
-	outTexCoord1 = iTexCoord1;
-	outVertexColour = iVertexColour;
+	v2fPosition = vec3(modelMatrix.model * vec4(iPosition, 1.0f));
+
+	mat3 normalMatrix = transpose(inverse(mat3(modelMatrix.model)));
+
+	v2fNormal = normalize(normalMatrix * iNormal);
+	v2fTangent = vec4(normalMatrix * iTangent.rgb, iTangent.w);
+	v2fTexCoord0 = iTexCoord0;
+	v2fTexCoord1 = iTexCoord1;
+	v2fVertexColour = iVertexColour;
+	v2fLightSpacePosition = (biasMat * depth.depthMVP * modelMatrix.model) * vec4(iPosition, 1.0f);
 
 	gl_Position = sceneUbo.projection * sceneUbo.view * modelMatrix.model * vec4(iPosition, 1.0f);
 }

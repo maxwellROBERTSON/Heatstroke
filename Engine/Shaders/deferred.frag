@@ -95,20 +95,20 @@ void main() {
 	vec3 normal = normalize(subpassLoad(inputNormals).xyz);
 
 	vec3 ambient = vec3(0.03f) * subpassLoad(inputAlbedo).xyz;
-	vec3 colour = vec3(0.0f);
+	vec3 colour = ambient;
 
 	for (int i = 0; i < MAX_LIGHTS; i++) {
 		vec3 lightCol = lights.light[i].color.rgb;
 		vec3 lightPos = lights.light[i].pos.xyz;
 		vec3 lightDir = normalize(lightPos - pos);
-		vec3 brdfVal = brdf(lightDir, viewDir, normal) * 100;
+		vec3 brdfVal = brdf(lightDir, viewDir, normal) * 5;
 		if (i == 0) {
-			brdfVal *= 10;
+			brdfVal *= 20;
 		}
 		float NdotL = max(dot(normal, lightDir), 0.0f);
-		float attenuation = 1 / pow(length(lightPos - pos), 2);
+		float attenuation = 1 / pow(length(lightPos - pos), 1);
 
-		colour += (ambient * brdfVal * lightCol * NdotL) * attenuation;
+		colour += (brdfVal * lightCol * NdotL) * attenuation;
 	}
 
 	colour = mix(colour, colour * subpassLoad(inputEmissive).a, 1.0f);

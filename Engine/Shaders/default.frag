@@ -2,12 +2,13 @@
 
 #define PI 3.14159265359
 
-layout(location = 0) in vec3 outPosition;
-layout(location = 1) in vec3 outNormal;
-layout(location = 2) in vec4 outTangent;
-layout(location = 3) in vec2 outTexCoord0;
-layout(location = 4) in vec2 outTexCoord1;
-layout(location = 5) in vec4 outVertexColour;
+layout(location = 0) in vec3 v2fPosition;
+layout(location = 1) in vec3 v2fNormal;
+layout(location = 2) in vec4 v2fTangent;
+layout(location = 3) in vec2 v2fTexCoord0;
+layout(location = 4) in vec2 v2fTexCoord1;
+layout(location = 5) in vec4 v2fVertexColour;
+layout(location = 6) in vec4 v2fLightSpacePosition;
 
 layout(set = 0, binding = 0) uniform SceneUBO {
 	mat4 projection;
@@ -20,6 +21,8 @@ layout(set = 1, binding = 1) uniform sampler2D metallicRoughness;
 layout(set = 1, binding = 2) uniform sampler2D emissiveMap;
 layout(set = 1, binding = 3) uniform sampler2D occlusionMap;
 layout(set = 1, binding = 4) uniform sampler2D normalMap;
+
+layout(set = 5, binding = 0) uniform sampler2D shadowMap;
 
 struct MaterialInfo {
     vec4 emissiveFactor;
@@ -81,7 +84,7 @@ float DistributionFunction(vec3 normal, vec3 halfwayVector, float roughness) {
 vec3 Fresnel(float metalness, vec3 halfwayVector, vec3 viewDir) {
     // Fresnel
     // Specular base reflectivity
-    vec3 f0 = (1 - metalness) * vec3(0.04) + (metalness * texture(baseColourMap, outTexCoord0).rgb);
+    vec3 f0 = (1 - metalness) * vec3(0.04) + (metalness * texture(baseColourMap, v2fTexCoord0).rgb);
     vec3 fresnel = f0 + (1 - f0) * pow((1 - dot(halfwayVector, viewDir)), 5.0);
     return fresnel;
 }
@@ -98,15 +101,15 @@ float GeometryFunction(vec3 normal, vec3 halfwayVector, vec3 viewDir, vec3 light
 vec3 brdf(vec3 lightDir, vec3 viewDir, vec3 normal, float metallicFactor, float roughnessFactor) {
     vec3 halfwayVector = normalize(viewDir + lightDir);
 
-    float metalness = texture(metallicRoughness, outTexCoord0).b * metallicFactor;
-    float roughness_sqrt = texture(metallicRoughness, outTexCoord0).g * roughnessFactor;
+    float metalness = texture(metallicRoughness, v2fTexCoord0).b * metallicFactor;
+    float roughness_sqrt = texture(metallicRoughness, v2fTexCoord0).g * roughnessFactor;
     float roughness = roughness_sqrt * roughness_sqrt;
 
     float ndf = DistributionFunction(normal, halfwayVector, roughness);
     vec3 fresnel = Fresnel(metalness, halfwayVector, viewDir);
     float geometry = GeometryFunction(normal, halfwayVector, viewDir, lightDir);    
 
-    vec3 diffuse = (texture(baseColourMap, outTexCoord0).rgb / PI) * (vec3(1.0f) - fresnel) * (1 - metalness);
+    vec3 diffuse = (texture(baseColourMap, v2fTexCoord0).rgb / PI) * (vec3(1.0f) - fresnel) * (1 - metalness);
 
     float brdf_denom = 4 * max(dot(normal, viewDir), 0.0) * max(dot(normal, lightDir), 0.0);
 
@@ -114,48 +117,75 @@ vec3 brdf(vec3 lightDir, vec3 viewDir, vec3 normal, float metallicFactor, float 
 }
 
 vec3 getNormal() {
-    vec3 tangentNormal = texture(normalMap, outTexCoord0).xyz * 2.0f - 1.0f;
+    vec3 tangentNormal = texture(normalMap, v2fTexCoord0).xyz * 2.0f - 1.0f;
 
-    vec3 N = normalize(outNormal);
-    vec3 T = normalize(outTangent.xyz);
-    vec3 B = normalize(cross(N, T) * outTangent.w);
+    vec3 N = normalize(v2fNormal);
+    vec3 T = normalize(v2fTangent.xyz);
+    vec3 B = normalize(cross(N, T) * v2fTangent.w);
     mat3 TBN = mat3(T, B, N);
 
     return normalize(TBN * tangentNormal);
+}
+
+float textureP(vec4 shadowCoord, vec2 offset)
+{
+	float shadow = 1.0f;
+	if (shadowCoord.z > -1.0f && shadowCoord.z < 1.0f) {
+		float dist = texture(shadowMap, shadowCoord.st + offset).r;
+		if (shadowCoord.w > 0.0f && dist < shadowCoord.z) {
+			shadow = 0.1f;
+		}
+	}
+	return shadow;
+}
+
+float shadowPCF(vec4 shadowCoords) {
+    float shadow = 0.0f;
+    vec2 texelSize = 1.0f / textureSize(shadowMap, 0);
+
+    for (int x = -1; x <= 1; x++) {
+        for (int y = -1; y <= 1; y++) {
+            shadow += textureP(shadowCoords, vec2(texelSize.x * x, texelSize.y * y));
+        }
+    }
+
+    return shadow / 9;
 }
 
 void main() {
     MaterialInfo matInfo = materialInfo[pushConstants.materialIndex];
 
     vec3 lightCol = vec3(1.0f);
-    vec3 lightPos = vec3(0.0f, 3.0f, 0.0f);
+    vec3 lightPos = vec3(0.75f, 20.0f, -0.4f);
 
-    vec3 lightDir = normalize(lightPos - outPosition);
-    vec3 viewDir = normalize(sceneUbo.position.rgb - outPosition);
+    vec3 lightDir = normalize(lightPos - v2fPosition);
+    vec3 viewDir = normalize(sceneUbo.position.xyz - v2fPosition);
     vec3 normal = getNormal();
 
     vec4 albedo;
     if (matInfo.baseColorTexSet > -1) {
-        albedo = SRGBtoLINEAR(texture(baseColourMap, matInfo.baseColorTexSet == 0 ? outTexCoord0 : outTexCoord1)) * matInfo.baseColourFactor;
+        albedo = SRGBtoLINEAR(texture(baseColourMap, matInfo.baseColorTexSet == 0 ? v2fTexCoord0 : v2fTexCoord1)) * matInfo.baseColourFactor;
     } else {
         albedo = matInfo.baseColourFactor;
     }
 
-    albedo *= outVertexColour;
+    albedo *= v2fVertexColour;
 
     float metallicFactor = matInfo.metallicFactor;
     float roughnessFactor = matInfo.roughnessFactor;
 
-    vec3 ambient = vec3(0.03f) * texture(baseColourMap, outTexCoord0).rgb;
+    vec3 ambient = vec3(0.03f) * texture(baseColourMap, v2fTexCoord0).rgb;
     vec3 brdfVal = brdf(lightDir, viewDir, normal, metallicFactor, roughnessFactor) * 100;
     float NdotL = max(dot(normal, lightDir), 0.0f);
-    float attenuation = 1 / pow(length(lightPos - outPosition), 2);
+    float attenuation = 1 / pow(length(lightPos - v2fPosition), 1);
 
-    vec3 colour = (ambient * brdfVal * lightCol * NdotL);
+    //float shadow = textureP(v2fLightSpacePosition / v2fLightSpacePosition.w, vec2(0.0f));
+    float shadow = shadowPCF(v2fLightSpacePosition / v2fLightSpacePosition.w);
+    vec3 colour = ambient + ((brdfVal * lightCol * NdotL) * shadow) * attenuation;
 
     // Occlusion factor
     if (matInfo.occlusionTexSet > -1) {
-        float ambientOcclusion = texture(occlusionMap, matInfo.occlusionTexSet == 0 ? outTexCoord0 : outTexCoord1).r;
+        float ambientOcclusion = texture(occlusionMap, matInfo.occlusionTexSet == 0 ? v2fTexCoord0 : v2fTexCoord1).r;
         colour = mix(colour, colour * ambientOcclusion, 1.0f);
     }
 
@@ -164,7 +194,7 @@ void main() {
     if (matInfo.emissiveTexSet > -1) {
         // glTF says this defines linear multipliers for sampled texels so the queried value might have to be
         // converted from sRGB to linear before multiplying
-        emissive *= SRGBtoLINEAR(texture(emissiveMap, matInfo.emissiveTexSet == 0 ? outTexCoord0 : outTexCoord1)).rgb;
+        emissive *= SRGBtoLINEAR(texture(emissiveMap, matInfo.emissiveTexSet == 0 ? v2fTexCoord0 : v2fTexCoord1)).rgb;
     }
 
     colour += emissive;

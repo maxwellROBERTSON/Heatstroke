@@ -178,7 +178,7 @@ void FPSTest::RenderScene()
 
 		this->renderer.updateUniforms();
 
-		this->renderer.render(Engine::RenderMode::DEFERRED, models);
+		this->renderer.render(Engine::RenderMode::FORWARD, models);
 
 		this->renderer.submitRender();
 	}
