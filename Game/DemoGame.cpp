@@ -1,4 +1,4 @@
-#include "DemoGame.h"
+#include "DemoGame.hpp"
 
 #include <chrono>
 
@@ -32,13 +32,22 @@ void FPSTest::OnEvent(Engine::Event& e)
 	camera->OnEvent(this->GetContext().getGLFWWindow(), e);
 	Engine::EventDispatcher dispatcher(e);
 
-	//dispatcher.Dispatch<Engine::KeyPressedEvent>(
-	//	[&](Engine::KeyPressedEvent& event)
-	//	{
-	//		std::cout << event.GetKeyCode() << std::endl;
-	//		return true;
-	//	}
-	//);
+	dispatcher.Dispatch<Engine::KeyPressedEvent>(
+		[&](Engine::KeyPressedEvent& event)
+		{
+			std::cout << event.GetKeyCode() << std::endl;
+			return true;
+		}
+	);
+
+	dispatcher.Dispatch<Engine::MouseButtonPressedEvent>(
+		[&](Engine::MouseButtonPressedEvent& event)
+		{
+
+			std::cout << event.GetMouseButton() << std::endl;
+			return true;
+		}
+	);
 
 }
 

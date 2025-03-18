@@ -41,17 +41,11 @@ namespace Engine
 	}
 	void InputManager::RegisterCallbacks(VulkanWindow* window)
 	{
-		glfwSetWindowCloseCallback(window->window, [](GLFWwindow* aWindow)
-			{
-				VulkanWindow& engineWindow = *(VulkanWindow*)glfwGetWindowUserPointer(aWindow);
-				Engine::WindowCloseEvent event;
-				engineWindow.EventCallback(event);
-			});
-
+		glfwSetWindowCloseCallback(window->window, &onWindowClose);
 		glfwSetJoystickCallback(&joyStickCallback);
 		glfwSetKeyCallback(window->window, &onKeyPress);
 		glfwSetCursorPosCallback(window->window, &onMouseMove);
 		glfwSetMouseButtonCallback(window->window, &onMouseButton);
-
+		glfwSetScrollCallback(window->window, &onMouseScroll);
 	}
 }

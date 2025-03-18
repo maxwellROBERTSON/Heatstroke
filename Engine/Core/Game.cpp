@@ -20,29 +20,6 @@ namespace Engine
 	{
 		EventDispatcher dispatcher(e);
 		dispatcher.Dispatch<WindowCloseEvent>(std::bind(&Game::OnWindowClose, this, std::placeholders::_1));
-
-
-		//dispatcher.Dispatch<KeyPressedEvent>(
-		//	[&](KeyPressedEvent& event)
-		//	{
-		//		if (event.GetKeyCode() == HS_KEY_ESCAPE)
-		//		{
-		//			WindowCloseEvent close;
-		//			OnWindowClose(close);
-		//			return true;
-		//		}
-		//	}
-		//);
-
-
-		//dispatcher.Dispatch<MouseButtonPressedEvent>(
-		//	[&](MouseButtonPressedEvent& event)
-		//	{
-		//		std::cout << event.GetMouseButton() << std::endl;
-		//		return true;
-		//	}
-		//);
-
 	}
 	bool Game::OnWindowClose(WindowCloseEvent& e)
 	{

@@ -103,9 +103,9 @@ void Camera::OnEvent(GLFWwindow* aWindow, Engine::Event& e)
 				else if (glfwGetInputMode(aWindow, GLFW_CURSOR) == GLFW_CURSOR_DISABLED) {
 					glfwSetInputMode(aWindow, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 				}
+				return true;
 			}
-			return true;
-
+			return false;
 		}
 	);
 }

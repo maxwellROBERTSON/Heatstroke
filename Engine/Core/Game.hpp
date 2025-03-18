@@ -28,7 +28,6 @@ namespace Engine
 		bool isRunning = true;
 		VulkanContext mContext;
 		static Game* game;
-
 		float deltaTime = 0.0f, lastTime = 0.0f;
 
 	};

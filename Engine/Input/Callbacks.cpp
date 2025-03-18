@@ -14,9 +14,15 @@
 #include "../Events/WindowEvent.hpp"
 
 namespace Engine {
+	void onWindowClose(GLFWwindow* aWindow)
+	{
+		VulkanWindow& engineWindow = *(VulkanWindow*)glfwGetWindowUserPointer(aWindow);
+		Engine::WindowCloseEvent event;
+		engineWindow.EventCallback(event);
+	}
 	void joyStickCallback(int jid, int event)
 	{
-		auto& joystick = static_cast<Joystick&>(InputManager::getJoystick(jid));
+		Joystick& joystick = static_cast<Joystick&>(InputManager::getJoystick(jid));
 		if (event == GLFW_CONNECTED) {
 			std::cout << joystick.getDeviceName() << " conneceted" << std::endl;
 		}
@@ -81,5 +87,11 @@ namespace Engine {
 			break;
 		}
 		}
+	}
+	void onMouseScroll(GLFWwindow* aWindow, double xOffset, double yOffset)
+	{
+		auto& mouse = InputManager::getMouse();
+		// MouseScroll Event
+		mouse.scrollPos = yOffset;
 	}
 }
