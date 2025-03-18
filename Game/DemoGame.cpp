@@ -1,7 +1,8 @@
 #include "DemoGame.h"
 
 #include <chrono>
-
+#include <thread>
+#include <future>
 
 #include "../Engine/vulkan/objects/Buffer.hpp"
 #include "../Engine/vulkan/PipelineCreation.hpp"
@@ -11,17 +12,27 @@
 #include "Error.hpp"
 #include "toString.hpp"
 
+
 void FPSTest::Init()
 {
 	std::cout << "FPS TEST INIT" << std::endl;
 	registerComponents();
-	initialiseModels();
+
+
+	//create thread which then begins execution of initialiseModels
+	std::thread initialiseModelsThread(&FPSTest::initialiseModels, this);
+
+	std::cout << "Waiting for the execution of modelsThread to finish..." << std::endl;
+
+	//blocks execution of the rest of the program until the initialiseModelsThread has finished
+	initialiseModelsThread.join();
 }
 
 void FPSTest::Update()
 {
 	RenderGUI();
 }
+
 
 void FPSTest::OnEvent(Engine::Event& e)
 {
@@ -76,6 +87,8 @@ void FPSTest::initialiseModels()
 	models.emplace_back(Engine::makeVulkanModel(this->GetContext(), helmet));
 	models.emplace_back(Engine::makeVulkanModel(this->GetContext(), cube));
 	models.emplace_back(Engine::makeVulkanModel(this->GetContext(), character));
+
+	std::cout << "Models created" << std::endl;
 }
 
 void FPSTest::RenderGUI()
