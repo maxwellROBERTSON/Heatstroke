@@ -1,16 +1,14 @@
 #include "PhysicsWorld.hpp"
-
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/string_cast.hpp>
+#include <glm/gtc/quaternion.hpp>
+#include "../vulkan/objects/Model.hpp"
+#include "../ECS/EntityManager.hpp"
+#include "../ECS/PhysicsComponent.hpp"
 physx::PxDefaultErrorCallback PhysicsWorld::gErrorCallback;
 
 void PhysicsWorld::init() {
-	//gFoundation = PxCreateFoundation(PX_PHYSICS_VERSION, gAllocator, gErrorCallback);
-	//gPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *gFoundation, PxTolerancesScale(), true);
-	//PxSceneDesc sceneDesc(gPhysics->getTolerancesScale());
-	//sceneDesc.gravity = PxVec3(0.0f, -9.81f, 0.0f);
-	//gDispatcher = PxDefaultCpuDispatcherCreate(2);
-	//sceneDesc.cpuDispatcher = gDispatcher;
-	//sceneDesc.filterShader = PxDefaultSimulationFilterShader;
-	//gScene = gPhysics->createScene(sceneDesc);
 
 	// gFoundation
 	gFoundation = PxCreateFoundation(PX_PHYSICS_VERSION, gAllocator, gErrorCallback);
@@ -33,10 +31,12 @@ void PhysicsWorld::init() {
 		std::cerr << "PxDefaultPvdSocketTransportCreate failed!" << std::endl;
 		std::exit(-1);
 	}
-	bool isConnected = gPvd->connect(*gTransport, PxPvdInstrumentationFlag::eALL);
+	//bool isConnected = gPvd->connect(*gTransport, PxPvdInstrumentationFlag::eALL);
+	bool isConnected = gPvd->connect(*gTransport, PxPvdInstrumentationFlag::eDEBUG);
+
 	if (!isConnected)
 	{
-		std::cerr << "PVD not connected. Is PhysX Visual Debugger running and listening?\n";
+		std::cerr << "PVD not connected\n";
 	}
 
 	gPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *gFoundation, PxTolerancesScale(), true, gPvd);
@@ -74,20 +74,30 @@ void PhysicsWorld::init() {
 		std::exit(-1);
 	}
 
-	// ControllerManager
-	gControllerManager = PxCreateControllerManager(*gScene);
-	if (!gControllerManager)
-	{
-		std::cerr << "PxCreateControllerManager failed!" << std::endl;
-		std::exit(-1);
-	}
 
 	// testplane!
-	{
-		PxRigidStatic* groundPlane = PxCreatePlane(*gPhysics, PxPlane(0, 0, 1, 0), *gMaterial);
-		gScene->addActor(*groundPlane);
-	}
+	
+	PxRigidStatic* groundPlane = PxCreatePlane(*gPhysics, PxPlane(0, 1, 0, 0), *gMaterial);
+	gScene->addActor(*groundPlane);
+	
 
+}
+
+// update models matrices
+void PhysicsWorld::updateObjects(EntityManager& entityManager, std::vector<Engine::vk::Model>& models)
+{
+	// get all PhysicsComponent
+	std::pair<void*, int> physicsComponents = entityManager.GetComponents<PhysicsComponent>();
+	for (std::size_t i = 0; i < physicsComponents.second; i++) {
+		PhysicsComponent p = reinterpret_cast<PhysicsComponent*>(physicsComponents.first)[i];
+		// only update dynamic now!
+		if (p.type == PhysicsComponent::PhysicsType::DYNAMIC)
+		{
+			glm::mat4 matrix = ConvertPxTransformToGlmMat4(p.dynamicBody->getGlobalPose());
+			matrix = glm::scale(matrix, p.scale);
+			entityManager.GetEntity(p.GetEntityId())->SetModelMatrix(matrix);
+		}
+	}
 }
 
 void PhysicsWorld::createCapsuleController()
@@ -180,4 +190,17 @@ void PhysicsWorld::createStaticBox()
 	gScene->addActor(*boxActor);
 
 
+}
+
+glm::mat4 PhysicsWorld::ConvertPxTransformToGlmMat4(const PxTransform& transform) {
+
+	glm::quat rotation(transform.q.w, transform.q.x, transform.q.y, transform.q.z);
+
+	glm::vec3 translation(transform.p.x, transform.p.y, transform.p.z);
+
+	glm::mat4 rotationMatrix = glm::mat4_cast(rotation);
+
+	rotationMatrix[3] = glm::vec4(translation, 1.0f);
+
+	return rotationMatrix;
 }

@@ -34,4 +34,13 @@ namespace glsl {
         float metallicFactor;
         float roughnessFactor;
     };
+
+    struct alignas(16) Light {
+        glm::vec4 pos;
+        glm::vec4 color;
+    };
+
+    struct LightsUniform {
+        Light light[5];
+    };
 }

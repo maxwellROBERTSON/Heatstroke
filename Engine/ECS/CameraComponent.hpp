@@ -3,7 +3,7 @@
 #include <string>
 
 #include "Component.hpp"
-#include "../../Game/Camera.hpp"
+#include "../Core/Camera.hpp"
 
 class CameraComponent : public Component<CameraComponent>
 {

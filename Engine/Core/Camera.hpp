@@ -3,9 +3,9 @@
 #include <glm/mat4x4.hpp>
 #include <glm/vec4.hpp>
 
-#include "../Engine/Events/Event.h"
-#include "../Engine/Events/KeyEvent.h"
-#include "../Engine/Events/MouseEvent.h"
+#include "../Events/Event.h"
+#include "../Events/KeyEvent.h"
+#include "../Events/MouseEvent.h"
 
 struct GLFWwindow;
 
