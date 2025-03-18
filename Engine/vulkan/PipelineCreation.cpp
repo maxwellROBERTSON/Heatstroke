@@ -778,8 +778,8 @@ namespace Engine {
 		rasterInfo.cullMode = VK_CULL_MODE_NONE;
 		rasterInfo.depthBiasEnable = VK_TRUE;
 		rasterInfo.depthBiasClamp = 0.0f;
-		rasterInfo.depthBiasConstantFactor = 1.25f;
-		rasterInfo.depthBiasSlopeFactor = 1.75f;
+		rasterInfo.depthBiasConstantFactor = 5.0f;
+		rasterInfo.depthBiasSlopeFactor = 1.00f;
 		rasterInfo.lineWidth = 1.0f;
 
 		VkPipelineMultisampleStateCreateInfo samplingInfo{};
