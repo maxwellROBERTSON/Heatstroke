@@ -3,6 +3,7 @@
 // Adapted from: COMP5892M (Advanced Rendering)
 
 #include <cstdint>
+#include <functional>
 #include <map>
 #include <memory>
 #include <optional>
@@ -17,6 +18,7 @@
 
 #include "objects/VkObjects.hpp"
 #include "objects/Texture.hpp"
+#include "../Events/Event.hpp"
 
 namespace Engine {
 
@@ -45,6 +47,9 @@ namespace Engine {
 		VkDebugUtilsMessengerEXT debugMessenger = VK_NULL_HANDLE;
 
 		GLFWwindow* window = nullptr;
+		std::function<void(Event&)> EventCallback;
+		inline void SetEventCallback(const std::function<void(Event&)>& callback) { EventCallback = callback; }
+
 		VkSurfaceKHR surface = VK_NULL_HANDLE;
 
 		std::uint32_t presentFamilyIndex = 0;
@@ -56,6 +61,9 @@ namespace Engine {
 
 		VkFormat swapchainFormat;
 		VkExtent2D swapchainExtent;
+
+
+
 	};
 
 	struct SwapChanges {
@@ -104,17 +112,4 @@ namespace Engine {
 		std::size_t frameIndex,
 		std::uint32_t imageIndex
 	);
-
-	void recreateFormatDependents(const VulkanWindow& aWindow, std::map<std::string, vk::RenderPass>& aRenderPasses);
-	void recreateSizeDependents(
-		const VulkanContext& aContext,
-		std::map<std::string, vk::RenderPass>& aRenderPasses,
-		std::map<std::string, vk::PipelineLayout>& aPipelineLayouts,
-		std::map<std::string, std::tuple<vk::Texture, vk::ImageView>>& aBuffers,
-		std::map<std::string, vk::Pipeline>& aPipelines);
-	void recreateOthers(
-		const VulkanWindow& aWindow,
-		std::map<std::string, vk::RenderPass>& aRenderPasses,
-		std::map<std::string, std::tuple<vk::Texture, vk::ImageView>>& buffers,
-		std::vector<vk::Framebuffer>& aFramebuffers, std::map<std::string, VkDescriptorSet>& aDescriptorSets);
 }

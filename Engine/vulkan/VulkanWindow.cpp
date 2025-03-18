@@ -22,6 +22,8 @@
 #include "VulkanContext.hpp"
 #include "VulkanDevice.hpp"
 
+#include "../Input/InputCodes.hpp"
+
 namespace Engine {
 
 	VulkanWindow::~VulkanWindow()
@@ -183,7 +185,6 @@ namespace Engine {
 			window.get()->debugMessenger = Utils::createDebugMessenger(window.get()->instance);
 
 		// Create GLFW window
-		// Get VkSurfaceKHR from the window
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
 		window.get()->window = glfwCreateWindow(width, height, name.c_str(), nullptr, nullptr); // Again, name not final
@@ -194,6 +195,13 @@ namespace Engine {
 			throw Utils::Error("Unable to create GLFW window\n Last error = %s", errMsg);
 		}
 
+		// Set window user pointer (for events)
+		glfwSetWindowUserPointer(window.get()->window, window.get());
+
+		// Register Callbacks
+		//window.get()->RegisterCallbacks();
+
+		// Get VkSurfaceKHR from the window
 		if (const auto res = glfwCreateWindowSurface(window.get()->instance, window.get()->window, nullptr, &window.get()->surface); VK_SUCCESS != res)
 			throw Utils::Error("Unable to create VkSurfaceKHR\n glfwCreateWindowSurface() returned %s", Utils::toString(res).c_str());
 
@@ -647,36 +655,4 @@ namespace Engine {
 
 		return vkQueuePresentKHR(aWindow.presentQueue, &presentInfo);
 	}
-
-	// Maybe these 3 recreate functions could go in PipelineCreation.cpp?
-
-	void recreateFormatDependents(const VulkanWindow& aWindow, std::map<std::string, vk::RenderPass>& aRenderPasses) {
-		for (auto& [name, renderPass] : aRenderPasses) {
-			renderPass = createRenderPass(aWindow);
-		}
-	}
-
-	void recreateSizeDependents(
-		const VulkanContext& aContext,
-		std::map<std::string, vk::RenderPass>& aRenderPasses,
-		std::map<std::string, vk::PipelineLayout>& aPipelineLayouts,
-		std::map<std::string, std::tuple<vk::Texture, vk::ImageView>>& aBuffers,
-		std::map<std::string, vk::Pipeline>& aPipelines)
-	{
-		aBuffers["depthBuffer"] = createDepthBuffer(*aContext.window, *aContext.allocator);
-
-		aPipelines["default"] = createPipeline(*aContext.window, aRenderPasses["default"].handle, aPipelineLayouts["default"].handle);
-	}
-
-	void recreateOthers(
-		const VulkanWindow& aWindow,
-		std::map<std::string, vk::RenderPass>& aRenderPasses,
-		std::map<std::string, std::tuple<vk::Texture, vk::ImageView>>& buffers,
-		std::vector<vk::Framebuffer>& aFramebuffers,
-		std::map<std::string, VkDescriptorSet>& aDescriptorSets)
-	{
-		aFramebuffers.clear();
-		Engine::createFramebuffers(aWindow, aFramebuffers, aRenderPasses["default"].handle, std::get<1>(buffers["depthBuffer"]).handle);
-	}
-
 }

@@ -1,0 +1,11 @@
+Model Information:
+* title:	Rust
+* source:	https://sketchfab.com/3d-models/rust-5f1118d7adb24f12aaa08b5d6f9a3aee
+* author:	frostychaos144 (https://sketchfab.com/frostychaos144)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Rust" (https://sketchfab.com/3d-models/rust-5f1118d7adb24f12aaa08b5d6f9a3aee) by frostychaos144 (https://sketchfab.com/frostychaos144) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

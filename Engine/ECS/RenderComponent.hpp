@@ -21,6 +21,8 @@ public:
 	// Setters
 	void SetModelIndex(int index) { modelIndex = index; }
 
+
+
 private:
 	int modelIndex = -1;
 	int isActive = true;

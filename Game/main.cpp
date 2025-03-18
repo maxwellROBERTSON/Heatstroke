@@ -8,8 +8,8 @@
 #include "../Engine/Network/Helpers/GetLocalIPAddress.hpp"
 #include "../Engine/Network/Server/GameServer.hpp"
 
-#include "DemoGame.h"
 #include "../Engine/Physics/PhysicsWorld.hpp"
+#include "DemoGame.hpp"
 
 //int main() try {
 //    // This manual scope is very important, it ensures the objects in models have their associated
@@ -23,7 +23,7 @@
 //		ComponentTypeRegistry registry = ComponentTypeRegistry::Get();
 //		EntityManager entityManager = EntityManager(&registry);
 //
-//		initialiseGame(registry, entityManager);
+//		initialiseGame(registry, entityManager);	
 //        initialiseModels(models);
 //		runGameLoop(models, registry, entityManager);
 

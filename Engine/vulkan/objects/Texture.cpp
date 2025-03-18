@@ -16,20 +16,25 @@ namespace vk {
 
 	Texture::~Texture() {
 		if (image != VK_NULL_HANDLE) {
+			//std::fprintf(stdout, "Destroyed texture: %s\n", name.c_str());
 			assert(mAllocator != VK_NULL_HANDLE);
 			assert(allocation != VK_NULL_HANDLE);
 			vmaDestroyImage(mAllocator, image, allocation);
 		}
 	}
 
-	Texture::Texture(VmaAllocator aAllocator, VkImage aImage, VmaAllocation aAllocation) noexcept
+	Texture::Texture(VmaAllocator aAllocator, std::string name, VkImage aImage, VmaAllocation aAllocation) noexcept
 		: image(aImage)
+		, name(name)
 		, allocation(aAllocation)
 		, mAllocator(aAllocator)
-	{}
+	{
+		//std::fprintf(stdout, "Created texture: %s - %p\n", name.c_str(), aImage);
+	}
 
 	Texture::Texture(Texture&& aOther) noexcept
 		: image(std::exchange(aOther.image, VK_NULL_HANDLE))
+		, name(std::exchange(aOther.name, ""))
 		, allocation(std::exchange(aOther.allocation, VK_NULL_HANDLE))
 		, mAllocator(std::exchange(aOther.mAllocator, VK_NULL_HANDLE))
 		, sampler(std::exchange(aOther.sampler, VK_NULL_HANDLE))
@@ -38,13 +43,14 @@ namespace vk {
 	Texture& Texture::operator=(Texture&& aOther) noexcept
 	{
 		std::swap(image, aOther.image);
+		std::swap(name, aOther.name);
 		std::swap(allocation, aOther.allocation);
 		std::swap(mAllocator, aOther.mAllocator);
 		std::swap(sampler, aOther.sampler);
 		return *this;
 	}
 
-	Texture createTexture(const VulkanContext& aContext, tinygltf::Image aTinygltfImage, VkFormat aFormat, VkSampler aSampler) {
+	Texture createTexture(const VulkanContext& aContext, std::string name, tinygltf::Image aTinygltfImage, VkFormat aFormat, VkSampler aSampler) {
 		std::size_t sizeInBytes = aTinygltfImage.image.size();
 
 		vk::Buffer staging = createBuffer(
@@ -69,7 +75,7 @@ namespace vk {
 		std::uint32_t mipLevels = computeMipLevels(width, height);
 
 		VkImageUsageFlags usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-		Texture texture = createVkImage(aContext, width, height, aFormat, mipLevels, usage);
+		Texture texture = createVkImage(aContext, name, width, height, aFormat, mipLevels, usage);
 
 		VkCommandBuffer cmdBuff = createCommandBuffer(*aContext.window);
 		beginCommandBuffer(cmdBuff);
@@ -184,7 +190,7 @@ namespace vk {
 		vmaUnmapMemory(aContext.allocator->allocator, staging.allocation);
 		
 		VkImageUsageFlags usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-		Texture texture = createVkImage(aContext, 1, 1, VK_FORMAT_R8G8B8A8_UNORM, 1, usage);
+		Texture texture = createVkImage(aContext, "dummy", 1, 1, VK_FORMAT_R8G8B8A8_UNORM, 1, usage);
 
 		VkCommandBuffer cmdBuff = createCommandBuffer(*aContext.window);
 		beginCommandBuffer(cmdBuff);
@@ -264,7 +270,7 @@ namespace vk {
 		return 32 - leadingZeros;
 	}
 
-	Texture createVkImage(const VulkanContext& aContext, std::uint32_t aWidth, std::uint32_t aHeight, VkFormat aFormat, std::uint32_t aMipLevels, VkImageUsageFlags aFlags) {
+	Texture createVkImage(const VulkanContext& aContext, std::string name, std::uint32_t aWidth, std::uint32_t aHeight, VkFormat aFormat, std::uint32_t aMipLevels, VkImageUsageFlags aFlags) {
 		VkImageCreateInfo imageInfo{};
 		imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 		imageInfo.imageType = VK_IMAGE_TYPE_2D;
@@ -290,7 +296,7 @@ namespace vk {
 		if (const auto result = vmaCreateImage(aContext.allocator.get()->allocator, &imageInfo, &allocInfo, &image, &allocation, nullptr); VK_SUCCESS != result)
 			throw Utils::Error("Unable to allocate image\n vmaCreateImage() returned %s", Utils::toString(result).c_str());
 
-		return Texture(aContext.allocator.get()->allocator, image, allocation);
+		return Texture(aContext.allocator.get()->allocator, name, image, allocation);
 	}
 }
 }

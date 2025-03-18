@@ -1,13 +1,24 @@
 #pragma once
 
+#include "../Input/Device.hpp"
+#include <iostream>
 #include <map>
+#include <string>
 
-namespace Engine {
-namespace Keyboard {
+namespace Engine
+{
+	class Keyboard : public Device
+	{
+	public:
+		Keyboard() : Device(DeviceType::Keyboard) {}
+		~Keyboard() {}
 
-	void setKey(int key, std::pair<bool, int> actionAndModifiers);
+		const std::string& getDeviceName() const override;
 
-	std::map<int, std::pair<bool, int>>& getKeyStates();
+		std::map<int, ButtonState>& getKeyboardState();
+		bool isPressed(int);
+		void setKey(int, ButtonState);
+		std::map<int, ButtonState> mKeyStates;
 
-}
+	};
 }

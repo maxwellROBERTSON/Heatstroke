@@ -1,107 +1,97 @@
 #include "Callbacks.hpp"
 
+#include "Input.hpp"
+#include "InputCodes.hpp"
+#include "Joystick.hpp"
 #include "Keyboard.hpp"
 #include "Mouse.hpp"
 
 #include <iostream>
 
+#include "../Events/Event.hpp"
+#include "../Events/KeyEvent.hpp"
+#include "../Events/MouseEvent.hpp"
+#include "../Events/WindowEvent.hpp"
+
 namespace Engine {
-
-	void registerCallbacks(GLFWwindow* aWindow) {
-		glfwSetKeyCallback(aWindow, &onKeyPress);
-		glfwSetMouseButtonCallback(aWindow, &onMouseButton);
-		glfwSetCursorPosCallback(aWindow, &onMouseMove);
-		glfwSetJoystickCallback(&joyStickCallback);
+	void onWindowClose(GLFWwindow* aWindow)
+	{
+		VulkanWindow& engineWindow = *(VulkanWindow*)glfwGetWindowUserPointer(aWindow);
+		Engine::WindowCloseEvent event;
+		engineWindow.EventCallback(event);
 	}
-
-	void onKeyPress(GLFWwindow* aWindow, int aKey, int aScanCode, int aAction, int aModifiers) {
-		switch (aKey) {
-		case GLFW_KEY_ESCAPE:
-			glfwSetWindowShouldClose(aWindow, true);
-			break;
-		}
-
-		if (aAction == GLFW_PRESS)
-			Keyboard::setKey(aKey, std::pair(true, aModifiers));
-		else if (aAction == GLFW_RELEASE)
-			Keyboard::setKey(aKey, std::pair(false, aModifiers));
-	}
-
-	void onMouseButton(GLFWwindow* aWindow, int aButton, int aAction, int aModifiers) {
-		switch (aButton) {
-		case GLFW_MOUSE_BUTTON_RIGHT:
-			if (aAction == GLFW_PRESS) {
-				if (glfwGetInputMode(aWindow, GLFW_CURSOR) == GLFW_CURSOR_NORMAL) {
-					glfwSetInputMode(aWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-				}
-				else if (glfwGetInputMode(aWindow, GLFW_CURSOR) == GLFW_CURSOR_DISABLED) {
-					glfwSetInputMode(aWindow, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-				}
-			}
-			break;
-		}
-	}
-
-	void onMouseMove(GLFWwindow* aWindow, double x, double y) {
-		Mouse::setMousePosition(x, y);
-	}
-
 	void joyStickCallback(int jid, int event)
 	{
-		if (event == GLFW_CONNECTED)
-		{
-			std::cout << glfwGetJoystickName(jid) << " has been connected" << std::endl;
+		Joystick& joystick = static_cast<Joystick&>(InputManager::getJoystick(jid));
+		if (event == GLFW_CONNECTED) {
+			std::cout << joystick.getDeviceName() << " conneceted" << std::endl;
 		}
-		else
-		{
-			std::cout << " Controller has been disconnected" << std::endl;
-			// Breaks - assuming that once it disconnects get name doesn't work
-			//std::cout << glfwGetJoystickName(jid) << "has been disconnected" << std::endl;
+		else {
+			std::cout << joystick.getDeviceName() << " disconneceted" << std::endl;
+
 		}
 	}
+
+	void onKeyPress(GLFWwindow* aWindow, int aKey, int aScanCode, int aAction, int aModifiers)
+	{
+		VulkanWindow& engineWindow = *(VulkanWindow*)glfwGetWindowUserPointer(aWindow);
+		if (aKey == HS_KEY_ESCAPE)
+		{
+			Engine::WindowCloseEvent event;
+			engineWindow.EventCallback(event);
+		}
+		auto& keyboard = InputManager::getKeyboard();
+		switch (aAction)
+		{
+		case GLFW_PRESS:
+		{
+			KeyPressedEvent event(aKey, 0);
+			engineWindow.EventCallback(event);
+			keyboard.setKey(aKey, ButtonState::PRESSED);
+			break;
+		}
+		case GLFW_RELEASE:
+		{
+			KeyReleasedEvent event(aKey);
+			engineWindow.EventCallback(event);
+			keyboard.setKey(aKey, ButtonState::RELEASED);
+			break;
+		}
+		}
+	}
+
+	void onMouseMove(GLFWwindow* aWindow, double x, double y)
+	{
+		auto& mouse = InputManager::getMouse();
+		mouse.xPos = x;
+		mouse.yPos = y;
+	}
+	void onMouseButton(GLFWwindow* aWindow, int aButton, int aAction, int aModifiers)
+	{
+		VulkanWindow& engineWindow = *(VulkanWindow*)glfwGetWindowUserPointer(aWindow);
+		auto& mouse = InputManager::getMouse();
+
+		switch (aAction) {
+		case GLFW_PRESS:
+		{
+			mouse.mButtonStates[aButton] = ButtonState::PRESSED;
+			MouseButtonPressedEvent event(aButton);
+			engineWindow.EventCallback(event);
+			break;
+		}
+		case GLFW_RELEASE:
+		{
+			mouse.mButtonStates[aButton] = ButtonState::RELEASED;
+			MouseButtonReleasedEvent event(aButton);
+			engineWindow.EventCallback(event);
+			break;
+		}
+		}
+	}
+	void onMouseScroll(GLFWwindow* aWindow, double xOffset, double yOffset)
+	{
+		auto& mouse = InputManager::getMouse();
+		// MouseScroll Event
+		mouse.scrollPos = yOffset;
+	}
 }
-
-// #include "Callbacks.hpp"
-
-// #include "Keyboard.hpp"
-// #include "Mouse.hpp"
-
-// namespace Engine {
-
-// 	void registerCallbacks(GLFWwindow* aWindow) {
-// 		glfwSetKeyCallback(aWindow, &onKeyPress);
-// 		glfwSetMouseButtonCallback(aWindow, &onMouseButton);
-// 		glfwSetCursorPosCallback(aWindow, &onMouseMove);
-// 	}
-
-// 	void onKeyPress(GLFWwindow* aWindow, int aKey, int aScanCode, int aAction, int aModifiers) {
-// 		switch (aKey) {
-// 		case GLFW_KEY_ESCAPE:
-// 			glfwSetWindowShouldClose(aWindow, true);
-// 			break;
-// 		}
-
-// 		if (aAction == GLFW_PRESS)
-// 			Keyboard::setKey(aKey, std::pair(true, aModifiers));
-// 		else if (aAction == GLFW_RELEASE)
-// 			Keyboard::setKey(aKey, std::pair(false, aModifiers));
-// 	}
-
-// 	void onMouseButton(GLFWwindow* aWindow, int aButton, int aAction, int aModifiers) {
-// 		switch (aButton) {
-// 		case GLFW_MOUSE_BUTTON_RIGHT:
-// 			if (aAction == GLFW_PRESS) {
-// 				if (glfwGetInputMode(aWindow, GLFW_CURSOR) == GLFW_CURSOR_NORMAL) {
-// 					glfwSetInputMode(aWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-// 				}
-// 				else if (glfwGetInputMode(aWindow, GLFW_CURSOR) == GLFW_CURSOR_DISABLED) {
-// 					glfwSetInputMode(aWindow, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-// 				}
-// 			}
-// 			break;
-// 		}
-// 	}
-	
-// 	void onMouseMove(GLFWwindow* aWindow, double x, double y) {
-// 		Mouse::setMousePosition(x, y);
-// 	}
