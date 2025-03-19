@@ -1,4 +1,4 @@
-#include "Game.h"
+#include "Game.hpp"
 
 namespace Engine
 {
@@ -6,7 +6,11 @@ namespace Engine
 	{
 		mContext.window = initialiseVulkan(name, width, height);
 		mContext.allocator = createVulkanAllocator(*mContext.window.get());
-		registerCallbacks(this->GetContext().getGLFWWindow(), this);
+		//sInputManager->registerCallbacks(mContext.window.get());
+		InputManager::RegisterCallbacks(mContext.window.get());
+		mContext.window.get()->SetEventCallback(std::bind(&Game::OnEvent, this, std::placeholders::_1));
+		//this->Init();
+		//registerCallbacks(this->GetContext().getGLFWWindow(), this);
 		renderer = std::make_unique<Renderer>(&this->GetContext(), &this->entityManager);
 		gui = std::make_unique<GUI>(this);
 		this->Init();
@@ -27,24 +31,11 @@ namespace Engine
 	{
 		EventDispatcher dispatcher(e);
 		dispatcher.Dispatch<WindowCloseEvent>(std::bind(&Game::OnWindowClose, this, std::placeholders::_1));
-
-		dispatcher.Dispatch<KeyPressedEvent>(
-			[&](KeyPressedEvent& event)
-			{
-				if (event.GetKeyCode() == HS_KEY_ESCAPE)
-				{
-					WindowCloseEvent close;
-					OnWindowClose(close);
-					return true;
-				}
-			}
-		);
-
 	}
 
 	bool Game::OnWindowClose(WindowCloseEvent& e)
 	{
-		isRunning = false;
+		glfwSetWindowShouldClose(mContext.getGLFWWindow(), true);
 		return true;
 	}
 }

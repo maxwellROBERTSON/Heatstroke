@@ -1,0 +1,11 @@
+Model Information:
+* title:	Animated FPS Pistol
+* source:	https://sketchfab.com/3d-models/animated-fps-pistol-01ade07ed09445eb8df00d6b7e66e2be
+* author:	Levraicoincoin (https://sketchfab.com/Levraicoincoin)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Animated FPS Pistol" (https://sketchfab.com/3d-models/animated-fps-pistol-01ade07ed09445eb8df00d6b7e66e2be) by Levraicoincoin (https://sketchfab.com/Levraicoincoin) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

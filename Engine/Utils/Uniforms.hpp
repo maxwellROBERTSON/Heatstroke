@@ -43,4 +43,8 @@ namespace glsl {
     struct LightsUniform {
         Light light[5];
     };
+
+    struct DepthMVP {
+        glm::mat4 depthMVP;
+    };
 }

@@ -14,6 +14,7 @@ namespace Engine {
 		glsl::ModelMatricesUniform modelMatricesUniform;
 		glsl::MaterialInfoBuffer materialInfoBuffer;
 		glsl::LightsUniform lightsUniform;
+		glsl::DepthMVP depthMVP;
 	};
 
 	enum RenderMode {
@@ -59,8 +60,11 @@ namespace Engine {
 		std::map<std::string, vk::Buffer> uniformBuffers;
 		std::map<std::string, VkDescriptorSet> descriptorSets;
 
+		vk::Sampler depthSampler;
+
 		std::vector<vk::Framebuffer> defaultFramebuffers;
 		std::vector<vk::Framebuffer> deferredFramebuffers;
+		std::vector<vk::Framebuffer> shadowFramebuffer;
 
 		std::size_t frameIndex = 0;
 		std::uint32_t imageIndex = 0;

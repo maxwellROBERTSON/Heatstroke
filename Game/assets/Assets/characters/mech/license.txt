@@ -1,0 +1,11 @@
+Model Information:
+* title:	Kanonenkopf Kampfpanzer V1
+* source:	https://sketchfab.com/3d-models/kanonenkopf-kampfpanzer-v1-e2661034e177407b9781dba917046598
+* author:	EddyNL (https://sketchfab.com/EddyNL)
+
+Model License:
+* license type:	CC-BY-NC-4.0 (http://creativecommons.org/licenses/by-nc/4.0/)
+* requirements:	Author must be credited. No commercial use.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Kanonenkopf Kampfpanzer V1" (https://sketchfab.com/3d-models/kanonenkopf-kampfpanzer-v1-e2661034e177407b9781dba917046598) by EddyNL (https://sketchfab.com/EddyNL) licensed under CC-BY-NC-4.0 (http://creativecommons.org/licenses/by-nc/4.0/)

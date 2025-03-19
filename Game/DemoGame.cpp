@@ -1,7 +1,8 @@
-#include "DemoGame.h"
+#include "DemoGame.hpp"
 
 #include <chrono>
-
+#include <thread>
+#include <future>
 
 #include "../Engine/vulkan/objects/Buffer.hpp"
 #include "../Engine/vulkan/PipelineCreation.hpp"
@@ -11,12 +12,18 @@
 #include "Error.hpp"
 #include "toString.hpp"
 
+
 void FPSTest::Init()
 {
-	std::cout << "FPS TEST INIT" << std::endl;
 	registerComponents();
-	initialiseModels();
-	initialisePhysics();
+	//create thread which then begins execution of initialiseModels
+	std::thread initialiseModelsThread(&FPSTest::initialiseModels, this);
+
+	std::cout << "Waiting for the execution of modelsThread to finish..." << std::endl;
+
+	//blocks execution of the rest of the program until the initialiseModelsThread has finished
+	initialiseModelsThread.join();
+	initialisePhysics(physics_world);
 }
 
 void FPSTest::Update()
@@ -24,17 +31,31 @@ void FPSTest::Update()
 	RenderGUI();
 }
 
+
 void FPSTest::OnEvent(Engine::Event& e)
 {
-	Engine::EventDispatcher dispatcher(e);
+	Game::OnEvent(e);
 
-	dispatcher.Dispatch<Engine::KeyPressedEvent>(
-		[&](Engine::KeyPressedEvent& event)
-		{
-			std::cout << event.GetKeyCode() << std::endl;
-			return true;
-		}
-	);
+	camera->OnEvent(this->GetContext().getGLFWWindow(), e);
+	//Engine::EventDispatcher dispatcher(e);
+
+	//dispatcher.Dispatch<Engine::KeyPressedEvent>(
+	//	[&](Engine::KeyPressedEvent& event)
+	//	{
+	//		std::cout << event.GetKeyCode() << std::endl;
+	//		return true;
+	//	}
+	//);
+
+	//dispatcher.Dispatch<Engine::MouseButtonPressedEvent>(
+	//	[&](Engine::MouseButtonPressedEvent& event)
+	//	{
+
+	//		std::cout << event.GetMouseButton() << std::endl;
+	//		return true;
+	//	}
+	//);
+
 }
 
 void FPSTest::registerComponents()
@@ -74,6 +95,8 @@ void FPSTest::initialiseModels()
 	GetModels().emplace_back(Engine::makeVulkanModel(this->GetContext(), helmet));
 	GetModels().emplace_back(Engine::makeVulkanModel(this->GetContext(), cube));
 	GetModels().emplace_back(Engine::makeVulkanModel(this->GetContext(), character));
+
+	std::cout << "Models created" << std::endl;
 }
 
 void FPSTest::initialisePhysics() 
@@ -100,7 +123,15 @@ void FPSTest::RenderScene()
 	auto previous = std::chrono::steady_clock::now();
 
 	while (!glfwWindowShouldClose(this->GetContext().getGLFWWindow())) {
-		glfwPollEvents();
+		Engine::InputManager::Update();
+		if (!Engine::InputManager::mJoysticks.empty())
+		{
+			if (Engine::InputManager::getJoystick(0).isPressed(HS_GAMEPAD_BUTTON_A))
+			{
+				std::cout << "A BUTTON PRESSED" << std::endl;
+			}
+		}
+
 
 		if (GetRenderer().checkSwapchain())
 			continue;

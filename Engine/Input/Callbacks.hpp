@@ -11,9 +11,13 @@ namespace Engine {
 	class Game;
 
 	void registerCallbacks(GLFWwindow* aWindow, Engine::Game* game);
+}
 
-	void onKeyPress(GLFWwindow*, int, int, int, int);
-	void onMouseButton(GLFWwindow*, int, int, int);
-	void onMouseMove(GLFWwindow*, double, double);
+namespace Engine {
+	void onWindowClose(GLFWwindow*);
 	void joyStickCallback(int, int);
+	void onKeyPress(GLFWwindow*, int, int, int, int);
+	void onMouseMove(GLFWwindow*, double, double);
+	void onMouseButton(GLFWwindow*, int, int, int);
+	void onMouseScroll(GLFWwindow*, double, double);
 }
