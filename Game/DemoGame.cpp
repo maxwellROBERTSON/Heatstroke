@@ -23,7 +23,7 @@ void FPSTest::Init()
 
 	//blocks execution of the rest of the program until the initialiseModelsThread has finished
 	initialiseModelsThread.join();
-	initialisePhysics(physics_world);
+	initialisePhysics();
 }
 
 void FPSTest::Update()
@@ -36,7 +36,7 @@ void FPSTest::OnEvent(Engine::Event& e)
 {
 	Game::OnEvent(e);
 
-	camera->OnEvent(this->GetContext().getGLFWWindow(), e);
+	GetRenderer().GetCamera()->OnEvent(this->GetContext().getGLFWWindow(), e);
 	//Engine::EventDispatcher dispatcher(e);
 
 	//dispatcher.Dispatch<Engine::KeyPressedEvent>(
@@ -113,7 +113,7 @@ void FPSTest::RenderGUI()
 
 void FPSTest::RenderScene()
 {
-	Camera camera = Camera();
+	Engine::Camera camera = Engine::Camera();
 
 	GetRenderer().initialiseRenderer();
 	GetGUI().initGUI();
@@ -131,7 +131,6 @@ void FPSTest::RenderScene()
 				std::cout << "A BUTTON PRESSED" << std::endl;
 			}
 		}
-
 
 		if (GetRenderer().checkSwapchain())
 			continue;
@@ -156,27 +155,9 @@ void FPSTest::RenderScene()
 
 		GetRenderer().updateUniforms();
 
-#ifdef _DEBUG
-		if (GetRenderMode() != Engine::GUIX)
-		{
-			std::string s = GetGUI().GetActiveGUI();
-			GetGUI().SetActiveGUI("Debug");
-			GetGUI().makeGUI();
-			GetGUI().SetActiveGUI(s);
-			GetRenderer().render(GetRenderMode(), GetModels());
-		}
-		else
-		{
-			GetGUI().makeGUI();
-			GetRenderer().render(GetRenderMode(), GetModels());
-		}
-#else
-		if (GetRenderMode() == Engine::GUIX)
-		{
-			GetGUI().makeGUI();
-		}
-		GetRenderer().render(GetRenderMode(), GetModels());
-#endif
+		GetGUI().makeGUI();
+
+		GetRenderer().render(GetRenderModes(), GetModels());
 
 		GetRenderer().submitRender();
 	}
@@ -239,7 +220,7 @@ void FPSTest::loadOfflineEntities()
 	//physicsComponent = GetEntityManager().GetEntityComponent<PhysicsComponent>(entity->GetEntityId());
 	//physicsComponent->init(GetPhysicsWorld(), PhysicsComponent::PhysicsType::DYNAMIC, player1Transform, 3);
 	cameraComponent = GetEntityManager().GetEntityComponent<CameraComponent>(entity->GetEntityId());
-	cameraComponent->SetCamera(Camera(100.0f, 0.01f, 256.0f, glm::vec3(-3.0f, 2.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
+	cameraComponent->SetCamera(Engine::Camera(100.0f, 0.01f, 256.0f, glm::vec3(-3.0f, 2.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
 	networkComponent = GetEntityManager().GetEntityComponent<NetworkComponent>(entity->GetEntityId());
 	networkComponent->SetClientId(0);
 

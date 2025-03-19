@@ -1,9 +1,9 @@
 #pragma once
 
-#include "../Events/Event.hpp"
-
 #include <memory>
 
+#include "RenderMode.hpp"
+#include "../Events/Event.hpp"
 #include "Camera.hpp"
 #include "../Events/KeyEvent.hpp"
 #include "../Events/MouseEvent.hpp"
@@ -15,15 +15,16 @@
 #include "../vulkan/VulkanContext.hpp"
 #include "../Physics/PhysicsWorld.hpp"
 #include "../vulkan/VulkanContext.hpp"
-#include "../GUI/GUI.hpp"
 #include "../vulkan/Renderer.hpp"
+#include "../GUI/GUI.hpp"
 #include "../ECS/ComponentTypeRegistry.hpp"
 #include "../ECS/EntityManager.hpp"
 
 namespace Engine
 {
-	class GUI;
+	class Camera;
 	class Renderer;
+	class GUI;
 
 	class Game
 	{
@@ -37,6 +38,8 @@ namespace Engine
 
 		virtual void loadOfflineEntities() {}
 
+		void ResetRenderModes();
+
 		// Getters
 		inline VulkanContext& GetContext() { return mContext; }
 		inline static Game& Get() { return *game; }
@@ -47,11 +50,15 @@ namespace Engine
 		inline Engine::Renderer& GetRenderer() { return *renderer; }
 		inline PhysicsWorld& GetPhysicsWorld() { return physics_world; }
 		inline Engine::GUI& GetGUI() { return *gui; }
-		inline Engine::RenderMode& GetRenderMode() { return renderMode; }
+		inline unsigned int* GetRenderModes() { return &renderModes; }
+		inline bool GetRenderMode(Engine::RenderMode r) { return (renderModes & (1 << r)) != 0; }
+		Engine::RenderMode GetGUIRenderMode();
+
+		// Setters
+		inline void ToggleRenderMode(Engine::RenderMode r) { renderModes ^= (1 << r); }
 
 		bool OnWindowClose(WindowCloseEvent& e);
 	private:
-		bool isRunning = true;
 		VulkanContext mContext;
 		static Game* game;
 		std::vector<Engine::vk::Model> models;
@@ -61,19 +68,10 @@ namespace Engine
 		std::unique_ptr<Engine::Renderer> renderer;
 		PhysicsWorld physics_world;
 		std::unique_ptr<Engine::GUI> gui;
-		Engine::RenderMode renderMode = GUIX;
+		unsigned int renderModes;
+		//std::vector<int> renderModes = std::vector<int>(Engine::RenderMode::COUNT);
 
-		//Game(const std::string& name, int width, int height)
-		//	: mContext(initialiseVulkan(name, width, height)),
-		//	registry(ComponentTypeRegistry::Get()),
-		//	entityManager(&registry),
-		//	physics_world(),
-		//	GUI(this),
-		//	renderer(&this->GetContext(), &this->GetEntityManager())  // Initialize renderer with context and entity manager
-		//{
-		//	// Your initialization code here if needed
-		//}
-
+		bool isRunning = true;
 		float deltaTime = 0.0f, lastTime = 0.0f;
 
 	};

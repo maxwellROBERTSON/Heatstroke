@@ -1,5 +1,7 @@
 #include "GUI.hpp"
 
+class GLFWwindow;
+
 namespace Engine
 {
 	void GUI::initGUI()
@@ -58,42 +60,20 @@ namespace Engine
 
 	void GUI::toggle()
 	{
-		for (const auto& [key, state] : Keyboard::getKeyStates())
+		Engine::RenderMode mode = game->GetGUIRenderMode();
+		if (mode != GUIHOME)
 		{
-			if (key == GLFW_KEY_ESCAPE && !isActive)
+			GLFWwindow* aWindow = game->GetContext().getGLFWWindow();
+			game->ToggleRenderMode(GUISETTINGS);
+			bool s = game->GetRenderMode(GUISETTINGS);
+			if (s)
 			{
-				if (state.first && !previousState)
-				{
-					isActive = true;
-					previousState = true;
-					break;
-				}
-				if (state.first && previousState)
-				{
-					break;
-				}
-				if (!state.first)
-				{
-					previousState = false;
-				}
+				int width;
+				int height;
+				glfwGetFramebufferSize(game->GetContext().getGLFWWindow(), &width, &height);
+				glfwSetCursorPos(aWindow, width / 2, height / 2);
 			}
-			else if (key == GLFW_KEY_ESCAPE && isActive)
-			{
-				if (!state.first)
-				{
-					previousState = false;
-					break;
-				}
-				if (state.first && previousState)
-				{
-					break;
-				}
-				if (state.first)
-				{
-					isActive = false;
-					previousState = true;
-				}
-			}
+			glfwSetInputMode(aWindow, GLFW_CURSOR, s ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
 		}
 	}
 
@@ -102,10 +82,12 @@ namespace Engine
 		int width;
 		int height;
 		glfwGetFramebufferSize(game->GetContext().getGLFWWindow(), &width, &height);
-
-		functions[activeGUI](&width, &height);
-
-		ImGui::Render();
+		Engine::RenderMode mode = game->GetGUIRenderMode();
+		if (functions.find(mode) != functions.end())
+		{
+			functions[mode](&width, &height);
+			ImGui::Render();
+		}
 	}
 
 	void GUI::makeHomeGUI(int* w, int* h)
@@ -131,15 +113,18 @@ namespace Engine
 		{
 			game->loadOfflineEntities();
 			game->GetRenderer().initialiseModelMatrices();
-			game->GetRenderMode() = FORWARD;
-			std::string s = "Settings";
-			activeGUI = s;
-			/*isActive = false;
-			isActive = true;*/
+			game->ToggleRenderMode(GUIHOME);
+			game->ToggleRenderMode(FORWARD);
+			GLFWwindow* window = game->GetContext().getGLFWWindow();
+			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 		}
 		if (ImGui::Button("Multi-Player", ImVec2(*w / 4, *h / 4)))
 		{
-			// nothing to be done yet
+			game->ToggleRenderMode(GUIHOME);
+			game->ToggleRenderMode(FORWARD);
+			GLFWwindow* window = game->GetContext().getGLFWWindow();
+			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+			glfwSetCursorPos(window, *w / 2.0, *h / 2.0);
 		}
 
 		ImVec2 windowSize = ImVec2(*w / 4, *h / 4);
@@ -151,8 +136,8 @@ namespace Engine
 		// ICON_FA_WRENCH
 		if (ImGui::Button("Settings", ImVec2(*w / 6, *h / 6)))
 		{
-			std::string s = "Settings";
-			activeGUI = s;
+			game->ToggleRenderMode(GUIHOME);
+			game->ToggleRenderMode(GUISETTINGS);
 		}
 
 		ImGui::End();
@@ -178,14 +163,20 @@ namespace Engine
 
 		ImGui::Begin("Settings Menu", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 
-		ImGui::Text("List of settings would go here", ImVec2(*w / 4, *h / 4));
-		if (ImGui::Button("Setting 1", ImVec2(*w / 4, *h / 4)))
+		ImGui::Text("Toggle Forward or Deferred rendering", ImVec2(*w / 4, *h / 4));
+		bool forward = game->GetRenderMode(FORWARD);
+		if (ImGui::Button(forward ? "Forward" : "Deferred", ImVec2(*w / 4, *h / 4)))
 		{
-			// nothing to be done yet
+			game->ToggleRenderMode(FORWARD);
+			game->ToggleRenderMode(DEFERRED);
 		}
-		if (ImGui::Button("Setting 2", ImVec2(*w / 4, *h / 4)))
+		ImGui::Text("Toggle Shadows (Only available when in forward rendering mode)", ImVec2(*w / 4, *h / 4));
+		if (forward)
 		{
-			// nothing to be done yet
+			if (ImGui::Button(game->GetRenderMode(SHADOWS) ? "Shadows" : "No Shadows", ImVec2(*w / 4, *h / 4)))
+			{
+				game->ToggleRenderMode(SHADOWS);
+			}
 		}
 
 		ImVec2 windowSize = ImVec2(*w / 4, *h / 4);
@@ -196,21 +187,11 @@ namespace Engine
 		ImGui::SetCursorPos(topRightPos);
 		if (ImGui::Button("Home", ImVec2(*w / 6, *h / 6)))
 		{
-			std::string s = "Home";
-			activeGUI = s;
-			game->GetRenderMode() = GUIX;
-
 			if (game->GetRenderer().GetIsSceneLoaded())
 			{
+				game->ResetRenderModes();
 				game->GetEntityManager().ClearManager();
-
 			}
-			//if (isActive)
-			//{
-			//	isActive = false;
-			//	game->GetEntityManager().ClearManager();
-			//	//deleteSceneAndModelDescriptors();
-			//}
 		}
 
 		ImGui::End();

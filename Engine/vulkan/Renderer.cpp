@@ -358,21 +358,32 @@ namespace Engine {
 		std::memcpy(this->uniformBuffers["modelMatrices"].mapped, this->uniforms.modelMatricesUniform.model, size);
 
 		vmaFlushAllocation(this->context->allocator->allocator, this->uniformBuffers["modelMatrices"].allocation, 0, size);
-
-		
 	}
 
-	void Renderer::render(Engine::RenderMode aRenderMode, std::vector<vk::Model>& models) {
-		switch (aRenderMode) {
-		case Engine::RenderMode::GUIX:
+	void Renderer::render(unsigned int* aRenderMode, std::vector<vk::Model>& models) {
+		/*for (int i = sizeof((*aRenderMode) * 8 - 1); i >= 0; i--) {
+			std::cout << ((*aRenderMode >> i) & 1);
+		}*/
+		std::cout << std::endl;
+		if (((*aRenderMode) & (1 << GUIHOME)))
+		{
 			this->renderGUI();
-			break;
-		case Engine::RenderMode::FORWARD:
-			this->renderForward(models);
-			break;
-		case Engine::RenderMode::DEFERRED:
-			this->renderDeferred(models);
-			break;
+		}
+		else if (((*aRenderMode) & (1 << GUISETTINGS)))
+		{
+			this->renderGUI();
+		}
+		else if ((((*aRenderMode) & (1 << FORWARD))))
+		{
+			this->renderForward(models, ((*aRenderMode) & (1 << GUIDEBUG)), ((*aRenderMode) & (1 << SHADOWS)));
+		}
+		else if (((*aRenderMode) & (1 << DEFERRED)))
+		{
+			this->renderDeferred(models, ((*aRenderMode) & (1 << GUIDEBUG)));
+		}
+		else
+		{
+			std::cerr << "Unknown RenderMode Config" << std::endl;
 		}
 	}
 
@@ -427,7 +438,7 @@ namespace Engine {
 			throw Utils::Error("Unable to end command buffer\n vkEndCommandBuffer() returned %s", Utils::toString(res).c_str());
 	}
 
-	void Renderer::renderForward(std::vector<vk::Model>& models) {
+	void Renderer::renderForward(std::vector<vk::Model>& models, bool debug, bool shadows) {
 		VkCommandBuffer cmdBuf = this->cmdBuffers[this->frameIndex];
 
 		// Begin recording
@@ -473,36 +484,39 @@ namespace Engine {
 			VK_PIPELINE_STAGE_VERTEX_SHADER_BIT
 		);
 
-		VkClearValue clearValueS[1]{};
-		clearValueS[0].depthStencil = { 1.0f, 0 };
+		if (shadows)
+		{
+			VkClearValue clearValueS[1]{};
+			clearValueS[0].depthStencil = { 1.0f, 0 };
 
-		VkRenderPassBeginInfo passInfoS{};
-		passInfoS.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		passInfoS.renderPass = this->renderPasses["shadow"].handle;
-		passInfoS.framebuffer = this->shadowFramebuffer[0].handle;
-		passInfoS.renderArea.offset = VkOffset2D{ 0, 0 };
-		passInfoS.renderArea.extent = VkExtent2D{ 2048, 2048 };
-		passInfoS.clearValueCount = 1;
-		passInfoS.pClearValues = clearValueS;
+			VkRenderPassBeginInfo passInfoS{};
+			passInfoS.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+			passInfoS.renderPass = this->renderPasses["shadow"].handle;
+			passInfoS.framebuffer = this->shadowFramebuffer[0].handle;
+			passInfoS.renderArea.offset = VkOffset2D{ 0, 0 };
+			passInfoS.renderArea.extent = VkExtent2D{ 2048, 2048 };
+			passInfoS.clearValueCount = 1;
+			passInfoS.pClearValues = clearValueS;
 
-		vkCmdBeginRenderPass(cmdBuf, &passInfoS, VK_SUBPASS_CONTENTS_INLINE);
+			vkCmdBeginRenderPass(cmdBuf, &passInfoS, VK_SUBPASS_CONTENTS_INLINE);
 
-		vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelines["shadow"].handle);
+			vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelines["shadow"].handle);
 
-		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["shadow"].handle, 0, 1, &this->descriptorSets["shadow"], 0, nullptr);
+			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["shadow"].handle, 0, 1, &this->descriptorSets["shadow"], 0, nullptr);
 
-		std::pair<void*, int> renderComponentsS = entityManager->GetComponents<RenderComponent>();
-		for (std::size_t i = 0; i < renderComponentsS.second; i++) {
-			RenderComponent r = reinterpret_cast<RenderComponent*>(renderComponentsS.first)[i];
+			std::pair<void*, int> renderComponentsS = entityManager->GetComponents<RenderComponent>();
+			for (std::size_t i = 0; i < renderComponentsS.second; i++) {
+				RenderComponent r = reinterpret_cast<RenderComponent*>(renderComponentsS.first)[i];
+			}
+			for (std::size_t i = 0; i < renderComponentsS.second; i++) {
+				std::uint32_t offset = i * this->dynamicUBOAlignment;
+				vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["shadow"].handle, 1, 1, &this->descriptorSets["modelMatrices"], 1, &offset);
+				int j = reinterpret_cast<RenderComponent*>(renderComponentsS.first)[i].GetModelIndex();
+				models[j].drawModel(cmdBuf, this->pipelineLayouts["shadow"].handle, true);
+			}
+
+			vkCmdEndRenderPass(cmdBuf);
 		}
-		for (std::size_t i = 0; i < renderComponentsS.second; i++) {
-			std::uint32_t offset = i * this->dynamicUBOAlignment;
-			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["shadow"].handle, 1, 1, &this->descriptorSets["modelMatrices"], 1, &offset);
-			int j = reinterpret_cast<RenderComponent*>(renderComponentsS.first)[i].GetModelIndex();
-			models[j].drawModel(cmdBuf, this->pipelineLayouts["shadow"].handle, true);
-		}
-
-		vkCmdEndRenderPass(cmdBuf);
 
 		// Clear attachments
 		VkClearValue clearValues[2]{};
@@ -542,9 +556,8 @@ namespace Engine {
 			models[j].drawModel(cmdBuf, this->pipelineLayouts["default"].handle);
 		}
 
-#ifdef _DEBUG
-		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmdBuf);
-#endif
+		if (debug)
+			ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmdBuf);
 
 		vkCmdEndRenderPass(cmdBuf);
 
@@ -552,7 +565,7 @@ namespace Engine {
 			throw Utils::Error("Unable to end command buffer\n vkEndCommandBuffer() returned %s", Utils::toString(res).c_str());
 	}
 
-	void Renderer::renderDeferred(std::vector<vk::Model>& models) {
+	void Renderer::renderDeferred(std::vector<vk::Model>& models, bool debug) {
 		VkCommandBuffer cmdBuf = this->cmdBuffers[this->frameIndex];
 
 		// Begin recording
@@ -658,9 +671,8 @@ namespace Engine {
 
 		vkCmdDraw(cmdBuf, 3, 1, 0, 0);
 
-#ifdef _DEBUG
-		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmdBuf);
-#endif
+		if (debug)
+			ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmdBuf);
 
 		vkCmdEndRenderPass(cmdBuf);
 

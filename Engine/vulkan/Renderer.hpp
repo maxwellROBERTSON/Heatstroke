@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../Core/RenderMode.hpp"
 #include "objects/Model.hpp"
 #include "Uniforms.hpp"
 #include "Utils.hpp"
@@ -9,6 +10,8 @@
 
 namespace Engine {
 
+	class Camera;
+
 	struct Uniforms {
 		glsl::SceneUniform sceneUniform;
 		glsl::ModelMatricesUniform modelMatricesUniform;
@@ -17,11 +20,11 @@ namespace Engine {
 		glsl::DepthMVP depthMVP;
 	};
 
-	enum RenderMode {
+	/*enum RenderMode {
 		GUIX,
 		FORWARD,
 		DEFERRED
-	};
+	};*/
 
 	class Renderer {
 	public:
@@ -29,19 +32,19 @@ namespace Engine {
 		Renderer() = default;
 
 		VkRenderPass& GetRenderPass(std::string s);
-		Camera* GetCamera() { return camera; }
-		bool GetIsSceneLoaded() { return isSceneLoaded; }
+		Engine::Camera* GetCamera() { return camera; }
+		bool const GetIsSceneLoaded() { return isSceneLoaded; }
 
 		void initialiseRenderer();
 		void initialiseModelMatrices();
 		void cleanModelMatrices();
-		void attachCamera(Camera* camera);
+		void attachCamera(Engine::Camera* camera);
 		void initialiseModelDescriptors(std::vector<vk::Model>& models);
 		bool checkSwapchain();
 		bool acquireSwapchainImage();
 		void updateUniforms();
 		void updateModelMatrices();
-		void render(RenderMode renderMode, std::vector<vk::Model>& models);
+		void render(unsigned int* renderModes, std::vector<vk::Model>& models);
 		void submitRender();
 		void finishRendering();
 
@@ -50,7 +53,7 @@ namespace Engine {
 	private:
 		VulkanContext* context;
 		EntityManager* entityManager;
-		Camera* camera;
+		Engine::Camera* camera;
 
 		std::map<std::string, vk::RenderPass> renderPasses;
 		std::map<std::string, vk::DescriptorSetLayout> descriptorLayouts;
@@ -82,8 +85,8 @@ namespace Engine {
 		bool recreateSwapchain = false;
 
 		void renderGUI();
-		void renderForward(std::vector<vk::Model>& models);
-		void renderDeferred(std::vector<vk::Model>& models);
+		void renderForward(std::vector<vk::Model>& models, bool debug, bool shadows);
+		void renderDeferred(std::vector<vk::Model>& models, bool debug);
 
 		void recreateFormatDependents();
 		void recreateSizeDependents();

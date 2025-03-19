@@ -13,7 +13,7 @@ namespace Engine
 		MouseButtonPressed, MouseButtonReleased, MouseScrolled, MouseMoved,
 		// TODO: add controller events
 		WindowClose,
-		GameMode
+		ESCPressed
 
 	};
 

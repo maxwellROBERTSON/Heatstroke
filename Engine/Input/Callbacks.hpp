@@ -4,16 +4,11 @@
 
 #include "Keyboard.hpp"
 #include "Mouse.hpp"
-#include "../Core/Game.h"
+#include "../Core/Game.hpp"
 
 namespace Engine {
-
 	class Game;
 
-	void registerCallbacks(GLFWwindow* aWindow, Engine::Game* game);
-}
-
-namespace Engine {
 	void onWindowClose(GLFWwindow*);
 	void joyStickCallback(int, int);
 	void onKeyPress(GLFWwindow*, int, int, int, int);

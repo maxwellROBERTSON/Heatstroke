@@ -13,14 +13,6 @@
 #include "../Events/MouseEvent.hpp"
 #include "../Events/WindowEvent.hpp"
 
-	/*void registerCallbacks(GLFWwindow* aWindow, Engine::Game* game) {
-
-		glfwSetWindowUserPointer(aWindow, game);
-
-		glfwSetKeyCallback(aWindow, &onKeyPress);
-		glfwSetMouseButtonCallback(aWindow, &onMouseButton);
-		glfwSetCursorPosCallback(aWindow, &onMouseMove);
-		glfwSetJoystickCallback(&joyStickCallback);*/
 namespace Engine {
 	void onWindowClose(GLFWwindow* aWindow)
 	{
@@ -29,22 +21,6 @@ namespace Engine {
 		engineWindow.EventCallback(event);
 	}
 
-	void onKeyPress(GLFWwindow* aWindow, int aKey, int aScanCode, int aAction, int aModifiers) {
-		Engine::Game* game = static_cast<Engine::Game*>(glfwGetWindowUserPointer(aWindow));
-
-		if (aAction == GLFW_PRESS)
-		{
-			switch (aKey) {
-			case GLFW_KEY_ESCAPE:
-				//glfwSetWindowShouldClose(aWindow, true);
-				if (game->GetRenderMode() != GUIX)
-					game->GetRenderMode() = GUIX;
-				else
-					game->GetRenderMode() = FORWARD;
-				break;
-			}
-		}
-	}
 	void joyStickCallback(int jid, int event)
 	{
 		Joystick& joystick = static_cast<Joystick&>(InputManager::getJoystick(jid));
@@ -60,12 +36,15 @@ namespace Engine {
 	void onKeyPress(GLFWwindow* aWindow, int aKey, int aScanCode, int aAction, int aModifiers)
 	{
 		VulkanWindow& engineWindow = *(VulkanWindow*)glfwGetWindowUserPointer(aWindow);
-		if (aKey == HS_KEY_ESCAPE)
-		{
-			Engine::WindowCloseEvent event;
-			engineWindow.EventCallback(event);
-		}
 		auto& keyboard = InputManager::getKeyboard();
+
+		if (aAction == GLFW_PRESS && aKey == HS_KEY_ESCAPE)
+		{
+			ESCEvent event;
+			engineWindow.EventCallback(event);
+			return;
+		}
+
 		switch (aAction)
 		{
 		case GLFW_PRESS:
@@ -87,6 +66,8 @@ namespace Engine {
 
 	void onMouseMove(GLFWwindow* aWindow, double x, double y)
 	{
+		if (glfwGetInputMode(aWindow, GLFW_CURSOR) != GLFW_CURSOR_DISABLED)
+			return;
 		auto& mouse = InputManager::getMouse();
 		mouse.xPos = x;
 		mouse.yPos = y;

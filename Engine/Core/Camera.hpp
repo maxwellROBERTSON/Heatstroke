@@ -13,42 +13,46 @@ struct GLFWwindow;
 
 // We put the camera implementation on the game side but do we want to have 
 // the camera implementation determined by the game or engine?
-class Camera {
-public:
-	Camera() = default;
-	Camera(float fov, float near, float far, glm::vec3 position, glm::vec3 frontDirection);
-	~Camera() = default;
 
-	void operator=(const Camera& other)
-	{
-		this->fov = other.fov;
-		this->nearPlane = other.nearPlane;
-		this->farPlane = other.farPlane;
-		this->position = other.position;
-		this->frontDirection = other.frontDirection;
+namespace Engine
+{
+	class Camera {
+	public:
+		Camera() = default;
+		Camera(float fov, float near, float far, glm::vec3 position, glm::vec3 frontDirection);
+		~Camera() = default;
 
-		this->firstClick = other.firstClick;
+		void operator=(const Camera& other)
+		{
+			this->fov = other.fov;
+			this->nearPlane = other.nearPlane;
+			this->farPlane = other.farPlane;
+			this->position = other.position;
+			this->frontDirection = other.frontDirection;
 
-		this->yaw = other.yaw;
-		this->pitch = other.pitch;
-		this->lastX = other.lastX;
-		this->lastY = other.lastY;
-	}
+			this->firstClick = other.firstClick;
 
-	void updateCamera(GLFWwindow* aWindow, float timeDelta);
-	void OnEvent(GLFWwindow* aWindow, Engine::Event& e);
+			this->yaw = other.yaw;
+			this->pitch = other.pitch;
+			this->lastX = other.lastX;
+			this->lastY = other.lastY;
+		}
 
-	float fov;
-	float nearPlane;
-	float farPlane;
-	glm::vec3 position;
-	glm::vec3 frontDirection;
+		void updateCamera(GLFWwindow* aWindow, float timeDelta);
+		void OnEvent(GLFWwindow* aWindow, Engine::Event& e);
 
-	bool firstClick = true;
+		float fov;
+		float nearPlane;
+		float farPlane;
+		glm::vec3 position;
+		glm::vec3 frontDirection;
 
-	float yaw = 0.0f;
-	float pitch = 0.0f;
-	float lastX = 0.0f;
-	float lastY = 0.0f;
+		bool firstClick = true;
 
-};
+		float yaw = 0.0f;
+		float pitch = 0.0f;
+		float lastX = 0.0f;
+		float lastY = 0.0f;
+
+	};
+}

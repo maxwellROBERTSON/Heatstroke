@@ -25,7 +25,7 @@
 #include "../vulkan/VulkanContext.hpp"
 #include "../vulkan/VulkanDevice.hpp"
 #include "../Input/Keyboard.hpp"
-#include "../Core/Game.h"
+#include "../Core/Game.hpp"
 
 #include "Error.hpp"
 #include "toString.hpp"
@@ -45,21 +45,16 @@ namespace Engine
 		GUI() {}
 		GUI(Engine::Game* game) : game(game)
 		{
-			std::string s = "Home";
-			AddFunction(s, [this](int* w, int* h) { makeHomeGUI(w, h); });
-			s = "Settings";
-			AddFunction(s, [this](int* w, int* h) { makeSettingsGUI(w, h); });
-			s = "Debug";
-			AddFunction(s, [this](int* w, int* h) { makeDebugGUI(w, h); });
+			AddFunction(GUIDEBUG, [this](int* w, int* h) { makeDebugGUI(w, h); });
+			AddFunction(GUIHOME, [this](int* w, int* h) { makeHomeGUI(w, h); });
+			AddFunction(GUISETTINGS, [this](int* w, int* h) { makeSettingsGUI(w, h); });
 		}
 
 		void initGUI();
 
 		void toggle();
 
-		void SetActiveGUI(std::string s) { activeGUI = s; }
-		std::string GetActiveGUI() { return activeGUI; }
-		void AddFunction(const std::string& name, std::function<void(int*, int*)> func) { functions.emplace(name, func); }
+		void AddFunction(Engine::RenderMode r, std::function<void(int*, int*)> func) { functions.emplace(r, func); }
 
 		void makeGUI();
 		void makeHomeGUI(int*, int*);
@@ -67,11 +62,7 @@ namespace Engine
 		void makeDebugGUI(int*, int*);
 
 	private:
-		bool isActive = true;
-		bool previousState = true;
-		std::map<std::string, std::function<void(int*, int*)>> functions;
-		std::string activeGUI = "Home";
-
+		std::map<Engine::RenderMode, std::function<void(int*, int*)>> functions;
 		Engine::Game* game;
 	};
 }
