@@ -123,7 +123,7 @@ void FPSTest::RenderScene()
 	{
 		// Offline mode
 		isChange = false;
-		loadOfflineEntities(registry, entityManager, physics_world);
+		loadOfflineEntities(registry, entityManager, physics_world, models);
 		clientId = 0;
 	}
 
@@ -185,7 +185,7 @@ void FPSTest::RenderScene()
 	this->renderer.finishRendering();
 }
 
-void loadOfflineEntities(ComponentTypeRegistry& registry, EntityManager& entityManager, PhysicsWorld& pworld)
+void loadOfflineEntities(ComponentTypeRegistry& registry, EntityManager& entityManager, PhysicsWorld& pworld, std::vector<Engine::vk::Model>& models)
 {
 	// Pointers
 	Entity* entity;
@@ -195,12 +195,14 @@ void loadOfflineEntities(ComponentTypeRegistry& registry, EntityManager& entityM
 	NetworkComponent* networkComponent;
 
 	// Map
-	entity = entityManager.AddEntity<RenderComponent>();
+	entity = entityManager.AddEntity<RenderComponent, PhysicsComponent>();
 	glm::mat4 mapTransform(1.0f);
 	mapTransform = glm::scale(mapTransform, glm::vec3(0.01f, 0.01f, 0.01f));
 	entity->SetModelMatrix(mapTransform);
 	renderComponent = entityManager.GetEntityComponent<RenderComponent>(entity->GetEntityId());
 	renderComponent->SetModelIndex(0);
+	physicsComponent = entityManager.GetEntityComponent<PhysicsComponent>(entity->GetEntityId());
+	physicsComponent->initComplexShape(pworld, PhysicsComponent::PhysicsType::STATIC, models[0], mapTransform, entity->GetEntityId());
 
 	// Helmet
 	entity = entityManager.AddEntity<RenderComponent, PhysicsComponent>();

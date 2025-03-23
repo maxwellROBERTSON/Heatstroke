@@ -68,4 +68,4 @@ public:
 	bool isChange = true;
 };
 
-void loadOfflineEntities(ComponentTypeRegistry& registry, EntityManager& entityManager, PhysicsWorld& pworld);
+void loadOfflineEntities(ComponentTypeRegistry& registry, EntityManager& entityManager, PhysicsWorld& pworld, std::vector<Engine::vk::Model>& models);

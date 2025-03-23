@@ -420,9 +420,6 @@ namespace Engine {
 
 		std::pair<void*, int> renderComponentsS = entityManager->GetComponents<RenderComponent>();
 		for (std::size_t i = 0; i < renderComponentsS.second; i++) {
-			RenderComponent r = reinterpret_cast<RenderComponent*>(renderComponentsS.first)[i];
-		}
-		for (std::size_t i = 0; i < renderComponentsS.second; i++) {
 			std::uint32_t offset = i * this->dynamicUBOAlignment;
 			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["shadow"].handle, 1, 1, &this->descriptorSets["modelMatrices"], 1, &offset);
 			int j = reinterpret_cast<RenderComponent*>(renderComponentsS.first)[i].GetModelIndex();
@@ -459,9 +456,6 @@ namespace Engine {
 		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["default"].handle, 5, 1, &this->descriptorSets["shadowMap"], 0, nullptr);
 
 		std::pair<void*, int> renderComponents = entityManager->GetComponents<RenderComponent>();
-		for (std::size_t i = 0; i < renderComponents.second; i++) {
-			RenderComponent r = reinterpret_cast<RenderComponent*>(renderComponents.first)[i];
-		}
 		for (std::size_t i = 0; i < renderComponents.second; i++) {
 			std::uint32_t offset = i * this->dynamicUBOAlignment;
 			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["default"].handle, 3, 1, &this->descriptorSets["modelMatrices"], 1, &offset);
