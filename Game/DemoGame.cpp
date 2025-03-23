@@ -138,10 +138,15 @@ void FPSTest::RenderScene()
 		camera->updateCamera(this->GetContext().getGLFWWindow(), timeDelta);
 
 		float fixedDeltaTime = std::min(0.016f, timeDelta);
-		// update PVD
+
+		// simulate controller first
+		this->physics_world.updateCharacter(fixedDeltaTime);
+		// then simulate all the dynamic objects
 		this->physics_world.gScene->simulate(fixedDeltaTime);
 		this->physics_world.gScene->fetchResults(true);
-		// update physics
+
+		
+		// update entites with physics component
 		this->physics_world.updateObjects(entityManager, models);
 
 
@@ -190,17 +195,17 @@ void loadOfflineEntities(ComponentTypeRegistry& registry, EntityManager& entityM
 	entity = entityManager.AddEntity<RenderComponent, PhysicsComponent>();
 	glm::mat4 cubeTransform(1.0f);
 	cubeTransform = glm::translate(cubeTransform, glm::vec3(0.3f, 1.0f, -1.0f));
-	cubeTransform = glm::scale(cubeTransform, glm::vec3(0.2f, 0.2f, 0.2f));
+	cubeTransform = glm::scale(cubeTransform, glm::vec3(0.4f, 0.4f, 0.4f));
 	entity->SetModelMatrix(cubeTransform);
 	renderComponent = entityManager.GetEntityComponent<RenderComponent>(entity->GetEntityId());
 	renderComponent->SetModelIndex(2);
 	// configure physics component
 	physicsComponent = entityManager.GetEntityComponent<PhysicsComponent>(entity->GetEntityId());
-	physicsComponent->init(pworld, PhysicsComponent::PhysicsType::STATIC, cubeTransform, entity->GetEntityId());
+	physicsComponent->init(pworld, PhysicsComponent::PhysicsType::DYNAMIC, cubeTransform, entity->GetEntityId());
 
 
 	// Player 1
-	entity = entityManager.AddEntity<RenderComponent, CameraComponent ,NetworkComponent>();
+	entity = entityManager.AddEntity<RenderComponent, CameraComponent ,NetworkComponent, PhysicsComponent>();
 	glm::mat4 player1Transform(1.0f);
 	player1Transform = glm::translate(player1Transform, glm::vec3(-5.0f, 1.0f, -1.0f));
 	player1Transform = glm::rotate(player1Transform, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
@@ -208,8 +213,8 @@ void loadOfflineEntities(ComponentTypeRegistry& registry, EntityManager& entityM
 	entity->SetModelMatrix(player1Transform);
 	renderComponent = entityManager.GetEntityComponent<RenderComponent>(entity->GetEntityId());
 	renderComponent->SetModelIndex(3);
-	//physicsComponent = entityManager.GetEntityComponent<PhysicsComponent>(entity->GetEntityId());
-	//physicsComponent->init(pworld, PhysicsComponent::PhysicsType::DYNAMIC, player1Transform, 3);
+	physicsComponent = entityManager.GetEntityComponent<PhysicsComponent>(entity->GetEntityId());
+	physicsComponent->init(pworld, PhysicsComponent::PhysicsType::CONTROLLER, player1Transform, entity->GetEntityId());
 	cameraComponent = entityManager.GetEntityComponent<CameraComponent>(entity->GetEntityId());
 	cameraComponent->SetCamera(Camera(100.0f, 0.01f, 256.0f, glm::vec3(-3.0f, 2.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
 	networkComponent = entityManager.GetEntityComponent<NetworkComponent>(entity->GetEntityId());
@@ -226,4 +231,5 @@ void loadOfflineEntities(ComponentTypeRegistry& registry, EntityManager& entityM
 	renderComponent->SetModelIndex(3);
 	//physicsComponent = entityManager.GetEntityComponent<PhysicsComponent>(entity->GetEntityId());
 	//physicsComponent->SetIsPerson(true
+
 }
