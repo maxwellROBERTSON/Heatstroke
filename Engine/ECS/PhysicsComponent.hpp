@@ -26,7 +26,7 @@ public:
 
 	PhysicsType type;
 	glm::vec3 scale;
-
+	glm::quat rotation = glm::quat(1, 0, 0, 0);
 
 	PhysicsComponent() {};
 
@@ -54,35 +54,56 @@ public:
 		material->setRestitution(0.0f);
 		type = physicsType;
 
-		switch (type) {
-		case PhysicsType::STATIC:
+		switch (type)
 		{
-			staticBody = pworld.gPhysics->createRigidStatic(pxTransform);
-			if (staticBody) {
-				PxShape* shape = PxRigidActorExt::createExclusiveShape(
-					*staticBody, PxBoxGeometry(scale.x, scale.y, scale.z), *material
-				);
+			case PhysicsType::STATIC:
+			{
+				staticBody = pworld.gPhysics->createRigidStatic(pxTransform);
+				if (staticBody) {
+					PxShape* shape = PxRigidActorExt::createExclusiveShape(
+						*staticBody, PxBoxGeometry(scale.x, scale.y, scale.z), *material
+					);
 
-				pworld.gScene->addActor(*staticBody);
-				
-			}
-			break;
-		}
-		case PhysicsType::DYNAMIC:
-			dynamicBody = pworld.gPhysics->createRigidDynamic(pxTransform);
-			
-			if (dynamicBody) {
-				PxShape* shape = PxRigidActorExt::createExclusiveShape(
-					*dynamicBody, PxBoxGeometry(scale.x, scale.y, scale.z), *material
-				);
+					pworld.gScene->addActor(*staticBody);
 
-				pworld.gScene->addActor(*dynamicBody);
-				pworld.numDynamicRigid++;
+				}
+				break;
 			}
-			break;
-		case PhysicsType::CONTROLLER:
-			// TODO:CharacterController, descriptor...
-			break;
+
+			case PhysicsType::DYNAMIC:
+			{
+				dynamicBody = pworld.gPhysics->createRigidDynamic(pxTransform);
+
+				if (dynamicBody) {
+					PxShape* shape = PxRigidActorExt::createExclusiveShape(
+						*dynamicBody, PxBoxGeometry(scale.x, scale.y, scale.z), *material
+					);
+
+					pworld.gScene->addActor(*dynamicBody);
+					pworld.numDynamicRigid++;
+				}
+				break;
+			}
+
+			case PhysicsType::CONTROLLER:
+			{
+				// set ControllerDescription
+				PxCapsuleControllerDesc desc;
+				desc.height = 1.f;
+				desc.radius = 0.3f;
+				desc.stepOffset = 0.1f;
+				//desc.contactOffset
+				desc.material = pworld.gPhysics->createMaterial(0.5f, 0.5f, 0.6f);
+				desc.position = PxExtendedVec3(translation.x, translation.y + desc.height / 2 + desc.radius, translation.z);
+				desc.slopeLimit = 0.8f;
+				desc.upDirection = PxVec3(0, 1, 0);
+
+				PxCapsuleController* pcontroller = static_cast<PxCapsuleController*>(pworld.gControllerManager->createController(desc));
+				controller = pcontroller;
+				pworld.controller = pcontroller;
+
+				break;
+			}
 		}
 	}
 

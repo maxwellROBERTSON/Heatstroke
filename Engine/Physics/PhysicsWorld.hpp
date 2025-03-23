@@ -17,7 +17,7 @@ public:
 	PxDefaultAllocator gAllocator;
 	static PxDefaultErrorCallback gErrorCallback;
 	PxMaterial* gMaterial = nullptr;
-
+	PxCapsuleController* controller = nullptr;
 	PxU32 numDynamicRigid = 0;
 
 	// CapsuleController
@@ -32,11 +32,9 @@ public:
 
 	void init();
 
+	void updateCharacter(PxReal deltatime);
+
 	void updateObjects(EntityManager& entityManager, std::vector<Engine::vk::Model>& models);
-
-	void createCapsuleController();
-
-	void createStaticBox();
 
 	void cleanupPhysX();
 
