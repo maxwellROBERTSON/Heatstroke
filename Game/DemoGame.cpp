@@ -157,7 +157,7 @@ void FPSTest::RenderScene()
 
 		GetGUI().makeGUI();
 
-		GetRenderer().render(GetRenderModes(), GetModels());
+		GetRenderer().render(GetModels());
 
 		GetRenderer().submitRender();
 	}

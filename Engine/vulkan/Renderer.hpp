@@ -6,7 +6,12 @@
 #include "Utils.hpp"
 #include "../ECS/EntityManager.hpp"
 #include "../Core/Camera.hpp"
-//#include "../GUI/GUI.hpp"
+#include "../Core/Game.hpp"
+
+namespace Engine
+{
+	class Game;
+}
 
 namespace Engine {
 
@@ -20,15 +25,9 @@ namespace Engine {
 		glsl::DepthMVP depthMVP;
 	};
 
-	/*enum RenderMode {
-		GUIX,
-		FORWARD,
-		DEFERRED
-	};*/
-
 	class Renderer {
 	public:
-		Renderer(VulkanContext* aContext, EntityManager* entityManager);
+		Renderer(VulkanContext* aContext, EntityManager* entityManager, Engine::Game* game);
 		Renderer() = default;
 
 		VkRenderPass& GetRenderPass(std::string s);
@@ -44,15 +43,18 @@ namespace Engine {
 		bool acquireSwapchainImage();
 		void updateUniforms();
 		void updateModelMatrices();
-		void render(unsigned int* renderModes, std::vector<vk::Model>& models);
+		void render(std::vector<vk::Model>& models);
 		void submitRender();
 		void finishRendering();
 
 		vk::Buffer createDynamicUniformBuffer();
+		void modeOn(Engine::RenderMode r);
+		void modeOff(Engine::RenderMode r);
 
 	private:
 		VulkanContext* context;
 		EntityManager* entityManager;
+		Engine::Game* game;
 		Engine::Camera* camera;
 
 		std::map<std::string, vk::RenderPass> renderPasses;
@@ -68,6 +70,12 @@ namespace Engine {
 		std::vector<vk::Framebuffer> defaultFramebuffers;
 		std::vector<vk::Framebuffer> deferredFramebuffers;
 		std::vector<vk::Framebuffer> shadowFramebuffer;
+
+		std::unordered_map<Engine::RenderMode, std::vector<vk::Framebuffer>*> framebuffersMap = {
+			{Engine::RenderMode::FORWARD, &defaultFramebuffers},
+			{Engine::RenderMode::DEFERRED,& deferredFramebuffers},
+			{Engine::RenderMode::SHADOWS, &shadowFramebuffer}
+		};
 
 		std::size_t frameIndex = 0;
 		std::uint32_t imageIndex = 0;
@@ -85,8 +93,10 @@ namespace Engine {
 		bool recreateSwapchain = false;
 
 		void renderGUI();
-		void renderForward(std::vector<vk::Model>& models, bool debug, bool shadows);
+		void renderForward(std::vector<vk::Model>& models, bool debug);
+		void renderForwardShadows(std::vector<vk::Model>& models, bool debug);
 		void renderDeferred(std::vector<vk::Model>& models, bool debug);
+		void drawModels(VkCommandBuffer& cmdBuf, std::vector<vk::Model>& models, std::string handle);
 
 		void recreateFormatDependents();
 		void recreateSizeDependents();

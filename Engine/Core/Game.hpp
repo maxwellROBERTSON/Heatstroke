@@ -3,8 +3,9 @@
 #include <memory>
 
 #include "RenderMode.hpp"
-#include "../Events/Event.hpp"
 #include "Camera.hpp"
+#include "../Events/Event.hpp"
+#include "../Events/RenderModeEvent.hpp"
 #include "../Events/KeyEvent.hpp"
 #include "../Events/MouseEvent.hpp"
 #include "../Events/WindowEvent.hpp"
@@ -55,7 +56,39 @@ namespace Engine
 		Engine::RenderMode GetGUIRenderMode();
 
 		// Setters
-		inline void ToggleRenderMode(Engine::RenderMode r) { renderModes ^= (1 << r); }
+		inline void ToggleRenderMode(Engine::RenderMode r) {
+			renderModes ^= (1 << r);
+			bool on;
+			if ((r == FORWARD) || (r == DEFERRED) || (r == SHADOWS))
+			{
+				if ((renderModes >> r) & 1)
+				{
+					on = true;
+				}
+				else
+				{
+					on = false;
+				}
+				/*RenderModeToggleEvent event(r, on);
+				VulkanWindow& engineWindow = *mContext.window.get();
+				engineWindow.EventCallback(event);*/
+			}
+
+			static const std::map<int, std::string> modeNames = {
+				{ GUIDEBUG, "GUIDEBUG" },
+				{ GUIHOME, "GUIHOME" },
+				{ GUISETTINGS, "GUISETTINGS" },
+				{ FORWARD, "FORWARD" },
+				{ DEFERRED, "DEFERRED" },
+				{ SHADOWS, "SHADOWS" },
+				{ COUNT, "COUNT" }
+			};
+			for (const auto& [mode, name] : modeNames)
+			{
+				std::cout << name << " = " << (((renderModes >> mode) & 1) ? "ON" : "OFF") << " ";
+			}
+			std::cout << std::endl;
+		}
 
 		bool OnWindowClose(WindowCloseEvent& e);
 	private:
@@ -69,7 +102,6 @@ namespace Engine
 		PhysicsWorld physics_world;
 		std::unique_ptr<Engine::GUI> gui;
 		unsigned int renderModes;
-		//std::vector<int> renderModes = std::vector<int>(Engine::RenderMode::COUNT);
 
 		bool isRunning = true;
 		float deltaTime = 0.0f, lastTime = 0.0f;

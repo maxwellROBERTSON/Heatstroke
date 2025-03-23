@@ -13,8 +13,8 @@ namespace Engine
 		MouseButtonPressed, MouseButtonReleased, MouseScrolled, MouseMoved,
 		// TODO: add controller events
 		WindowClose,
-		ESCPressed
-
+		ESCPressed,
+		RenderMode
 	};
 
 	enum EventCategory
@@ -24,7 +24,8 @@ namespace Engine
 		EventCategoryKeyboard = 1 << 1,
 		EventCategoryMouse = 1 << 2,
 		EventCategoryMouseButton = 1 << 3,
-		EventCategoryWindow = 1 << 4
+		EventCategoryWindow = 1 << 4,
+		EventCategoryRenderMode = 1 << 5
 	};
 
 	class Event

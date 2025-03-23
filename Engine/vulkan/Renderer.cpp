@@ -15,9 +15,10 @@
 
 namespace Engine {
 
-	Renderer::Renderer(VulkanContext* aContext, EntityManager* entityManager) {
+	Renderer::Renderer(VulkanContext* aContext, EntityManager* entityManager, Engine::Game* game) {
 		this->context = aContext;
 		this->entityManager = entityManager;
+		this->game = game;
 	}
 
 	VkRenderPass& Renderer::GetRenderPass(std::string s)
@@ -122,13 +123,13 @@ namespace Engine {
 			VkExtent2D {2048, 2048} }; // Probably will want to make the shadow map resolution more easily editable, rather than hardcoding it everywhere
 		this->buffers.emplace("shadowDepth", createTextureBuffer(*this->context, shadowDepthTexture));
 
-		// Framebuffers
+		//// Framebuffers
 		VkExtent2D swapchainExtent = this->context->window->swapchainExtent;
 		VkExtent2D shadowExtent = VkExtent2D{ 2048, 2048 };
 
 		std::vector<VkImageView> defaultViews;
 		defaultViews.emplace_back(this->buffers["depth"].second.handle);
-		createFramebuffers(*this->context->window, this->defaultFramebuffers, this->renderPasses["default"].handle, defaultViews, swapchainExtent);
+		createFramebuffers(*this->context->window, *this->framebuffersMap[FORWARD], this->renderPasses["default"].handle, defaultViews, swapchainExtent);
 
 		std::vector<VkImageView> deferredViews;
 		// Must be emplaced in the vector in the *EXACT* same order as defined in the render pass
@@ -136,11 +137,11 @@ namespace Engine {
 		deferredViews.emplace_back(this->buffers["albedo"].second.handle);
 		deferredViews.emplace_back(this->buffers["emissive"].second.handle);
 		deferredViews.emplace_back(this->buffers["depth"].second.handle);
-		createFramebuffers(*this->context->window, this->deferredFramebuffers, this->renderPasses["deferred"].handle, deferredViews, swapchainExtent);
+		createFramebuffers(*this->context->window, *this->framebuffersMap[DEFERRED], this->renderPasses["deferred"].handle, deferredViews, swapchainExtent);
 
 		std::vector<VkImageView> shadowViews;
 		shadowViews.emplace_back(this->buffers["shadowDepth"].second.handle);
-		createFramebuffers(*this->context->window, this->shadowFramebuffer, this->renderPasses["shadow"].handle, shadowViews, shadowExtent, true);
+		createFramebuffers(*this->context->window, *this->framebuffersMap[SHADOWS], this->renderPasses["shadow"].handle, shadowViews, shadowExtent, true);
 
 		// Setup synchronisation
 		for (std::size_t i = 0; i < context->window->swapViews.size(); i++) {
@@ -360,26 +361,27 @@ namespace Engine {
 		vmaFlushAllocation(this->context->allocator->allocator, this->uniformBuffers["modelMatrices"].allocation, 0, size);
 	}
 
-	void Renderer::render(unsigned int* aRenderMode, std::vector<vk::Model>& models) {
-		/*for (int i = sizeof((*aRenderMode) * 8 - 1); i >= 0; i--) {
-			std::cout << ((*aRenderMode >> i) & 1);
-		}*/
-		std::cout << std::endl;
-		if (((*aRenderMode) & (1 << GUIHOME)))
+	void Renderer::render(std::vector<vk::Model>& models) {
+		unsigned int modes = (*game->GetRenderModes());
+		if ((modes & (1 << GUIHOME)))
 		{
 			this->renderGUI();
 		}
-		else if (((*aRenderMode) & (1 << GUISETTINGS)))
+		else if ((modes & (1 << GUISETTINGS)))
 		{
 			this->renderGUI();
 		}
-		else if ((((*aRenderMode) & (1 << FORWARD))))
+		else if (((modes & (1 << FORWARD))))
 		{
-			this->renderForward(models, ((*aRenderMode) & (1 << GUIDEBUG)), ((*aRenderMode) & (1 << SHADOWS)));
+			this->renderForwardShadows(models, (modes & (1 << GUIDEBUG)));
+			/*if (((modes & (1 << SHADOWS))))
+				this->renderForwardShadows(models, (modes & (1 << GUIDEBUG)));
+			else
+				this->renderForward(models, (modes & (1 << GUIDEBUG)));*/
 		}
-		else if (((*aRenderMode) & (1 << DEFERRED)))
+		else if ((modes & (1 << DEFERRED)))
 		{
-			this->renderDeferred(models, ((*aRenderMode) & (1 << GUIDEBUG)));
+			this->renderDeferred(models, ((*game->GetRenderModes()) & (1 << GUIDEBUG)));
 		}
 		else
 		{
@@ -402,6 +404,55 @@ namespace Engine {
 		vmaUnmapMemory(this->context->allocator->allocator, this->uniformBuffers["modelMatrices"].allocation);
 	}
 
+	void Renderer::modeOn(Engine::RenderMode r)
+	{
+		VkExtent2D swapchainExtent = this->context->window->swapchainExtent;
+
+		this->framebuffersMap[r]->clear();
+		std::vector<VkImageView> views;
+
+		if (r == FORWARD)
+		{
+			views.emplace_back(this->buffers["depth"].second.handle);
+			createFramebuffers(*this->context->window, *this->framebuffersMap[FORWARD], this->renderPasses["default"].handle, views, swapchainExtent);
+		}
+		else if (r == DEFERRED)
+		{
+			views.emplace_back(this->buffers["normals"].second.handle);
+			views.emplace_back(this->buffers["albedo"].second.handle);
+			views.emplace_back(this->buffers["emissive"].second.handle);
+			views.emplace_back(this->buffers["depth"].second.handle);
+			createFramebuffers(*this->context->window, *this->framebuffersMap[DEFERRED], this->renderPasses["deferred"].handle, views, swapchainExtent);
+
+			this->descriptorSets["deferredShading"] = createDeferredShadingDescriptor(
+				*this->context->window,
+				this->descriptorLayouts["deferredLayout"].handle,
+				this->buffers["depth"].second.handle,
+				this->buffers["normals"].second.handle,
+				this->buffers["albedo"].second.handle,
+				this->buffers["emissive"].second.handle);
+		}
+		
+		if (r == SHADOWS)
+		{
+			views.clear();
+			VkExtent2D shadowExtent = VkExtent2D{ 2048, 2048 };
+			views.emplace_back(this->buffers["shadowDepth"].second.handle);
+			createFramebuffers(*this->context->window, *this->framebuffersMap[SHADOWS], this->renderPasses["shadow"].handle, views, shadowExtent, true);
+
+			this->descriptorSets["shadowMap"] = createImageDescriptor(
+				*this->context->window,
+				this->descriptorLayouts["shadowMapLayout"].handle,
+				this->buffers["shadowDepth"].second.handle,
+				this->depthSampler.handle);
+		}
+	}
+
+	void Renderer::modeOff(Engine::RenderMode r)
+	{
+		this->framebuffersMap[r]->clear();
+	}
+
 	void Renderer::renderGUI()
 	{
 		VkCommandBuffer cmdBuf = this->cmdBuffers[this->frameIndex];
@@ -422,7 +473,7 @@ namespace Engine {
 		VkRenderPassBeginInfo passInfo{};
 		passInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 		passInfo.renderPass = this->renderPasses["default"].handle;
-		passInfo.framebuffer = this->defaultFramebuffers[this->imageIndex].handle;
+		passInfo.framebuffer = (*this->framebuffersMap[FORWARD])[this->imageIndex].handle;
 		passInfo.renderArea.offset = VkOffset2D{ 0, 0 };
 		passInfo.renderArea.extent = context->window->swapchainExtent;
 		passInfo.clearValueCount = 2;
@@ -438,7 +489,78 @@ namespace Engine {
 			throw Utils::Error("Unable to end command buffer\n vkEndCommandBuffer() returned %s", Utils::toString(res).c_str());
 	}
 
-	void Renderer::renderForward(std::vector<vk::Model>& models, bool debug, bool shadows) {
+	void Renderer::renderForward(std::vector<vk::Model>& models, bool debug) {
+		VkCommandBuffer cmdBuf = this->cmdBuffers[this->frameIndex];
+
+		// Begin recording
+		beginCommandBuffer(cmdBuf, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+
+		Utils::bufferBarrier(
+			cmdBuf,
+			this->uniformBuffers["scene"].buffer,
+			VK_ACCESS_UNIFORM_READ_BIT,
+			VK_ACCESS_TRANSFER_WRITE_BIT,
+			VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+			VK_PIPELINE_STAGE_TRANSFER_BIT
+		);
+
+		vkCmdUpdateBuffer(cmdBuf, this->uniformBuffers["scene"].buffer, 0, sizeof(glsl::SceneUniform), &this->uniforms.sceneUniform);
+
+		Utils::bufferBarrier(
+			cmdBuf,
+			this->uniformBuffers["scene"].buffer,
+			VK_ACCESS_TRANSFER_WRITE_BIT,
+			VK_ACCESS_UNIFORM_READ_BIT,
+			VK_PIPELINE_STAGE_TRANSFER_BIT,
+			VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
+		);
+
+		// Clear attachments
+		VkClearValue clearValues[2]{};
+		clearValues[0].color.float32[0] = 0.1f;
+		clearValues[0].color.float32[1] = 0.1f;
+		clearValues[0].color.float32[2] = 0.1f;
+		clearValues[0].color.float32[3] = 1.0f;
+
+		clearValues[1].depthStencil.depth = 1.0f;
+
+		// Initialise render pass
+		VkRenderPassBeginInfo passInfo{};
+		passInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		passInfo.renderPass = this->renderPasses["default"].handle;
+		passInfo.framebuffer = (*this->framebuffersMap[FORWARD])[this->imageIndex].handle;
+		passInfo.renderArea.offset = VkOffset2D{ 0, 0 };
+		passInfo.renderArea.extent = this->context->window->swapchainExtent;
+		passInfo.clearValueCount = 2;
+		passInfo.pClearValues = clearValues;
+
+		vkCmdBeginRenderPass(cmdBuf, &passInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+		vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelines["default"].handle);
+
+		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["default"].handle, 0, 1, &this->descriptorSets["scene"], 0, nullptr);
+
+		std::pair<void*, int> renderComponents = entityManager->GetComponents<RenderComponent>();
+		for (std::size_t i = 0; i < renderComponents.second; i++) {
+			RenderComponent r = reinterpret_cast<RenderComponent*>(renderComponents.first)[i];
+		}
+		for (std::size_t i = 0; i < renderComponents.second; i++) {
+			std::uint32_t offset = i * this->dynamicUBOAlignment;
+			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["default"].handle, 3, 1, &this->descriptorSets["modelMatrices"], 1, &offset);
+			int j = reinterpret_cast<RenderComponent*>(renderComponents.first)[i].GetModelIndex();
+			models[j].drawModel(cmdBuf, this->pipelineLayouts["default"].handle);
+		}
+
+		if (debug)
+			ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmdBuf);
+
+		vkCmdEndRenderPass(cmdBuf);
+
+		if (const auto res = vkEndCommandBuffer(cmdBuf); VK_SUCCESS != res)
+			throw Utils::Error("Unable to end command buffer\n vkEndCommandBuffer() returned %s", Utils::toString(res).c_str());
+	}
+
+	void Renderer::renderForwardShadows(std::vector<vk::Model>& models, bool debug) {
 		VkCommandBuffer cmdBuf = this->cmdBuffers[this->frameIndex];
 
 		// Begin recording
@@ -484,39 +606,37 @@ namespace Engine {
 			VK_PIPELINE_STAGE_VERTEX_SHADER_BIT
 		);
 
-		if (shadows)
-		{
-			VkClearValue clearValueS[1]{};
-			clearValueS[0].depthStencil = { 1.0f, 0 };
+		VkClearValue clearValueS[1]{};
+		clearValueS[0].depthStencil = { 1.0f, 0 };
 
-			VkRenderPassBeginInfo passInfoS{};
-			passInfoS.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-			passInfoS.renderPass = this->renderPasses["shadow"].handle;
-			passInfoS.framebuffer = this->shadowFramebuffer[0].handle;
-			passInfoS.renderArea.offset = VkOffset2D{ 0, 0 };
-			passInfoS.renderArea.extent = VkExtent2D{ 2048, 2048 };
-			passInfoS.clearValueCount = 1;
-			passInfoS.pClearValues = clearValueS;
+		VkRenderPassBeginInfo passInfoS{};
+		passInfoS.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		passInfoS.renderPass = this->renderPasses["shadow"].handle;
+		passInfoS.framebuffer = (*this->framebuffersMap[SHADOWS])[0].handle;
+		passInfoS.renderArea.offset = VkOffset2D{ 0, 0 };
+		passInfoS.renderArea.extent = VkExtent2D{ 2048, 2048 };
+		passInfoS.clearValueCount = 1;
+		passInfoS.pClearValues = clearValueS;
 
-			vkCmdBeginRenderPass(cmdBuf, &passInfoS, VK_SUBPASS_CONTENTS_INLINE);
+		vkCmdBeginRenderPass(cmdBuf, &passInfoS, VK_SUBPASS_CONTENTS_INLINE);
 
-			vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelines["shadow"].handle);
+		vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelines["shadow"].handle);
 
-			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["shadow"].handle, 0, 1, &this->descriptorSets["shadow"], 0, nullptr);
+		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["shadow"].handle, 0, 1, &this->descriptorSets["shadow"], 0, nullptr);
 
-			std::pair<void*, int> renderComponentsS = entityManager->GetComponents<RenderComponent>();
-			for (std::size_t i = 0; i < renderComponentsS.second; i++) {
-				RenderComponent r = reinterpret_cast<RenderComponent*>(renderComponentsS.first)[i];
-			}
-			for (std::size_t i = 0; i < renderComponentsS.second; i++) {
-				std::uint32_t offset = i * this->dynamicUBOAlignment;
-				vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["shadow"].handle, 1, 1, &this->descriptorSets["modelMatrices"], 1, &offset);
-				int j = reinterpret_cast<RenderComponent*>(renderComponentsS.first)[i].GetModelIndex();
-				models[j].drawModel(cmdBuf, this->pipelineLayouts["shadow"].handle, true);
-			}
-
-			vkCmdEndRenderPass(cmdBuf);
+		std::pair<void*, int> renderComponentsS = entityManager->GetComponents<RenderComponent>();
+		for (std::size_t i = 0; i < renderComponentsS.second; i++) {
+			RenderComponent r = reinterpret_cast<RenderComponent*>(renderComponentsS.first)[i];
 		}
+		for (std::size_t i = 0; i < renderComponentsS.second; i++) {
+			std::uint32_t offset = i * this->dynamicUBOAlignment;
+			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["shadow"].handle, 1, 1, &this->descriptorSets["modelMatrices"], 1, &offset);
+			int j = reinterpret_cast<RenderComponent*>(renderComponentsS.first)[i].GetModelIndex();
+			models[j].drawModel(cmdBuf, this->pipelineLayouts["shadow"].handle, true);
+		}
+		//drawModels(cmdBuf, models, "shadow");
+
+		vkCmdEndRenderPass(cmdBuf);
 
 		// Clear attachments
 		VkClearValue clearValues[2]{};
@@ -531,7 +651,7 @@ namespace Engine {
 		VkRenderPassBeginInfo passInfo{};
 		passInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 		passInfo.renderPass = this->renderPasses["default"].handle;
-		passInfo.framebuffer = this->defaultFramebuffers[this->imageIndex].handle;
+		passInfo.framebuffer = (*this->framebuffersMap[FORWARD])[this->imageIndex].handle;
 		passInfo.renderArea.offset = VkOffset2D{ 0, 0 };
 		passInfo.renderArea.extent = this->context->window->swapchainExtent;
 		passInfo.clearValueCount = 2;
@@ -545,16 +665,7 @@ namespace Engine {
 		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["default"].handle, 4, 1, &this->descriptorSets["shadow"], 0, nullptr);
 		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["default"].handle, 5, 1, &this->descriptorSets["shadowMap"], 0, nullptr);
 
-		std::pair<void*, int> renderComponents = entityManager->GetComponents<RenderComponent>();
-		for (std::size_t i = 0; i < renderComponents.second; i++) {
-			RenderComponent r = reinterpret_cast<RenderComponent*>(renderComponents.first)[i];
-		}
-		for (std::size_t i = 0; i < renderComponents.second; i++) {
-			std::uint32_t offset = i * this->dynamicUBOAlignment;
-			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["default"].handle, 3, 1, &this->descriptorSets["modelMatrices"], 1, &offset);
-			int j = reinterpret_cast<RenderComponent*>(renderComponents.first)[i].GetModelIndex();
-			models[j].drawModel(cmdBuf, this->pipelineLayouts["default"].handle);
-		}
+		drawModels(cmdBuf, models, "default");
 
 		if (debug)
 			ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmdBuf);
@@ -639,7 +750,7 @@ namespace Engine {
 		VkRenderPassBeginInfo passInfo{};
 		passInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 		passInfo.renderPass = this->renderPasses["deferred"].handle;
-		passInfo.framebuffer = this->deferredFramebuffers[this->imageIndex].handle;
+		passInfo.framebuffer = (*this->framebuffersMap[DEFERRED])[this->imageIndex].handle;
 		passInfo.renderArea.offset = VkOffset2D{ 0, 0 };
 		passInfo.renderArea.extent = this->context->window->swapchainExtent;
 		passInfo.clearValueCount = 5;
@@ -651,16 +762,7 @@ namespace Engine {
 
 		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["default"].handle, 0, 1, &this->descriptorSets["scene"], 0, nullptr);
 
-		std::pair<void*, int> renderComponents = entityManager->GetComponents<RenderComponent>();
-		for (std::size_t i = 0; i < renderComponents.second; i++) {
-			RenderComponent r = reinterpret_cast<RenderComponent*>(renderComponents.first)[i];
-		}
-		for (std::size_t i = 0; i < renderComponents.second; i++) {
-			std::uint32_t offset = i * this->dynamicUBOAlignment;
-			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["default"].handle, 3, 1, &this->descriptorSets["modelMatrices"], 1, &offset);
-			int j = reinterpret_cast<RenderComponent*>(renderComponents.first)[i].GetModelIndex();
-			models[j].drawModel(cmdBuf, this->pipelineLayouts["default"].handle);
-		}
+		drawModels(cmdBuf, models, "default");
 
 		vkCmdNextSubpass(cmdBuf, VK_SUBPASS_CONTENTS_INLINE);
 
@@ -726,24 +828,32 @@ namespace Engine {
 		VkExtent2D swapchainExtent = this->context->window->swapchainExtent;
 		VkExtent2D shadowExtent = VkExtent2D{ 2048, 2048 };
 
-		this->defaultFramebuffers.clear();
-		std::vector<VkImageView> defaultViews;
-		defaultViews.emplace_back(this->buffers["depth"].second.handle);
-		createFramebuffers(*this->context->window, this->defaultFramebuffers, this->renderPasses["default"].handle, defaultViews, swapchainExtent);
+		this->framebuffersMap[FORWARD]->clear();
+		this->framebuffersMap[DEFERRED]->clear();
+		this->framebuffersMap[SHADOWS]->clear();
 
-		this->deferredFramebuffers.clear();
-		std::vector<VkImageView> deferredViews;
-		deferredViews.emplace_back(this->buffers["normals"].second.handle);
-		deferredViews.emplace_back(this->buffers["albedo"].second.handle);
-		deferredViews.emplace_back(this->buffers["emissive"].second.handle);
-		deferredViews.emplace_back(this->buffers["depth"].second.handle);
-		createFramebuffers(*this->context->window, this->deferredFramebuffers, this->renderPasses["deferred"].handle, deferredViews, swapchainExtent);
+		unsigned int modes = (*game->GetRenderModes());
 
-		this->shadowFramebuffer.clear();
-		std::vector<VkImageView> shadowViews;
-		shadowViews.emplace_back(this->buffers["shadowDepth"].second.handle);
-		createFramebuffers(*this->context->window, this->shadowFramebuffer, this->renderPasses["shadow"].handle, shadowViews, shadowExtent, true);
-	
+		if ((modes & (1 << FORWARD)))
+		{
+			std::vector<VkImageView> defaultViews;
+			defaultViews.emplace_back(this->buffers["depth"].second.handle);
+			createFramebuffers(*this->context->window, *this->framebuffersMap[FORWARD], this->renderPasses["default"].handle, defaultViews, swapchainExtent);
+
+			std::vector<VkImageView> shadowViews;
+			shadowViews.emplace_back(this->buffers["shadowDepth"].second.handle);
+			createFramebuffers(*this->context->window, *this->framebuffersMap[SHADOWS], this->renderPasses["shadow"].handle, shadowViews, shadowExtent, true);
+		}
+		else if (modes & (1 << DEFERRED))
+		{
+			std::vector<VkImageView> deferredViews;
+			deferredViews.emplace_back(this->buffers["normals"].second.handle);
+			deferredViews.emplace_back(this->buffers["albedo"].second.handle);
+			deferredViews.emplace_back(this->buffers["emissive"].second.handle);
+			deferredViews.emplace_back(this->buffers["depth"].second.handle);
+			createFramebuffers(*this->context->window, *this->framebuffersMap[DEFERRED], this->renderPasses["deferred"].handle, deferredViews, swapchainExtent);
+		}
+
 		this->descriptorSets["deferredShading"] = createDeferredShadingDescriptor(
 			*this->context->window,
 			this->descriptorLayouts["deferredLayout"].handle,
@@ -756,5 +866,19 @@ namespace Engine {
 			this->descriptorLayouts["shadowMapLayout"].handle,
 			this->buffers["shadowDepth"].second.handle,
 			this->depthSampler.handle);
+	}
+
+	void Renderer::drawModels(VkCommandBuffer& cmdBuf, std::vector<vk::Model>& models, std::string handle)
+	{
+		std::pair<void*, int> renderComponents = entityManager->GetComponents<RenderComponent>();
+		for (std::size_t i = 0; i < renderComponents.second; i++) {
+			RenderComponent r = reinterpret_cast<RenderComponent*>(renderComponents.first)[i];
+		}
+		for (std::size_t i = 0; i < renderComponents.second; i++) {
+			std::uint32_t offset = i * this->dynamicUBOAlignment;
+			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts[handle].handle, 3, 1, &this->descriptorSets["modelMatrices"], 1, &offset);
+			int j = reinterpret_cast<RenderComponent*>(renderComponents.first)[i].GetModelIndex();
+			models[j].drawModel(cmdBuf, this->pipelineLayouts[handle].handle);
+		}
 	}
 }
