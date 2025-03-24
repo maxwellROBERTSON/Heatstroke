@@ -12,7 +12,6 @@
 #include "../Input/Callbacks.hpp"
 #include "../Input/Input.hpp"
 #include "../Input/InputCodes.hpp"
-#include "../Network/Client/GameClient.hpp"
 #include "../vulkan/VulkanContext.hpp"
 #include "../Physics/PhysicsWorld.hpp"
 #include "../vulkan/VulkanContext.hpp"
@@ -20,12 +19,14 @@
 #include "../GUI/GUI.hpp"
 #include "../ECS/ComponentTypeRegistry.hpp"
 #include "../ECS/EntityManager.hpp"
+#include "../Network/Network.hpp"
 
 namespace Engine
 {
 	class Camera;
 	class Renderer;
 	class GUI;
+	class Network;
 
 	class Game
 	{
@@ -38,6 +39,7 @@ namespace Engine
 		virtual void OnEvent(Event& e);
 
 		virtual void loadOfflineEntities() {}
+		virtual void loadOnlineEntities() {}
 
 		void ResetRenderModes();
 
@@ -89,6 +91,8 @@ namespace Engine
 			}
 			std::cout << std::endl;
 		}
+		void SetClient(yojimbo::Address);
+		void SetServer(uint16_t, int);
 
 		bool OnWindowClose(WindowCloseEvent& e);
 	private:
@@ -98,14 +102,13 @@ namespace Engine
 		bool recreateSwapchain;
 		ComponentTypeRegistry registry = ComponentTypeRegistry::Get();
 		EntityManager entityManager = EntityManager(&registry);
-		std::unique_ptr<Engine::Renderer> renderer;
 		PhysicsWorld physics_world;
+		std::unique_ptr<Engine::Renderer> renderer;
 		std::unique_ptr<Engine::GUI> gui;
+		std::unique_ptr<Engine::Network> network;
 		unsigned int renderModes;
 
 		bool isRunning = true;
 		float deltaTime = 0.0f, lastTime = 0.0f;
-
 	};
 }
-

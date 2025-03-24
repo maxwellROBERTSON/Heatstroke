@@ -6,6 +6,7 @@ namespace Engine
 		GUIDEBUG,
 		GUIHOME,
 		GUISETTINGS,
+		GUISERVER,
 		FORWARD,
 		DEFERRED,
 		SHADOWS,

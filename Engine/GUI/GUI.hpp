@@ -1,17 +1,7 @@
 #pragma once
 
-//#include <glm/mat4x4.hpp>
-//#include <glm/vec4.hpp>
-//
-//#include "../Events/Event.h"
-//#include "../Events/KeyEvent.h"
-//#include "../Events/MouseEvent.h"
-
-//#include <map>
 #include <string>
-//#include <any>
 #include <functional>
-//#include <typeindex>
 
 #include <imgui.h>
 #include <backends/imgui_impl_glfw.h>
@@ -48,6 +38,7 @@ namespace Engine
 			AddFunction(GUIDEBUG, [this](int* w, int* h) { makeDebugGUI(w, h); });
 			AddFunction(GUIHOME, [this](int* w, int* h) { makeHomeGUI(w, h); });
 			AddFunction(GUISETTINGS, [this](int* w, int* h) { makeSettingsGUI(w, h); });
+			AddFunction(GUISERVER, [this](int* w, int* h) { makeServerGUI(w, h); });
 		}
 
 		void initGUI();
@@ -60,9 +51,14 @@ namespace Engine
 		void makeHomeGUI(int*, int*);
 		void makeSettingsGUI(int*, int*);
 		void makeDebugGUI(int*, int*);
+		void makeServerGUI(int*, int*);
 
 	private:
 		std::map<Engine::RenderMode, std::function<void(int*, int*)>> functions;
 		Engine::Game* game;
+
+		// Server create box
+		std::string errorMsg = "";
+		ImVec2 serverBoxSize = ImVec2(0, 0);
 	};
 }

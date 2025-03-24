@@ -1,29 +1,39 @@
 #pragma once
 
+#include "../Helpers/GameConfig.hpp"
 #include "../Helpers/GameAdapter.hpp"
+#include "../Network.hpp"
 
-class GameClient
+namespace Engine
 {
-public:
-	GameClient(
-		yojimbo::ClientServerConfig*,
-		GameAdapter*,
-		yojimbo::Address
-	);
-	~GameClient() {}
+	class Game;
+}
 
-	void Connect(yojimbo::Address);
-	void Run();
-	int Update();
-	void ProcessMessages();
-	void ProcessMessage(yojimbo::Message*);
-	void CleanUp();
+namespace Engine
+{
+	class GameClient : public GameNetworkType
+	{
+	public:
+		GameClient(
+			yojimbo::ClientServerConfig*,
+			GameAdapter*,
+			yojimbo::Address
+		);
+		~GameClient() {}
 
-private:
-	double time = 1.0;
-	float dt = 1.0f / 120.0f;
-	yojimbo::Client* client;
+		void Connect(yojimbo::Address);
+		void Run();
+		int Update();
+		void ProcessMessages();
+		void ProcessMessage(yojimbo::Message*);
+		void CleanUp();
 
-	yojimbo::ClientServerConfig* config;
-	GameAdapter* adapter;
-};
+	private:
+		double time = 1.0;
+		float dt = 1.0f / 120.0f;
+		yojimbo::Client* client;
+
+		yojimbo::ClientServerConfig* config;
+		GameAdapter* adapter;
+	};
+}

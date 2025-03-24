@@ -363,11 +363,7 @@ namespace Engine {
 
 	void Renderer::render(std::vector<vk::Model>& models) {
 		unsigned int modes = (*game->GetRenderModes());
-		if ((modes & (1 << GUIHOME)))
-		{
-			this->renderGUI();
-		}
-		else if ((modes & (1 << GUISETTINGS)))
+		if ((modes & (1 << GUIHOME)) || (modes & (1 << GUISETTINGS)) || (((modes & (1 << GUISERVER)) && (modes & (1 << GUIDEBUG)))))
 		{
 			this->renderGUI();
 		}

@@ -105,6 +105,7 @@ namespace Engine
 		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.5f, 0.1f, 0.1f, 1.0f));
 		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.8f, 0.2f, 0.2f, 1.0f));
 		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(1.0f, 0.1f, 0.1f, 1.0f));
+		ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.5f, 0.1f, 0.1f, 1.0f));
 
 		ImGui::Begin("Home Menu", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 
@@ -127,23 +128,61 @@ namespace Engine
 			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 			glfwSetCursorPos(window, *w / 2.0, *h / 2.0);
 		}
+		
+		ImVec2 bottomLeftPos = ImVec2(10, *h - *h / 4.8 - 10);
+		ImGui::SetCursorPos(bottomLeftPos);
 
-		ImVec2 windowSize = ImVec2(*w / 4, *h / 4);
-		ImVec2 windowPos = ImGui::GetWindowPos();
-		ImVec2 topRightPos = ImVec2(*w - *w / 6 - 10, 30); // Adjust for button size
+		ImVec2 childSize = ImVec2(ImGui::CalcTextSize("Error: Invalid number of Max Clients. Max Clients must be between 1 and 50.").x, *h / 4.8);
 
-		// Set cursor to top-right position
-		ImGui::SetCursorPos(topRightPos);
-		// ICON_FA_WRENCH
-		if (ImGui::Button("Settings", ImVec2(*w / 6, *h / 6)))
+		ImGui::BeginChild("ServerBox", childSize, true, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+
+		ImGui::Text("Start a server");
+
+		static char portStr[6] = "";
+		ImGui::Text("Port:");
+		ImGui::InputText("Port", portStr, IM_ARRAYSIZE(portStr));
+		int portNum = atoi(portStr);
+
+		static char maxClientsStr[6] = "";
+		ImGui::Text("Max Clients:");
+		ImGui::InputText("Max Clients", maxClientsStr, IM_ARRAYSIZE(maxClientsStr));
+		int maxClientsNum = atoi(maxClientsStr);
+
+		if (ImGui::Button("Go"))
 		{
-			game->ToggleRenderMode(GUIHOME);
-			game->ToggleRenderMode(GUISETTINGS);
+			if (strlen(portStr) == 0)
+			{
+				errorMsg = "Error: Port cannot be empty.";
+			}
+			else if (strlen(maxClientsStr) == 0)
+			{
+				errorMsg = "Error: Max Clients cannot be empty.";
+			}
+			else if (portNum >= 1 && portNum <= 65535)
+			{
+				errorMsg = "Error: Invalid Port number. Port must be between 1 and 65535.";
+			}
+			else if (maxClientsNum >= 1 && maxClientsNum <= 50)
+			{
+				errorMsg = "Error: Invalid number of Max Clients. Max Clients must be between 1 and 50.";
+			}
+			else
+			{
+				errorMsg = "";
+				game->loadOnlineEntities();
+				game->GetRenderer().initialiseModelMatrices();
+				game->ToggleRenderMode(GUIHOME);
+				game->ToggleRenderMode(GUISERVER);
+				game->SetServer(portNum, maxClientsNum);
+			}
 		}
 
+		ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), errorMsg.c_str());
+
+		ImGui::EndChild();
 		ImGui::End();
 
-		ImGui::PopStyleColor(3);
+		ImGui::PopStyleColor(4);
 	}
 
 	void GUI::makeSettingsGUI(int* w, int* h)
@@ -182,23 +221,12 @@ namespace Engine
 			}
 		}*/
 
-		ImVec2 windowSize = ImVec2(*w / 4, *h / 4);
-		ImVec2 windowPos = ImGui::GetWindowPos();
-		ImVec2 topRightPos = ImVec2(*w - *w / 6 - 10, 30); // Adjust for button size
-
-		// Set cursor to top-right position
+		ImVec2 topRightPos = ImVec2(*w - *w / 6 - 10, 30);
 		ImGui::SetCursorPos(topRightPos);
-		if (ImGui::Button("Home", ImVec2(*w / 6, *h / 6)))
+		if (ImGui::Button("Disconnect", ImVec2(*w / 6, *h / 6)))
 		{
-			if (game->GetRenderer().GetIsSceneLoaded())
-			{
-				game->ResetRenderModes();
-				game->GetEntityManager().ClearManager();
-			}
-			else
-			{
-				std::cout << game->GetRenderer().GetIsSceneLoaded() << std::endl;
-			}
+			game->ResetRenderModes();
+			game->GetEntityManager().ClearManager();
 		}
 
 		ImGui::End();
@@ -236,5 +264,20 @@ namespace Engine
 		ImGui::InputText("##FrontDir", (char*)fDirStr.c_str(), fDirStr.size() + 1, ImGuiInputTextFlags_ReadOnly);
 
 		ImGui::End();
+	}
+
+	void GUI::makeServerGUI(int* w, int* h)
+	{
+
+
+		ImVec2 windowSize = ImVec2(*w / 4, *h / 4);
+		ImVec2 windowPos = ImGui::GetWindowPos();
+		ImVec2 topRightPos = ImVec2(*w - *w / 6 - 10, 30);
+		ImGui::SetCursorPos(topRightPos);
+		if (ImGui::Button("Stop server", ImVec2(*w / 6, *h / 6)))
+		{
+			game->ResetRenderModes();
+			game->GetEntityManager().ClearManager();
+		}
 	}
 }

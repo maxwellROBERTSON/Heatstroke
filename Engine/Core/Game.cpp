@@ -6,13 +6,11 @@ namespace Engine
 	{
 		mContext.window = initialiseVulkan(name, width, height);
 		mContext.allocator = createVulkanAllocator(*mContext.window.get());
-		//sInputManager->registerCallbacks(mContext.window.get());
 		InputManager::RegisterCallbacks(mContext.window.get());
 		mContext.window.get()->SetEventCallback(std::bind(&Game::OnEvent, this, std::placeholders::_1));
-		//this->Init();
-		//registerCallbacks(this->GetContext().getGLFWWindow(), this);
 		renderer = std::make_unique<Renderer>(&this->GetContext(), &this->entityManager, this);
 		gui = std::make_unique<GUI>(this);
+		network = std::make_unique<Network>();
 		ResetRenderModes();
 		this->Init();
 	}
@@ -23,7 +21,6 @@ namespace Engine
 		//	//float currTime = (float)glfwGetTime();
 		//	//deltaTime = currTime - lastTime;
 		//	//lastTime = currTime;
-
 			this->Update();
 		//}
 	}
@@ -51,9 +48,9 @@ namespace Engine
 	void Game::ResetRenderModes()
 	{
 #ifdef _DEBUG
-		renderModes = 0b0100011;
+		renderModes = 0b01000011;
 #else
-		renderModes = 0b0100010
+		renderModes = 0b01000010
 #endif
 		static const std::map<int, std::string> modeNames = {
 		{ GUIDEBUG, "GUIDEBUG" },
@@ -92,4 +89,14 @@ namespace Engine
 		else
 			return COUNT;
 	}
+
+	void Game::SetClient(yojimbo::Address serverAddress)
+	{
+		network->InitializeClient(serverAddress);
+	}
+	void Game::SetServer(uint16_t port, int maxClients)
+	{
+		network->InitializeServer(this, port, maxClients);
+	}
+
 }

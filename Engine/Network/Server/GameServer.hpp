@@ -1,36 +1,42 @@
 #pragma once
 
-#include "../Core/Game.hpp"
+#include "../Helpers/GameConfig.hpp"
 #include "../Helpers/GameAdapter.hpp"
+#include "../Network.hpp"
 
-class GameServer
+namespace Engine
 {
-public:
-	GameServer(
-		yojimbo::ClientServerConfig* config,
-		GameAdapter* adapter,
-		yojimbo::Address address,
-		int maxClients,
-		Engine::Game* game
-	);
-	~GameServer() {}
+	class Game;
+}
 
-	void Start();
-	void Run();
-	void Update(float);
-	void ProcessMessages();
-	void ProcessMessage(int, GameMessage*);
-	void CleanUp();
+namespace Engine
+{
+	class GameServer : public GameNetworkType
+	{
+	public:
+		GameServer(
+			yojimbo::ClientServerConfig* config,
+			GameAdapter* adapter,
+			yojimbo::Address address,
+			int maxClients,
+			Engine::Game* game
+		);
+		~GameServer() {}
 
-	//EntityManager* GetEntityManager();
-	//void AddEntity(Entity entity);
+		void Start();
+		void Run();
+		void Update(float);
+		void ProcessMessages();
+		void ProcessMessage(int, GameMessage*);
+		void CleanUp();
 
-private:
-	int maxClients;
-	yojimbo::Server* server;
+	private:
+		int maxClients;
+		yojimbo::Server* server;
 
-	yojimbo::ClientServerConfig* config;
-	GameAdapter* adapter;
+		yojimbo::ClientServerConfig* config;
+		GameAdapter* adapter;
 
-	Engine::Game* mGame;
-};
+		Engine::Game* mGame;
+	};
+}
