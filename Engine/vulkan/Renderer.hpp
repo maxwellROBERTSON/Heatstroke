@@ -67,12 +67,12 @@ namespace Engine {
 
 		vk::Sampler depthSampler;
 
-		std::vector<vk::Framebuffer> defaultFramebuffers;
+		std::vector<vk::Framebuffer> forwardFramebuffers;
 		std::vector<vk::Framebuffer> deferredFramebuffers;
 		std::vector<vk::Framebuffer> shadowFramebuffer;
 
 		std::unordered_map<Engine::RenderMode, std::vector<vk::Framebuffer>*> framebuffersMap = {
-			{Engine::RenderMode::FORWARD, &defaultFramebuffers},
+			{Engine::RenderMode::FORWARD, &forwardFramebuffers},
 			{Engine::RenderMode::DEFERRED,& deferredFramebuffers},
 			{Engine::RenderMode::SHADOWS, &shadowFramebuffer}
 		};

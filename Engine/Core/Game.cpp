@@ -51,9 +51,9 @@ namespace Engine
 	void Game::ResetRenderModes()
 	{
 #ifdef _DEBUG
-		renderModes = 0b0100011;
+		renderModes = 0b0000011;
 #else
-		renderModes = 0b0100010
+		renderModes = 0b0000010
 #endif
 		static const std::map<int, std::string> modeNames = {
 		{ GUIDEBUG, "GUIDEBUG" },

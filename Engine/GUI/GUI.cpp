@@ -171,16 +171,16 @@ namespace Engine
 			game->ToggleRenderMode(FORWARD);
 			game->ToggleRenderMode(DEFERRED);
 		}
-		//ImGui::Text("Toggle Shadows (Only available when in forward rendering mode)", ImVec2(*w / 4, *h / 4));
-		ImGui::Text("SHADOWS CURRENTLY ALWAYS ON IF FORWARD MODE", ImVec2(*w / 4, *h / 4));
+		ImGui::Text("Toggle Shadows (Only available when in forward rendering mode)", ImVec2(*w / 4, *h / 4));
+		//ImGui::Text("SHADOWS CURRENTLY ALWAYS ON IF FORWARD MODE", ImVec2(*w / 4, *h / 4));
 
-		/*if (forward)
+		if (forward)
 		{
 			if (ImGui::Button(game->GetRenderMode(SHADOWS) ? "Shadows" : "No Shadows", ImVec2(*w / 4, *h / 4)))
 			{
 				game->ToggleRenderMode(SHADOWS);
 			}
-		}*/
+		}
 
 		ImVec2 windowSize = ImVec2(*w / 4, *h / 4);
 		ImVec2 windowPos = ImGui::GetWindowPos();
@@ -194,6 +194,7 @@ namespace Engine
 			{
 				game->ResetRenderModes();
 				game->GetEntityManager().ClearManager();
+				game->GetRenderer().cleanModelMatrices();
 			}
 			else
 			{
