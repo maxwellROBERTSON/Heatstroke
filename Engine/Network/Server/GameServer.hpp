@@ -24,16 +24,19 @@ namespace Engine
 		~GameServer() {}
 
 		void Start();
-		void Run();
-		void Update(float);
+		void Update();
 		void ProcessMessages();
 		void ProcessMessage(int, GameMessage*);
 		void CleanUp();
 
-	private:
-		int maxClients;
-		yojimbo::Server* server;
+		void UpdateStatus();
+		std::map<std::string, std::string> GetInfo();
 
+	private:
+		float dt = 1.0f / 120.0f;
+		int maxClients;
+
+		yojimbo::Server* server;
 		yojimbo::ClientServerConfig* config;
 		GameAdapter* adapter;
 

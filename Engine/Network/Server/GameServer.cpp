@@ -35,31 +35,12 @@ namespace Engine
 	{
 		// Start server
 		server->Start(maxClients);
-		//mGame->Init();
-		Run();
 	}
 
-	void GameServer::Run()
-	{
-		float fixedDt = 1.0f / 120.0f;
-		/*while (server && server->IsRunning())
-		{
-			double currentTime = yojimbo_time();
-			if (server->GetTime() <= currentTime)
-			{
-				Update(fixedDt);
-			}
-			else
-			{
-				yojimbo_sleep(server->GetTime() - currentTime);
-			}
-		}*/
-	}
-
-	void GameServer::Update(float fixedDt)
+	void GameServer::Update()
 	{
 		// update server and process messages
-		server->AdvanceTime(server->GetTime() + fixedDt);
+		server->AdvanceTime(server->GetTime() + dt);
 		server->ReceivePackets();
 		ProcessMessages();
 
@@ -106,5 +87,23 @@ namespace Engine
 		YOJIMBO_DELETE(yojimbo::GetDefaultAllocator(), GameAdapter, adapter);
 		YOJIMBO_DELETE(yojimbo::GetDefaultAllocator(), Server, server);
 		ShutdownYojimbo();
+	}
+
+	void GameServer::UpdateStatus()
+	{
+		;
+	}
+
+	std::map<std::string, std::string> GameServer::GetInfo()
+	{
+		std::map<std::string, std::string> info;
+
+		// Server Info
+		info["Dt"] = std::to_string(dt);
+		info["Max Clients"] = std::to_string(maxClients);
+		info["Num Connected Clients"] = std::to_string(server->GetNumConnectedClients());
+		info["Address"] = std::to_string(*server->GetAddress().GetAddress4());
+
+		return info;
 	}
 }

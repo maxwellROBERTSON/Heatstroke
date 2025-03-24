@@ -254,7 +254,7 @@ namespace yojimbo
         return m_connection->HasMessagesToSend( channelIndex );
     }
 
-    void BaseClient::SendMessage( int channelIndex, Message * message )
+    void BaseClient::SendClientMessage( int channelIndex, Message * message )
     {
         yojimbo_assert( m_connection );
         yojimbo_assert( channelIndex >= 0 );

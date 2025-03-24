@@ -2,6 +2,7 @@
 
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <chrono>
 
 #include "../Engine/Core/Game.hpp"
 
@@ -38,15 +39,12 @@ public:
 		this->Init();
 	}
 	virtual void Init() override;
+	virtual void Render() override;
 	virtual void Update() override;
 	virtual void OnEvent(Engine::Event& e) override;
 
 	void registerComponents();
 	void initialiseModels();
-	void initialisePhysics();
-
-	void RenderGUI();
-	void RenderScene();
 
 	void loadOfflineEntities();
 	void loadOnlineEntities();
@@ -56,10 +54,8 @@ public:
 			model.destroy();
 	};
 
+	std::chrono::steady_clock::time_point previous;
 	int clientId = 0;
-	bool online = false;
-	bool offline = true;
-	bool isChange = true;
 };
 
 //void loadOfflineEntities(ComponentTypeRegistry& registry, EntityManager& entityManager, PhysicsWorld& pworld);

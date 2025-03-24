@@ -39,6 +39,7 @@ namespace Engine
 			AddFunction(GUIHOME, [this](int* w, int* h) { makeHomeGUI(w, h); });
 			AddFunction(GUISETTINGS, [this](int* w, int* h) { makeSettingsGUI(w, h); });
 			AddFunction(GUISERVER, [this](int* w, int* h) { makeServerGUI(w, h); });
+			AddFunction(GUILOADING, [this](int* w, int* h) { makeLoadingGUI(w, h); });
 		}
 
 		void initGUI();
@@ -52,13 +53,19 @@ namespace Engine
 		void makeSettingsGUI(int*, int*);
 		void makeDebugGUI(int*, int*);
 		void makeServerGUI(int*, int*);
+		void makeLoadingGUI(int*, int*);
 
 	private:
 		std::map<Engine::RenderMode, std::function<void(int*, int*)>> functions;
 		Engine::Game* game;
 
-		// Server create box
+		// Pop-up info
+		bool multiplayerSelected = false;
+		bool serverSelected = false;
 		std::string errorMsg = "";
 		ImVec2 serverBoxSize = ImVec2(0, 0);
+
+		// Loading info
+		std::string loadingMsg = "Messages not yet setup. Need to put this onto a thread.";
 	};
 }

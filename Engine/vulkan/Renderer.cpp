@@ -363,7 +363,7 @@ namespace Engine {
 
 	void Renderer::render(std::vector<vk::Model>& models) {
 		unsigned int modes = (*game->GetRenderModes());
-		if ((modes & (1 << GUIHOME)) || (modes & (1 << GUISETTINGS)) || (((modes & (1 << GUISERVER)) && (modes & (1 << GUIDEBUG)))))
+		if ((modes & (1 << GUIHOME)) || (modes & (1 << GUISETTINGS)) || ((((modes & (1 << GUILOADING)) || (modes & (1 << GUISERVER))) && (modes & (1 << GUIDEBUG)))))
 		{
 			this->renderGUI();
 		}
@@ -378,10 +378,6 @@ namespace Engine {
 		else if ((modes & (1 << DEFERRED)))
 		{
 			this->renderDeferred(models, ((*game->GetRenderModes()) & (1 << GUIDEBUG)));
-		}
-		else
-		{
-			std::cerr << "Unknown RenderMode Config" << std::endl;
 		}
 	}
 

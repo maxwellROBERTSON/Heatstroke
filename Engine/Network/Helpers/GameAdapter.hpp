@@ -2,6 +2,10 @@
 
 #include <yojimbo.h>
 
+//#define NOMINMAX           // Avoid conflicts with Windows macros like min/max
+//#define _WIN32_WINNT 0x0601 // Optional, depending on your Windows version
+//#define WINUSERAPI
+
 #include <iostream>
 
 namespace Engine
@@ -39,6 +43,25 @@ namespace Engine
         YOJIMBO_VIRTUAL_SERIALIZE_FUNCTIONS()
     };
 
+    enum class RequestType : uint16_t
+    {
+        RequestEntityData = 0,
+        RequestPlayerStats = 1,
+        RequestGameState = 2,
+        RequestChatMessages = 3
+        // Add more request types as needed
+    };
+
+    class RequestMessage : public GameMessage
+    {
+    public:
+        RequestMessage(RequestType type = RequestType::RequestEntityData)
+            : sequence(static_cast<uint16_t>(type)) {
+        }
+
+        uint16_t sequence;
+    };
+
     class GameBlockMessage : public yojimbo::BlockMessage
     {
     public:
@@ -57,6 +80,7 @@ namespace Engine
     enum GameMessageType
     {
         GAME_MESSAGE,
+        REQUEST_MESSAGE,
         GAME_BLOCK_MESSAGE,
         NUM_GAME_MESSAGE_TYPES
     };
@@ -74,6 +98,12 @@ namespace Engine
             {
             case GAME_MESSAGE:
                 message = YOJIMBO_NEW(allocator, GameMessage);
+                if (!message)
+                    return nullptr;
+                SetMessageType(message, type);
+                return message;
+            case REQUEST_MESSAGE:
+                message = YOJIMBO_NEW(allocator, RequestMessage);
                 if (!message)
                     return nullptr;
                 SetMessageType(message, type);

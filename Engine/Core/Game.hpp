@@ -34,6 +34,7 @@ namespace Engine
 		Game(const std::string& name = "Heatstroke", int width = 1280, int height = 720);
 		virtual ~Game() = default;
 		virtual void Init() {}
+		virtual void Render() {}
 		virtual void Update() {}
 		virtual void Run();
 		virtual void OnEvent(Event& e);
@@ -56,40 +57,14 @@ namespace Engine
 		inline unsigned int* GetRenderModes() { return &renderModes; }
 		inline bool GetRenderMode(Engine::RenderMode r) { return (renderModes & (1 << r)) != 0; }
 		Engine::RenderMode GetGUIRenderMode();
+		inline Engine::Network& GetNetwork() { return *network; }
 
 		// Setters
 		inline void ToggleRenderMode(Engine::RenderMode r) {
 			renderModes ^= (1 << r);
-			bool on;
-			if ((r == FORWARD) || (r == DEFERRED) || (r == SHADOWS))
-			{
-				if ((renderModes >> r) & 1)
-				{
-					on = true;
-				}
-				else
-				{
-					on = false;
-				}
-				/*RenderModeToggleEvent event(r, on);
+			/*RenderModeToggleEvent event(r, on);
 				VulkanWindow& engineWindow = *mContext.window.get();
 				engineWindow.EventCallback(event);*/
-			}
-
-			static const std::map<int, std::string> modeNames = {
-				{ GUIDEBUG, "GUIDEBUG" },
-				{ GUIHOME, "GUIHOME" },
-				{ GUISETTINGS, "GUISETTINGS" },
-				{ FORWARD, "FORWARD" },
-				{ DEFERRED, "DEFERRED" },
-				{ SHADOWS, "SHADOWS" },
-				{ COUNT, "COUNT" }
-			};
-			for (const auto& [mode, name] : modeNames)
-			{
-				std::cout << name << " = " << (((renderModes >> mode) & 1) ? "ON" : "OFF") << " ";
-			}
-			std::cout << std::endl;
 		}
 		void SetClient(yojimbo::Address);
 		void SetServer(uint16_t, int);
@@ -108,7 +83,6 @@ namespace Engine
 		std::unique_ptr<Engine::Network> network;
 		unsigned int renderModes;
 
-		bool isRunning = true;
 		float deltaTime = 0.0f, lastTime = 0.0f;
 	};
 }

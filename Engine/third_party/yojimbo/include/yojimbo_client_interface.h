@@ -199,7 +199,7 @@ namespace yojimbo
             @param message The message to send.
          */
 
-        virtual void SendMessage( int channelIndex, Message * message ) = 0;
+        virtual void SendClientMessage( int channelIndex, Message * message ) = 0;
 
         /**
             Receive a message from a channel.

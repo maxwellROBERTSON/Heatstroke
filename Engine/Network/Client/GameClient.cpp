@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iostream>
+#include <yojimbo.h>
 
 #include "GameClient.hpp"
 
@@ -12,7 +13,8 @@ namespace Engine
 		yojimbo::Address serverAddress)
 		:
 		config(config),
-		adapter(adapter)
+		adapter(adapter),
+		serverAddress(serverAddress)
 	{
 		// Initialise  client
 		client = YOJIMBO_NEW(yojimbo::GetDefaultAllocator(), yojimbo::Client,
@@ -22,81 +24,35 @@ namespace Engine
 			*adapter,
 			time);
 
-		Connect(serverAddress);
+		Connect();
 	}
 
-	void GameClient::Connect(yojimbo::Address serverAddress)
+	void GameClient::Connect()
 	{
 		uint64_t clientId;
 		yojimbo_random_bytes((uint8_t*)&clientId, 8);
 		client->InsecureConnect(DEFAULT_PRIVATE_KEY, clientId, serverAddress);
-		Run();
 	}
 
-	void GameClient::Run()
+	void GameClient::Update()
 	{
-		//initialiseGame();
-		//runGameLoop(this);
-
-		//float fixedDt = 1.0f / 120.0f;
-		//while (true)
+		//// check if client is disconnected
+		//if (client->GetClientId() == 0)
 		//{
-		//	client->SendPackets();
-
-		//	client->ReceivePackets();
-
-		//	if (client->IsDisconnected())
-		//		break;
-
-		//	time += fixedDt;
-
-		//	client->AdvanceTime(time);
-
-		//	if (client->ConnectionFailed())
-		//		break;
-
-		//	/*if(client->IsConnecting())
-		//		std::cout << "Connecting to server...\n";*/
-
-		//	yojimbo_sleep(fixedDt);
-		//	GameMessage* message = (GameMessage*)adapter->factory->CreateMessage(GameMessageType::GAME_MESSAGE);
-		//	message->sequence = 42;
-		//	client->SendMessage(1, message);
-		//	//adapter->factory->ReleaseMessage(message);
+		//	CleanUp();
+		//	return;
 		//}
-		//Update(fixedDt);
-		/*while (client->IsConnected())
-		{
-			double currentTime = yojimbo_time();
-			if (client->GetTime() <= currentTime)
-			{
-				Update(fixedDt);
-			}
-			else
-			{
-				yojimbo_sleep(client->GetTime() - currentTime);
-			}
-		}*/
-	}
-
-	int GameClient::Update()
-	{
-		// check if client is disconnected
-		if (client->GetClientId() == 0)
-		{
-			CleanUp();
-			return 1;
-		}
 
 		// update client
 		double currentTime = yojimbo_time();
 		if (client->GetTime() >= currentTime)
 		{
-			return 0;
+			return;
 		}
 
 		client->AdvanceTime(client->GetTime() + dt);
 		client->ReceivePackets();
+		UpdateStatus();
 
 		if (client->IsConnected())
 		{
@@ -110,12 +66,11 @@ namespace Engine
 				message->m_data = 42;
 				m_client.SendMessage((int)GameChannel::RELIABLE, message);
 			}*/
-			yojimbo::Message* message = adapter->factory->CreateMessage(1);
+			//yojimbo::Message* message = adapter->factory->CreateMessage(1);
 			//client->SendMessage(0, message);
 		}
 
 		client->SendPackets();
-		return 0;
 	}
 
 	void GameClient::ProcessMessages()
@@ -143,5 +98,45 @@ namespace Engine
 		YOJIMBO_DELETE(yojimbo::GetDefaultAllocator(), GameAdapter, adapter);
 		YOJIMBO_DELETE(yojimbo::GetDefaultAllocator(), Client, client);
 		ShutdownYojimbo();
+	}
+
+	void GameClient::UpdateStatus()
+	{
+		if (client->IsConnecting() && status != Status::ClientConnecting)
+			status = Status::ClientConnecting;
+		else if (client->IsConnected() && status != Status::ClientConnected)
+		{
+			status = Status::ClientConnected;
+			yojimbo::Message *message = adapter->factory->CreateMessage(REQUEST_MESSAGE);
+			client->SendClientMessage(0, message);
+		}
+		else if (client->IsDisconnected() && status != Status::ClientDisconnected)
+			status = Status::ClientDisconnected;
+		else if (client->ConnectionFailed() && status != Status::ClientConnectionFailed)
+			status = Status::ClientConnectionFailed;
+	}
+
+	std::map<std::string, std::string> GameClient::GetInfo()
+	{
+		std::map<std::string, std::string> info;
+
+		// Client Info
+		info["Time"] = std::to_string(time);
+		info["Dt"] = std::to_string(dt);
+		info["Client Address"] = std::to_string(*client->GetAddress().GetAddress4());
+		if (client->IsConnected())
+		{
+			info["Client Connected"] = "true";
+			info["Server Address"] = std::to_string(*serverAddress.GetAddress4());
+		}
+		else
+		{
+			info["Client Connected"] = "false";
+		}
+		info["Client Index"] = std::to_string(client->GetClientIndex());
+		info["Client Id"] = std::to_string(client->GetClientId());
+		info["Is Loopback"] = std::to_string(client->IsLoopback());
+
+		return info;
 	}
 }

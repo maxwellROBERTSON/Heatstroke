@@ -12,6 +12,7 @@
 #include "Error.hpp"
 #include "toString.hpp"
 
+Engine::Camera camera = Engine::Camera();
 
 void FPSTest::Init()
 {
@@ -23,14 +24,67 @@ void FPSTest::Init()
 
 	//blocks execution of the rest of the program until the initialiseModelsThread has finished
 	initialiseModelsThread.join();
-	initialisePhysics();
+	GetPhysicsWorld().init();
+	GetRenderer().initialiseRenderer();
+	GetGUI().initGUI();
+	GetRenderer().attachCamera(&camera);
+	GetRenderer().initialiseModelDescriptors(GetModels());
+}
+
+void FPSTest::Render()
+{
+	previous = std::chrono::steady_clock::now();
+
+	while (!glfwWindowShouldClose(this->GetContext().getGLFWWindow()))
+	{
+		Update();
+	}
+
+	GetRenderer().finishRendering();
 }
 
 void FPSTest::Update()
 {
-	RenderGUI();
-}
+	Engine::InputManager::Update();
+	if (!Engine::InputManager::mJoysticks.empty())
+	{
+		if (Engine::InputManager::getJoystick(0).isPressed(HS_GAMEPAD_BUTTON_A))
+		{
+			std::cout << "A BUTTON PRESSED" << std::endl;
+		}
+	}
 
+	GetNetwork().Update();
+
+	if (GetRenderer().checkSwapchain())
+		return;
+
+	if (GetRenderer().acquireSwapchainImage())
+		return;
+
+	// Calculate time delta
+	const auto now = std::chrono::steady_clock::now();
+	const auto timeDelta = std::chrono::duration_cast<std::chrono::duration<float, std::ratio<1>>>(now - previous).count();
+	previous = now;
+
+	GetRenderer().GetCamera()->updateCamera(this->GetContext().getGLFWWindow(), timeDelta);
+
+	float fixedDeltaTime = std::min(0.016f, timeDelta);
+
+	// update PVD
+	GetPhysicsWorld().gScene->simulate(fixedDeltaTime);
+	GetPhysicsWorld().gScene->fetchResults(true);
+	// update physics
+	GetPhysicsWorld().updateObjects(GetEntityManager(), GetModels());
+
+	GetRenderer().updateUniforms();
+
+	GetGUI().makeGUI();
+
+	GetRenderer().render(GetModels());
+
+	GetRenderer().submitRender();
+}
 
 void FPSTest::OnEvent(Engine::Event& e)
 {
@@ -97,72 +151,6 @@ void FPSTest::initialiseModels()
 	GetModels().emplace_back(Engine::makeVulkanModel(this->GetContext(), character));
 
 	std::cout << "Models created" << std::endl;
-}
-
-void FPSTest::initialisePhysics() 
-{
-	GetPhysicsWorld().init();
-}
-
-void FPSTest::RenderGUI()
-{
-	// Render loop for GUI before scene
-	// For now just call RenderScene
-	RenderScene();
-}
-
-void FPSTest::RenderScene()
-{
-	Engine::Camera camera = Engine::Camera();
-
-	GetRenderer().initialiseRenderer();
-	GetGUI().initGUI();
-	GetRenderer().attachCamera(&camera);
-	GetRenderer().initialiseModelDescriptors(GetModels());	
-
-	auto previous = std::chrono::steady_clock::now();
-
-	while (!glfwWindowShouldClose(this->GetContext().getGLFWWindow())) {
-		Engine::InputManager::Update();
-		if (!Engine::InputManager::mJoysticks.empty())
-		{
-			if (Engine::InputManager::getJoystick(0).isPressed(HS_GAMEPAD_BUTTON_A))
-			{
-				std::cout << "A BUTTON PRESSED" << std::endl;
-			}
-		}
-
-		if (GetRenderer().checkSwapchain())
-			continue;
-
-		if (GetRenderer().acquireSwapchainImage())
-			continue;
-
-		// Calculate time delta
-		const auto now = std::chrono::steady_clock::now();
-		const auto timeDelta = std::chrono::duration_cast<std::chrono::duration<float, std::ratio<1>>>(now - previous).count();
-		previous = now;
-
-		GetRenderer().GetCamera()->updateCamera(this->GetContext().getGLFWWindow(), timeDelta);
-
-		float fixedDeltaTime = std::min(0.016f, timeDelta);
-
-		// update PVD
-		GetPhysicsWorld().gScene->simulate(fixedDeltaTime);
-		GetPhysicsWorld().gScene->fetchResults(true);
-		// update physics
-		GetPhysicsWorld().updateObjects(GetEntityManager(), GetModels());
-
-		GetRenderer().updateUniforms();
-
-		GetGUI().makeGUI();
-
-		GetRenderer().render(GetModels());
-
-		GetRenderer().submitRender();
-	}
-
-	GetRenderer().finishRendering();
 }
 
 void FPSTest::loadOfflineEntities()

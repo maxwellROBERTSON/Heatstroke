@@ -16,13 +16,7 @@ namespace Engine
 	}
 	void Game::Run()
 	{
-		//while (isRunning)
-		//{
-		//	//float currTime = (float)glfwGetTime();
-		//	//deltaTime = currTime - lastTime;
-		//	//lastTime = currTime;
-			this->Update();
-		//}
+		this->Render();
 	}
 
 	void Game::OnEvent(Event& e)
@@ -30,13 +24,13 @@ namespace Engine
 		EventDispatcher dispatcher(e);
 		dispatcher.Dispatch<WindowCloseEvent>(std::bind(&Game::OnWindowClose, this, std::placeholders::_1));
 		dispatcher.Dispatch<ESCEvent>([this](Event& event) { gui->toggle(); return true; });
-		dispatcher.Dispatch<RenderModeToggleEvent>([this](RenderModeToggleEvent& event)
+		/*dispatcher.Dispatch<RenderModeToggleEvent>([this](RenderModeToggleEvent& event)
 			{
 				if (event.IsOn())
 					renderer->modeOn(event.GetRenderMode());
 				else renderer->modeOff(event.GetRenderMode());
 				return true;
-			});
+			});*/
 	}
 
 	bool Game::OnWindowClose(WindowCloseEvent& e)
@@ -52,30 +46,6 @@ namespace Engine
 #else
 		renderModes = 0b01000010
 #endif
-		static const std::map<int, std::string> modeNames = {
-		{ GUIDEBUG, "GUIDEBUG" },
-		{ GUIHOME, "GUIHOME" },
-		{ GUISETTINGS, "GUISETTINGS" },
-		{ FORWARD, "FORWARD" },
-		{ DEFERRED, "DEFERRED" },
-		{ SHADOWS, "SHADOWS" },
-		{ COUNT, "COUNT" }
-		};
-		std::cout << "INIT:" << std::endl;
-		for (const auto& [mode, name] : modeNames)
-		{
-			std::cout << name << " = " << (((renderModes >> mode) & 1) ? "ON" : "OFF") << " ";
-		}
-		/*std::cout << ((renderModes >> 0) & 1) << std::endl;
-		std::cout << ((renderModes >> 1) & 1) << std::endl;
-		std::cout << ((renderModes >> 2) & 1) << std::endl;
-		std::cout << ((renderModes >> 3) & 1) << std::endl;
-		std::cout << ((renderModes >> 4) & 1) << std::endl;
-		std::cout << ((renderModes >> 5) & 1) << std::endl;
-		std::cout << ((renderModes >> 6) & 1) << std::endl;
-		std::cout << ((renderModes >> 7) & 1) << std::endl;*/
-		//std::cout << "\n" << renderModes << std::endl;
-		std::cout << "\n" << std::endl;
 	}
 
 	Engine::RenderMode Game::GetGUIRenderMode()
@@ -84,6 +54,10 @@ namespace Engine
 			return GUIHOME;
 		else if ((renderModes & (1 << GUISETTINGS)))
 			return GUISETTINGS;
+		else if ((renderModes & (1 << GUILOADING)))
+			return GUILOADING;
+		else if ((renderModes & (1 << GUISERVER)))
+			return GUISERVER;
 		else if ((renderModes & (1 << GUIDEBUG)))
 			return GUIDEBUG;
 		else
@@ -94,6 +68,7 @@ namespace Engine
 	{
 		network->InitializeClient(serverAddress);
 	}
+
 	void Game::SetServer(uint16_t port, int maxClients)
 	{
 		network->InitializeServer(this, port, maxClients);

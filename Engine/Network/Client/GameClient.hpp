@@ -21,19 +21,22 @@ namespace Engine
 		);
 		~GameClient() {}
 
-		void Connect(yojimbo::Address);
-		void Run();
-		int Update();
+		void Connect();
+		void Update();
 		void ProcessMessages();
 		void ProcessMessage(yojimbo::Message*);
 		void CleanUp();
 
+		void UpdateStatus();
+		std::map<std::string, std::string> GetInfo();
+
 	private:
 		double time = 1.0;
 		float dt = 1.0f / 120.0f;
-		yojimbo::Client* client;
 
+		yojimbo::Client* client;
 		yojimbo::ClientServerConfig* config;
 		GameAdapter* adapter;
+		yojimbo::Address serverAddress;
 	};
 }

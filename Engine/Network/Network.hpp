@@ -1,5 +1,8 @@
 #pragma once
 
+#include <vector>
+#include <string>
+
 #include "Helpers/GameConfig.hpp"
 #include "Helpers/GetLocalIPAddress.hpp"
 #include "../Core/Game.hpp"
@@ -20,7 +23,14 @@ namespace Engine
         Network();
         void InitializeClient(yojimbo::Address);
         void InitializeServer(Game*, uint16_t, int);
+        void Update();
         void Reset();
+
+        // Getters
+        std::map<std::string, std::string> GetNetworkInfo();
+        inline bool isInitialized() { return initialized; }
+        inline Status& GetStatus() { return networkType->GetStatus(); }
+        inline std::string GetStatusString() { return networkType->GetStatusString(); }
 
     private:
         std::unique_ptr<GameNetworkType> networkType;  // Holds either GameClient or GameServer
