@@ -36,7 +36,7 @@ namespace Engine
 		init_info.QueueFamily = window->graphicsFamilyIndex;
 		init_info.Queue = window->graphicsQueue;
 		init_info.DescriptorPool = window->device->dPool;
-		init_info.RenderPass = game->GetRenderer().GetRenderPass("default");
+		init_info.RenderPass = game->GetRenderer().GetRenderPass("forward");
 		init_info.Subpass = 0;
 
 		VkSurfaceCapabilitiesKHR caps;
@@ -51,7 +51,7 @@ namespace Engine
 		if (caps.maxImageCount > 0 && imageCount > caps.maxImageCount)
 			imageCount = caps.maxImageCount;
 
-		init_info.MinImageCount = caps.minImageCount;
+		init_info.MinImageCount = caps.minImageCount < 2 ? 2 : caps.minImageCount;
 		init_info.ImageCount = imageCount;
 		init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
 
@@ -194,7 +194,7 @@ namespace Engine
 			{
 				game->ResetRenderModes();
 				game->GetEntityManager().ClearManager();
-				game->GetRenderer().cleanModelMatrices();
+				//game->GetRenderer().cleanModelMatrices();
 			}
 			else
 			{

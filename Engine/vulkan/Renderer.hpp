@@ -71,12 +71,6 @@ namespace Engine {
 		std::vector<vk::Framebuffer> deferredFramebuffers;
 		std::vector<vk::Framebuffer> shadowFramebuffer;
 
-		std::unordered_map<Engine::RenderMode, std::vector<vk::Framebuffer>*> framebuffersMap = {
-			{Engine::RenderMode::FORWARD, &forwardFramebuffers},
-			{Engine::RenderMode::DEFERRED,& deferredFramebuffers},
-			{Engine::RenderMode::SHADOWS, &shadowFramebuffer}
-		};
-
 		std::size_t frameIndex = 0;
 		std::uint32_t imageIndex = 0;
 		std::vector<VkCommandBuffer> cmdBuffers;

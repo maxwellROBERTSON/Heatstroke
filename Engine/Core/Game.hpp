@@ -83,11 +83,6 @@ namespace Engine
 				{ SHADOWS, "SHADOWS" },
 				{ COUNT, "COUNT" }
 			};
-			for (const auto& [mode, name] : modeNames)
-			{
-				std::cout << name << " = " << (((renderModes >> mode) & 1) ? "ON" : "OFF") << " ";
-			}
-			std::cout << std::endl;
 		}
 
 		bool OnWindowClose(WindowCloseEvent& e);
