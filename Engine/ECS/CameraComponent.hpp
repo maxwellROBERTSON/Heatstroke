@@ -16,13 +16,13 @@ public:
 	}
 
 	// Getters
-	Camera* GetCamera() { return &camera; }
+	Engine::Camera* GetCamera() { return &camera; }
 
 	// Setters
-	void SetCamera(Camera aCamera) { camera = aCamera; }
+	void SetCamera(Engine::Camera aCamera) { camera = aCamera; }
 
 private:
-	Camera camera;
+	Engine::Camera camera;
 };
 
 

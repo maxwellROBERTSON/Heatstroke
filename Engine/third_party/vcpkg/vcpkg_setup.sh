@@ -11,6 +11,17 @@ export VCPKG_ROOT="${PWD}"
 # Add vcpkg to PATH
 export PATH="$VCPKG_ROOT:$PATH"
 
+# INSTALLED=$(./vcpkg list | grep "physx")
+
+# # Check if PhysX is installed
+# if [ -z "$INSTALLED" ]; then
+#     echo "PhysX is not installed. Installing..."
+#     ./vcpkg install physx
+# else
+#     echo "PhysX is already installed:"
+#     echo "$INSTALLED"
+# fi
+
 # Install PhysX using vcpkg
 echo "Installing PhysX using vcpkg..."
 ./vcpkg install physx
