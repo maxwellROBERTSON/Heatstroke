@@ -361,9 +361,14 @@ namespace Engine {
 		return vk::PipelineLayout(aWindow.device->device, layout);
 	}
 
-	vk::Pipeline createPipeline(const VulkanWindow& aWindow, VkRenderPass aRenderPass, VkPipelineLayout aPipelineLayout) {
-		vk::ShaderModule vert = loadShaderModule(aWindow, Shaders::vertShader);
-		vk::ShaderModule frag = loadShaderModule(aWindow, Shaders::fragShader);
+	vk::Pipeline createForwardPipeline(const VulkanWindow& aWindow, VkRenderPass aRenderPass, VkPipelineLayout aPipelineLayout, bool shadows) {
+		vk::ShaderModule vert = loadShaderModule(aWindow, Shaders::forwardVert);
+		vk::ShaderModule frag = loadShaderModule(aWindow, Shaders::forwardFrag);
+
+		if (shadows) {
+			vert = loadShaderModule(aWindow, Shaders::forwardShadowVert);
+			frag = loadShaderModule(aWindow, Shaders::forwardShadowFrag);
+		}
 
 		VkPipelineShaderStageCreateInfo stages[2]{};
 		stages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;

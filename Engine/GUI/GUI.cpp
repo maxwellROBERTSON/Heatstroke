@@ -37,7 +37,7 @@ namespace Engine
 		init_info.QueueFamily = window->graphicsFamilyIndex;
 		init_info.Queue = window->graphicsQueue;
 		init_info.DescriptorPool = window->device->dPool;
-		init_info.RenderPass = game->GetRenderer().GetRenderPass("default");
+		init_info.RenderPass = game->GetRenderer().GetRenderPass("forward");
 		init_info.Subpass = 0;
 
 		VkSurfaceCapabilitiesKHR caps;
@@ -52,7 +52,7 @@ namespace Engine
 		if (caps.maxImageCount > 0 && imageCount > caps.maxImageCount)
 			imageCount = caps.maxImageCount;
 
-		init_info.MinImageCount = caps.minImageCount;
+		init_info.MinImageCount = caps.minImageCount < 2 ? 2 : caps.minImageCount;
 		init_info.ImageCount = imageCount;
 		init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
 
@@ -265,16 +265,16 @@ namespace Engine
 			game->ToggleRenderMode(FORWARD);
 			game->ToggleRenderMode(DEFERRED);
 		}
-		//ImGui::Text("Toggle Shadows (Only available when in forward rendering mode)", ImVec2(*w / 4, *h / 4));
-		ImGui::Text("SHADOWS CURRENTLY ALWAYS ON IF FORWARD MODE", ImVec2(*w / 4, *h / 4));
+		ImGui::Text("Toggle Shadows (Only available when in forward rendering mode)", ImVec2(*w / 4, *h / 4));
+		//ImGui::Text("SHADOWS CURRENTLY ALWAYS ON IF FORWARD MODE", ImVec2(*w / 4, *h / 4));
 
-		/*if (forward)
+		if (forward)
 		{
 			if (ImGui::Button(game->GetRenderMode(SHADOWS) ? "Shadows" : "No Shadows", ImVec2(*w / 4, *h / 4)))
 			{
 				game->ToggleRenderMode(SHADOWS);
 			}
-		}*/
+		}
 
 		ImVec2 topRightPos = ImVec2(*w - *w / 6 - 10, 30);
 		ImGui::SetCursorPos(topRightPos);
