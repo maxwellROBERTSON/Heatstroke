@@ -29,8 +29,10 @@ public:
 	PxCapsuleController* gCapsuleController = nullptr;
 
 	// PVD
+	#if defined(WIN32y)
 	PxPvd* gPvd = nullptr;
 	PxPvdTransport* gTransport = nullptr;
+	#endif
 
 
 	PxReal gTimestep = 1.0f / 60.0f; // 60 FPS

@@ -62,7 +62,7 @@ workspace "Heatstroke"
     
     filter "configurations:Debug"
         symbols "On"
-        defines {"_DEBUG=1", "YOJIMBO_DEBUG", "NETCODE_DEBUG", "RELIABLE_DEBUG", "PX_PHYSX_STATIC_LIB"}
+        defines {"_DEBUG=1", "YOJIMBO_DEBUG", "NETCODE_DEBUG", "RELIABLE_DEBUG"}
     
     filter "configurations:Release"
         optimize "On"
@@ -115,7 +115,7 @@ project "Engine"
     filter "*"
         
     filter "system:not windows"
-        libdirs { "Engine/third_party/vcpkg/packages/physx_x64-linux/lib" }
+        libdirs { "Engine/third_party/vcpkg/packages/physx_x64-linux/debug/lib" }
         links { 
             "PhysXExtensions_static_64",
             "PhysX_static_64",
@@ -126,10 +126,7 @@ project "Engine"
             "PhysXCommon_static_64", 
             "PhysXFoundation_static_64" 
         }
-        libdirs { "Engine/third_party/vcpkg/packages/physx_x64-linux/tools" }
-        links {
-            "PhysXGpu_64"
-        }
+
     filter { "system:linux", "configurations:Release" }
         libdirs { "Engine/third_party/vcpkg/packages/physx_x64-linux/lib" }
         links(os.matchfiles("Engine/third_party/vcpkg/packages/physx_x64-linux/lib/*.lib"))
@@ -209,10 +206,7 @@ project "Game"
             "PhysXCommon_static_64", 
             "PhysXFoundation_static_64"
         }
-        libdirs { "Engine/third_party/vcpkg/packages/physx_x64-linux/tools" }
-        links {
-            "PhysXGpu_64"
-        }
+
 
     filter "*"
     
