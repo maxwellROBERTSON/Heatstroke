@@ -393,7 +393,8 @@ namespace Engine {
 	void Renderer::finishRendering() {
 		vkDeviceWaitIdle(this->context->window->device->device);
 
-		vmaUnmapMemory(this->context->allocator->allocator, this->uniformBuffers["modelMatrices"].allocation);
+		if (isSceneLoaded)
+			vmaUnmapMemory(this->context->allocator->allocator, this->uniformBuffers["modelMatrices"].allocation);
 	}
 
 	void Renderer::modeOn(Engine::RenderMode r)
