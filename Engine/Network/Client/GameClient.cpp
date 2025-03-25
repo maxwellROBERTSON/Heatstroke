@@ -108,7 +108,7 @@ namespace Engine
 		{
 			status = Status::ClientConnected;
 			yojimbo::Message *message = adapter->factory->CreateMessage(REQUEST_MESSAGE);
-			client->SendClientMessage(0, message);
+			client->SendClientMessage(yojimbo::CHANNEL_TYPE_RELIABLE_ORDERED, message);
 		}
 		else if (client->IsDisconnected() && status != Status::ClientDisconnected)
 			status = Status::ClientDisconnected;

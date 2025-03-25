@@ -62,7 +62,15 @@ namespace Engine
 					GameMessage* message = (GameMessage*)server->ReceiveMessage(i, j);
 					while (message != NULL)
 					{
-						ProcessMessage(i, message);
+						if (message->GetType() == REQUEST_MESSAGE)
+						{
+							RequestMessage* derived = dynamic_cast<RequestMessage*>(message);
+							HandleRequestMessage(i, static_cast<RequestType>(derived->sequence));
+						}
+						else
+						{
+							ProcessMessage(i, message);
+						}
 						server->ReleaseMessage(i, message);
 						message = (GameMessage*)server->ReceiveMessage(i, j);
 					}
@@ -73,6 +81,12 @@ namespace Engine
 				server->DisconnectClient(i);
 			}
 		}
+	}
+
+	void GameServer::HandleRequestMessage(int clientIndex, RequestType type)
+	{
+		yojimbo::Message* message = adapter->factory->CreateMessage(GAME_MESSAGE);
+		server->SendServerMessage(clientIndex, yojimbo::CHANNEL_TYPE_RELIABLE_ORDERED, message);
 	}
 
 	void GameServer::ProcessMessage(int clientIndex, GameMessage* message)
@@ -102,7 +116,12 @@ namespace Engine
 		info["Dt"] = std::to_string(dt);
 		info["Max Clients"] = std::to_string(maxClients);
 		info["Num Connected Clients"] = std::to_string(server->GetNumConnectedClients());
-		info["Address"] = std::to_string(*server->GetAddress().GetAddress4());
+		const uint8_t* addPtr = server->GetAddress().GetAddress4();
+		std::string ipAddress = std::to_string(addPtr[0]) + "." +
+			std::to_string(addPtr[1]) + "." +
+			std::to_string(addPtr[2]) + "." +
+			std::to_string(addPtr[3]);
+		info["Address"] = ipAddress;
 
 		return info;
 	}
