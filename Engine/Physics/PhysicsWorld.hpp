@@ -2,7 +2,12 @@
 
 #include "PxPhysicsAPI.h"
 #include <iostream>
+#if defined(WIN32)
 #include <conio.h>
+#else
+#include <termios.h>
+#include <unistd.h>
+#endif
 #include <vector>
 #include "../ECS/EntityManager.hpp"
 using namespace physx;

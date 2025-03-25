@@ -26,6 +26,10 @@ filter "system:not windows"
     libdirs( "libsodium-1.0.20/libsodium-build/lib")
     links { "sodium" }
 
+filter "system:not windows"
+    libdirs( "vcpkg/packages/physx_x64-linux/tools")
+    links { "PhysXGpu_64" }
+
 project "yojimbo"
     kind "StaticLib"
     location "."
