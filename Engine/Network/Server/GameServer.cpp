@@ -85,8 +85,10 @@ namespace Engine
 
 	void GameServer::HandleRequestMessage(int clientIndex, RequestType type)
 	{
-		yojimbo::Message* message = adapter->factory->CreateMessage(GAME_MESSAGE);
+		yojimbo::Message* message = server->CreateMessage(clientIndex, GAME_MESSAGE);
 		server->SendServerMessage(clientIndex, yojimbo::CHANNEL_TYPE_RELIABLE_ORDERED, message);
+		//adapter->factory->ReleaseMessage(message);
+		//server->ReleaseMessage(clientIndex, message);
 	}
 
 	void GameServer::ProcessMessage(int clientIndex, GameMessage* message)
