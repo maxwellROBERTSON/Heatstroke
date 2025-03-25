@@ -20,6 +20,7 @@ namespace Engine {
 		Engine::WindowCloseEvent event;
 		engineWindow.EventCallback(event);
 	}
+
 	void joyStickCallback(int jid, int event)
 	{
 		Joystick& joystick = static_cast<Joystick&>(InputManager::getJoystick(jid));
@@ -35,12 +36,15 @@ namespace Engine {
 	void onKeyPress(GLFWwindow* aWindow, int aKey, int aScanCode, int aAction, int aModifiers)
 	{
 		VulkanWindow& engineWindow = *(VulkanWindow*)glfwGetWindowUserPointer(aWindow);
-		if (aKey == HS_KEY_ESCAPE)
-		{
-			Engine::WindowCloseEvent event;
-			engineWindow.EventCallback(event);
-		}
 		auto& keyboard = InputManager::getKeyboard();
+
+		if (aAction == GLFW_PRESS && aKey == HS_KEY_ESCAPE)
+		{
+			ESCEvent event;
+			engineWindow.EventCallback(event);
+			return;
+		}
+
 		switch (aAction)
 		{
 		case GLFW_PRESS:
@@ -74,9 +78,9 @@ namespace Engine {
 
 	void onMouseMove(GLFWwindow* aWindow, double x, double y)
 	{
-		// TODO - MouseMove Event
 
-
+		if (glfwGetInputMode(aWindow, GLFW_CURSOR) != GLFW_CURSOR_DISABLED)
+			return;
 		auto& mouse = InputManager::getMouse();
 		mouse.xPos = x;
 		mouse.yPos = y;

@@ -1,11 +1,21 @@
 #pragma once
 
+#include "../Core/RenderMode.hpp"
 #include "objects/Model.hpp"
 #include "Uniforms.hpp"
+#include "Utils.hpp"
 #include "../ECS/EntityManager.hpp"
 #include "../Core/Camera.hpp"
+#include "../Core/Game.hpp"
+
+namespace Engine
+{
+	class Game;
+}
 
 namespace Engine {
+
+	class Camera;
 
 	struct Uniforms {
 		glsl::SceneUniform sceneUniform;
@@ -15,32 +25,37 @@ namespace Engine {
 		glsl::DepthMVP depthMVP;
 	};
 
-	enum RenderMode {
-		FORWARD,
-		DEFERRED
-	};
-
 	class Renderer {
 	public:
-		Renderer(VulkanContext* aContext, EntityManager* entityManager);
+		Renderer(VulkanContext* aContext, EntityManager* entityManager, Engine::Game* game);
 		Renderer() = default;
 
+		VkRenderPass& GetRenderPass(std::string s);
+		Engine::Camera* GetCamera() { return camera; }
+		bool const GetIsSceneLoaded() { return isSceneLoaded; }
+
 		void initialiseRenderer();
-		void attachCamera(Camera* camera);
+		void initialiseModelMatrices();
+		void cleanModelMatrices();
+		void attachCamera(Engine::Camera* camera);
 		void initialiseModelDescriptors(std::vector<vk::Model>& models);
 		bool checkSwapchain();
 		bool acquireSwapchainImage();
 		void updateUniforms();
-		void render(RenderMode renderMode, std::vector<vk::Model>& models);
+		void updateModelMatrices();
+		void render(std::vector<vk::Model>& models);
 		void submitRender();
 		void finishRendering();
 
 		vk::Buffer createDynamicUniformBuffer();
+		void modeOn(Engine::RenderMode r);
+		void modeOff(Engine::RenderMode r);
 
 	private:
 		VulkanContext* context;
 		EntityManager* entityManager;
-		Camera* camera;
+		Engine::Game* game;
+		Engine::Camera* camera;
 
 		std::map<std::string, vk::RenderPass> renderPasses;
 		std::map<std::string, vk::DescriptorSetLayout> descriptorLayouts;
@@ -52,7 +67,7 @@ namespace Engine {
 
 		vk::Sampler depthSampler;
 
-		std::vector<vk::Framebuffer> defaultFramebuffers;
+		std::vector<vk::Framebuffer> forwardFramebuffers;
 		std::vector<vk::Framebuffer> deferredFramebuffers;
 		std::vector<vk::Framebuffer> shadowFramebuffer;
 
@@ -67,10 +82,15 @@ namespace Engine {
 
 		Uniforms uniforms;
 
+		bool isSceneLoaded = false;
+
 		bool recreateSwapchain = false;
 
-		void renderForward(std::vector<vk::Model>& models);
-		void renderDeferred(std::vector<vk::Model>& models);
+		void renderGUI();
+		void renderForward(std::vector<vk::Model>& models, bool debug);
+		void renderForwardShadows(std::vector<vk::Model>& models, bool debug);
+		void renderDeferred(std::vector<vk::Model>& models, bool debug);
+		void drawModels(VkCommandBuffer& cmdBuf, std::vector<vk::Model>& models, std::string handle);
 
 		void recreateFormatDependents();
 		void recreateSizeDependents();
