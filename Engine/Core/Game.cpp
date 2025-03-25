@@ -6,21 +6,12 @@ namespace Engine
 	{
 		mContext.window = initialiseVulkan(name, width, height);
 		mContext.allocator = createVulkanAllocator(*mContext.window.get());
-		//sInputManager->registerCallbacks(mContext.window.get());
 		InputManager::RegisterCallbacks(mContext.window.get());
 		mContext.window.get()->SetEventCallback(std::bind(&Game::OnEvent, this, std::placeholders::_1));
-		//this->Init();
 	}
 	void Game::Run()
 	{
-		//while (isRunning)
-		//{
-		//	//float currTime = (float)glfwGetTime();
-		//	//deltaTime = currTime - lastTime;
-		//	//lastTime = currTime;
-
-			this->Update();
-		//}
+		this->Update();
 	}
 
 	void Game::OnEvent(Event& e)

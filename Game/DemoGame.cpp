@@ -1,8 +1,8 @@
 #include "DemoGame.hpp"
 
 #include <chrono>
-#include <thread>
 #include <future>
+#include <thread>
 
 #include "../Engine/vulkan/objects/Buffer.hpp"
 #include "../Engine/vulkan/PipelineCreation.hpp"
@@ -24,6 +24,12 @@ void FPSTest::Init()
 	//blocks execution of the rest of the program until the initialiseModelsThread has finished
 	initialiseModelsThread.join();
 	initialisePhysics(physics_world);
+
+	Engine::InputManager::addAction("Accept", HS_KEY_A, HS_GAMEPAD_BUTTON_A);
+	Engine::InputManager::addAction("Decline", HS_KEY_B, HS_GAMEPAD_BUTTON_B);
+	Engine::InputManager::addAction("MoveRight", HS_KEY_RIGHT, HS_GAMEPAD_AXIS_RIGHT_X);
+	//Engine::InputManager::bindAction(Engine::ActionType::Accept, HS_KEY_A, HS_GAMEPAD_BUTTON_A);
+	//Engine::InputManager::bindAction(Engine::ActionType::Decline, HS_KEY_B, HS_GAMEPAD_BUTTON_B);
 }
 
 void FPSTest::Update()
@@ -35,27 +41,7 @@ void FPSTest::Update()
 void FPSTest::OnEvent(Engine::Event& e)
 {
 	Game::OnEvent(e);
-
 	camera->OnEvent(this->GetContext().getGLFWWindow(), e);
-	//Engine::EventDispatcher dispatcher(e);
-
-	//dispatcher.Dispatch<Engine::KeyPressedEvent>(
-	//	[&](Engine::KeyPressedEvent& event)
-	//	{
-	//		std::cout << event.GetKeyCode() << std::endl;
-	//		return true;
-	//	}
-	//);
-
-	//dispatcher.Dispatch<Engine::MouseButtonPressedEvent>(
-	//	[&](Engine::MouseButtonPressedEvent& event)
-	//	{
-
-	//		std::cout << event.GetMouseButton() << std::endl;
-	//		return true;
-	//	}
-	//);
-
 }
 
 void FPSTest::registerComponents()
@@ -146,15 +132,19 @@ void FPSTest::RenderScene()
 
 	while (!glfwWindowShouldClose(this->GetContext().getGLFWWindow())) {
 		Engine::InputManager::Update();
-		if (!Engine::InputManager::mJoysticks.empty())
+		if (Engine::InputManager::Action("Accept"))
 		{
-			if (Engine::InputManager::getJoystick(0).isPressed(HS_GAMEPAD_BUTTON_A))
-			{
-				std::cout << "A BUTTON PRESSED" << std::endl;
-			}
+			std::cout << "Accept" << std::endl;
 		}
-
-
+		if (Engine::InputManager::Action("Decline"))
+		{
+			std::cout << "Decline" << std::endl;
+		}
+		if (Engine::InputManager::Action("MoveRight"))
+		{
+			std::cout << "Move Right" << std::endl;
+		}
+		/*	std::cout << HS_GAMEPAD_AXIS_RIGHT_X << std::endl;*/
 		if (this->renderer.checkSwapchain())
 			continue;
 

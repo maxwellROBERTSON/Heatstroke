@@ -3,11 +3,11 @@
 #include <GLFW/glfw3.h>
 #include <glm/detail/func_trigonometric.inl>
 
-#include <iostream>
-#include "../Input/InputCodes.hpp"
 #include "../Events/Event.hpp"
+#include "../Input/InputCodes.hpp"
 #include "../Input/Keyboard.hpp"
 #include "../Input/Mouse.hpp"
+#include <iostream>
 
 
 /*
@@ -22,37 +22,35 @@ void Camera::updateCamera(GLFWwindow* aWindow, float timeDelta) {
 	if (glfwGetInputMode(aWindow, GLFW_CURSOR) != GLFW_CURSOR_DISABLED)
 		return;
 
-	auto& keyboard = Engine::InputManager::getKeyboard();
 	auto& mouse = Engine::InputManager::getMouse();
 	float speedModifier = 1.0f;
-	if (keyboard.isPressed(HS_KEY_LEFT_SHIFT)) speedModifier = 3.0f;
+	if (Engine::InputManager::IsPressed(HS_KEY_LEFT_SHIFT)) speedModifier = 3.0f;
 	float distance = 1.0f * speedModifier * timeDelta;
 
-	if (keyboard.isPressed(HS_KEY_W))
+	if (Engine::InputManager::IsPressed(HS_KEY_W))
 	{
 		this->position += distance * this->frontDirection;
 	}
-	if (keyboard.isPressed(HS_KEY_S))
+	if (Engine::InputManager::IsPressed(HS_KEY_S))
 	{
 		this->position -= distance * this->frontDirection;
 	}
-	if (keyboard.isPressed(HS_KEY_D))
+	if (Engine::InputManager::IsPressed(HS_KEY_D))
 	{
 		this->position += glm::normalize(glm::cross(this->frontDirection, glm::vec3(0.0f, 1.0f, 0.0f))) * distance;
 	}
-	if (keyboard.isPressed(HS_KEY_A))
+	if (Engine::InputManager::IsPressed(HS_KEY_A))
 	{
 		this->position -= glm::normalize(glm::cross(this->frontDirection, glm::vec3(0.0f, 1.0f, 0.0f))) * distance;
 	}
-	if (keyboard.isPressed(HS_KEY_E))
+	if (Engine::InputManager::IsPressed(HS_KEY_E))
 	{
 		this->position += distance * glm::vec3(0.0f, 1.0f, 0.0f);
 	}
-	if (keyboard.isPressed(HS_KEY_Q))
+	if (Engine::InputManager::IsPressed(HS_KEY_Q))
 	{
 		this->position -= distance * glm::vec3(0.0f, 1.0f, 0.0f);
 	}
-	//std::fprintf(stdout, "Pos: %f %f %f\n", this->position.x, this->position.y, this->position.z);
 
 	if (this->firstClick) {
 		int winX, winY;

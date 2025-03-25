@@ -23,12 +23,12 @@ namespace Engine {
 	void joyStickCallback(int jid, int event)
 	{
 		Joystick& joystick = static_cast<Joystick&>(InputManager::getJoystick(jid));
-		if (event == GLFW_CONNECTED) {
+		if (event == GLFW_CONNECTED && glfwJoystickIsGamepad(jid)) {
 			std::cout << joystick.getDeviceName() << " conneceted" << std::endl;
+			InputManager::addJoysitck(jid);
 		}
 		else {
 			std::cout << joystick.getDeviceName() << " disconneceted" << std::endl;
-
 		}
 	}
 
@@ -48,6 +48,7 @@ namespace Engine {
 			KeyPressedEvent event(aKey, 0);
 			engineWindow.EventCallback(event);
 			keyboard.setKey(aKey, ButtonState::PRESSED);
+			//std::cout << "PRESS" << std::endl;
 			break;
 		}
 		case GLFW_RELEASE:
@@ -55,6 +56,17 @@ namespace Engine {
 			KeyReleasedEvent event(aKey);
 			engineWindow.EventCallback(event);
 			keyboard.setKey(aKey, ButtonState::RELEASED);
+			//std::cout << "RELEASE" << std::endl;
+			break;
+		}
+		case GLFW_REPEAT:
+		{
+			// TODO - KeyHeld Event
+
+			//KeyReleasedEvent event(aKey);
+			//engineWindow.EventCallback(event);
+			//keyboard.setKey(aKey, ButtonState::RELEASED);
+			//std::cout << "REPEAT" << std::endl;
 			break;
 		}
 		}
@@ -62,6 +74,9 @@ namespace Engine {
 
 	void onMouseMove(GLFWwindow* aWindow, double x, double y)
 	{
+		// TODO - MouseMove Event
+
+
 		auto& mouse = InputManager::getMouse();
 		mouse.xPos = x;
 		mouse.yPos = y;
@@ -91,7 +106,7 @@ namespace Engine {
 	void onMouseScroll(GLFWwindow* aWindow, double xOffset, double yOffset)
 	{
 		auto& mouse = InputManager::getMouse();
-		// MouseScroll Event
+		// // TODO - MouseScroll Event
 		mouse.scrollPos = yOffset;
 	}
 }

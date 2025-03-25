@@ -2,7 +2,9 @@
 
 namespace Engine
 {
-
+	Joystick::Joystick() : Device(DeviceType::Joystick)
+	{
+	}
 	Joystick::Joystick(int index) :
 		Device(DeviceType::Joystick), joyStickIndex(index)
 	{
