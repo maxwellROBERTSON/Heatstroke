@@ -42,9 +42,9 @@ namespace Engine
 	void Game::ResetRenderModes()
 	{
 #ifdef _DEBUG
-		renderModes = 0b01000011;
+		renderModes = 0b0000011;
 #else
-		renderModes = 0b01000010
+		renderModes = 0b0000010
 #endif
 	}
 
