@@ -264,15 +264,3 @@ void loadOfflineEntities(ComponentTypeRegistry& registry, EntityManager& entityM
 	//physicsComponent = entityManager.GetEntityComponent<PhysicsComponent>(entity->GetEntityId());
 	//physicsComponent->SetIsPerson(true
 }
-=========
-
-}
->>>>>>>>> Temporary merge branch 2
-=========
-
-}
->>>>>>>>> Temporary merge branch 2
-=========
-
-}
->>>>>>>>> Temporary merge branch 2
