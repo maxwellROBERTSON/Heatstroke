@@ -404,60 +404,6 @@ namespace Engine {
 			vmaUnmapMemory(this->context->allocator->allocator, this->uniformBuffers["modelMatrices"].allocation);
 	}
 
-	void Renderer::modeOn(Engine::RenderMode r)
-	{
-		VkExtent2D swapchainExtent = this->context->window->swapchainExtent;
-
-		std::vector<VkImageView> views;
-
-		if (r == FORWARD)
-		{
-			this->forwardFramebuffers.clear();
-			views.emplace_back(this->buffers["depth"].second.handle);
-			createFramebuffers(*this->context->window, this->forwardFramebuffers, this->renderPasses["forward"].handle, views, swapchainExtent);
-		}
-		else if (r == DEFERRED)
-		{
-			this->deferredFramebuffers.clear();
-			views.emplace_back(this->buffers["normals"].second.handle);
-			views.emplace_back(this->buffers["albedo"].second.handle);
-			views.emplace_back(this->buffers["emissive"].second.handle);
-			views.emplace_back(this->buffers["depth"].second.handle);
-			createFramebuffers(*this->context->window, this->deferredFramebuffers, this->renderPasses["deferred"].handle, views, swapchainExtent);
-
-			this->descriptorSets["deferredShading"] = createDeferredShadingDescriptor(
-				*this->context->window,
-				this->descriptorLayouts["deferredLayout"].handle,
-				this->buffers["depth"].second.handle,
-				this->buffers["normals"].second.handle,
-				this->buffers["albedo"].second.handle,
-				this->buffers["emissive"].second.handle);
-		}
-		
-		if (r == SHADOWS)
-		{
-			this->shadowFramebuffer.clear();
-			views.clear();
-			VkExtent2D shadowExtent = VkExtent2D{ 2048, 2048 };
-			views.emplace_back(this->buffers["shadowDepth"].second.handle);
-			createFramebuffers(*this->context->window, this->shadowFramebuffer, this->renderPasses["shadow"].handle, views, shadowExtent, true);
-
-			this->descriptorSets["shadowMap"] = createImageDescriptor(
-				*this->context->window,
-				this->descriptorLayouts["shadowMapLayout"].handle,
-				this->buffers["shadowDepth"].second.handle,
-				this->depthSampler.handle);
-		}
-	}
-
-	void Renderer::modeOff(Engine::RenderMode r)
-	{
-		//this->framebuffersMap[r].clear();
-		this->forwardFramebuffers.clear();
-		this->deferredFramebuffers.clear();
-		this->shadowFramebuffer.clear();
-	}
-
 	void Renderer::renderGUI()
 	{
 		VkCommandBuffer cmdBuf = this->cmdBuffers[this->frameIndex];
@@ -762,15 +708,14 @@ namespace Engine {
 		std::tuple<vk::Pipeline, vk::Pipeline> deferredPipelines = createDeferredPipelines(
 			*this->context->window,
 			this->renderPasses["deferred"].handle,
-			this->pipelineLayouts["foward"].handle,
+			this->pipelineLayouts["forward"].handle,
 			this->pipelineLayouts["deferred"].handle);
 
-		this->pipelines.emplace("forward", createForwardPipeline(*this->context->window, this->renderPasses["forward"].handle, this->pipelineLayouts["forward"].handle, false));
-		this->pipelines.emplace("forwardshadow", createForwardPipeline(*this->context->window, this->renderPasses["forward"].handle, this->pipelineLayouts["forwardshadow"].handle, true));
-		this->pipelines.emplace("gBufWrite", std::move(std::get<0>(deferredPipelines)));
-		this->pipelines.emplace("deferred", std::move(std::get<1>(deferredPipelines)));
-		this->pipelines.emplace("shadow", createShadowOffscreenPipeline(*this->context->window, this->renderPasses["shadow"].handle, this->pipelineLayouts["shadow"].handle));
-
+		this->pipelines["forward"] = createForwardPipeline(*this->context->window, this->renderPasses["forward"].handle, this->pipelineLayouts["forward"].handle, false);
+		this->pipelines["forwardShadow"] = createForwardPipeline(*this->context->window, this->renderPasses["forward"].handle, this->pipelineLayouts["forwardShadow"].handle, true);
+		this->pipelines["gBufWrite"] = std::move(std::get<0>(deferredPipelines));
+		this->pipelines["deferred"] = std::move(std::get<1>(deferredPipelines));
+		this->pipelines["shadow"] = createShadowOffscreenPipeline(*this->context->window, this->renderPasses["shadow"].handle, this->pipelineLayouts["shadow"].handle);
 	}
 
 	void Renderer::recreateOthers() {

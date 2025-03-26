@@ -48,8 +48,6 @@ namespace Engine {
 		void finishRendering();
 
 		vk::Buffer createDynamicUniformBuffer();
-		void modeOn(Engine::RenderMode r);
-		void modeOff(Engine::RenderMode r);
 
 	private:
 		VulkanContext* context;
