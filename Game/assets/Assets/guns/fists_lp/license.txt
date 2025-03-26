@@ -1,0 +1,11 @@
+Model Information:
+* title:	Low Poly FPS Arms (Rigged-Animated)
+* source:	https://sketchfab.com/3d-models/low-poly-fps-arms-rigged-animated-6e6b0613f06a4ab78b89e52095d5d338
+* author:	OblixStudio (https://sketchfab.com/OblixStudio)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Low Poly FPS Arms (Rigged-Animated)" (https://sketchfab.com/3d-models/low-poly-fps-arms-rigged-animated-6e6b0613f06a4ab78b89e52095d5d338) by OblixStudio (https://sketchfab.com/OblixStudio) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
