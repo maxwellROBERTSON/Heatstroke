@@ -2,7 +2,12 @@
 
 #include "PxPhysicsAPI.h"
 #include <iostream>
+#if defined(WIN32)
 #include <conio.h>
+#else
+#include <termios.h>
+#include <unistd.h>
+#endif
 #include <vector>
 #include "../ECS/EntityManager.hpp"
 using namespace physx;
@@ -24,8 +29,10 @@ public:
 	PxCapsuleController* gCapsuleController = nullptr;
 
 	// PVD
+	#if defined(WIN32y)
 	PxPvd* gPvd = nullptr;
 	PxPvdTransport* gTransport = nullptr;
+	#endif
 
 
 	PxReal gTimestep = 1.0f / 60.0f; // 60 FPS
