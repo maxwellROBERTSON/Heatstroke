@@ -4,7 +4,7 @@
 
 namespace Engine
 {
-    Network::Network()
+    void Network::InitializeNetwork()
     {
         if (!InitializeYojimbo())
         {
@@ -27,6 +27,7 @@ namespace Engine
     {
         if (!initialized)
         {
+            InitializeNetwork();
             networkType = std::make_unique<GameClient>(&config, adapter, serverAddress);
             initialized = true;
         }
@@ -40,6 +41,7 @@ namespace Engine
     {
         if (!initialized)
         {
+            InitializeNetwork();
             networkType = std::make_unique<GameServer>(&config, adapter, GetLocalIPAddress(port), maxClients, game);
             initialized = true;
         }
@@ -57,11 +59,12 @@ namespace Engine
 
     void Network::Reset()
     {
-        if (!initialized)
+        if (initialized)
         {
             networkType->CleanUp();
             networkType.reset();
             initialized = false;
+            std::cout << "Network reset." << std::endl;
         }
     }
 

@@ -33,9 +33,12 @@ workspace "Heatstroke"
 
     local cwd = os.getcwd()
     local shellScript = cwd .. "/Engine/third_party/vcpkg/vcpkg_setup.sh"
+    local bootstrapScript = cwd .. "/Engine/third_party/vcpkg/bootstrap-vcpkg.sh"
     local batchFile = cwd .. "/Engine/third_party/vcpkg/vcpkg_setup.bat"
 
     if os.istarget("linux") then
+        os.execute('chmod 777 "' .. shellScript .. '"')
+        os.execute('chmod 777 "' .. bootstrapScript .. '"')
         os.execute('sh "' .. shellScript .. '"')
     end
     if os.istarget("windows") then

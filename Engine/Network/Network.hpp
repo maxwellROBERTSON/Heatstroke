@@ -20,7 +20,8 @@ namespace Engine
 	class Network
 	{
     public:
-        Network();
+        Network() {};
+        void InitializeNetwork();
         void InitializeClient(yojimbo::Address);
         void InitializeServer(Game*, uint16_t, int);
         void Update();

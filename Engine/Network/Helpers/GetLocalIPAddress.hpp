@@ -79,6 +79,7 @@ namespace Engine
 				if (!strncmp(ifa->ifa_name, "eno1", 4))
 				{
 					yojimbo::Address address(addressBuffer, port);
+					std::cout << port << std::endl;
 					return address;
 				}
 			}

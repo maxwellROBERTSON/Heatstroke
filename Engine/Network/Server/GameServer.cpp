@@ -85,7 +85,7 @@ namespace Engine
 
 	void GameServer::HandleRequestMessage(int clientIndex, RequestType type)
 	{
-		yojimbo::Message* message = server->CreateMessage(clientIndex, GAME_MESSAGE);
+		yojimbo::Message* message = server->CreateMessage(clientIndex, REQUEST_RESPONSE_MESSAGE);
 		server->SendServerMessage(clientIndex, yojimbo::CHANNEL_TYPE_RELIABLE_ORDERED, message);
 		//adapter->factory->ReleaseMessage(message);
 		//server->ReleaseMessage(clientIndex, message);
@@ -101,6 +101,7 @@ namespace Engine
 	{
 		// Clean up server
 		YOJIMBO_DELETE(yojimbo::GetDefaultAllocator(), GameAdapter, adapter);
+		server->Stop();
 		YOJIMBO_DELETE(yojimbo::GetDefaultAllocator(), Server, server);
 		ShutdownYojimbo();
 	}
@@ -124,6 +125,8 @@ namespace Engine
 			std::to_string(addPtr[2]) + "." +
 			std::to_string(addPtr[3]);
 		info["Address"] = ipAddress;
+		uint16_t port = server->GetAddress().GetPort();
+		info["Port"] = std::to_string(port);
 
 		return info;
 	}
