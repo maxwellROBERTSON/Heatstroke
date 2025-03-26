@@ -7,8 +7,8 @@
 #include "../ECS/EntityManager.hpp"
 #include "../ECS/PhysicsComponent.hpp"
 #include "../Input/Keyboard.hpp"
-#include "../Input/InputCodes.h"
-
+#include "../Input/InputCodes.hpp"
+#include "../Input/Input.hpp"
 
 physx::PxDefaultErrorCallback PhysicsWorld::gErrorCallback;
 
@@ -105,18 +105,19 @@ void PhysicsWorld::updateCharacter(PxReal deltatime)
 		PxVec3 displacement(0.0f, -9.81f * deltatime, 0.0f);
 		float speed = 5.0f;
 
-		auto& keys = Engine::Keyboard::getKeyStates();
+		//auto& keys = Engine::Keyboard::getKeyStates();
+		auto& keyboard = Engine::InputManager::getKeyboard();
 
-		if (keys[HS_KEY_W].first) {
+		if (keyboard.isPressed(HS_KEY_W)) {
 			displacement.z -= speed * deltatime;
 		}
-		if (keys[HS_KEY_S].first) {
+		if (keyboard.isPressed(HS_KEY_S)) {
 			displacement.z += speed * deltatime;
 		}
-		if (keys[HS_KEY_A].first) {
+		if (keyboard.isPressed(HS_KEY_A)) {
 			displacement.x -= speed * deltatime;
 		}
-		if (keys[HS_KEY_D].first) {
+		if (keyboard.isPressed(HS_KEY_D)) {
 			displacement.x += speed * deltatime;
 		}
 
