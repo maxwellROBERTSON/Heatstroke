@@ -23,7 +23,7 @@ void PhysicsWorld::init() {
 	}
 
 	// Pvd
-#if defined(WIN32)
+#if defined(_WIN32)
 	gPvd = PxCreatePvd(*gFoundation);
 	if (!gPvd)
 	{

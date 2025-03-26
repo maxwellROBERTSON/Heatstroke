@@ -182,8 +182,8 @@ void FPSTest::loadOfflineEntities()
 	entity->SetModelMatrix(mapTransform);
 	renderComponent = GetEntityManager().GetEntityComponent<RenderComponent>(entity->GetEntityId());
 	renderComponent->SetModelIndex(0);
-	physicsComponent = entityManager.GetEntityComponent<PhysicsComponent>(entity->GetEntityId());
-	physicsComponent->initComplexShape(pworld, PhysicsComponent::PhysicsType::STATIC, models[0], mapTransform, entity->GetEntityId());
+	physicsComponent = GetEntityManager().GetEntityComponent<PhysicsComponent>(entity->GetEntityId());
+	physicsComponent->initComplexShape(GetPhysicsWorld(), PhysicsComponent::PhysicsType::STATIC, GetModels()[0], mapTransform, entity->GetEntityId());
 
 	// Helmet
 	entity = GetEntityManager().AddEntity<RenderComponent, PhysicsComponent>();

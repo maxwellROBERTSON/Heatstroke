@@ -2,7 +2,7 @@
 
 #include "PxPhysicsAPI.h"
 #include <iostream>
-#if defined(WIN32)
+#if defined(_WIN32)
 #include <conio.h>
 #else
 #include <termios.h>
@@ -29,7 +29,7 @@ public:
 	PxCapsuleController* gCapsuleController = nullptr;
 
 	// PVD
-	#if defined(WIN32y)
+	#if defined(_WIN32)
 	PxPvd* gPvd = nullptr;
 	PxPvdTransport* gTransport = nullptr;
 	#endif
