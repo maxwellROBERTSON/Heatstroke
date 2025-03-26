@@ -258,6 +258,59 @@ namespace Engine {
 		return vk::RenderPass(aWindow.device->device, rpass);
 	}
 
+	vk::RenderPass createShadowRenderPass(const VulkanWindow& aWindow) {
+		VkAttachmentDescription attachments[1]{};
+		attachments[0].format = VK_FORMAT_D32_SFLOAT_S8_UINT;
+		attachments[0].samples = VK_SAMPLE_COUNT_1_BIT;
+		attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		attachments[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		attachments[0].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+		attachments[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+
+		VkAttachmentReference depthAttachment{};
+		depthAttachment.attachment = 0;
+		depthAttachment.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+		VkSubpassDescription subpasses[1]{};
+		subpasses[0].pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+		subpasses[0].colorAttachmentCount = 0;
+		subpasses[0].pDepthStencilAttachment = &depthAttachment;
+
+		VkSubpassDependency deps[2]{};
+		deps[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+		deps[0].srcSubpass = VK_SUBPASS_EXTERNAL;
+		deps[0].srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+		deps[0].srcStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+		deps[0].dstSubpass = 0;
+		deps[0].dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+		deps[0].dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+
+		deps[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+		deps[1].srcSubpass = 0;
+		deps[1].srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+		deps[1].srcStageMask = VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+		deps[1].dstSubpass = VK_SUBPASS_EXTERNAL;
+		deps[1].dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+		deps[1].dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+
+		VkRenderPassCreateInfo passInfo{};
+		passInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+		passInfo.attachmentCount = 1;
+		passInfo.pAttachments = attachments;
+		passInfo.subpassCount = 1;
+		passInfo.pSubpasses = subpasses;
+		passInfo.dependencyCount = 2;
+		passInfo.pDependencies = deps;
+
+		VkRenderPass rpass = VK_NULL_HANDLE;
+		if (const auto res = vkCreateRenderPass(aWindow.device->device, &passInfo, nullptr, &rpass); VK_SUCCESS != res) {
+			throw Utils::Error("Unable to create render pass\n vkCreateRenderPass() returned %s\n", Utils::toString(res).c_str());
+		}
+
+		return vk::RenderPass(aWindow.device->device, rpass);
+	}
+
 	vk::DescriptorSetLayout createDescriptorLayout(const VulkanWindow& aWindow, std::vector<DescriptorSetting> aDescriptorSettings) {
 		std::vector<VkDescriptorSetLayoutBinding> layoutBindings;
 		
@@ -666,14 +719,124 @@ namespace Engine {
 		return { std::move(vk::Pipeline(aWindow.device->device, gBufWritePipe	)), std::move(vk::Pipeline(aWindow.device->device, shadingPipe)) };
 	}
 
+	vk::Pipeline createShadowOffscreenPipeline(const VulkanWindow& aWindow, VkRenderPass aRenderPass, VkPipelineLayout aPipelineLayout) {
+		vk::ShaderModule vert = loadShaderModule(aWindow, Shaders::shadowVert);
+
+		VkPipelineShaderStageCreateInfo stages[1]{};
+		stages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+		stages[0].module = vert.handle;
+		stages[0].pName = "main";
+
+		VkVertexInputBindingDescription vertexInputs[1]{};
+		vertexInputs[0].binding = 0;
+		vertexInputs[0].stride = sizeof(float) * 3;
+		vertexInputs[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+		VkVertexInputAttributeDescription vertexAttributes[1]{};
+		vertexAttributes[0].binding = 0;
+		vertexAttributes[0].location = 0;
+		vertexAttributes[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+		vertexAttributes[0].offset = 0;
+
+		VkPipelineVertexInputStateCreateInfo inputInfo{};
+		inputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+		inputInfo.vertexBindingDescriptionCount = 1;
+		inputInfo.pVertexBindingDescriptions = vertexInputs;
+		inputInfo.vertexAttributeDescriptionCount = 1;
+		inputInfo.pVertexAttributeDescriptions = vertexAttributes;
+
+		VkPipelineInputAssemblyStateCreateInfo assemblyInfo{};
+		assemblyInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+		assemblyInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+		assemblyInfo.primitiveRestartEnable = VK_FALSE;
+
+		VkViewport viewport{};
+		viewport.x = 0.0f;
+		viewport.y = 0.0f;
+		viewport.width = 2048.0f;
+		viewport.height = 2048.0f;
+		viewport.minDepth = 0.0f;
+		viewport.maxDepth = 1.0f;
+
+		VkRect2D scissor{};
+		scissor.offset = VkOffset2D{ 0, 0 };
+		scissor.extent = VkExtent2D{ 2048, 2048 };
+
+		VkPipelineViewportStateCreateInfo viewportInfo{};
+		viewportInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+		viewportInfo.viewportCount = 1;
+		viewportInfo.pViewports = &viewport;
+		viewportInfo.scissorCount = 1;
+		viewportInfo.pScissors = &scissor;
+
+		VkPipelineRasterizationStateCreateInfo rasterInfo{};
+		rasterInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+		rasterInfo.depthClampEnable = VK_FALSE;
+		rasterInfo.rasterizerDiscardEnable = VK_FALSE;
+		rasterInfo.polygonMode = VK_POLYGON_MODE_FILL;
+		rasterInfo.cullMode = VK_CULL_MODE_NONE;
+		rasterInfo.depthBiasEnable = VK_TRUE;
+		rasterInfo.depthBiasClamp = 0.0f;
+		rasterInfo.depthBiasConstantFactor = 5.0f;
+		rasterInfo.depthBiasSlopeFactor = 1.00f;
+		rasterInfo.lineWidth = 1.0f;
+
+		VkPipelineMultisampleStateCreateInfo samplingInfo{};
+		samplingInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+		samplingInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+
+		VkPipelineColorBlendAttachmentState blendStates[1]{};
+		blendStates[0].blendEnable = VK_FALSE;
+		blendStates[0].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+
+		VkPipelineColorBlendStateCreateInfo blendInfo{};
+		blendInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+		blendInfo.logicOpEnable = VK_FALSE;
+		blendInfo.attachmentCount = 0;
+		blendInfo.pAttachments = blendStates;
+
+		VkPipelineDepthStencilStateCreateInfo depthInfo{};
+		depthInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+		depthInfo.depthTestEnable = VK_TRUE;
+		depthInfo.depthWriteEnable = VK_TRUE;
+		depthInfo.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+		depthInfo.minDepthBounds = 0.0f;
+		depthInfo.maxDepthBounds = 1.0f;
+
+		VkGraphicsPipelineCreateInfo pipeInfo{};
+		pipeInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+		pipeInfo.stageCount = 1;
+		pipeInfo.pStages = stages;
+		pipeInfo.pVertexInputState = &inputInfo;
+		pipeInfo.pInputAssemblyState = &assemblyInfo;
+		pipeInfo.pTessellationState = nullptr;
+		pipeInfo.pViewportState = &viewportInfo;
+		pipeInfo.pRasterizationState = &rasterInfo;
+		pipeInfo.pMultisampleState = &samplingInfo;
+		pipeInfo.pDepthStencilState = &depthInfo;
+		pipeInfo.pColorBlendState = &blendInfo;
+		pipeInfo.pDynamicState = nullptr;
+		pipeInfo.layout = aPipelineLayout;
+		pipeInfo.renderPass = aRenderPass;
+		pipeInfo.subpass = 0;
+
+		VkPipeline pipe = VK_NULL_HANDLE;
+		if (const auto res = vkCreateGraphicsPipelines(aWindow.device->device, VK_NULL_HANDLE, 1, &pipeInfo, nullptr, &pipe); VK_SUCCESS != res) {
+			throw Utils::Error("Unable to create graphics pipeline\n vkCreateGraphicsPipeline() returned %s", Utils::toString(res).c_str());
+		}
+
+		return vk::Pipeline(aWindow.device->device, pipe);
+	}
+
 	// Should only be used for render pass attachments
 	std::pair<vk::Texture, vk::ImageView> createTextureBuffer(const VulkanContext& aContext, TextureBufferSetting aBufferSetting) {
 		VkImageCreateInfo imageInfo{};
 		imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 		imageInfo.imageType = VK_IMAGE_TYPE_2D;
 		imageInfo.format = aBufferSetting.imageFormat;
-		imageInfo.extent.width = aContext.window->swapchainExtent.width;
-		imageInfo.extent.height = aContext.window->swapchainExtent.height;
+		imageInfo.extent.width = aBufferSetting.extent.width;
+		imageInfo.extent.height = aBufferSetting.extent.height;
 		imageInfo.extent.depth = 1;
 		imageInfo.mipLevels = 1;
 		imageInfo.arrayLayers = 1;
@@ -709,12 +872,13 @@ namespace Engine {
 		return { std::move(Image), vk::ImageView(aContext.window->device->device, view) };
 	}
 
-	void createFramebuffers(const VulkanWindow& aWindow, std::vector<vk::Framebuffer>& aFramebuffers, VkRenderPass aRenderPass, std::vector<VkImageView>& aImageViews) {
+	void createFramebuffers(const VulkanWindow& aWindow, std::vector<vk::Framebuffer>& aFramebuffers, VkRenderPass aRenderPass, std::vector<VkImageView>& aImageViews, VkExtent2D aExtent, bool ignoreSwapchainImage) {
 		assert(aFramebuffers.empty());
 
 		for (std::size_t i = 0; i < aWindow.swapViews.size(); ++i) {
 			std::vector<VkImageView> attachments;
-			attachments.push_back(aWindow.swapViews[i]);
+			if (!ignoreSwapchainImage)
+				attachments.push_back(aWindow.swapViews[i]);
 
 			for (std::size_t j = 0; j < aImageViews.size(); j++) {
 				attachments.push_back(aImageViews[j]);
@@ -726,8 +890,8 @@ namespace Engine {
 			fbInfo.renderPass = aRenderPass;
 			fbInfo.attachmentCount = attachments.size();
 			fbInfo.pAttachments = attachments.data();
-			fbInfo.width = aWindow.swapchainExtent.width;
-			fbInfo.height = aWindow.swapchainExtent.height;
+			fbInfo.width = aExtent.width;
+			fbInfo.height = aExtent.height;
 			fbInfo.layers = 1;
 
 			VkFramebuffer fb = VK_NULL_HANDLE;
@@ -843,5 +1007,30 @@ namespace Engine {
 		}
 
 		return deferredShadingDescriptor;
+	}
+
+	// Only works for shadow depth image at the moment
+	VkDescriptorSet createImageDescriptor(const VulkanWindow& aWindow, VkDescriptorSetLayout aSetLayout, VkImageView aImageView, VkSampler aSampler) {
+		VkDescriptorSet imageDescriptor = allocateDescriptorSet(aWindow, aWindow.device->dPool, aSetLayout);
+		{
+			VkWriteDescriptorSet desc[1]{};
+
+			VkDescriptorImageInfo imageInfo[1]{};
+			imageInfo[0].imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+			imageInfo[0].imageView = aImageView;
+			imageInfo[0].sampler = aSampler;
+
+			desc[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			desc[0].dstSet = imageDescriptor;
+			desc[0].dstBinding = 0;
+			desc[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			desc[0].descriptorCount = 1;
+			desc[0].pImageInfo = imageInfo;
+
+			constexpr auto numSets = sizeof(desc) / sizeof(desc[0]);
+			vkUpdateDescriptorSets(aWindow.device->device, numSets, desc, 0, nullptr);
+		}
+
+		return imageDescriptor;
 	}
 }

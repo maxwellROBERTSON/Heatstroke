@@ -1,7 +1,8 @@
-#include "DemoGame.h"
+#include "DemoGame.hpp"
 
 #include <chrono>
-
+#include <thread>
+#include <future>
 
 #include "../Engine/vulkan/objects/Buffer.hpp"
 #include "../Engine/vulkan/PipelineCreation.hpp"
@@ -11,11 +12,17 @@
 #include "Error.hpp"
 #include "toString.hpp"
 
+
 void FPSTest::Init()
 {
-	std::cout << "FPS TEST INIT" << std::endl;
 	registerComponents();
-	initialiseModels();
+	//create thread which then begins execution of initialiseModels
+	std::thread initialiseModelsThread(&FPSTest::initialiseModels, this);
+
+	std::cout << "Waiting for the execution of modelsThread to finish..." << std::endl;
+
+	//blocks execution of the rest of the program until the initialiseModelsThread has finished
+	initialiseModelsThread.join();
 	initialisePhysics(physics_world);
 }
 
@@ -24,17 +31,31 @@ void FPSTest::Update()
 	RenderGUI();
 }
 
+
 void FPSTest::OnEvent(Engine::Event& e)
 {
-	Engine::EventDispatcher dispatcher(e);
+	Game::OnEvent(e);
 
-	dispatcher.Dispatch<Engine::KeyPressedEvent>(
-		[&](Engine::KeyPressedEvent& event)
-		{
-			std::cout << event.GetKeyCode() << std::endl;
-			return true;
-		}
-	);
+	camera->OnEvent(this->GetContext().getGLFWWindow(), e);
+	//Engine::EventDispatcher dispatcher(e);
+
+	//dispatcher.Dispatch<Engine::KeyPressedEvent>(
+	//	[&](Engine::KeyPressedEvent& event)
+	//	{
+	//		std::cout << event.GetKeyCode() << std::endl;
+	//		return true;
+	//	}
+	//);
+
+	//dispatcher.Dispatch<Engine::MouseButtonPressedEvent>(
+	//	[&](Engine::MouseButtonPressedEvent& event)
+	//	{
+
+	//		std::cout << event.GetMouseButton() << std::endl;
+	//		return true;
+	//	}
+	//);
+
 }
 
 void FPSTest::registerComponents()
@@ -76,9 +97,11 @@ void FPSTest::initialiseModels()
 	models.emplace_back(Engine::makeVulkanModel(this->GetContext(), helmet));
 	models.emplace_back(Engine::makeVulkanModel(this->GetContext(), cube));
 	models.emplace_back(Engine::makeVulkanModel(this->GetContext(), character));
+
+	std::cout << "Models created" << std::endl;
 }
 
-void FPSTest::initialisePhysics(PhysicsWorld& pworld) 
+void FPSTest::initialisePhysics(PhysicsWorld& pworld)
 {
 	pworld.init();
 }
@@ -100,7 +123,7 @@ void FPSTest::RenderScene()
 	{
 		// Offline mode
 		isChange = false;
-		loadOfflineEntities(registry, entityManager,physics_world);
+		loadOfflineEntities(registry, entityManager, physics_world, models);
 		clientId = 0;
 	}
 
@@ -117,12 +140,20 @@ void FPSTest::RenderScene()
 
 	this->renderer.initialiseRenderer();
 	this->renderer.attachCamera(camera);
-	this->renderer.initialiseModelDescriptors(models);	
+	this->renderer.initialiseModelDescriptors(models);
 
 	auto previous = std::chrono::steady_clock::now();
 
 	while (!glfwWindowShouldClose(this->GetContext().getGLFWWindow())) {
-		glfwPollEvents();
+		Engine::InputManager::Update();
+		if (!Engine::InputManager::mJoysticks.empty())
+		{
+			if (Engine::InputManager::getJoystick(0).isPressed(HS_GAMEPAD_BUTTON_A))
+			{
+				std::cout << "A BUTTON PRESSED" << std::endl;
+			}
+		}
+
 
 		if (this->renderer.checkSwapchain())
 			continue;
@@ -152,15 +183,14 @@ void FPSTest::RenderScene()
 
 		this->renderer.updateUniforms();
 
-		this->renderer.render(Engine::RenderMode::DEFERRED, models);
+		this->renderer.render(Engine::RenderMode::FORWARD, models);
 
 		this->renderer.submitRender();
 	}
-
 	this->renderer.finishRendering();
 }
 
-void loadOfflineEntities(ComponentTypeRegistry& registry, EntityManager& entityManager, PhysicsWorld& pworld)
+void loadOfflineEntities(ComponentTypeRegistry& registry, EntityManager& entityManager, PhysicsWorld& pworld, std::vector<Engine::vk::Model>& models)
 {
 	// Pointers
 	Entity* entity;
@@ -170,12 +200,14 @@ void loadOfflineEntities(ComponentTypeRegistry& registry, EntityManager& entityM
 	NetworkComponent* networkComponent;
 
 	// Map
-	entity = entityManager.AddEntity<RenderComponent>();
+	entity = entityManager.AddEntity<RenderComponent, PhysicsComponent>();
 	glm::mat4 mapTransform(1.0f);
 	mapTransform = glm::scale(mapTransform, glm::vec3(0.01f, 0.01f, 0.01f));
 	entity->SetModelMatrix(mapTransform);
 	renderComponent = entityManager.GetEntityComponent<RenderComponent>(entity->GetEntityId());
 	renderComponent->SetModelIndex(0);
+	physicsComponent = entityManager.GetEntityComponent<PhysicsComponent>(entity->GetEntityId());
+	physicsComponent->initComplexShape(pworld, PhysicsComponent::PhysicsType::STATIC, models[0], mapTransform, entity->GetEntityId());
 
 	// Helmet
 	entity = entityManager.AddEntity<RenderComponent, PhysicsComponent>();
@@ -189,7 +221,7 @@ void loadOfflineEntities(ComponentTypeRegistry& registry, EntityManager& entityM
 	renderComponent->SetModelIndex(1);
 	// configure physics component
 	physicsComponent = entityManager.GetEntityComponent<PhysicsComponent>(entity->GetEntityId());
-	physicsComponent->init(pworld, PhysicsComponent::PhysicsType::STATIC, helmetTransform, entity->GetEntityId());
+	physicsComponent->init(pworld, PhysicsComponent::PhysicsType::DYNAMIC, helmetTransform, entity->GetEntityId());
 
 	// Cube
 	entity = entityManager.AddEntity<RenderComponent, PhysicsComponent>();
@@ -231,5 +263,4 @@ void loadOfflineEntities(ComponentTypeRegistry& registry, EntityManager& entityM
 	renderComponent->SetModelIndex(3);
 	//physicsComponent = entityManager.GetEntityComponent<PhysicsComponent>(entity->GetEntityId());
 	//physicsComponent->SetIsPerson(true
-
 }

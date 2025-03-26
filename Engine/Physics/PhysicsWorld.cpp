@@ -84,8 +84,8 @@ void PhysicsWorld::init() {
 
 	// testplane!
 	
-	PxRigidStatic* groundPlane = PxCreatePlane(*gPhysics, PxPlane(0, 1, 0, 0), *gMaterial);
-	gScene->addActor(*groundPlane);
+	//PxRigidStatic* groundPlane = PxCreatePlane(*gPhysics, PxPlane(0, 1, 0, 0), *gMaterial);
+	//gScene->addActor(*groundPlane);
 	
 
 }

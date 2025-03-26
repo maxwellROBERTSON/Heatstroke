@@ -22,6 +22,8 @@
 #include "VulkanContext.hpp"
 #include "VulkanDevice.hpp"
 
+#include "../Input/InputCodes.hpp"
+
 namespace Engine {
 
 	VulkanWindow::~VulkanWindow()
@@ -183,7 +185,6 @@ namespace Engine {
 			window.get()->debugMessenger = Utils::createDebugMessenger(window.get()->instance);
 
 		// Create GLFW window
-		// Get VkSurfaceKHR from the window
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
 		window.get()->window = glfwCreateWindow(width, height, name.c_str(), nullptr, nullptr); // Again, name not final
@@ -194,6 +195,13 @@ namespace Engine {
 			throw Utils::Error("Unable to create GLFW window\n Last error = %s", errMsg);
 		}
 
+		// Set window user pointer (for events)
+		glfwSetWindowUserPointer(window.get()->window, window.get());
+
+		// Register Callbacks
+		//window.get()->RegisterCallbacks();
+
+		// Get VkSurfaceKHR from the window
 		if (const auto res = glfwCreateWindowSurface(window.get()->instance, window.get()->window, nullptr, &window.get()->surface); VK_SUCCESS != res)
 			throw Utils::Error("Unable to create VkSurfaceKHR\n glfwCreateWindowSurface() returned %s", Utils::toString(res).c_str());
 

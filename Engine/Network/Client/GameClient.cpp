@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "../Core/Game.h"
+#include "../Core/Game.hpp"
 #include "GameClient.hpp"
 
 static const uint8_t DEFAULT_PRIVATE_KEY[yojimbo::KeyBytes] = { 0 };

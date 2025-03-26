@@ -200,7 +200,15 @@ namespace vk {
         materialInfoSSBO = materialInfoDescriptors;
 	}
 
-	void Model::drawModel(VkCommandBuffer aCmdBuf, VkPipelineLayout aPipelineLayout) {
+	void Model::drawModel(VkCommandBuffer aCmdBuf, VkPipelineLayout aPipelineLayout, bool justGeometry) {
+
+        if (justGeometry) {
+
+            for (Node* node : nodes)
+                drawNodeGeometry(node, aCmdBuf);
+
+            return;
+        }
 
         vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, 2, 1, &materialInfoSSBO, 0, nullptr);
 
@@ -240,6 +248,26 @@ namespace vk {
 		//	drawNode(child, aCmdBuf, aPipelineLayout);
 		//}
 	}
+
+    void Model::drawNodeGeometry(Node* aNode, VkCommandBuffer aCmdBuf) {
+        if (aNode->mesh) {
+            for (Primitive* primitive : aNode->mesh->primitives) {
+
+
+                VkBuffer vBuffers[1] = {
+                    primitive->posBuffer.buffer
+                };
+                VkBuffer iBuffer = primitive->indicesBuffer.buffer;
+                VkDeviceSize vOffsets[1]{};
+                VkDeviceSize iOffset{};
+
+                vkCmdBindVertexBuffers(aCmdBuf, 0, 1, vBuffers, vOffsets);
+                vkCmdBindIndexBuffer(aCmdBuf, iBuffer, 0, VK_INDEX_TYPE_UINT32);
+
+                vkCmdDrawIndexed(aCmdBuf, primitive->indexCount, 1, primitive->firstIndex, 0, 0);
+            }
+        }
+    }
 
 	void Model::destroy() {
         for (Node* node : nodes) {

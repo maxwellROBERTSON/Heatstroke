@@ -1,0 +1,11 @@
+Model Information:
+* title:	FPS Guns 4K - Rifle 1
+* source:	https://sketchfab.com/3d-models/fps-guns-4k-rifle-1-9f421e63c2e241cdb5ec85fd10837853
+* author:	Heart State Games® (https://sketchfab.com/heartstategames)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "FPS Guns 4K - Rifle 1" (https://sketchfab.com/3d-models/fps-guns-4k-rifle-1-9f421e63c2e241cdb5ec85fd10837853) by Heart State Games® (https://sketchfab.com/heartstategames) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

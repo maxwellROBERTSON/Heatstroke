@@ -79,7 +79,6 @@ dofile("Engine/Utils/glslc.lua")
 project "Engine"
     local sources = {
         "Engine/Core/**",
-        "Engine/glfw/**",  -- TO BE REMOVED
         "Engine/Input/**", 
         "Engine/Events/**", 
         "Engine/gltf/**",
@@ -131,7 +130,8 @@ project "Engine"
         postbuildcommands {
             '{COPY} "%{wks.location}Engine/third_party/vcpkg/packages/physx_x64-windows/debug/bin/PhysXFoundation_64.dll" "%{wks.location}bin"',
             '{COPY} "%{wks.location}Engine/third_party/vcpkg/packages/physx_x64-windows/debug/bin/PhysXCommon_64.dll" "%{wks.location}bin"',
-            '{COPY} "%{wks.location}Engine/third_party/vcpkg/packages/physx_x64-windows/debug/bin/PhysX_64.dll" "%{wks.location}bin"'
+            '{COPY} "%{wks.location}Engine/third_party/vcpkg/packages/physx_x64-windows/debug/bin/PhysX_64.dll" "%{wks.location}bin"',
+            '{COPY} "%{wks.location}Engine/third_party/vcpkg/packages/physx_x64-windows/debug/bin/PhysXCooking_64.dll" "%{wks.location}bin"'
         }
     filter { "system:windows", "configurations:Release" }
         libdirs { "Engine/third_party/vcpkg/packages/physx_x64-windows/lib" }
@@ -139,7 +139,8 @@ project "Engine"
         postbuildcommands {
             '{COPY} "%{wks.location}Engine/third_party/vcpkg/packages/physx_x64-windows/bin/PhysXFoundation_64.dll" "%{wks.location}bin"',
             '{COPY} "%{wks.location}Engine/third_party/vcpkg/packages/physx_x64-windows/bin/PhysXCommon_64.dll" "%{wks.location}bin"',
-            '{COPY} "%{wks.location}Engine/third_party/vcpkg/packages/physx_x64-windows/bin/PhysX_64.dll" "%{wks.location}bin"'
+            '{COPY} "%{wks.location}Engine/third_party/vcpkg/packages/physx_x64-windows/bin/PhysX_64.dll" "%{wks.location}bin"',
+            '{COPY} "%{wks.location}Engine/third_party/vcpkg/packages/physx_x64-windows/bin/PhysXCooking_64.dll" "%{wks.location}bin"'
         }
 
     filter "*"

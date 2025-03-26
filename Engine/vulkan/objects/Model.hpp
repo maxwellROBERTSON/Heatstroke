@@ -167,8 +167,9 @@ namespace vk {
 			const VulkanContext& aContext, 
 			VkDescriptorSetLayout aSamplerSetLayout, 
 			VkDescriptorSetLayout aMaterialInfoSetLayout);
-        void drawModel(VkCommandBuffer aCmdBuf, VkPipelineLayout aPipelineLayout);
+        void drawModel(VkCommandBuffer aCmdBuf, VkPipelineLayout aPipelineLayout, bool justGeometry = false);
 		void drawNode(Node* node, VkCommandBuffer aCmdBuf, VkPipelineLayout aPipelineLayout);
+		void drawNodeGeometry(Node* node, VkCommandBuffer aCmdBuf);
 		void destroy();
 	};
 
