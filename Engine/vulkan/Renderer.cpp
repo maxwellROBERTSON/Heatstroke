@@ -770,14 +770,14 @@ namespace Engine {
 		std::tuple<vk::Pipeline, vk::Pipeline> deferredPipelines = createDeferredPipelines(
 			*this->context->window,
 			this->renderPasses["deferred"].handle,
-			this->pipelineLayouts["foward"].handle,
+			this->pipelineLayouts["forward"].handle,
 			this->pipelineLayouts["deferred"].handle);
 
-		this->pipelines.emplace("forward", createForwardPipeline(*this->context->window, this->renderPasses["forward"].handle, this->pipelineLayouts["forward"].handle, false));
-		this->pipelines.emplace("forwardshadow", createForwardPipeline(*this->context->window, this->renderPasses["forward"].handle, this->pipelineLayouts["forwardshadow"].handle, true));
-		this->pipelines.emplace("gBufWrite", std::move(std::get<0>(deferredPipelines)));
-		this->pipelines.emplace("deferred", std::move(std::get<1>(deferredPipelines)));
-		this->pipelines.emplace("shadow", createShadowOffscreenPipeline(*this->context->window, this->renderPasses["shadow"].handle, this->pipelineLayouts["shadow"].handle));
+		this->pipelines["forward"] = createForwardPipeline(*this->context->window, this->renderPasses["forward"].handle, this->pipelineLayouts["forward"].handle, false);
+		this->pipelines["forwardShadow"] = createForwardPipeline(*this->context->window, this->renderPasses["forward"].handle, this->pipelineLayouts["forwardShadow"].handle, true);
+		this->pipelines["gBufWrite"] = std::move(std::get<0>(deferredPipelines));
+		this->pipelines["deferred"] = std::move(std::get<1>(deferredPipelines));
+		this->pipelines["shadow"] = createShadowOffscreenPipeline(*this->context->window, this->renderPasses["shadow"].handle, this->pipelineLayouts["shadow"].handle);
 
 	}
 
@@ -822,9 +822,6 @@ namespace Engine {
 	void Renderer::drawModels(VkCommandBuffer& cmdBuf, std::vector<vk::Model>& models, std::string handle)
 	{
 		std::pair<void*, int> renderComponents = entityManager->GetComponents<RenderComponent>();
-		for (std::size_t i = 0; i < renderComponents.second; i++) {
-			RenderComponent r = reinterpret_cast<RenderComponent*>(renderComponents.first)[i];
-		}
 		for (std::size_t i = 0; i < renderComponents.second; i++) {
 			std::uint32_t offset = i * this->dynamicUBOAlignment;
 			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts[handle].handle, 3, 1, &this->descriptorSets["modelMatrices"], 1, &offset);
