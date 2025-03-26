@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Event.hpp"
+#include "../Input/InputCodes.hpp"
 
 namespace Engine
 {
@@ -49,5 +50,25 @@ namespace Engine
 		} virtual const char* GetEventName() const override {
 			return "KeyReleasedEvent";
 		}
+	};
+
+	class ESCEvent : public Event
+	{
+	public:
+		ESCEvent() = default;
+		uint16_t GetKeyCode() const { return keyCode; }
+		virtual int GetEventCategoryFlags() const override {
+			return EventCategoryKeyboard | EventCategoryInput;
+		}
+
+		static EventType GetStaticType() {
+			return EventType::ESCPressed;
+		} virtual EventType GetEventType() const override {
+			return GetStaticType();
+		} virtual const char* GetEventName() const override {
+			return "ESCKeyPressedEvent";
+		}
+	private:
+		uint16_t keyCode = HS_KEY_ESCAPE;
 	};
 }

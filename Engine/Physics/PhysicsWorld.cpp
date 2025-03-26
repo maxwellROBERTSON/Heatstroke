@@ -23,6 +23,7 @@ void PhysicsWorld::init() {
 	}
 
 	// Pvd
+#if defined(WIN32)
 	gPvd = PxCreatePvd(*gFoundation);
 	if (!gPvd)
 	{
@@ -43,7 +44,11 @@ void PhysicsWorld::init() {
 		std::cerr << "PVD not connected\n";
 	}
 
+
 	gPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *gFoundation, PxTolerancesScale(), true, gPvd);
+#else
+	gPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *gFoundation, PxTolerancesScale(), true, NULL);
+#endif
 	if (!gPhysics)
 	{
 		std::cerr << "PxCreatePhysics failed!" << std::endl;
@@ -179,6 +184,7 @@ void PhysicsWorld::cleanupPhysX()
 	}
 
 	// disconnect PVD
+	#if defined(WIN32)
 	if (gPvd)
 	{
 		PxPvdTransport* transport = gPvd->getTransport();
@@ -190,6 +196,7 @@ void PhysicsWorld::cleanupPhysX()
 		gPvd->release();
 		gPvd = nullptr;
 	}
+	#endif
 
 	if (gFoundation)
 	{
