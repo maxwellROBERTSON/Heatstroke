@@ -11,14 +11,12 @@ namespace Engine {
 	vk::Model makeVulkanModel(const VulkanContext& aContext, tinygltf::Model& model);
 
 	void loadMaterials(tinygltf::Model& model, vk::Model& vkModel);
-
 	void loadTextureSamplers(const VulkanWindow& aWindow, tinygltf::Model& model, vk::Model& vkModel);
-
 	void loadTextures(const VulkanContext& aContext, tinygltf::Model& model, vk::Model& vkModel);
-
-	void getCounts(tinygltf::Model& model, tinygltf::Node& node, std::uint32_t& indicesCount, std::uint32_t& verticesCount);
-
 	void loadNodeMeshes(vk::Node* parent, tinygltf::Node& node, tinygltf::Model& model, std::uint32_t nodeIndex, vk::Model& vkModel);
+	void calculateModelBoundingBox(vk::Model& vkModel);
+	void loadAnimations(tinygltf::Model& model, vk::Model& vkModel);
+	void loadSkins(tinygltf::Model& model, vk::Model& vkModel);
 
 	void createVulkanBuffers(const VulkanContext& aContext, vk::Model& vkModel);
 }

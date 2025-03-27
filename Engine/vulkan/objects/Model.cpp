@@ -11,9 +11,27 @@
 namespace Engine {
 namespace vk {
 
-	glm::mat4 Node::getModelMatrix() {
-		return this->postTransform * (glm::translate(glm::mat4(1.0f), translation) * glm::mat4(rotation) * glm::scale(glm::mat4(1.0f), scale) * this->nodeMatrix);
-	}
+    glm::mat4 Node::getLocalMatrix() {
+        // Since the TRS properties and node matrix are mutually exclusive, we can multiply everything together as 
+        // the node matrix or the TRS properties will be its identity value and will have no effect on final transform.
+        return glm::translate(glm::mat4(1.0f), translation) * glm::mat4(rotation) * glm::scale(glm::mat4(1.0f), scale) * this->nodeMatrix;
+    }
+
+    glm::mat4 Node::getModelMatrix() {
+        // TODO: maybe add a way of caching matrices if they don't change from frame to frame
+        // TODO: to avoid traversing and multipling matrices all the time.
+
+        // Need to traverse the node hierarchy to calculate this node's global transformation matrix.
+        glm::mat4 matrix = this->getLocalMatrix();
+
+        Node* parent = this->parent;
+        while (parent) {
+            matrix = parent->getLocalMatrix() * matrix;
+            parent = parent->parent;
+        }
+
+        return matrix;
+    }
 
 	void Model::createDescriptorSets(
         const VulkanContext& aContext, 
@@ -200,12 +218,15 @@ namespace vk {
         materialInfoSSBO = materialInfoDescriptors;
 	}
 
-	void Model::drawModel(VkCommandBuffer aCmdBuf, VkPipelineLayout aPipelineLayout, bool justGeometry) {
+	void Model::drawModel(VkCommandBuffer aCmdBuf, VkPipelineLayout aPipelineLayout, VkDescriptorSet aDescriptorSet, std::size_t dynamicUBOAlignment, int modelMatricesSet, std::uint32_t& offset, bool justGeometry) {
 
         if (justGeometry) {
 
-            for (Node* node : nodes)
+            for (Node* node : nodes) {
+                vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, modelMatricesSet, 1, &aDescriptorSet, 1, &offset);
+                offset += dynamicUBOAlignment;
                 drawNodeGeometry(node, aCmdBuf);
+            }
 
             return;
         }
@@ -213,6 +234,8 @@ namespace vk {
         vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, 2, 1, &materialInfoSSBO, 0, nullptr);
 
 		for (Node* node : nodes) {
+            vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, modelMatricesSet, 1, &aDescriptorSet, 1, &offset);
+            offset += dynamicUBOAlignment;
 			drawNode(node, aCmdBuf, aPipelineLayout);
 		}
 
@@ -243,16 +266,11 @@ namespace vk {
                 vkCmdDrawIndexed(aCmdBuf, primitive->indexCount, 1, primitive->firstIndex, 0, 0);
             }
 		}
-
-		//for (Node* child : aNode->children) {
-		//	drawNode(child, aCmdBuf, aPipelineLayout);
-		//}
 	}
 
     void Model::drawNodeGeometry(Node* aNode, VkCommandBuffer aCmdBuf) {
         if (aNode->mesh) {
             for (Primitive* primitive : aNode->mesh->primitives) {
-
 
                 VkBuffer vBuffers[1] = {
                     primitive->posBuffer.buffer

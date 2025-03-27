@@ -60,6 +60,8 @@ namespace vk {
 			texCoords0.reserve(vertexCount);
 			texCoords1.reserve(vertexCount);
 			vertexColours.reserve(vertexCount);
+			joints.reserve(vertexCount);
+			weights.reserve(vertexCount);
 			indices.reserve(indexCount);
 		};
 
@@ -69,6 +71,8 @@ namespace vk {
 		std::vector<glm::vec2> texCoords0;
 		std::vector<glm::vec2> texCoords1;
 		std::vector<glm::vec4> vertexColours;
+		std::vector<glm::uvec4> joints;
+		std::vector<glm::vec4> weights;
 		std::vector<std::uint32_t> indices;
 	};
 
@@ -120,14 +124,21 @@ namespace vk {
 		Mesh* mesh;
 		std::uint32_t index;
 		std::vector<Node*> children;
+
 		glm::mat4 nodeMatrix;
 		glm::vec3 translation;
-		glm::vec3 scale{1.f};
 		glm::quat rotation;
+		glm::vec3 scale{ 1.0f };
 
 		glm::mat4 postTransform{ 1.0f };
 
+		// This gets the matrix transformation local to this node.
+		// You most likely will want the getModelMatrix() method
+		// which returns the global transformation matrix for this node.
+		glm::mat4 getLocalMatrix();
+		// Returns global transformation matrix for this node.
 		glm::mat4 getModelMatrix();
+
 		// This method sets the transform that gets applied AFTER
 		// the transforms from the glTF file have been applied.
 		// This method will be moved out of the node part of the model
@@ -135,6 +146,10 @@ namespace vk {
 		void setPostTransform(glm::mat4 transform) {
 			this->postTransform = transform;
 		}
+
+		// Bounding box minimums and maximums of this node
+		glm::vec3 bbMin;
+		glm::vec3 bbMax;
 	};
 
     struct Model {
@@ -155,6 +170,12 @@ namespace vk {
 
 		VkDescriptorSet materialInfoSSBO;
 
+		int meshedNodes;
+
+		// Bounding box of the entire model
+		glm::vec3 bbMin;
+		glm::vec3 bbMax;
+
 		// set all nodes transform
 		void setMat(glm::mat4 mat) {
 			for (Node* node : nodes)
@@ -167,7 +188,7 @@ namespace vk {
 			const VulkanContext& aContext, 
 			VkDescriptorSetLayout aSamplerSetLayout, 
 			VkDescriptorSetLayout aMaterialInfoSetLayout);
-        void drawModel(VkCommandBuffer aCmdBuf, VkPipelineLayout aPipelineLayout, bool justGeometry = false);
+        void drawModel(VkCommandBuffer aCmdBuf, VkPipelineLayout aPipelineLayout, VkDescriptorSet aDescriptorSet, std::size_t dynamicUBOAlignment, int modelMatricesSet, std::uint32_t& offset, bool justGeometry = false);
 		void drawNode(Node* node, VkCommandBuffer aCmdBuf, VkPipelineLayout aPipelineLayout);
 		void drawNodeGeometry(Node* node, VkCommandBuffer aCmdBuf);
 		void destroy();

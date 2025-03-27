@@ -83,6 +83,8 @@ namespace Engine {
 		std::vector<vk::Semaphore> renderFinished;
 
 		std::size_t dynamicUBOAlignment;
+		// Number of model matrices when creating dynamic uniform buffer object
+		int modelMatrices;
 
 		Uniforms uniforms;
 

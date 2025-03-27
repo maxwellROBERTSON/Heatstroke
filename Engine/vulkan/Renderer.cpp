@@ -270,11 +270,21 @@ namespace Engine {
 	}
 
 	vk::Buffer Renderer::createDynamicUniformBuffer() {
+		std::vector<vk::Model>& models = this->game->GetModels();
+		this->modelMatrices = 0;
+
 		std::size_t uboAlignment = this->context->window->device->minUBOAlignment;
 		this->dynamicUBOAlignment = (sizeof(glm::mat4) + uboAlignment - 1) & ~(uboAlignment - 1);
 
-		VkDeviceSize bufferSize = this->dynamicUBOAlignment * entityManager->GetComponentTypeSize<RenderComponent>();
+		std::vector<int> renderComponentEntities = this->entityManager->GetEntitiesWithComponent<RenderComponent>();
+		for (std::size_t i = 0; i < renderComponentEntities.size(); i++) {
+			int modelIndex = this->entityManager->GetEntityComponent<RenderComponent>(renderComponentEntities[i])->GetModelIndex();
+			vk::Model& model = models[modelIndex];
 
+			this->modelMatrices += model.nodes.size();
+		}
+
+		VkDeviceSize bufferSize = this->modelMatrices * this->dynamicUBOAlignment;
 		this->uniforms.modelMatricesUniform.model = (glm::mat4*)Utils::allocAligned(bufferSize, this->dynamicUBOAlignment);
 
 		return vk::createBuffer("dynamicUBO", *this->context->allocator, bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT);
@@ -354,22 +364,28 @@ namespace Engine {
 			updateModelMatrices();
 	}
 
-	void Renderer::updateModelMatrices()
-	{
-		// Update model matrices
-		std::vector<int> models = this->entityManager->GetEntitiesWithComponent<RenderComponent>();
-		for (std::size_t i = 0; i < models.size(); i++) {
-			glm::mat4* modelMatrix = (glm::mat4*)((std::uint64_t)this->uniforms.modelMatricesUniform.model + (i * this->dynamicUBOAlignment));
+	void Renderer::updateModelMatrices() {
+		std::vector<vk::Model>& models = this->game->GetModels();
 
-			// This will need to be changed to get a 'parent' model matrix, not
-			// just the first node's model matrix.
-			*modelMatrix = this->entityManager->GetEntity(models[i])->GetModelMatrix();
+		// Update model matrices
+		std::size_t offset = 0;
+
+		std::vector<int> renderComponentEntities = this->entityManager->GetEntitiesWithComponent<RenderComponent>();
+		for (std::size_t i = 0; i < renderComponentEntities.size(); i++) {
+			int modelIndex = this->entityManager->GetEntityComponent<RenderComponent>(renderComponentEntities[i])->GetModelIndex();
+			vk::Model& model = models[modelIndex];
+
+			for (std::size_t j = 0; j < model.nodes.size(); j++) {
+				glm::mat4* modelMatrix = (glm::mat4*)((std::uint64_t)this->uniforms.modelMatricesUniform.model + offset);
+				offset += this->dynamicUBOAlignment;
+
+				// Get the models model matrix (the one from the glTF file) and times it by the entities model matrix (post transform)
+				*modelMatrix = this->entityManager->GetEntity(renderComponentEntities[i])->GetModelMatrix() * model.nodes[j]->getModelMatrix();
+			}
 		}
 
-		int size = this->entityManager->GetComponentTypeSize<RenderComponent>() * this->dynamicUBOAlignment;
-
+		int size = this->modelMatrices * this->dynamicUBOAlignment;
 		std::memcpy(this->uniformBuffers["modelMatrices"].mapped, this->uniforms.modelMatricesUniform.model, size);
-
 		vmaFlushAllocation(this->context->allocator->allocator, this->uniformBuffers["modelMatrices"].allocation, 0, size);
 	}
 
@@ -775,7 +791,6 @@ namespace Engine {
 		this->pipelines["gBufWrite"] = std::move(std::get<0>(deferredPipelines));
 		this->pipelines["deferred"] = std::move(std::get<1>(deferredPipelines));
 		this->pipelines["shadow"] = createShadowOffscreenPipeline(*this->context->window, this->renderPasses["shadow"].handle, this->pipelineLayouts["shadow"].handle);
-
 	}
 
 	void Renderer::recreateOthers() {
@@ -816,14 +831,13 @@ namespace Engine {
 			this->depthSampler.handle);
 	}
 
-	void Renderer::drawModels(VkCommandBuffer& cmdBuf, std::vector<vk::Model>& models, std::string handle, int modelMatricesSet, bool justGeometry)
-	{
+	void Renderer::drawModels(VkCommandBuffer& cmdBuf, std::vector<vk::Model>& models, std::string handle, int modelMatricesSet, bool justGeometry) {
+		std::uint32_t offset = 0;
+
 		std::pair<void*, int> renderComponents = entityManager->GetComponents<RenderComponent>();
 		for (std::size_t i = 0; i < renderComponents.second; i++) {
-			std::uint32_t offset = i * this->dynamicUBOAlignment;
-			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts[handle].handle, modelMatricesSet, 1, &this->descriptorSets["modelMatrices"], 1, &offset);
 			int j = reinterpret_cast<RenderComponent*>(renderComponents.first)[i].GetModelIndex();
-			models[j].drawModel(cmdBuf, this->pipelineLayouts[handle].handle, justGeometry);
+			models[j].drawModel(cmdBuf, this->pipelineLayouts[handle].handle, this->descriptorSets["modelMatrices"], this->dynamicUBOAlignment, modelMatricesSet, offset, justGeometry);
 		}
 	}
 }
