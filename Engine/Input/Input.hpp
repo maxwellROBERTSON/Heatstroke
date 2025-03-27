@@ -36,6 +36,7 @@ namespace Engine
 		static Joystick& getJoystick(int index);
 		static Keyboard& getKeyboard();
 		static void addJoysitck(int index);
+		static void removeJoystick(int index);
 		static Mouse& getMouse();
 		static bool hasJoysticksConnected();
 		static std::map<std::string, std::pair<int, int>> mActionMap;
@@ -54,7 +55,7 @@ namespace Engine
 		static void RegisterCallbacks(VulkanWindow* window);
 
 
-	private:
+		//private:
 		static InputManager* sInputManager;
 		static Keyboard mKeyboard;
 		static std::map<int, Joystick> mJoysticks;

@@ -30,6 +30,8 @@ namespace Engine {
 		}
 		else {
 			std::cout << joystick.getDeviceName() << " disconneceted" << std::endl;
+			InputManager::removeJoystick(jid);
+
 		}
 	}
 

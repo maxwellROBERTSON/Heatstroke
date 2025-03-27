@@ -31,6 +31,11 @@ namespace Engine
 
 	}
 
+	void InputManager::removeJoystick(int index)
+	{
+		mJoysticks.erase(index);
+	}
+
 	Mouse& InputManager::getMouse()
 	{
 		return mMouse;
@@ -38,7 +43,8 @@ namespace Engine
 
 	bool InputManager::hasJoysticksConnected()
 	{
-		return !mJoysticks.empty();
+		//return !mJoysticks.empty();
+		return (mJoysticks.size() != 0);
 	}
 
 	void InputManager::Update()

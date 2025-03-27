@@ -23,7 +23,7 @@ void FPSTest::Init()
 
 	//blocks execution of the rest of the program until the initialiseModelsThread has finished
 	initialiseModelsThread.join();
-	
+
 	Engine::InputManager::addAction("Accept", HS_KEY_A, HS_GAMEPAD_BUTTON_A);
 	Engine::InputManager::addAction("Decline", HS_KEY_B, HS_GAMEPAD_BUTTON_B);
 	Engine::InputManager::addAction("MoveRight", HS_KEY_RIGHT, HS_GAMEPAD_AXIS_RIGHT_X);
@@ -72,10 +72,13 @@ void FPSTest::registerComponents()
 void FPSTest::initialiseModels()
 {
 	// Here we would load all relevant glTF models and put them in the models vector
+	//tinygltf::Model sponza = Engine::loadFromFile("Game/assets/Assets/maps/pipeline/scene.gltf");
 	tinygltf::Model sponza = Engine::loadFromFile("Game/assets/Sponza/glTF/Sponza.gltf");
 	tinygltf::Model helmet = Engine::loadFromFile("Game/assets/DamagedHelmet.gltf");
 	tinygltf::Model cube = Engine::loadFromFile("Game/assets/Cube.gltf");
-	tinygltf::Model character = Engine::loadFromFile("Game/assets/Character/scene.gltf");
+	//tinygltf::Model character = Engine::loadFromFile("Game/assets/Assets/guns/pistol1/scene.gltf");
+	tinygltf::Model character = Engine::loadFromFile("Game/assets/test_anim/test.gltf");
+
 	GetModels().emplace_back(Engine::makeVulkanModel(this->GetContext(), sponza));
 	GetModels().emplace_back(Engine::makeVulkanModel(this->GetContext(), helmet));
 	GetModels().emplace_back(Engine::makeVulkanModel(this->GetContext(), cube));
@@ -84,7 +87,7 @@ void FPSTest::initialiseModels()
 	std::cout << "Models created" << std::endl;
 }
 
-void FPSTest::initialisePhysics() 
+void FPSTest::initialisePhysics()
 {
 	GetPhysicsWorld().init();
 }
@@ -103,24 +106,12 @@ void FPSTest::RenderScene()
 	GetRenderer().initialiseRenderer();
 	GetGUI().initGUI();
 	GetRenderer().attachCamera(&camera);
-	GetRenderer().initialiseModelDescriptors(GetModels());	
+	GetRenderer().initialiseModelDescriptors(GetModels());
 
 	auto previous = std::chrono::steady_clock::now();
 
 	while (!glfwWindowShouldClose(this->GetContext().getGLFWWindow())) {
 		Engine::InputManager::Update();
-		if (Engine::InputManager::Action("Accept"))
-		{
-			std::cout << "Accept" << std::endl;
-		}
-		if (Engine::InputManager::Action("Decline"))
-		{
-			std::cout << "Decline" << std::endl;
-		}
-		if (Engine::InputManager::Action("MoveRight"))
-		{
-			std::cout << "Move Right" << std::endl;
-		}
 		if (GetRenderer().checkSwapchain())
 			continue;
 
@@ -198,7 +189,7 @@ void FPSTest::loadOfflineEntities()
 	physicsComponent->init(GetPhysicsWorld(), PhysicsComponent::PhysicsType::DYNAMIC, cubeTransform, entity->GetEntityId());
 
 	// Player 1
-	entity = GetEntityManager().AddEntity<RenderComponent, CameraComponent ,NetworkComponent>();
+	entity = GetEntityManager().AddEntity<RenderComponent, CameraComponent, NetworkComponent>();
 	glm::mat4 player1Transform(1.0f);
 	player1Transform = glm::translate(player1Transform, glm::vec3(-5.0f, 1.0f, -1.0f));
 	player1Transform = glm::rotate(player1Transform, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));

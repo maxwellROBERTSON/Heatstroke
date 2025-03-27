@@ -60,7 +60,9 @@ namespace Engine
 		void makeHomeGUI(int*, int*);
 		void makeSettingsGUI(int*, int*);
 		void makeDebugGUI(int*, int*);
+		void ShowInputDebug();
 
+		bool debugInput{ false };
 	private:
 		std::map<Engine::RenderMode, std::function<void(int*, int*)>> functions;
 		Engine::Game* game;
