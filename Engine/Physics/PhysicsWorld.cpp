@@ -6,6 +6,10 @@
 #include "../vulkan/objects/Model.hpp"
 #include "../ECS/EntityManager.hpp"
 #include "../ECS/PhysicsComponent.hpp"
+#include "../Input/Keyboard.hpp"
+#include "../Input/InputCodes.hpp"
+#include "../Input/Input.hpp"
+
 physx::PxDefaultErrorCallback PhysicsWorld::gErrorCallback;
 
 void PhysicsWorld::init() {
@@ -19,6 +23,7 @@ void PhysicsWorld::init() {
 	}
 
 	// Pvd
+#if defined(_WIN32)
 	gPvd = PxCreatePvd(*gFoundation);
 	if (!gPvd)
 	{
@@ -39,7 +44,11 @@ void PhysicsWorld::init() {
 		std::cerr << "PVD not connected\n";
 	}
 
+
 	gPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *gFoundation, PxTolerancesScale(), true, gPvd);
+#else
+	gPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *gFoundation, PxTolerancesScale(), true, NULL);
+#endif
 	if (!gPhysics)
 	{
 		std::cerr << "PxCreatePhysics failed!" << std::endl;
@@ -62,6 +71,9 @@ void PhysicsWorld::init() {
 		std::cerr << "createScene failed!" << std::endl;
 		std::exit(-1);
 	}
+
+	gControllerManager = PxCreateControllerManager(*gScene);
+
 	// set parameters for the scene
 	gScene->setVisualizationParameter(PxVisualizationParameter::eSCALE, 1.0f);
 	//gScene->setVisualizationParameter(PxVisualizationParameter::eCOLLISION_SHAPES, 1.0f);
@@ -77,46 +89,77 @@ void PhysicsWorld::init() {
 
 	// testplane!
 	
-	PxRigidStatic* groundPlane = PxCreatePlane(*gPhysics, PxPlane(0, 1, 0, 0), *gMaterial);
-	gScene->addActor(*groundPlane);
+	//PxRigidStatic* groundPlane = PxCreatePlane(*gPhysics, PxPlane(0, 1, 0, 0), *gMaterial);
+	//gScene->addActor(*groundPlane);
 	
+
+}
+
+
+void PhysicsWorld::updateCharacter(PxReal deltatime)
+{
+	//if (this->controller)
+	//{
+	//	PxVec3 displacement(0.0f, -9.81f * deltatime, 0.0f);
+	//	PxControllerFilters filters;
+	//	this->controller->move(displacement, 0.01f, deltatime, filters);
+
+	//}
+	if (this->controller)
+	{
+		PxVec3 displacement(0.0f, -9.81f * deltatime, 0.0f);
+		float speed = 5.0f;
+
+		//auto& keys = Engine::Keyboard::getKeyStates();
+		auto& keyboard = Engine::InputManager::getKeyboard();
+
+		if (keyboard.isPressed(HS_KEY_W)) {
+			displacement.z -= speed * deltatime;
+		}
+		if (keyboard.isPressed(HS_KEY_S)) {
+			displacement.z += speed * deltatime;
+		}
+		if (keyboard.isPressed(HS_KEY_A)) {
+			displacement.x -= speed * deltatime;
+		}
+		if (keyboard.isPressed(HS_KEY_D)) {
+			displacement.x += speed * deltatime;
+		}
+
+		PxControllerFilters filters;
+		this->controller->move(displacement, 0.01f, deltatime, filters);
+	}
 
 }
 
 // update models matrices
 void PhysicsWorld::updateObjects(EntityManager& entityManager, std::vector<Engine::vk::Model>& models)
 {
+
 	// get all PhysicsComponent
 	std::pair<void*, int> physicsComponents = entityManager.GetComponents<PhysicsComponent>();
 	for (std::size_t i = 0; i < physicsComponents.second; i++) {
 		PhysicsComponent p = reinterpret_cast<PhysicsComponent*>(physicsComponents.first)[i];
-		// only update dynamic now!
+		//glm::mat4 matrix(1.0f);
+		// dynamic update
 		if (p.type == PhysicsComponent::PhysicsType::DYNAMIC)
 		{
 			glm::mat4 matrix = ConvertPxTransformToGlmMat4(p.dynamicBody->getGlobalPose());
 			matrix = glm::scale(matrix, p.scale);
 			entityManager.GetEntity(p.GetEntityId())->SetModelMatrix(matrix);
+			continue;
 		}
-	}
-}
 
-void PhysicsWorld::createCapsuleController()
-{
-	PxCapsuleControllerDesc desc;
-	desc.radius = 0.5f;
-	desc.height = 1.8f;
-	desc.material = gMaterial;
-	desc.contactOffset = 0.1f;
-	desc.position = PxExtendedVec3(0.0, 0.0, desc.height / 2.f + desc.contactOffset + desc.radius);
-	desc.slopeLimit = 0.0f;
-	desc.stepOffset = 0.5f;
-	desc.upDirection = PxVec3(0, 0, 1);
+		// controller update
+		if (p.type == PhysicsComponent::PhysicsType::CONTROLLER)
+		{
+			PxExtendedVec3 pos = p.controller->getFootPosition();
+			glm::vec3 glmPos = glm::vec3(pos.x, pos.y, pos.z);
+			glm::mat4 matrix = glm::translate(glm::mat4(1.0f), glmPos);
+			matrix = glm::scale(matrix, p.scale);
 
-	gCapsuleController = static_cast<PxCapsuleController*>(gControllerManager->createController(desc));
-	if (!gCapsuleController)
-	{
-		std::cerr << "createCapsuleController failed!" << std::endl;
-		std::exit(-1);
+			entityManager.GetEntity(p.GetEntityId())->SetModelMatrix(matrix);
+		}
 	}
 }
 
@@ -141,6 +184,7 @@ void PhysicsWorld::cleanupPhysX()
 	}
 
 	// disconnect PVD
+	#if defined(WIN32)
 	if (gPvd)
 	{
 		PxPvdTransport* transport = gPvd->getTransport();
@@ -152,44 +196,13 @@ void PhysicsWorld::cleanupPhysX()
 		gPvd->release();
 		gPvd = nullptr;
 	}
+	#endif
 
 	if (gFoundation)
 	{
 		gFoundation->release();
 		gFoundation = nullptr;
 	}
-}
-
-void PhysicsWorld::createStaticBox()
-{
-	PxVec3 pos = PxVec3(2.0f, 2.0f, 1.f);
-	float angle = PxPi * 0.25f; // 45 degrees
-	PxQuat rotation(angle, PxVec3(0.f, 0.f, 1.f)); // (angle, axis)
-
-	PxTransform boxTransform(pos, rotation);
-
-	PxRigidStatic* boxActor = gPhysics->createRigidStatic(boxTransform);
-	if (!boxActor)
-	{
-		std::cerr << "createRigidStatic for box failed!\n";
-		return;
-	}
-
-	PxBoxGeometry boxGeom(1.0f, 1.0f, 1.0f);
-
-	//
-	PxShape* boxShape = PxRigidActorExt::createExclusiveShape(*boxActor, boxGeom, *gMaterial);
-
-	if (!boxShape)
-	{
-		std::cerr << "createExclusiveShape for box failed!\n";
-		return;
-	}
-
-	// add actor to the scene
-	gScene->addActor(*boxActor);
-
-
 }
 
 glm::mat4 PhysicsWorld::ConvertPxTransformToGlmMat4(const PxTransform& transform) {

@@ -6,6 +6,7 @@
 #include "Error.hpp"
 #include "toString.hpp"
 #include "VulkanWindow.hpp"
+#include "vulkan/vulkan_core.h"
 
 namespace Engine {
 
@@ -53,6 +54,7 @@ namespace Engine {
 		poolInfo.maxSets = 1024;
 		poolInfo.poolSizeCount = sizeof(pools) / sizeof(pools[0]);
 		poolInfo.pPoolSizes = pools;
+		poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 
 		if (const auto res = vkCreateDescriptorPool(device, &poolInfo, nullptr, &dPool); VK_SUCCESS != res)
 			throw Utils::Error("Unable to create descriptor pool\n vkCreateDescriptorPool() returned %s", Utils::toString(res).c_str());

@@ -8,6 +8,7 @@
 #include "VulkanContext.hpp"
 #include "VulkanDevice.hpp"
 #include "Utils.hpp"
+#include "vulkan/vulkan_core.h"
 
 namespace Engine {
 
@@ -782,9 +783,6 @@ namespace Engine {
 		rasterInfo.polygonMode = VK_POLYGON_MODE_FILL;
 		rasterInfo.cullMode = VK_CULL_MODE_NONE;
 		rasterInfo.depthBiasEnable = VK_TRUE;
-		rasterInfo.depthBiasClamp = 0.0f;
-		rasterInfo.depthBiasConstantFactor = 5.0f;
-		rasterInfo.depthBiasSlopeFactor = 1.00f;
 		rasterInfo.lineWidth = 1.0f;
 
 		VkPipelineMultisampleStateCreateInfo samplingInfo{};
@@ -809,6 +807,15 @@ namespace Engine {
 		depthInfo.minDepthBounds = 0.0f;
 		depthInfo.maxDepthBounds = 1.0f;
 
+		VkDynamicState dynamicStates {
+			VK_DYNAMIC_STATE_DEPTH_BIAS
+		};
+
+		VkPipelineDynamicStateCreateInfo dynamicStateInfo{};
+		dynamicStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+		dynamicStateInfo.dynamicStateCount = 1;
+		dynamicStateInfo.pDynamicStates = &dynamicStates;
+
 		VkGraphicsPipelineCreateInfo pipeInfo{};
 		pipeInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
 		pipeInfo.stageCount = 1;
@@ -821,7 +828,7 @@ namespace Engine {
 		pipeInfo.pMultisampleState = &samplingInfo;
 		pipeInfo.pDepthStencilState = &depthInfo;
 		pipeInfo.pColorBlendState = &blendInfo;
-		pipeInfo.pDynamicState = nullptr;
+		pipeInfo.pDynamicState = &dynamicStateInfo;
 		pipeInfo.layout = aPipelineLayout;
 		pipeInfo.renderPass = aRenderPass;
 		pipeInfo.subpass = 0;
