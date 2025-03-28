@@ -106,6 +106,8 @@ project "Engine"
 
     filter "system:linux"
         includedirs { "Engine/third_party/vcpkg/packages/physx_x64-linux/include/physx" }
+        -- libdirs { "Engine/third_party/vcpkg/packages/physx_x64-linux/tools" }
+        -- links { "PhysXGpu_64" }
 
     filter "system:windows"
         includedirs { "Engine/third_party/vcpkg/packages/physx_x64-windows/include/physx" }
@@ -117,22 +119,30 @@ project "Engine"
 
     filter "*"
         
-    filter "system:not windows"
+    filter { "system:linux", "configurations:Debug" }
         libdirs { "Engine/third_party/vcpkg/packages/physx_x64-linux/debug/lib" }
         links { 
-            "PhysXExtensions_static_64",
             "PhysX_static_64",
             "PhysXPvdSDK_static_64",
             "PhysXVehicle_static_64",
-            "PhysXCharacterKinematics_static_64",
+            "PhysXCharacterKinematic_static_64",
             "PhysXCooking_static_64",
-            "PhysXCommon_static_64", 
-            "PhysXFoundation_static_64" 
+            "PhysXCommon_static_64",
+            "PhysXFoundation_static_64",
+            "PhysXExtensions_static_64"
         }
-
     filter { "system:linux", "configurations:Release" }
         libdirs { "Engine/third_party/vcpkg/packages/physx_x64-linux/lib" }
-        links(os.matchfiles("Engine/third_party/vcpkg/packages/physx_x64-linux/lib/*.lib"))
+        links {
+            "PhysX_static_64",
+            "PhysXPvdSDK_static_64",
+            "PhysXVehicle_static_64",
+            "PhysXCharacterKinematic_static_64",
+            "PhysXCooking_static_64",
+            "PhysXCommon_static_64",
+            "PhysXFoundation_static_64",
+            "PhysXExtensions_static_64"
+        }
 
     filter { "system:windows", "configurations:Debug" }
         libdirs { "Engine/third_party/vcpkg/packages/physx_x64-windows/debug/lib" }
@@ -190,6 +200,8 @@ project "Game"
 
     filter "system:linux"
         includedirs { "Engine/third_party/vcpkg/packages/physx_x64-linux/include/physx" }
+        -- libdirs { "Engine/third_party/vcpkg/packages/physx_x64-linux/tools" }
+        -- links { "PhysXGpu_64" }
 
     filter "system:windows"
         includedirs { "Engine/third_party/vcpkg/packages/physx_x64-windows/include/physx" }
@@ -199,19 +211,39 @@ project "Game"
     files(sources)
     removefiles("**.vcxproj*")
 
-    filter "system:not windows"
-        libdirs { "Engine/third_party/vcpkg/packages/physx_x64-linux/lib" }
-        links { 
-            "PhysXExtensions_static_64",
+    filter "*"
+
+    filter { "system:linux", "configurations:Debug" }
+        libdirs { "Engine/third_party/vcpkg/packages/physx_x64-linux/debug/lib" }
+        links {
             "PhysX_static_64",
             "PhysXPvdSDK_static_64",
             "PhysXVehicle_static_64",
             "PhysXCharacterKinematic_static_64",
             "PhysXCooking_static_64",
-            "PhysXCommon_static_64", 
-            "PhysXFoundation_static_64"
+            "PhysXCommon_static_64",
+            "PhysXFoundation_static_64",
+            "PhysXExtensions_static_64"
+        }
+    filter { "system:linux", "configurations:Release" }
+        libdirs { "Engine/third_party/vcpkg/packages/physx_x64-linux/lib" }
+        links {
+            "PhysX_static_64",
+            "PhysXPvdSDK_static_64",
+            "PhysXVehicle_static_64",
+            "PhysXCharacterKinematic_static_64",
+            "PhysXCooking_static_64",
+            "PhysXCommon_static_64",
+            "PhysXFoundation_static_64",
+            "PhysXExtensions_static_64"
         }
 
+    filter "*"
+
+    filter "*"
+
+    filter { "system:linux" }
+        libdirs { "Engine/third_party/vcpkg/packages/physx_x64-linux/tools/libPhysXGpu_64.so" }
 
     filter "*"
     

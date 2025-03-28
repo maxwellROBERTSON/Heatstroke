@@ -10,6 +10,10 @@
 
 #include "../vulkan/objects/Model.hpp"
 
+#ifdef OS_LINUX
+#include <cassert>
+#endif
+
 using namespace physx;
 
 class PhysicsComponent : public Component<PhysicsComponent>
@@ -173,7 +177,12 @@ public:
 					// Only static triangle meshes are supported for now.
 					// Dynamic triangle mesh geometries are possible but are more complicated
 					// and I don't believe we have a use case for them just yet.
-					assert(physicsType == PhysicsType::STATIC, "Only static triangle mesh geometries are supported currently!");
+					if (physicsType != PhysicsType::STATIC)
+					{
+						std::cerr << "Only static triangle mesh geometries are supported currently!" << std::endl;
+						assert(physicsType == PhysicsType::STATIC);
+					}
+					//assert(physicsType == PhysicsType::STATIC, "Only static triangle mesh geometries are supported currently!");
 
 					switch (physicsType) {
 					case PhysicsType::STATIC:
