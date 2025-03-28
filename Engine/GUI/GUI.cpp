@@ -280,10 +280,13 @@ namespace Engine
 		ImGui::SetCursorPos(topRightPos);
 		if (ImGui::Button("Disconnect", ImVec2(*w / 6, *h / 6)))
 		{
-			game->ResetRenderModes();
-			game->GetEntityManager().ClearManager();
-			game->GetRenderer().cleanModelMatrices();
-			game->GetNetwork().Reset();
+			if (game->GetRenderer().GetIsSceneLoaded())
+			{
+				game->ResetRenderModes();
+				game->GetEntityManager().ClearManager();
+				game->GetRenderer().cleanModelMatrices();
+				game->GetNetwork().Reset();
+			}
 		}
 
 		ImGui::End();
@@ -319,6 +322,10 @@ namespace Engine
 
 		ImGui::Text("FrontDir:");
 		ImGui::InputText("##FrontDir", (char*)fDirStr.c_str(), fDirStr.size() + 1, ImGuiInputTextFlags_ReadOnly);
+
+		ImGui::Text("Shadow depth buffer settings:");
+		ImGui::SliderFloat("Depth Bias Constant", &game->GetRenderer().depthBiasConstant, 0.0f, 10.0f);
+		ImGui::SliderFloat("Depth Bias Slope Factor", &game->GetRenderer().depthBiasSlopeFactor, 0.0f, 10.0f);
 
 		if (game->GetNetwork().isInitialized())
 		{

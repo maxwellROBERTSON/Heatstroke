@@ -2,7 +2,7 @@
 
 #include "PxPhysicsAPI.h"
 #include <iostream>
-#if defined(WIN32)
+#if defined(_WIN32)
 #include <conio.h>
 #else
 #include <termios.h>
@@ -22,14 +22,14 @@ public:
 	PxDefaultAllocator gAllocator;
 	static PxDefaultErrorCallback gErrorCallback;
 	PxMaterial* gMaterial = nullptr;
-
+	PxCapsuleController* controller = nullptr;
 	PxU32 numDynamicRigid = 0;
 
 	// CapsuleController
 	PxCapsuleController* gCapsuleController = nullptr;
 
 	// PVD
-	#if defined(WIN32y)
+	#if defined(_WIN32)
 	PxPvd* gPvd = nullptr;
 	PxPvdTransport* gTransport = nullptr;
 	#endif
@@ -39,11 +39,9 @@ public:
 
 	void init();
 
+	void updateCharacter(PxReal deltatime);
+
 	void updateObjects(EntityManager& entityManager, std::vector<Engine::vk::Model>& models);
-
-	void createCapsuleController();
-
-	void createStaticBox();
 
 	void cleanupPhysX();
 
