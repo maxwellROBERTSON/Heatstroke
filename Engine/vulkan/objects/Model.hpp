@@ -10,6 +10,9 @@
 #include "Buffer.hpp"
 
 namespace Engine {
+
+	class Renderer;
+
 namespace vk {
 
     struct SamplerInfo {
@@ -97,6 +100,8 @@ namespace vk {
 		Buffer tex0Buffer;
 		Buffer tex1Buffer;
 		Buffer vertColBuffer;
+		Buffer jointsBuffer;
+		Buffer weightsBuffer;
 		Buffer indicesBuffer;
 
 		VkDescriptorSet samplerDescriptorSet;
@@ -188,9 +193,9 @@ namespace vk {
 			const VulkanContext& aContext, 
 			VkDescriptorSetLayout aSamplerSetLayout, 
 			VkDescriptorSetLayout aMaterialInfoSetLayout);
-        void drawModel(VkCommandBuffer aCmdBuf, VkPipelineLayout aPipelineLayout, VkDescriptorSet aDescriptorSet, std::size_t dynamicUBOAlignment, int modelMatricesSet, std::uint32_t& offset, bool justGeometry = false);
-		void drawNode(Node* node, VkCommandBuffer aCmdBuf, VkPipelineLayout aPipelineLayout);
-		void drawNodeGeometry(Node* node, VkCommandBuffer aCmdBuf);
+        void drawModel(VkCommandBuffer aCmdBuf, Renderer* aRenderer, const std::string& aPipelineHandle, int modelMatricesSet, std::uint32_t& offset, bool justGeometry = false);
+		void drawNode(Node* node, VkCommandBuffer aCmdBuf, VkPipelineLayout aPipelineLayout, AlphaMode aAlphaMode);
+		void drawNodeGeometry(Node* node, VkCommandBuffer aCmdBuf, AlphaMode aAlphaMode);
 		void destroy();
 	};
 

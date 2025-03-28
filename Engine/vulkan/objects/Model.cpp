@@ -3,6 +3,7 @@
 #include "../VulkanContext.hpp"
 #include "../VulkanDevice.hpp"
 #include "../PipelineCreation.hpp"
+#include "../Renderer.hpp"
 #include "Uniforms.hpp"
 #include "VulkanUtils.hpp"
 #include "Error.hpp"
@@ -218,35 +219,74 @@ namespace vk {
         materialInfoSSBO = materialInfoDescriptors;
 	}
 
-	void Model::drawModel(VkCommandBuffer aCmdBuf, VkPipelineLayout aPipelineLayout, VkDescriptorSet aDescriptorSet, std::size_t dynamicUBOAlignment, int modelMatricesSet, std::uint32_t& offset, bool justGeometry) {
+	void Model::drawModel(VkCommandBuffer aCmdBuf, Renderer* aRenderer, const std::string& aPipelineHandle, int modelMatricesSet, std::uint32_t& offset, bool justGeometry) {
+
+        std::size_t dynamicUBOAlignment = aRenderer->getDynamicUBOAlignment();
+        VkPipelineLayout pipelineLayout = aRenderer->getPipelineLayout(aPipelineHandle).handle;
+        VkDescriptorSet modelMatricesDescriptor = aRenderer->getDescriptorSet("modelMatrices");
+        VkPipeline alphaPipeline = aRenderer->getPipeline(aPipelineHandle + "Alpha").handle;
 
         if (justGeometry) {
 
+            // Draw opaque nodes first
             for (Node* node : nodes) {
-                vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, modelMatricesSet, 1, &aDescriptorSet, 1, &offset);
+                vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, modelMatricesSet, 1, &modelMatricesDescriptor, 1, &offset);
                 offset += dynamicUBOAlignment;
-                drawNodeGeometry(node, aCmdBuf);
+                drawNodeGeometry(node, aCmdBuf, AlphaMode::ALPHA_OPAQUE);
             }
+
+            // Do we want to do alpha masking on the shadow pass?
+            // For some models it may make sense if there are large
+            // parts of a mesh that need to be alpha masked and end
+            // subsequently end up being transparent, but will still
+            // cause a shadow.
+            // Alpha masking the shadow pass would mean passing in
+            // the base colour texture and material info SSBO.
+         
+            // Draw alpha masked nodes second
+            //for (Node* node : nodes) {
+            //    vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, modelMatricesSet, 1, &modelMatricesDescriptor, 1, &offset);
+            //    offset += dynamicUBOAlignment;
+            //    drawNodeGeometry(node, aCmdBuf, AlphaMode::ALPHA_MASK);
+            //}
 
             return;
         }
 
-        vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, 2, 1, &materialInfoSSBO, 0, nullptr);
+        vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 2, 1, &materialInfoSSBO, 0, nullptr);
 
+        std::uint32_t tempOffset = offset;
+
+        // Draw opaque nodes first
 		for (Node* node : nodes) {
-            vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, modelMatricesSet, 1, &aDescriptorSet, 1, &offset);
+            vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, modelMatricesSet, 1, &modelMatricesDescriptor, 1, &offset);
             offset += dynamicUBOAlignment;
-			drawNode(node, aCmdBuf, aPipelineLayout);
+			drawNode(node, aCmdBuf, pipelineLayout, AlphaMode::ALPHA_OPAQUE);
 		}
+
+        offset = tempOffset;
+
+        vkCmdBindPipeline(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, alphaPipeline);
+
+        // Draw alpha masked nodes second
+        for (Node* node : nodes) {
+            vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, modelMatricesSet, 1, &modelMatricesDescriptor, 1, &offset);
+            offset += dynamicUBOAlignment;
+            drawNode(node, aCmdBuf, pipelineLayout, AlphaMode::ALPHA_MASK);
+        }
 
 	}
 
-	void Model::drawNode(Node* aNode, VkCommandBuffer aCmdBuf, VkPipelineLayout aPipelineLayout) {
+	void Model::drawNode(Node* aNode, VkCommandBuffer aCmdBuf, VkPipelineLayout aPipelineLayout, AlphaMode aAlphaMode) {
 		if (aNode->mesh) {
-            for (Primitive* primitive : aNode->mesh->primitives) {
+            for (std::size_t i = 0; i < aNode->mesh->primitives.size(); i++) {
+                Primitive* primitive = aNode->mesh->primitives[i];
+
+                if (primitive->material.alphaMode != aAlphaMode)
+                    continue;
 
                 vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, 1, 1, &primitive->samplerDescriptorSet, 0, nullptr);
-                vkCmdPushConstants(aCmdBuf, aPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(std::uint32_t), &primitive->material.index);
+                vkCmdPushConstants(aCmdBuf, aPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(std::uint32_t), &i);
 
                 VkBuffer vBuffers[6] = {
                     primitive->posBuffer.buffer,
@@ -268,7 +308,7 @@ namespace vk {
 		}
 	}
 
-    void Model::drawNodeGeometry(Node* aNode, VkCommandBuffer aCmdBuf) {
+    void Model::drawNodeGeometry(Node* aNode, VkCommandBuffer aCmdBuf, AlphaMode aAlphaMode) {
         if (aNode->mesh) {
             for (Primitive* primitive : aNode->mesh->primitives) {
 

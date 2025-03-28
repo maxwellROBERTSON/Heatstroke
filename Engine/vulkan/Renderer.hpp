@@ -51,6 +51,18 @@ namespace Engine {
 		void modeOn(Engine::RenderMode r);
 		void modeOff(Engine::RenderMode r);
 
+		// Getters
+		std::map<std::string, vk::PipelineLayout>& getPipelineLayouts();
+		vk::PipelineLayout& getPipelineLayout(const std::string& handle);
+
+		std::map<std::string, vk::Pipeline>& getPipelines();
+		vk::Pipeline& getPipeline(const std::string& handle);
+
+		std::map<std::string, VkDescriptorSet> getDescriptorSets();
+		VkDescriptorSet getDescriptorSet(const std::string& handle);
+
+		std::size_t getDynamicUBOAlignment();
+
 		// Debug things
 		float depthBiasConstant = 7.0f;
 		float depthBiasSlopeFactor = 10.0f;
@@ -96,7 +108,7 @@ namespace Engine {
 		void renderForward(std::vector<vk::Model>& models, bool debug);
 		void renderForwardShadows(std::vector<vk::Model>& models, bool debug);
 		void renderDeferred(std::vector<vk::Model>& models, bool debug);
-		void drawModels(VkCommandBuffer& cmdBuf, std::vector<vk::Model>& models, std::string handle, int modelMatricesSet, bool justGeometry = false);
+		void drawModels(VkCommandBuffer cmdBuf, std::vector<vk::Model>& models, std::string handle, int modelMatricesSet, bool justGeometry = false);
 
 		void recreateFormatDependents();
 		void recreateSizeDependents();

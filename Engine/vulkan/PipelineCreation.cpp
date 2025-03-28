@@ -362,7 +362,7 @@ namespace Engine {
 		return vk::PipelineLayout(aWindow.device->device, layout);
 	}
 
-	vk::Pipeline createForwardPipeline(const VulkanWindow& aWindow, VkRenderPass aRenderPass, VkPipelineLayout aPipelineLayout, bool shadows) {
+	vk::Pipeline createForwardPipeline(const VulkanWindow& aWindow, VkRenderPass aRenderPass, VkPipelineLayout aPipelineLayout, bool shadows, bool alpha) {
 		vk::ShaderModule vert = loadShaderModule(aWindow, Shaders::forwardVert);
 		vk::ShaderModule frag = loadShaderModule(aWindow, Shaders::forwardFrag);
 
@@ -481,6 +481,10 @@ namespace Engine {
 		rasterInfo.depthBiasEnable = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 		rasterInfo.lineWidth = 1.0f;
 
+		if (alpha) {
+			rasterInfo.cullMode = VK_CULL_MODE_NONE;
+		}
+
 		VkPipelineMultisampleStateCreateInfo samplingInfo{};
 		samplingInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
 		samplingInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
@@ -488,6 +492,14 @@ namespace Engine {
 		VkPipelineColorBlendAttachmentState blendStates[1]{};
 		blendStates[0].blendEnable = VK_FALSE;
 		blendStates[0].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+
+		if (alpha) {
+			blendStates[0].blendEnable = VK_TRUE;
+			blendStates[0].colorBlendOp = VK_BLEND_OP_ADD;
+			blendStates[0].srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+			blendStates[0].dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+			blendStates[0].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+		}
 
 		VkPipelineColorBlendStateCreateInfo blendInfo{};
 		blendInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;

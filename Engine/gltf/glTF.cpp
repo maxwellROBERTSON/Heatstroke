@@ -489,6 +489,8 @@ namespace Engine {
 				std::size_t tex0Size = rawData.texCoords0.size() * sizeof(glm::vec2);
 				std::size_t tex1Size = rawData.texCoords1.size() * sizeof(glm::vec2);
 				std::size_t vertColSize = rawData.vertexColours.size() * sizeof(glm::vec4);
+				std::size_t jointsSize = rawData.joints.size() * sizeof(glm::uvec4);
+				std::size_t weightsSize = rawData.weights.size() * sizeof(glm::vec4);
 				std::size_t indicesSize = rawData.indices.size() * (vkModel.indexType == VK_INDEX_TYPE_UINT32 ? sizeof(std::uint32_t) : sizeof(std::uint32_t));
 
 				// GPU sided buffers
@@ -541,6 +543,24 @@ namespace Engine {
 					"vertColGPU",
 					*aContext.allocator,
 					vertColSize,
+					VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+					0,
+					VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
+				);
+
+				vk::Buffer jointsGPUBuf = vk::createBuffer(
+					"jointsGPU",
+					*aContext.allocator,
+					jointsSize,
+					VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+					0,
+					VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
+				);
+
+				vk::Buffer weightsGPUBuf = vk::createBuffer(
+					"weightsGPU",
+					*aContext.allocator,
+					weightsSize,
 					VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 					0,
 					VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
@@ -604,6 +624,22 @@ namespace Engine {
 					VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT
 				);
 
+				vk::Buffer jointsStaging = vk::createBuffer(
+					"jointsStaging",
+					*aContext.allocator,
+					jointsSize,
+					VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+					VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT
+				);
+
+				vk::Buffer weightsStaging = vk::createBuffer(
+					"weightsStaging",
+					*aContext.allocator,
+					weightsSize,
+					VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+					VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT
+				);
+
 				vk::Buffer indicesStaging = vk::createBuffer(
 					"indicesStaging",
 					*aContext.allocator,
@@ -654,6 +690,20 @@ namespace Engine {
 
 				std::memcpy(vertColPtr, rawData.vertexColours.data(), vertColSize);
 				vmaUnmapMemory(aContext.allocator->allocator, vertColStaging.allocation);
+
+				void* jointsPtr = nullptr;
+				if (const auto res = vmaMapMemory(aContext.allocator->allocator, jointsStaging.allocation, &jointsPtr); VK_SUCCESS != res)
+					throw Utils::Error("Mapping memory for writing\n vmaMapMemory() returned %s", Utils::toString(res).c_str());
+
+				std::memcpy(jointsPtr, rawData.joints.data(), jointsSize);
+				vmaUnmapMemory(aContext.allocator->allocator, jointsStaging.allocation);
+
+				void* weightsPtr = nullptr;
+				if (const auto res = vmaMapMemory(aContext.allocator->allocator, weightsStaging.allocation, &weightsPtr); VK_SUCCESS != res)
+					throw Utils::Error("Mapping memory for writing\n vmaMapMemory() returned %s", Utils::toString(res).c_str());
+
+				std::memcpy(weightsPtr, rawData.weights.data(), weightsSize);
+				vmaUnmapMemory(aContext.allocator->allocator, weightsStaging.allocation);
 
 				void* indicesPtr = nullptr;
 				if (const auto res = vmaMapMemory(aContext.allocator->allocator, indicesStaging.allocation, &indicesPtr); VK_SUCCESS != res)
@@ -752,6 +802,34 @@ namespace Engine {
 					VK_PIPELINE_STAGE_VERTEX_INPUT_BIT
 				);
 
+				VkBufferCopy jointsCopy{};
+				jointsCopy.size = jointsSize;
+
+				vkCmdCopyBuffer(uploadCmdBuf, jointsStaging.buffer, jointsGPUBuf.buffer, 1, &jointsCopy);
+
+				Utils::bufferBarrier(
+					uploadCmdBuf,
+					jointsGPUBuf.buffer,
+					VK_ACCESS_TRANSFER_WRITE_BIT,
+					VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,
+					VK_PIPELINE_STAGE_TRANSFER_BIT,
+					VK_PIPELINE_STAGE_VERTEX_INPUT_BIT
+				);
+
+				VkBufferCopy weightsCopy{};
+				weightsCopy.size = weightsSize;
+
+				vkCmdCopyBuffer(uploadCmdBuf, weightsStaging.buffer, weightsGPUBuf.buffer, 1, &weightsCopy);
+
+				Utils::bufferBarrier(
+					uploadCmdBuf,
+					weightsGPUBuf.buffer,
+					VK_ACCESS_TRANSFER_WRITE_BIT,
+					VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,
+					VK_PIPELINE_STAGE_TRANSFER_BIT,
+					VK_PIPELINE_STAGE_VERTEX_INPUT_BIT
+				);
+
 				VkBufferCopy indicesCopy{};
 				indicesCopy.size = indicesSize;
 
@@ -774,6 +852,8 @@ namespace Engine {
 				primitive->tex0Buffer = std::move(tex0GPUBuf);
 				primitive->tex1Buffer = std::move(tex1GPUBuf);
 				primitive->vertColBuffer = std::move(vertColGPUBuf);
+				primitive->jointsBuffer = std::move(jointsGPUBuf);
+				primitive->weightsBuffer = std::move(weightsGPUBuf);
 				primitive->indicesBuffer = std::move(indicesGPUBuf);
 
 			}

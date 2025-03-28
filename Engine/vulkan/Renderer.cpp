@@ -105,8 +105,10 @@ namespace Engine {
 			this->pipelineLayouts["forward"].handle,
 			this->pipelineLayouts["deferred"].handle);
 
-		this->pipelines.emplace("forward", createForwardPipeline(*this->context->window, this->renderPasses["forward"].handle, this->pipelineLayouts["forward"].handle, false));
-		this->pipelines.emplace("forwardShadow", createForwardPipeline(*this->context->window, this->renderPasses["forward"].handle, this->pipelineLayouts["forwardShadow"].handle, true));
+		this->pipelines.emplace("forward", createForwardPipeline(*this->context->window, this->renderPasses["forward"].handle, this->pipelineLayouts["forward"].handle, false, false));
+		this->pipelines.emplace("forwardAlpha", createForwardPipeline(*this->context->window, this->renderPasses["forward"].handle, this->pipelineLayouts["forward"].handle, false, true));
+		this->pipelines.emplace("forwardShadow", createForwardPipeline(*this->context->window, this->renderPasses["forward"].handle, this->pipelineLayouts["forwardShadow"].handle, true, false));
+		this->pipelines.emplace("forwardShadowAlpha", createForwardPipeline(*this->context->window, this->renderPasses["forward"].handle, this->pipelineLayouts["forwardShadow"].handle, true, true));
 		this->pipelines.emplace("gBufWrite", std::move(std::get<0>(deferredPipelines)));
 		this->pipelines.emplace("deferred", std::move(std::get<1>(deferredPipelines)));
 		this->pipelines.emplace("shadow", createShadowOffscreenPipeline(*this->context->window, this->renderPasses["shadow"].handle, this->pipelineLayouts["shadow"].handle));
@@ -786,8 +788,10 @@ namespace Engine {
 			this->pipelineLayouts["forward"].handle,
 			this->pipelineLayouts["deferred"].handle);
 
-		this->pipelines["forward"] = createForwardPipeline(*this->context->window, this->renderPasses["forward"].handle, this->pipelineLayouts["forward"].handle, false);
-		this->pipelines["forwardShadow"] = createForwardPipeline(*this->context->window, this->renderPasses["forward"].handle, this->pipelineLayouts["forwardShadow"].handle, true);
+		this->pipelines["forward"] = createForwardPipeline(*this->context->window, this->renderPasses["forward"].handle, this->pipelineLayouts["forward"].handle, false, false);
+		this->pipelines["forwardAlpha"] = createForwardPipeline(*this->context->window, this->renderPasses["forward"].handle, this->pipelineLayouts["forward"].handle, false, true);
+		this->pipelines["forwardShadow"] = createForwardPipeline(*this->context->window, this->renderPasses["forward"].handle, this->pipelineLayouts["forwardShadow"].handle, true, false);
+		this->pipelines["forwardShadowAlpha"] = createForwardPipeline(*this->context->window, this->renderPasses["forward"].handle, this->pipelineLayouts["forwardShadow"].handle, true, true);
 		this->pipelines["gBufWrite"] = std::move(std::get<0>(deferredPipelines));
 		this->pipelines["deferred"] = std::move(std::get<1>(deferredPipelines));
 		this->pipelines["shadow"] = createShadowOffscreenPipeline(*this->context->window, this->renderPasses["shadow"].handle, this->pipelineLayouts["shadow"].handle);
@@ -831,13 +835,42 @@ namespace Engine {
 			this->depthSampler.handle);
 	}
 
-	void Renderer::drawModels(VkCommandBuffer& cmdBuf, std::vector<vk::Model>& models, std::string handle, int modelMatricesSet, bool justGeometry) {
+	void Renderer::drawModels(VkCommandBuffer cmdBuf, std::vector<vk::Model>& models, std::string handle, int modelMatricesSet, bool justGeometry) {
 		std::uint32_t offset = 0;
 
 		std::pair<void*, int> renderComponents = entityManager->GetComponents<RenderComponent>();
 		for (std::size_t i = 0; i < renderComponents.second; i++) {
 			int j = reinterpret_cast<RenderComponent*>(renderComponents.first)[i].GetModelIndex();
-			models[j].drawModel(cmdBuf, this->pipelineLayouts[handle].handle, this->descriptorSets["modelMatrices"], this->dynamicUBOAlignment, modelMatricesSet, offset, justGeometry);
+			//models[j].drawModel(cmdBuf, this->pipelineLayouts[handle].handle, this->descriptorSets["modelMatrices"], this->dynamicUBOAlignment, modelMatricesSet, offset, justGeometry);
+			models[j].drawModel(cmdBuf, this, handle, modelMatricesSet, offset, justGeometry);
 		}
+	}
+
+	std::map<std::string, vk::PipelineLayout>& Renderer::getPipelineLayouts() {
+		return this->pipelineLayouts;
+	}
+
+	vk::PipelineLayout& Renderer::getPipelineLayout(const std::string& handle) {
+		return this->pipelineLayouts[handle];
+	}
+
+	std::map<std::string, vk::Pipeline>& Renderer::getPipelines() {
+		return this->pipelines;
+	}
+
+	vk::Pipeline& Renderer::getPipeline(const std::string& handle) {
+		return this->pipelines[handle];
+	}
+
+	std::map<std::string, VkDescriptorSet> Renderer::getDescriptorSets() {
+		return this->descriptorSets;
+	}
+
+	VkDescriptorSet Renderer::getDescriptorSet(const std::string& handle) {
+		return this->descriptorSets[handle];
+	}
+
+	std::size_t Renderer::getDynamicUBOAlignment() {
+		return this->dynamicUBOAlignment;
 	}
 }

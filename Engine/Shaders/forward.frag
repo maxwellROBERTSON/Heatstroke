@@ -127,13 +127,6 @@ vec3 getNormal() {
 void main() {
     MaterialInfo matInfo = materialInfo[pushConstants.materialIndex];
 
-    vec3 lightCol = vec3(1.0f);
-    vec3 lightPos = vec3(0.75f, 20.0f, -0.4f);
-
-    vec3 lightDir = normalize(lightPos - v2fPosition);
-    vec3 viewDir = normalize(sceneUbo.position.xyz - v2fPosition);
-    vec3 normal = getNormal();
-
     vec4 albedo;
     if (matInfo.baseColorTexSet > -1) {
         albedo = SRGBtoLINEAR(texture(baseColourMap, matInfo.baseColorTexSet == 0 ? v2fTexCoord0 : v2fTexCoord1)) * matInfo.baseColourFactor;
@@ -142,6 +135,20 @@ void main() {
     }
 
     albedo *= v2fVertexColour;
+
+    if (matInfo.alphaMode == 1) {
+        if (albedo.a < matInfo.alphaCutoff) {
+            discard;
+        }
+    }
+
+    // TODO: Pass these in via a uniform rather than being hardcoded
+    vec3 lightCol = vec3(1.0f);
+    vec3 lightPos = vec3(0.75f, 20.0f, -0.4f);
+
+    vec3 lightDir = normalize(lightPos - v2fPosition);
+    vec3 viewDir = normalize(sceneUbo.position.xyz - v2fPosition);
+    vec3 normal = getNormal();
 
     float metallicFactor = matInfo.metallicFactor;
     float roughnessFactor = matInfo.roughnessFactor;
