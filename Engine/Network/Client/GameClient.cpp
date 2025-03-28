@@ -102,19 +102,19 @@ namespace Engine
 
 	void GameClient::UpdateStatus()
 	{
-		if (client->IsConnecting() && status != Status::ClientConnecting)
-			status = Status::ClientConnecting;
-		else if (client->IsConnected() && status != Status::ClientConnected)
+		if (client->IsConnecting() && status != Status::CLIENT_CONNECTING)
+			status = Status::CLIENT_CONNECTING;
+		else if (client->IsConnected() && status != Status::CLIENT_CONNECTED)
 		{
-			status = Status::ClientConnected;
-			yojimbo::Message *message = adapter->factory->CreateMessage(REQUEST_MESSAGE);
-			message->type = RequestEntityData;
+			status = Status::CLIENT_CONNECTED;
+			RequestMessage *message = (RequestMessage*)adapter->factory->CreateMessage(REQUEST_MESSAGE);
+			message->requestType = RequestType::ENTITY_DATA;
 			client->SendClientMessage(yojimbo::CHANNEL_TYPE_RELIABLE_ORDERED, message);
 		}
-		else if (client->IsDisconnected() && status != Status::ClientDisconnected)
-			status = Status::ClientDisconnected;
-		else if (client->ConnectionFailed() && status != Status::ClientConnectionFailed)
-			status = Status::ClientConnectionFailed;
+		else if (client->IsDisconnected() && status != Status::CLIENT_DISCONNECTED)
+			status = Status::CLIENT_DISCONNECTED;
+		else if (client->ConnectionFailed() && status != Status::CLIENT_CONNECTION_FAILED)
+			status = Status::CLIENT_CONNECTION_FAILED;
 	}
 
 	std::map<std::string, std::string> GameClient::GetInfo()

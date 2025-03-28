@@ -62,15 +62,16 @@ namespace Engine
 					GameMessage* message = (GameMessage*)server->ReceiveMessage(i, j);
 					while (message != NULL)
 					{
-						if (message->GetType() == REQUEST_MESSAGE)
-						{
-							RequestMessage* derived = dynamic_cast<RequestMessage*>(message);
-							HandleRequestMessage(i, static_cast<RequestType>(derived->sequence));
-						}
-						else
-						{
-							ProcessMessage(i, message);
-						}
+						ProcessMessage(i, message);
+						// if (message->GetType() == REQUEST_MESSAGE)
+						// {
+						// 	RequestMessage* derived = dynamic_cast<RequestMessage*>(message);
+						// 	HandleRequestMessage(i, static_cast<RequestType>(derived->sequence));
+						// }
+						// else
+						// {
+						// 	ProcessMessage(i, message);
+						// }
 						server->ReleaseMessage(i, message);
 						message = (GameMessage*)server->ReceiveMessage(i, j);
 					}
@@ -83,18 +84,23 @@ namespace Engine
 		}
 	}
 
-	void GameServer::HandleRequestMessage(int clientIndex, RequestType type)
+	void GameServer::ProcessMessage(int clientIndex, GameMessage* message)
 	{
-		yojimbo::Message* message = server->CreateMessage(clientIndex, REQUEST_RESPONSE_MESSAGE);
+		if (message->GetType() == REQUEST_MESSAGE)
+		{
+			RequestMessage* derived = (RequestMessage*)message;
+			HandleRequestMessage(clientIndex, derived->requestType);
+		}
+		std::cout << "MESSAGE FROM CLIENT " << clientIndex << " " << message->sequence << " MESSAGEID = " << message->GetId() << std::endl;
+	}
+
+	void GameServer::HandleRequestMessage(int clientIndex, RequestType requestType)
+	{
+		RequestResponseMessage* message = (RequestResponseMessage*)server->CreateMessage(clientIndex, REQUEST_RESPONSE_MESSAGE);
+		message->requestType = RequestType::ENTITY_DATA;
 		server->SendServerMessage(clientIndex, yojimbo::CHANNEL_TYPE_RELIABLE_ORDERED, message);
 		//adapter->factory->ReleaseMessage(message);
 		//server->ReleaseMessage(clientIndex, message);
-	}
-
-	void GameServer::ProcessMessage(int clientIndex, GameMessage* message)
-	{
-		//std::cout << "Processing message from client " << clientIndex << " with messageID " << message->GetId() << std::endl;
-		std::cout << "MESSAGE FROM CLIENT " << clientIndex << " " << message->sequence << " MESSAGEID = " << message->GetId() << std::endl;
 	}
 
 	void GameServer::CleanUp()

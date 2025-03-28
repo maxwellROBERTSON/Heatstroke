@@ -26,8 +26,8 @@ namespace Engine
 		void Start();
 		void Update();
 		void ProcessMessages();
-		void HandleRequestMessage(int, RequestType);
 		void ProcessMessage(int, GameMessage*);
+		void HandleRequestMessage(int, RequestType);
 		void CleanUp();
 
 		void UpdateStatus();

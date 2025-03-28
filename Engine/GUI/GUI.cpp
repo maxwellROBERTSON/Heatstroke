@@ -386,14 +386,14 @@ namespace Engine
 		ImGui::Begin("Loading Menu", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 
 		Status s = game->GetNetwork().GetStatus();
-		if (s == Status::ClientLoaded)
+		if (s == Status::CLIENT_CONNECTED)
 		{
 			//game->loadOnlineEntities();
 			game->GetRenderer().initialiseModelMatrices();
 			game->ToggleRenderMode(GUILOADING);
 			game->ToggleRenderMode(FORWARD);
 		}
-		else if (s == Status::ClientDisconnected || s == Status::ClientConnectionFailed)
+		else if (s == Status::CLIENT_DISCONNECTED || s == Status::CLIENT_CONNECTION_FAILED)
 		{
 			ImGui::Text("Loading Failed.");
 			ImGui::Text(game->GetNetwork().GetStatusString().c_str());

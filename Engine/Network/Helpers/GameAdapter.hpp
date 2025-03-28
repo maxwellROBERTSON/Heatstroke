@@ -43,22 +43,22 @@ namespace Engine
         YOJIMBO_VIRTUAL_SERIALIZE_FUNCTIONS()
     };
 
-    enum class RequestType : uint16_t
+    enum class RequestType : uint8_t
     {
-        RequestEntityData = 0,
-        RequestPlayerStats = 1,
-        RequestGameState = 2,
-        RequestChatMessages = 3
+        NO_DATA = 0,
+        ENTITY_DATA = 1,
+        PLAYER_STATS = 2,
+        GAME_TATE = 3,
+        CHAT_MESSAGES = 4
         // Add more request types as needed
     };
 
     class RequestMessage : public GameMessage
     {
     public:
-        RequestMessage() {}
-        inline void SetRequestType(RequestType t) { requestType = static_cast<uint16_t>(t); }
+        RequestMessage() : requestType(RequestType::NO_DATA){}
 
-        uint16_t requestType;
+        RequestType requestType;
     };
 
     class GameBlockMessage : public yojimbo::BlockMessage
@@ -79,10 +79,10 @@ namespace Engine
     class RequestResponseMessage : public GameBlockMessage
     {
     public:
-        RequestResponseMessage() {}
-        inline void SetRequestType(RequestType t) { requestType = static_cast<uint16_t>(t); }
+        RequestResponseMessage() : requestType(RequestType::NO_DATA){}
+        //inline void SetRequestType(RequestType t) { requestType = static_cast<uint16_t>(t); }
 
-        uint16_t requestType;
+        RequestType requestType;
     };
 
     enum GameMessageType
