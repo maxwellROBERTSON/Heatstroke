@@ -45,21 +45,36 @@ namespace Engine
 
     enum class RequestType : uint8_t
     {
-        EntityData = 0,
-        PlayerStats = 1,
-        GameState = 2,
-        ChatMessages = 3,
-        Count
+        NO_DATA = 0,
+        ENTITY_DATA = 1,
+        PLAYER_STATS = 2,
+        GAME_TATE = 3,
+        CHAT_MESSAGES = 4
         // Add more request types as needed
     };
 
-    class RequestMessage : public GameMessage
+    class RequestMessage : public yojimbo::Message
     {
     public:
-        RequestMessage() {}
-        inline void SetRequestType(RequestType t) { requestType = static_cast<uint8_t>(t); }
+        RequestMessage() : requestType(RequestType::NO_DATA){}
 
-        uint8_t requestType = 0;
+        template <typename Stream> bool Serialize(Stream& stream)
+        {
+            uint8_t requestTypeValue = static_cast<uint8_t>(requestType);
+
+            serialize_bits(stream, requestTypeValue, 8);
+
+            if (Stream::IsReading)
+            {
+                requestType = static_cast<RequestType>(requestTypeValue);
+            }
+
+            return true;
+        }
+
+        YOJIMBO_VIRTUAL_SERIALIZE_FUNCTIONS()
+
+        RequestType requestType;
     };
 
     class GameBlockMessage : public yojimbo::BlockMessage
@@ -77,13 +92,48 @@ namespace Engine
         YOJIMBO_VIRTUAL_SERIALIZE_FUNCTIONS()
     };
 
-    class RequestResponseMessage : public GameBlockMessage
+    // For each entity:
+    // Component vector of int = registry.GetNumComponents * sizeof(int)
+    // Matrix = 16 * sizeof(float)
+    // If rendercomp:
+    //  Model index = sizeof(int0
+    // If camera:
+    // fov + near + far + vec3(pos) + vec3(front_dir) = 9 * float
+    // If network:
+    // clientid = int
+
+    class RequestResponseMessage : public yojimbo::BlockMessage
     {
     public:
-        RequestResponseMessage() {}
-        inline void SetRequestType(RequestType t) { requestType = static_cast<uint8_t>(t); }
+        RequestResponseMessage() : requestType(RequestType::NO_DATA), data(0){}
+        
+        template <typename Stream> bool Serialize(Stream& stream)
+        {
+            uint8_t requestTypeValue = static_cast<uint8_t>(requestType);
 
-        uint8_t requestType = 0;
+            serialize_bits(stream, requestTypeValue, 8);
+
+            if (Stream::IsReading)
+            {
+                requestType = static_cast<RequestType>(requestTypeValue);
+            }
+
+            serialize_bits(stream, data, 16);
+
+            int numBits = GetNumBitsForMessage(data);
+            int numWords = numBits / 32;
+            uint32_t dummy = 0;
+            for (int i = 0; i < numWords; ++i)
+                serialize_bits(stream, dummy, 32);
+            int numRemainderBits = numBits - numWords * 32;
+            if (numRemainderBits > 0)
+                serialize_bits(stream, dummy, numRemainderBits);
+
+            return true;
+        }
+
+        RequestType requestType;
+        uint16_t data;
     };
 
     enum GameMessageType

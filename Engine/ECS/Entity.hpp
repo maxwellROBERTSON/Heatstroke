@@ -4,6 +4,7 @@
 #include <vector>
 #include <unordered_map>
 #include <glm/gtc/matrix_transform.hpp>
+#include <cstdint>
 
 #include "Component.hpp"
 #include "../gltf/glTF.hpp"
@@ -21,9 +22,11 @@ public:
 	glm::mat4 GetModelMatrix() { return modelMatrix; }
 	int GetComponent(int id) { return componentListId[id]; }
 	std::vector<int> GetComponentIndexArray() { return componentListId; }
+	void GetData(uint8_t* block);
 
 	// Setters
 	void SetModelMatrix(glm::mat4 aModelMatrix) { modelMatrix = aModelMatrix; }
+	void SetData(uint8_t* block);
 
 private:
 	EntityManager* entityManager;

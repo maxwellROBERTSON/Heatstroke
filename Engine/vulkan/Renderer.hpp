@@ -49,6 +49,10 @@ namespace Engine {
 
 		vk::Buffer createDynamicUniformBuffer();
 
+		// Debug things
+		float depthBiasConstant = 7.0f;
+		float depthBiasSlopeFactor = 10.0f;
+
 	private:
 		VulkanContext* context;
 		EntityManager* entityManager;
@@ -88,7 +92,7 @@ namespace Engine {
 		void renderForward(std::vector<vk::Model>& models, bool debug);
 		void renderForwardShadows(std::vector<vk::Model>& models, bool debug);
 		void renderDeferred(std::vector<vk::Model>& models, bool debug);
-		void drawModels(VkCommandBuffer& cmdBuf, std::vector<vk::Model>& models, std::string handle);
+		void drawModels(VkCommandBuffer& cmdBuf, std::vector<vk::Model>& models, std::string handle, int modelMatricesSet, bool justGeometry = false);
 
 		void recreateFormatDependents();
 		void recreateSizeDependents();

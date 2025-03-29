@@ -47,6 +47,11 @@ public:
         return static_cast<int>(typeToId.size());
     }
 
+   /* std::vector<std::type_index> GetComponentTypes()
+    {
+
+    }*/
+
 	// Setters
 	template <typename ... Types>
 	void RegisterComponentTypes()

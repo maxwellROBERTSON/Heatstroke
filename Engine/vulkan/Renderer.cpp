@@ -8,6 +8,7 @@
 #include "../ECS/RenderComponent.hpp"
 
 #include "Utils.hpp"
+#include "vulkan/vulkan_core.h"
 
 #include <imgui.h>
 #include <backends/imgui_impl_glfw.h>
@@ -374,7 +375,7 @@ namespace Engine {
 
 	void Renderer::render(std::vector<vk::Model>& models) {
 		unsigned int modes = (*game->GetRenderModes());
-		if ((modes & (1 << GUIHOME)) || (modes & (1 << GUISETTINGS)) || ((((modes & (1 << GUILOADING)) || (modes & (1 << GUISERVER))) && (modes & (1 << GUIDEBUG)))))
+		if ((modes & (1 << GUIHOME)) || (modes & (1 << GUISETTINGS)) || (modes & (1 << GUILOADING)) || ((modes & (1 << GUISERVER)) && (modes & (1 << GUIDEBUG))))
 		{
 			this->renderGUI();
 		}
@@ -384,7 +385,7 @@ namespace Engine {
 		}
 		else if ((modes & (1 << DEFERRED)))
 		{
-			this->renderDeferred(models, ((*game->GetRenderModes()) & (1 << GUIDEBUG)));
+			this->renderDeferred(models, (modes & (1 << GUIDEBUG)));
 		}
 	}
 
@@ -399,6 +400,10 @@ namespace Engine {
 
 	void Renderer::finishRendering() {
 		vkDeviceWaitIdle(this->context->window->device->device);
+
+		ImGui_ImplVulkan_Shutdown();
+		ImGui_ImplGlfw_Shutdown();
+		ImGui::DestroyContext();
 
 		if (this->uniformBuffers["modelMatrices"].allocation != VK_NULL_HANDLE)
 			vmaUnmapMemory(this->context->allocator->allocator, this->uniformBuffers["modelMatrices"].allocation);
@@ -508,17 +513,9 @@ namespace Engine {
 
 			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["shadow"].handle, 0, 1, &this->descriptorSets["shadow"], 0, nullptr);
 
-			std::pair<void*, int> renderComponentsS = entityManager->GetComponents<RenderComponent>();
-			for (std::size_t i = 0; i < renderComponentsS.second; i++) {
-				RenderComponent r = reinterpret_cast<RenderComponent*>(renderComponentsS.first)[i];
-			}
-			for (std::size_t i = 0; i < renderComponentsS.second; i++) {
-				std::uint32_t offset = i * this->dynamicUBOAlignment;
-				vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["shadow"].handle, 1, 1, &this->descriptorSets["modelMatrices"], 1, &offset);
-				int j = reinterpret_cast<RenderComponent*>(renderComponentsS.first)[i].GetModelIndex();
-				models[j].drawModel(cmdBuf, this->pipelineLayouts["shadow"].handle, true);
-			}
-			//drawModels(cmdBuf, models, "shadow");
+			vkCmdSetDepthBias(cmdBuf, this->depthBiasConstant, 0.0f, this->depthBiasSlopeFactor);
+
+			drawModels(cmdBuf, models, "shadow", 1, true);
 
 			vkCmdEndRenderPass(cmdBuf);
 		}
@@ -558,7 +555,7 @@ namespace Engine {
 			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["forward"].handle, 0, 1, &this->descriptorSets["scene"], 0, nullptr);
 		}
 
-		drawModels(cmdBuf, models, "forward");
+		drawModels(cmdBuf, models, "forward", 3);
 
 		if (debug)
 			ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmdBuf);
@@ -655,7 +652,7 @@ namespace Engine {
 
 		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["forward"].handle, 0, 1, &this->descriptorSets["scene"], 0, nullptr);
 
-		drawModels(cmdBuf, models, "forward"); // The gBufWrite stage uses same pipelineLayout as forward
+		drawModels(cmdBuf, models, "forward", 3); // The gBufWrite stage uses same pipelineLayout as forward
 
 		vkCmdNextSubpass(cmdBuf, VK_SUBPASS_CONTENTS_INLINE);
 
@@ -757,14 +754,14 @@ namespace Engine {
 			this->depthSampler.handle);
 	}
 
-	void Renderer::drawModels(VkCommandBuffer& cmdBuf, std::vector<vk::Model>& models, std::string handle)
+	void Renderer::drawModels(VkCommandBuffer& cmdBuf, std::vector<vk::Model>& models, std::string handle, int modelMatricesSet, bool justGeometry)
 	{
 		std::pair<void*, int> renderComponents = entityManager->GetComponents<RenderComponent>();
 		for (std::size_t i = 0; i < renderComponents.second; i++) {
 			std::uint32_t offset = i * this->dynamicUBOAlignment;
-			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts[handle].handle, 3, 1, &this->descriptorSets["modelMatrices"], 1, &offset);
+			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts[handle].handle, modelMatricesSet, 1, &this->descriptorSets["modelMatrices"], 1, &offset);
 			int j = reinterpret_cast<RenderComponent*>(renderComponents.first)[i].GetModelIndex();
-			models[j].drawModel(cmdBuf, this->pipelineLayouts[handle].handle);
+			models[j].drawModel(cmdBuf, this->pipelineLayouts[handle].handle, justGeometry);
 		}
 	}
 }

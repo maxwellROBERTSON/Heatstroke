@@ -6,11 +6,11 @@ namespace Engine
 {
     enum class Status : int
     {
-        ClientConnecting = 0,
-        ClientConnected = 1,
-        ClientDisconnected = 2,
-        ClientConnectionFailed = 3,
-        ClientLoaded = 4
+        CLIENT_CONNECTING = 0,
+        CLIENT_CONNECTED = 1,
+        CLIENT_DISCONNECTED = 2,
+        CLIENT_CONNECTION_FAILED = 3,
+        CLIENT_LOADED = 4
     };
 
 	static const uint8_t DEFAULT_PRIVATE_KEY[yojimbo::KeyBytes] = { 0 };
@@ -29,15 +29,15 @@ namespace Engine
         {
             switch (status)
             {
-            case Status::ClientConnecting:
+            case Status::CLIENT_CONNECTING:
                 return "Connecting.";
-            case Status::ClientConnected:
+            case Status::CLIENT_CONNECTED:
                 return "Connected.";
-            case Status::ClientDisconnected:
+            case Status::CLIENT_DISCONNECTED:
                 return "Disconnected.";
-            case Status::ClientConnectionFailed:
+            case Status::CLIENT_CONNECTION_FAILED:
                 return "Connection Failed.";
-            case Status::ClientLoaded:
+            case Status::CLIENT_LOADED:
                 return "Loaded Scene.";
             default:
                 return "Unknown";
