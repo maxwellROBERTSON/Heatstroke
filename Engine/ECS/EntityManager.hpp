@@ -59,6 +59,7 @@ public:
 		int typeIndex = registry->GetComponentID<T>();
 		return entitiesWithType[typeIndex];
 	}
+	void GetData(uint8_t* block);
 
 	// Setters
 	void SetComponentTypesPointers(std::vector<std::pair<void*, int>>);
@@ -84,23 +85,24 @@ public:
 
 		return &entities[entities.size() - 1];
 	}
-	void ClearManager()
-	{
-		entities.clear();
-		for (int i = 0; i < entitiesWithType.size(); i++)
-		{
-			entitiesWithType[i] = std::vector<int>();
-			delete[] componentList[i].first;
-			componentList[i].first = nullptr;
-			componentList[i].second = 0;
-		}
-	}
+	void ClearManager();
 
 private:
 	ComponentTypeRegistry* registry;
 	std::vector<Entity> entities;
 	std::vector<std::vector<int>> entitiesWithType;
 	std::vector<std::pair<void*, int>> componentList;
+
+	// For each entity:
+	// Component vector of int = registry.GetNumComponents * sizeof(int)
+	// Matrix = 16 * sizeof(float)
+	// If rendercomp:
+	//  Model index = sizeof(int)
+	// If camera:
+	// fov + near + far + vec3(pos) + vec3(front_dir) = 9 * float
+	// If network:
+	// clientid = int
+	int sizeofEntities = entities.size() * (25 * sizeof(float) + sizeof(int) + 
 
 	int localPlayerEntityId = -1;
 

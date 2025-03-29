@@ -53,10 +53,26 @@ namespace Engine
         // Add more request types as needed
     };
 
-    class RequestMessage : public GameMessage
+    class RequestMessage : public yojimbo::Message
     {
     public:
         RequestMessage() : requestType(RequestType::NO_DATA){}
+
+        template <typename Stream> bool Serialize(Stream& stream)
+        {
+            uint8_t requestTypeValue = static_cast<uint8_t>(requestType);
+
+            serialize_bits(stream, requestTypeValue, 8);
+
+            if (Stream::IsReading)
+            {
+                requestType = static_cast<RequestType>(requestTypeValue);
+            }
+
+            return true;
+        }
+
+        YOJIMBO_VIRTUAL_SERIALIZE_FUNCTIONS()
 
         RequestType requestType;
     };
@@ -76,13 +92,48 @@ namespace Engine
         YOJIMBO_VIRTUAL_SERIALIZE_FUNCTIONS()
     };
 
-    class RequestResponseMessage : public GameBlockMessage
+    // For each entity:
+    // Component vector of int = registry.GetNumComponents * sizeof(int)
+    // Matrix = 16 * sizeof(float)
+    // If rendercomp:
+    //  Model index = sizeof(int0
+    // If camera:
+    // fov + near + far + vec3(pos) + vec3(front_dir) = 9 * float
+    // If network:
+    // clientid = int
+
+    class RequestResponseMessage : public yojimbo::BlockMessage
     {
     public:
-        RequestResponseMessage() : requestType(RequestType::NO_DATA){}
-        //inline void SetRequestType(RequestType t) { requestType = static_cast<uint16_t>(t); }
+        RequestResponseMessage() : requestType(RequestType::NO_DATA), data(0){}
+        
+        template <typename Stream> bool Serialize(Stream& stream)
+        {
+            uint8_t requestTypeValue = static_cast<uint8_t>(requestType);
+
+            serialize_bits(stream, requestTypeValue, 8);
+
+            if (Stream::IsReading)
+            {
+                requestType = static_cast<RequestType>(requestTypeValue);
+            }
+
+            serialize_bits(stream, data, 16);
+
+            int numBits = GetNumBitsForMessage(data);
+            int numWords = numBits / 32;
+            uint32_t dummy = 0;
+            for (int i = 0; i < numWords; ++i)
+                serialize_bits(stream, dummy, 32);
+            int numRemainderBits = numBits - numWords * 32;
+            if (numRemainderBits > 0)
+                serialize_bits(stream, dummy, numRemainderBits);
+
+            return true;
+        }
 
         RequestType requestType;
+        uint16_t data;
     };
 
     enum GameMessageType
