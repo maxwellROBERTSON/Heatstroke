@@ -107,8 +107,8 @@ namespace Engine
 		else if (client->IsConnected() && status != Status::ClientConnected)
 		{
 			status = Status::ClientConnected;
-			yojimbo::Message *message = adapter->factory->CreateMessage(REQUEST_MESSAGE);
-			message->type = RequestEntityData;
+			RequestMessage *message = (RequestMessage*)adapter->factory->CreateMessage(REQUEST_MESSAGE);
+			message->SetRequestType(RequestType::EntityData);
 			client->SendClientMessage(yojimbo::CHANNEL_TYPE_RELIABLE_ORDERED, message);
 		}
 		else if (client->IsDisconnected() && status != Status::ClientDisconnected)

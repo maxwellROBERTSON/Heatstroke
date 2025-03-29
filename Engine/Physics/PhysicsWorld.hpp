@@ -2,7 +2,7 @@
 
 #include "PxPhysicsAPI.h"
 #include <iostream>
-#if defined(WIN32)
+#if defined(_WIN32)
 #include <conio.h>
 #else
 #include <termios.h>

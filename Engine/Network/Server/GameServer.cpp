@@ -65,7 +65,7 @@ namespace Engine
 						if (message->GetType() == REQUEST_MESSAGE)
 						{
 							RequestMessage* derived = dynamic_cast<RequestMessage*>(message);
-							HandleRequestMessage(i, static_cast<RequestType>(derived->sequence));
+							HandleRequestMessage(i, static_cast<RequestType>(derived->requestType));
 						}
 						else
 						{
