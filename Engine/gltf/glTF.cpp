@@ -5,10 +5,13 @@
 
 #include "Error.hpp"
 #include "toString.hpp"
+#include "Animation.hpp"
 #include "VulkanEnums.hpp"
 #include "VulkanUtils.hpp"
 #include "../vulkan/VulkanDevice.hpp"
 #include "../vulkan/objects/Buffer.hpp"
+
+#define MAX_JOINTS 128u
 
 namespace Engine {
 
@@ -170,6 +173,7 @@ namespace Engine {
 	void loadNodeMeshes(vk::Node* parent, tinygltf::Node& node, tinygltf::Model& model, std::uint32_t nodeIndex, vk::Model& vkModel) {
 		vk::Node* newNode = new vk::Node();
 		newNode->index = nodeIndex;
+		newNode->skinIndex = node.skin;
 		newNode->parent = parent;
 		newNode->nodeMatrix = glm::mat4(1.0f);
 
@@ -467,10 +471,150 @@ namespace Engine {
 	void loadAnimations(tinygltf::Model& model, vk::Model& vkModel) {
 		if (model.animations.size() == 0)
 			return;
+
+		for (tinygltf::Animation& gltfAnimation : model.animations) {
+			vk::Animation animation{};
+			
+			animation.name = gltfAnimation.name;
+			if (animation.name.empty())
+				animation.name = std::to_string(vkModel.animations.size());
+
+			// Parse samplers
+			for (tinygltf::AnimationSampler& animSampler : gltfAnimation.samplers) {
+				vk::AnimationSampler sampler{};
+			
+				if (animSampler.interpolation == "LINEAR")
+					sampler.interpolationType = vk::AnimationSampler::InterpolationType::LINEAR;
+				if (animSampler.interpolation == "STEP")
+					sampler.interpolationType = vk::AnimationSampler::InterpolationType::STEP;
+				if (animSampler.interpolation == "CUBICSPLINE")
+					sampler.interpolationType = vk::AnimationSampler::InterpolationType::CUBIC_SPLINE;
+
+				// Parse sampler inputs
+				{
+					const tinygltf::Accessor& accessor = model.accessors[animSampler.input];
+					const tinygltf::BufferView& bufView = model.bufferViews[accessor.bufferView];
+					const tinygltf::Buffer& buffer = model.buffers[bufView.buffer];
+
+					const void* dataPtr = &buffer.data[accessor.byteOffset + bufView.byteOffset];
+					const float* bufValues = (const float*)dataPtr;
+
+					for (std::size_t i = 0; i < accessor.count; i++) {
+						sampler.keyframeTimes.push_back(bufValues[i]);
+					}
+
+					for (float time : sampler.keyframeTimes) {
+						if (time < animation.start)
+							animation.start = time;
+						if (time > animation.end)
+							animation.end = time;
+					}
+				}
+
+				// Parse sampler outputs
+				{
+					const tinygltf::Accessor& accessor = model.accessors[animSampler.output];
+					const tinygltf::BufferView& bufView = model.bufferViews[accessor.bufferView];
+					const tinygltf::Buffer& buffer = model.buffers[bufView.buffer];
+				
+					const void* dataPtr = &buffer.data[accessor.byteOffset + bufView.byteOffset];
+
+					switch (accessor.type) {
+					case TINYGLTF_TYPE_VEC3: {
+						const glm::vec3* buf = (const glm::vec3*)dataPtr;
+						
+						for (std::size_t i = 0; i < accessor.count; i++) {
+							sampler.outputValues.push_back(glm::vec4(buf[i], 0.0f));
+						}
+
+						break;
+					}
+					case TINYGLTF_TYPE_VEC4: {
+						const glm::vec4* buf = (const glm::vec4*)dataPtr;
+
+						for (std::size_t i = 0; i < accessor.count; i++) {
+							sampler.outputValues.push_back(glm::vec4(buf[i]));
+						}
+
+						break;
+					}
+					default:
+						std::cout << "Unknown channel type!" << std::endl;
+						break;
+					}
+				}
+
+				animation.samplers.push_back(sampler);
+			}
+
+			// Parse channels
+			for (tinygltf::AnimationChannel& animChannel : gltfAnimation.channels) {
+				vk::AnimationChannel channel{};
+
+				if (animChannel.target_path == "translation")
+					channel.pathType = vk::AnimationChannel::PathType::TRANSLATION;
+				if (animChannel.target_path == "rotation")
+					channel.pathType = vk::AnimationChannel::PathType::ROTATION;
+				if (animChannel.target_path == "scale")
+					channel.pathType = vk::AnimationChannel::PathType::SCALE;
+				if (animChannel.target_path == "weights") {
+					std::cout << "AnimationChannel 'weights' not supported!" << std::endl;
+					continue;
+				}
+
+				channel.samplerIndex = animChannel.sampler;
+				channel.node = vkModel.getNodeFromIndex(animChannel.target_node);
+				
+				if (!channel.node)
+					continue;
+			
+				animation.channels.push_back(channel);
+			}
+
+			vkModel.animations.push_back(animation);
+		}
 	}
 
 	void loadSkins(tinygltf::Model& model, vk::Model& vkModel) {
+		for (tinygltf::Skin& gltfSkin : model.skins) {
+			vk::Skin skin{};
 
+			skin.name = gltfSkin.name;
+
+			// Get skeleton root node
+			if (gltfSkin.skeleton > -1)
+				skin.rootNode = vkModel.getNodeFromIndex(gltfSkin.skeleton);
+
+			// Get inverse bind matrices
+			if (gltfSkin.inverseBindMatrices > -1) {
+				const tinygltf::Accessor& accessor = model.accessors[gltfSkin.inverseBindMatrices];
+				const tinygltf::BufferView& bufView = model.bufferViews[accessor.bufferView];
+				const tinygltf::Buffer& buffer = model.buffers[bufView.buffer];
+
+				skin.inverseBindMatrices.resize(accessor.count);
+				std::memcpy(skin.inverseBindMatrices.data(), &buffer.data[accessor.byteOffset + bufView.byteOffset], accessor.count * sizeof(glm::mat4));
+			}
+
+			// Get joints
+			for (int joint : gltfSkin.joints) {
+				vk::Node* node = vkModel.getNodeFromIndex(joint);
+
+				if (node)
+					skin.joints.push_back(node);
+			}
+
+			if (skin.joints.size() > MAX_JOINTS) {
+				std::cout << "Warning: Number of joints (" << skin.joints.size() << ") exceeds the supported maximum: " << MAX_JOINTS << "." << std::endl;
+			}
+
+			vkModel.skins.push_back(skin);
+		}
+
+		// Give nodes their respective skin
+		for (vk::Node* node : vkModel.nodes) {
+			if (node->skinIndex > -1)
+				node->skin = &vkModel.skins[node->skinIndex];
+		}
 	}
 
 	void createVulkanBuffers(const VulkanContext& aContext, vk::Model& vkModel) {

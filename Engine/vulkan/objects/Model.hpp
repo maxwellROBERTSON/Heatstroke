@@ -8,6 +8,8 @@
 
 #include "Texture.hpp"
 #include "Buffer.hpp"
+#include "../gltf/Animation.hpp"
+#include "../gltf/Skin.hpp"
 
 namespace Engine {
 
@@ -127,6 +129,8 @@ namespace vk {
 	struct Node {
 		Node* parent;
 		Mesh* mesh;
+		Skin* skin;
+		std::uint32_t skinIndex = -1;
 		std::uint32_t index;
 		std::vector<Node*> children;
 
@@ -135,8 +139,6 @@ namespace vk {
 		glm::quat rotation;
 		glm::vec3 scale{ 1.0f };
 
-		glm::mat4 postTransform{ 1.0f };
-
 		// This gets the matrix transformation local to this node.
 		// You most likely will want the getModelMatrix() method
 		// which returns the global transformation matrix for this node.
@@ -144,17 +146,11 @@ namespace vk {
 		// Returns global transformation matrix for this node.
 		glm::mat4 getModelMatrix();
 
-		// This method sets the transform that gets applied AFTER
-		// the transforms from the glTF file have been applied.
-		// This method will be moved out of the node part of the model
-		// eventually
-		void setPostTransform(glm::mat4 transform) {
-			this->postTransform = transform;
-		}
-
 		// Bounding box minimums and maximums of this node
 		glm::vec3 bbMin;
 		glm::vec3 bbMax;
+
+		glsl::SkinningUniform skinUniform;
 	};
 
     struct Model {
@@ -162,10 +158,12 @@ namespace vk {
         std::vector<Material> materials;
         std::vector<SamplerInfo> samplerInfos; // Sampler info from tinygltf
 		std::vector<Sampler> samplers; // Actual Vulkan sampler objects
-		Sampler defaultSampler; // Default sampler for when a texture doesn't reference any sampler
         std::vector<Texture> textures;
         std::vector<ImageView> imageViews;
-		
+		std::vector<Animation> animations;
+		std::vector<Skin> skins;
+
+		Sampler defaultSampler; // Default sampler for when a texture doesn't reference any sampler
 		ImageView dummyImageView;
 		Texture dummyTexture;
 
@@ -181,14 +179,6 @@ namespace vk {
 		glm::vec3 bbMin;
 		glm::vec3 bbMax;
 
-		// set all nodes transform
-		void setMat(glm::mat4 mat) {
-			for (Node* node : nodes)
-			{
-				node->setPostTransform(mat);
-			}
-		};
-
 		void createDescriptorSets(
 			const VulkanContext& aContext, 
 			VkDescriptorSetLayout aSamplerSetLayout, 
@@ -196,6 +186,9 @@ namespace vk {
         void drawModel(VkCommandBuffer aCmdBuf, Renderer* aRenderer, const std::string& aPipelineHandle, int modelMatricesSet, std::uint32_t& offset, bool justGeometry = false);
 		void drawNode(Node* node, VkCommandBuffer aCmdBuf, VkPipelineLayout aPipelineLayout, AlphaMode aAlphaMode);
 		void drawNodeGeometry(Node* node, VkCommandBuffer aCmdBuf, AlphaMode aAlphaMode);
+
+		Node* getNodeFromIndex(int nodeIndex);
+
 		void destroy();
 	};
 

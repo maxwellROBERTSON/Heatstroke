@@ -6,6 +6,8 @@ layout(location = 2) in vec4 iTangent;
 layout(location = 3) in vec2 iTexCoord0;
 layout(location = 4) in vec2 iTexCoord1;
 layout(location = 5) in vec4 iVertexColour;
+layout(location = 6) in uvec4 iJoints;
+layout(location = 7) in vec4 iWeights;
 
 layout(set = 0, binding = 0) uniform SceneUBO {
 	mat4 projection;
@@ -29,6 +31,14 @@ layout(location = 4) out vec2 v2fTexCoord1;
 layout(location = 5) out vec4 v2fVertexColour;
 
 void main() {
+//	if (skinned) {
+//		mat4 skinMatrix =
+//			iWeights.x * jointMatrix[int(iJoints.x)] +
+//			iWeights.y * jointMatrix[int(iJoints.y)] +
+//			iWeights.z * jointMatrix[int(iJoints.z)] +
+//			iWeights.w * jointMatrix[int(iJoints.w)];
+//	}
+
 	v2fPosition = vec3(modelMatrix.model * vec4(iPosition, 1.0f));
 
 	mat3 normalMatrix = transpose(inverse(mat3(modelMatrix.model)));

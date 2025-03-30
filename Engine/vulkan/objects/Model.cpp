@@ -34,6 +34,15 @@ namespace vk {
         return matrix;
     }
 
+    vk::Node* Model::getNodeFromIndex(int nodeIndex) {
+        for (vk::Node* node : nodes) {
+            if (node->index == nodeIndex)
+                return node;
+        }
+
+        return nullptr;
+    }
+
 	void Model::createDescriptorSets(
         const VulkanContext& aContext, 
         VkDescriptorSetLayout aSamplerSetLayout, 

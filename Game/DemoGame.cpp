@@ -154,6 +154,8 @@ void FPSTest::RenderScene()
 		// update physics
 		GetPhysicsWorld().updateObjects(GetEntityManager(), GetModels());
 
+		GetRenderer().updateAnimations(timeDelta);
+
 		GetRenderer().updateUniforms();
 
 		GetGUI().makeGUI();

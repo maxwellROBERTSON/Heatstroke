@@ -241,6 +241,17 @@ namespace Engine
 		ImGui::SliderFloat("Depth Bias Constant", &game->GetRenderer().depthBiasConstant, 0.0f, 10.0f);
 		ImGui::SliderFloat("Depth Bias Slope Factor", &game->GetRenderer().depthBiasSlopeFactor, 0.0f, 10.0f);
 
+		std::vector<const char*> list;
+		std::size_t size = game->GetModels()[4].animations.size();
+		list.reserve(size);
+		for (std::size_t i = 0; i < size; i++)
+			list.push_back(game->GetModels()[4].animations[i].name.c_str());
+
+		ImGui::Combo("Animation", &game->GetRenderer().animationIndex, list.data(), size, size);
+		if (ImGui::Button("Play Animation")) {
+			game->GetRenderer().animating = true;
+		}
+
 		ImGui::End();
 	}
 }

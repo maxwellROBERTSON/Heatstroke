@@ -15,6 +15,8 @@
 #include <backends/imgui_impl_vulkan.h>
 #include <backends/imgui_impl_vulkan.cpp>
 
+#define MAX_JOINTS 128u
+
 namespace Engine {
 
 	Renderer::Renderer(VulkanContext* aContext, EntityManager* entityManager, Engine::Game* game) {
@@ -342,6 +344,85 @@ namespace Engine {
 		resetFences(*this->context->window, this->frameDone, this->frameIndex);
 
 		return false;
+	}
+
+	void Renderer::updateAnimations(float timeDelta) {
+		if (!this->animating)
+			return;
+
+		float timeDeltaSecs = timeDelta / 1000.0f;
+
+		std::vector<vk::Model>& models = this->game->GetModels();
+
+		std::vector<int> renderComponentEntities = this->entityManager->GetEntitiesWithComponent<RenderComponent>();
+		for (std::size_t i = 0; i < renderComponentEntities.size(); i++) {
+			int modelIndex = this->entityManager->GetEntityComponent<RenderComponent>(renderComponentEntities[i])->GetModelIndex();
+			vk::Model& model = models[modelIndex];
+
+			if (model.animations.size() == 0)
+				continue;
+			
+			vk::Animation& animation = model.animations[this->animationIndex];
+
+			if (this->animationTimer > animation.end) {
+				this->animationTimer = 0.0f;
+				this->animating = false;
+				return;
+			}
+
+			bool updated = false;
+
+			for (vk::AnimationChannel& channel : animation.channels) {
+				vk::AnimationSampler& sampler = animation.samplers[channel.samplerIndex];
+
+				// Iterate through the keyframe times for this sampler
+				for (std::size_t j = 0; j < sampler.keyframeTimes.size(); j++) {
+					float firstKeyframe = sampler.keyframeTimes[j];
+					float secondKeyframe = sampler.keyframeTimes[j + 1];
+
+					// Check if the current animation time lies in between a keyframe time and the next keyframe
+					if ((this->animationTimer < firstKeyframe) || (this->animationTimer > secondKeyframe))
+						continue;
+
+					float interp = std::max(0.0f, this->animationTimer - firstKeyframe) / (secondKeyframe - firstKeyframe);
+
+					switch (channel.pathType) {
+					case vk::AnimationChannel::PathType::TRANSLATION:
+						sampler.translate(channel.node, interp, j);
+						break;
+					case vk::AnimationChannel::PathType::ROTATION:
+						sampler.rotate(channel.node, interp, j);
+						break;
+					case vk::AnimationChannel::PathType::SCALE:
+						sampler.scale(channel.node, interp, j);
+						break;
+					}
+
+					updated = true;
+				}
+			}
+
+			if (updated) {
+				// Update joint matrices
+				for (vk::Node* node : model.nodes) {
+					if (!node->skin)
+						continue;
+
+					glm::mat4 matrix = node->getModelMatrix();
+					glm::mat4 inverseMatrix = glm::inverse(matrix);
+
+					std::size_t numJoints = std::min((std::uint32_t)node->skin->joints.size(), MAX_JOINTS);
+					for (std::size_t j = 0; j < numJoints; j++) {
+						vk::Node* jointNode = node->skin->joints[j];
+						glm::mat4 jointMatrix = jointNode->getModelMatrix() * node->skin->inverseBindMatrices[j];
+						node->skinUniform.jointMatrix[j] = inverseMatrix * jointMatrix;
+						node->skinUniform.isSkinned = 1;
+					}
+				}
+			}
+		}
+
+		this->animationTimer += timeDeltaSecs;
 	}
 
 	void Renderer::updateUniforms() {
@@ -841,7 +922,6 @@ namespace Engine {
 		std::pair<void*, int> renderComponents = entityManager->GetComponents<RenderComponent>();
 		for (std::size_t i = 0; i < renderComponents.second; i++) {
 			int j = reinterpret_cast<RenderComponent*>(renderComponents.first)[i].GetModelIndex();
-			//models[j].drawModel(cmdBuf, this->pipelineLayouts[handle].handle, this->descriptorSets["modelMatrices"], this->dynamicUBOAlignment, modelMatricesSet, offset, justGeometry);
 			models[j].drawModel(cmdBuf, this, handle, modelMatricesSet, offset, justGeometry);
 		}
 	}

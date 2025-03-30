@@ -41,6 +41,7 @@ namespace Engine {
 		void initialiseModelDescriptors(std::vector<vk::Model>& models);
 		bool checkSwapchain();
 		bool acquireSwapchainImage();
+		void updateAnimations(float timeDelta);
 		void updateUniforms();
 		void updateModelMatrices();
 		void render(std::vector<vk::Model>& models);
@@ -66,6 +67,10 @@ namespace Engine {
 		// Debug things
 		float depthBiasConstant = 7.0f;
 		float depthBiasSlopeFactor = 10.0f;
+
+		float animationTimer = 0.0f;
+		int animationIndex = 0;
+		bool animating = false;
 
 	private:
 		VulkanContext* context;
