@@ -114,6 +114,7 @@ namespace Engine
 		{
 			game->loadOfflineEntities();
 			game->GetRenderer().initialiseModelMatrices();
+			game->GetRenderer().initialiseJointMatrices();
 			game->ToggleRenderMode(GUIHOME);
 			game->ToggleRenderMode(FORWARD);
 			//game->ToggleRenderMode(SHADOWS);
@@ -241,15 +242,25 @@ namespace Engine
 		ImGui::SliderFloat("Depth Bias Constant", &game->GetRenderer().depthBiasConstant, 0.0f, 10.0f);
 		ImGui::SliderFloat("Depth Bias Slope Factor", &game->GetRenderer().depthBiasSlopeFactor, 0.0f, 10.0f);
 
-		std::vector<const char*> list;
-		std::size_t size = game->GetModels()[4].animations.size();
-		list.reserve(size);
-		for (std::size_t i = 0; i < size; i++)
-			list.push_back(game->GetModels()[4].animations[i].name.c_str());
+		ImGui::Text("Animations:");
+		// Iterate over all models and find ones with animations
+		std::vector<vk::Model>& models = game->GetModels();
+		for (vk::Model& model : models) {
+			if (model.animations.size() == 0)
+				continue;
 
-		ImGui::Combo("Animation", &game->GetRenderer().animationIndex, list.data(), size, size);
-		if (ImGui::Button("Play Animation")) {
-			game->GetRenderer().animating = true;
+			// Get the list of animation names
+			std::vector<const char*> list;
+			std::size_t size = model.animations.size();
+			list.reserve(size);
+			for (std::size_t i = 0; i < size; i++)
+				list.push_back(model.animations[i].name.c_str());
+
+			ImGui::Combo("Animation", &model.animationIndex, list.data(), size, size);
+			if (ImGui::Button("Play Animation")) {
+				if (!model.animations[model.animationIndex].animating)
+					model.animations[model.animationIndex].animating = true;
+			}
 		}
 
 		ImGui::End();

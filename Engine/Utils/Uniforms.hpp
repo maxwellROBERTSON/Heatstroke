@@ -51,7 +51,7 @@ namespace glsl {
     };
 
     struct SkinningUniform {
-        glm::mat4 jointMatrix[MAX_JOINTS];
-        int isSkinned;
+        glm::mat4 jointMatrix[MAX_JOINTS]{};
+        int isSkinned = 0;
     };
 }

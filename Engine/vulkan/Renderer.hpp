@@ -1,10 +1,10 @@
 #pragma once
 
-#include "../Core/RenderMode.hpp"
-#include "objects/Model.hpp"
 #include "Uniforms.hpp"
 #include "Utils.hpp"
+#include "../gltf/Model.hpp"
 #include "../ECS/EntityManager.hpp"
+#include "../Core/RenderMode.hpp"
 #include "../Core/Camera.hpp"
 #include "../Core/Game.hpp"
 
@@ -36,6 +36,7 @@ namespace Engine {
 
 		void initialiseRenderer();
 		void initialiseModelMatrices();
+		void initialiseJointMatrices();
 		void cleanModelMatrices();
 		void attachCamera(Engine::Camera* camera);
 		void initialiseModelDescriptors(std::vector<vk::Model>& models);
@@ -111,9 +112,8 @@ namespace Engine {
 
 		void renderGUI();
 		void renderForward(std::vector<vk::Model>& models, bool debug);
-		void renderForwardShadows(std::vector<vk::Model>& models, bool debug);
 		void renderDeferred(std::vector<vk::Model>& models, bool debug);
-		void drawModels(VkCommandBuffer cmdBuf, std::vector<vk::Model>& models, std::string handle, int modelMatricesSet, bool justGeometry = false);
+		void drawModels(VkCommandBuffer cmdBuf, std::vector<vk::Model>& models, std::string handle, bool justGeometry = false);
 
 		void recreateFormatDependents();
 		void recreateSizeDependents();

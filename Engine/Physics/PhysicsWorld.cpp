@@ -3,7 +3,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/string_cast.hpp>
 #include <glm/gtc/quaternion.hpp>
-#include "../vulkan/objects/Model.hpp"
+#include "../gltf/Model.hpp"
 #include "../ECS/EntityManager.hpp"
 #include "../ECS/PhysicsComponent.hpp"
 #include "../Input/Keyboard.hpp"
@@ -144,9 +144,13 @@ void PhysicsWorld::updateObjects(EntityManager& entityManager, std::vector<Engin
 		// dynamic update
 		if (p.type == PhysicsComponent::PhysicsType::DYNAMIC)
 		{
-			glm::mat4 matrix = ConvertPxTransformToGlmMat4(p.dynamicBody->getGlobalPose());
-			matrix = glm::scale(matrix, p.scale);
-			entityManager.GetEntity(p.GetEntityId())->SetModelMatrix(matrix);
+			Entity* entity = entityManager.GetEntity(p.GetEntityId());
+
+			PxTransform transform = p.dynamicBody->getGlobalPose();
+			entity->SetPosition(transform.p.x, transform.p.y, transform.p.z);
+			entity->SetRotation(glm::quat(transform.q.w, transform.q.x, transform.q.y, transform.q.z));
+			entity->SetScale(p.scale.x, p.scale.y, p.scale.z);
+
 			continue;
 		}
 
@@ -154,11 +158,7 @@ void PhysicsWorld::updateObjects(EntityManager& entityManager, std::vector<Engin
 		if (p.type == PhysicsComponent::PhysicsType::CONTROLLER)
 		{
 			PxExtendedVec3 pos = p.controller->getFootPosition();
-			glm::vec3 glmPos = glm::vec3(pos.x, pos.y, pos.z);
-			glm::mat4 matrix = glm::translate(glm::mat4(1.0f), glmPos);
-			matrix = glm::scale(matrix, p.scale);
-
-			entityManager.GetEntity(p.GetEntityId())->SetModelMatrix(matrix);
+			entityManager.GetEntity(p.GetEntityId())->SetPosition(pos.x, pos.y, pos.z);
 		}
 	}
 }

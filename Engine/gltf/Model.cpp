@@ -1,41 +1,19 @@
 #include "Model.hpp"
 
-#include "../VulkanContext.hpp"
-#include "../VulkanDevice.hpp"
-#include "../PipelineCreation.hpp"
-#include "../Renderer.hpp"
 #include "Uniforms.hpp"
 #include "VulkanUtils.hpp"
 #include "Error.hpp"
 #include "toString.hpp"
+#include "../vulkan/VulkanContext.hpp"
+#include "../vulkan/VulkanDevice.hpp"
+#include "../vulkan/PipelineCreation.hpp"
+#include "../vulkan/Renderer.hpp"
 
 namespace Engine {
 namespace vk {
 
-    glm::mat4 Node::getLocalMatrix() {
-        // Since the TRS properties and node matrix are mutually exclusive, we can multiply everything together as 
-        // the node matrix or the TRS properties will be its identity value and will have no effect on final transform.
-        return glm::translate(glm::mat4(1.0f), translation) * glm::mat4(rotation) * glm::scale(glm::mat4(1.0f), scale) * this->nodeMatrix;
-    }
-
-    glm::mat4 Node::getModelMatrix() {
-        // TODO: maybe add a way of caching matrices if they don't change from frame to frame
-        // TODO: to avoid traversing and multipling matrices all the time.
-
-        // Need to traverse the node hierarchy to calculate this node's global transformation matrix.
-        glm::mat4 matrix = this->getLocalMatrix();
-
-        Node* parent = this->parent;
-        while (parent) {
-            matrix = parent->getLocalMatrix() * matrix;
-            parent = parent->parent;
-        }
-
-        return matrix;
-    }
-
     vk::Node* Model::getNodeFromIndex(int nodeIndex) {
-        for (vk::Node* node : nodes) {
+        for (vk::Node* node : linearNodes) {
             if (node->index == nodeIndex)
                 return node;
         }
@@ -50,7 +28,7 @@ namespace vk {
     {
         std::vector<glsl::MaterialInfoBuffer> materialInfos;
         
-        for (Node* node : nodes) {
+        for (Node* node : linearNodes) {
 
             if (!node->mesh) continue;
 
@@ -190,8 +168,6 @@ namespace vk {
         std::memcpy(matInfoPtr, materialInfos.data(), materialInfoSize);
         vmaUnmapMemory(aContext.allocator->allocator, matInfoStaging.allocation);
 
-        //vk::Fence uploadComplete = createFence(*aContext.window);
-
         VkCommandBuffer uploadCmdBuf = createCommandBuffer(*aContext.window);
 
         beginCommandBuffer(uploadCmdBuf);
@@ -228,7 +204,7 @@ namespace vk {
         materialInfoSSBO = materialInfoDescriptors;
 	}
 
-	void Model::drawModel(VkCommandBuffer aCmdBuf, Renderer* aRenderer, const std::string& aPipelineHandle, int modelMatricesSet, std::uint32_t& offset, bool justGeometry) {
+	void Model::drawModel(VkCommandBuffer aCmdBuf, Renderer* aRenderer, const std::string& aPipelineHandle, std::uint32_t& offset, bool justGeometry) {
 
         std::size_t dynamicUBOAlignment = aRenderer->getDynamicUBOAlignment();
         VkPipelineLayout pipelineLayout = aRenderer->getPipelineLayout(aPipelineHandle).handle;
@@ -238,10 +214,10 @@ namespace vk {
         if (justGeometry) {
 
             // Draw opaque nodes first
-            for (Node* node : nodes) {
-                vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, modelMatricesSet, 1, &modelMatricesDescriptor, 1, &offset);
+            for (Node* node : linearNodes) {
+                vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &modelMatricesDescriptor, 1, &offset); // Model matrices
                 offset += dynamicUBOAlignment;
-                drawNodeGeometry(node, aCmdBuf, AlphaMode::ALPHA_OPAQUE);
+                drawNodeGeometry(node, aCmdBuf, pipelineLayout, AlphaMode::ALPHA_OPAQUE);
             }
 
             // Do we want to do alpha masking on the shadow pass?
@@ -262,13 +238,13 @@ namespace vk {
             return;
         }
 
-        vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 2, 1, &materialInfoSSBO, 0, nullptr);
+        vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 4, 1, &materialInfoSSBO, 0, nullptr); // Material SSBO
 
         std::uint32_t tempOffset = offset;
 
         // Draw opaque nodes first
-		for (Node* node : nodes) {
-            vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, modelMatricesSet, 1, &modelMatricesDescriptor, 1, &offset);
+		for (Node* node : linearNodes) {
+            vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &modelMatricesDescriptor, 1, &offset); // Model matrices
             offset += dynamicUBOAlignment;
 			drawNode(node, aCmdBuf, pipelineLayout, AlphaMode::ALPHA_OPAQUE);
 		}
@@ -278,8 +254,8 @@ namespace vk {
         vkCmdBindPipeline(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, alphaPipeline);
 
         // Draw alpha masked nodes second
-        for (Node* node : nodes) {
-            vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, modelMatricesSet, 1, &modelMatricesDescriptor, 1, &offset);
+        for (Node* node : linearNodes) {
+            vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &modelMatricesDescriptor, 1, &offset); // Model matrices
             offset += dynamicUBOAlignment;
             drawNode(node, aCmdBuf, pipelineLayout, AlphaMode::ALPHA_MASK);
         }
@@ -294,22 +270,25 @@ namespace vk {
                 if (primitive->material.alphaMode != aAlphaMode)
                     continue;
 
-                vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, 1, 1, &primitive->samplerDescriptorSet, 0, nullptr);
+                vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, 2, 1, &aNode->descriptor, 0, nullptr); // Joint matrices
+                vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, 3, 1, &primitive->samplerDescriptorSet, 0, nullptr); // Textures
                 vkCmdPushConstants(aCmdBuf, aPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(std::uint32_t), &i);
 
-                VkBuffer vBuffers[6] = {
+                VkBuffer vBuffers[8] = {
                     primitive->posBuffer.buffer,
                     primitive->normBuffer.buffer,
                     primitive->tangentBuffer.buffer,
                     primitive->tex0Buffer.buffer,
                     primitive->tex1Buffer.buffer,
-                    primitive->vertColBuffer.buffer
+                    primitive->vertColBuffer.buffer,
+                    primitive->jointsBuffer.buffer,
+                    primitive->weightsBuffer.buffer
                 };
                 VkBuffer iBuffer = primitive->indicesBuffer.buffer;
-                VkDeviceSize vOffsets[6]{};
+                VkDeviceSize vOffsets[8]{};
                 VkDeviceSize iOffset{};
 
-                vkCmdBindVertexBuffers(aCmdBuf, 0, 6, vBuffers, vOffsets);
+                vkCmdBindVertexBuffers(aCmdBuf, 0, 8, vBuffers, vOffsets);
                 vkCmdBindIndexBuffer(aCmdBuf, iBuffer, 0, VK_INDEX_TYPE_UINT32);
 
                 vkCmdDrawIndexed(aCmdBuf, primitive->indexCount, 1, primitive->firstIndex, 0, 0);
@@ -317,18 +296,22 @@ namespace vk {
 		}
 	}
 
-    void Model::drawNodeGeometry(Node* aNode, VkCommandBuffer aCmdBuf, AlphaMode aAlphaMode) {
+    void Model::drawNodeGeometry(Node* aNode, VkCommandBuffer aCmdBuf, VkPipelineLayout aPipelineLayout, AlphaMode aAlphaMode) {
         if (aNode->mesh) {
             for (Primitive* primitive : aNode->mesh->primitives) {
 
-                VkBuffer vBuffers[1] = {
-                    primitive->posBuffer.buffer
+                vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, 2, 1, &aNode->descriptor, 0, nullptr); // Joint matrices
+
+                VkBuffer vBuffers[3] = {
+                    primitive->posBuffer.buffer,
+                    primitive->jointsBuffer.buffer,
+                    primitive->weightsBuffer.buffer
                 };
                 VkBuffer iBuffer = primitive->indicesBuffer.buffer;
-                VkDeviceSize vOffsets[1]{};
+                VkDeviceSize vOffsets[3]{};
                 VkDeviceSize iOffset{};
 
-                vkCmdBindVertexBuffers(aCmdBuf, 0, 1, vBuffers, vOffsets);
+                vkCmdBindVertexBuffers(aCmdBuf, 0, 3, vBuffers, vOffsets);
                 vkCmdBindIndexBuffer(aCmdBuf, iBuffer, 0, VK_INDEX_TYPE_UINT32);
 
                 vkCmdDrawIndexed(aCmdBuf, primitive->indexCount, 1, primitive->firstIndex, 0, 0);
@@ -337,12 +320,14 @@ namespace vk {
     }
 
 	void Model::destroy() {
-        for (Node* node : nodes) {
+        for (Node* node : linearNodes) {
 
             if (!node->mesh) continue;
 
             for (Primitive* primitive : node->mesh->primitives)
                 primitive->~Primitive();
+
+            node->descriptorBuffer.~Buffer();
         }
 	}
 

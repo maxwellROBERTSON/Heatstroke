@@ -57,10 +57,9 @@ namespace Engine {
 		const tinygltf::Scene& scene = model.scenes[model.defaultScene > -1 ? model.defaultScene : 0];
 
 		// 5. Recurse through scene nodes and get mesh data for each
-		// Load the node meshes into Vulkan objects
-		for (std::size_t i = 0; i < model.nodes.size(); i++) {
-			tinygltf::Node node = model.nodes[i];
-			loadNodeMeshes(nullptr, node, model, i, vkModel);
+		for (std::size_t i = 0; i < scene.nodes.size(); i++) {
+			tinygltf::Node node = model.nodes[scene.nodes[i]];
+			loadNodes(nullptr, node, model, i, vkModel);
 		}
 
 		// 6. Calculate bounding box of entire model
@@ -94,22 +93,22 @@ namespace Engine {
 
 			vkMaterial.emissiveFactor = glm::make_vec3(material.emissiveFactor.data());
 			vkMaterial.emissiveTextureIndex = material.emissiveTexture.index;
-			vkMaterial.emissiveTextureTexCoords = material.emissiveTexture.texCoord;
+			vkMaterial.emissiveTextureTexCoords = vkMaterial.emissiveTextureIndex > -1 ? material.emissiveTexture.texCoord : -1;
 			vkMaterial.emissiveStrength = 1.0f; // This can be changed using a glTF extension, which we may want to account for
 
 			vkMaterial.normalTextureIndex = material.normalTexture.index;
-			vkMaterial.normalTextureTexCoords = material.normalTexture.texCoord;
+			vkMaterial.normalTextureTexCoords = vkMaterial.normalTextureIndex > -1 ? material.normalTexture.texCoord : -1;
 
 			vkMaterial.occlusionTextureIndex = material.occlusionTexture.index;
-			vkMaterial.occlusionTextureTexCoords = material.occlusionTexture.texCoord;
+			vkMaterial.occlusionTextureTexCoords = vkMaterial.occlusionTextureIndex > -1 ? material.occlusionTexture.texCoord : -1;
 			vkMaterial.occlusionStrength = material.occlusionTexture.strength;
 
 			vkMaterial.baseColourFactor = glm::make_vec4(material.pbrMetallicRoughness.baseColorFactor.data());
 			vkMaterial.baseColourTextureIndex = material.pbrMetallicRoughness.baseColorTexture.index;
-			vkMaterial.baseColourTextureTexCoords = material.pbrMetallicRoughness.baseColorTexture.texCoord;
+			vkMaterial.baseColourTextureTexCoords = vkMaterial.baseColourTextureIndex > -1 ? material.pbrMetallicRoughness.baseColorTexture.texCoord : -1;
 
 			vkMaterial.metallicRoughnessTextureIndex = material.pbrMetallicRoughness.metallicRoughnessTexture.index;
-			vkMaterial.metallicRoughnessTextureTexCoords = material.pbrMetallicRoughness.metallicRoughnessTexture.texCoord;
+			vkMaterial.metallicRoughnessTextureTexCoords = vkMaterial.metallicRoughnessTextureIndex > -1 ? material.pbrMetallicRoughness.metallicRoughnessTexture.texCoord : -1;
 			vkMaterial.metallicFactor = material.pbrMetallicRoughness.metallicFactor;
 			vkMaterial.roughnessFactor = material.pbrMetallicRoughness.roughnessFactor;
 
@@ -154,7 +153,7 @@ namespace Engine {
 			VkFormat format = VK_FORMAT_R8G8B8A8_UNORM;
 
 			// Go through all materials and if the baseColourTextureIndex is this texture
-			// then set format to SRGB format (potentially an expensive operation)
+			// then set format to SRGB format
 			for (const vk::Material& material : vkModel.materials) {
 				if (material.baseColourTextureIndex == i)
 					format = VK_FORMAT_R8G8B8A8_SRGB;
@@ -170,7 +169,7 @@ namespace Engine {
 		}
 	}
 
-	void loadNodeMeshes(vk::Node* parent, tinygltf::Node& node, tinygltf::Model& model, std::uint32_t nodeIndex, vk::Model& vkModel) {
+	void loadNodes(vk::Node* parent, tinygltf::Node& node, tinygltf::Model& model, std::uint32_t nodeIndex, vk::Model& vkModel) {
 		vk::Node* newNode = new vk::Node();
 		newNode->index = nodeIndex;
 		newNode->skinIndex = node.skin;
@@ -194,6 +193,12 @@ namespace Engine {
 
 		if (node.scale.size() == 3)
 			newNode->scale = glm::make_vec3(node.scale.data());
+
+		// Recurse through this nodes children
+		if (!node.children.empty()) {
+			for (std::size_t i = 0; i < node.children.size(); i++)
+				loadNodes(newNode, model.nodes[node.children[i]], model, node.children[i], vkModel);
+		}
 
 		if (node.mesh > -1) {
 			const tinygltf::Mesh mesh = model.meshes[node.mesh];
@@ -448,10 +453,12 @@ namespace Engine {
 			parent->children.push_back(newNode);
 		else
 			vkModel.nodes.push_back(newNode);
+
+		vkModel.linearNodes.push_back(newNode);
 	}
 
 	void calculateModelBoundingBox(vk::Model& vkModel) {
-		for (vk::Node* node : vkModel.nodes) {
+		for (vk::Node* node : vkModel.linearNodes) {
 			if (node->bbMin.x < vkModel.bbMin.x)
 				vkModel.bbMin.x = node->bbMin.x;
 			if (node->bbMin.y < vkModel.bbMin.y)
@@ -577,13 +584,13 @@ namespace Engine {
 
 	void loadSkins(tinygltf::Model& model, vk::Model& vkModel) {
 		for (tinygltf::Skin& gltfSkin : model.skins) {
-			vk::Skin skin{};
+			vk::Skin* skin = new vk::Skin();
 
-			skin.name = gltfSkin.name;
+			skin->name = gltfSkin.name;
 
 			// Get skeleton root node
 			if (gltfSkin.skeleton > -1)
-				skin.rootNode = vkModel.getNodeFromIndex(gltfSkin.skeleton);
+				skin->rootNode = vkModel.getNodeFromIndex(gltfSkin.skeleton);
 
 			// Get inverse bind matrices
 			if (gltfSkin.inverseBindMatrices > -1) {
@@ -591,8 +598,8 @@ namespace Engine {
 				const tinygltf::BufferView& bufView = model.bufferViews[accessor.bufferView];
 				const tinygltf::Buffer& buffer = model.buffers[bufView.buffer];
 
-				skin.inverseBindMatrices.resize(accessor.count);
-				std::memcpy(skin.inverseBindMatrices.data(), &buffer.data[accessor.byteOffset + bufView.byteOffset], accessor.count * sizeof(glm::mat4));
+				skin->inverseBindMatrices.resize(accessor.count);
+				std::memcpy(skin->inverseBindMatrices.data(), &buffer.data[accessor.byteOffset + bufView.byteOffset], accessor.count * sizeof(glm::mat4));
 			}
 
 			// Get joints
@@ -600,26 +607,29 @@ namespace Engine {
 				vk::Node* node = vkModel.getNodeFromIndex(joint);
 
 				if (node)
-					skin.joints.push_back(node);
+					skin->joints.push_back(node);
 			}
 
-			if (skin.joints.size() > MAX_JOINTS) {
-				std::cout << "Warning: Number of joints (" << skin.joints.size() << ") exceeds the supported maximum: " << MAX_JOINTS << "." << std::endl;
+			if (skin->joints.size() > MAX_JOINTS) {
+				std::cout << "Warning: Number of joints (" << skin->joints.size() << ") exceeds the supported maximum: " << MAX_JOINTS << "." << std::endl;
 			}
 
 			vkModel.skins.push_back(skin);
 		}
 
 		// Give nodes their respective skin
-		for (vk::Node* node : vkModel.nodes) {
-			if (node->skinIndex > -1)
-				node->skin = &vkModel.skins[node->skinIndex];
+		for (std::size_t i = 0; i < vkModel.linearNodes.size(); i++) {
+			vk::Node* node = vkModel.linearNodes[i];
+			try {
+				node->skin = vkModel.skins.at(node->skinIndex);
+			}
+			catch (const std::out_of_range& exception) {}
 		}
 	}
 
 	void createVulkanBuffers(const VulkanContext& aContext, vk::Model& vkModel) {
 		// We need to create the buffers for every vertex attribute and indices for every primitive
-		for (vk::Node* node : vkModel.nodes) {
+		for (vk::Node* node : vkModel.linearNodes) {
 
 			if (!node->mesh) continue;
 

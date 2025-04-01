@@ -6,10 +6,12 @@
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/quaternion.hpp>
 
-#include "Texture.hpp"
-#include "Buffer.hpp"
-#include "../gltf/Animation.hpp"
-#include "../gltf/Skin.hpp"
+#include "Uniforms.hpp"
+#include "Animation.hpp"
+#include "Skin.hpp"
+#include "Node.hpp"
+#include "../vulkan/objects/Texture.hpp"
+#include "../vulkan/objects/Buffer.hpp"
 
 namespace Engine {
 
@@ -126,54 +128,30 @@ namespace vk {
 		glm::mat4 matrix;
 	};
 
-	struct Node {
-		Node* parent;
-		Mesh* mesh;
-		Skin* skin;
-		std::uint32_t skinIndex = -1;
-		std::uint32_t index;
-		std::vector<Node*> children;
-
-		glm::mat4 nodeMatrix;
-		glm::vec3 translation;
-		glm::quat rotation;
-		glm::vec3 scale{ 1.0f };
-
-		// This gets the matrix transformation local to this node.
-		// You most likely will want the getModelMatrix() method
-		// which returns the global transformation matrix for this node.
-		glm::mat4 getLocalMatrix();
-		// Returns global transformation matrix for this node.
-		glm::mat4 getModelMatrix();
-
-		// Bounding box minimums and maximums of this node
-		glm::vec3 bbMin;
-		glm::vec3 bbMax;
-
-		glsl::SkinningUniform skinUniform;
-	};
-
     struct Model {
+		// Vector of root nodes for each scene (usually just 1)
 		std::vector<Node*> nodes;
+		// Vector of all nodes linearly (allows for easily iterating over all nodes)
+		std::vector<Node*> linearNodes;
         std::vector<Material> materials;
         std::vector<SamplerInfo> samplerInfos; // Sampler info from tinygltf
 		std::vector<Sampler> samplers; // Actual Vulkan sampler objects
         std::vector<Texture> textures;
         std::vector<ImageView> imageViews;
 		std::vector<Animation> animations;
-		std::vector<Skin> skins;
+		std::vector<Skin*> skins;
 
 		Sampler defaultSampler; // Default sampler for when a texture doesn't reference any sampler
 		ImageView dummyImageView;
 		Texture dummyTexture;
 
 		Buffer materialInfoBuffer;
-
 		VkIndexType indexType;
-
 		VkDescriptorSet materialInfoSSBO;
 
 		int meshedNodes;
+
+		int animationIndex = 0; // TEMP
 
 		// Bounding box of the entire model
 		glm::vec3 bbMin;
@@ -183,9 +161,9 @@ namespace vk {
 			const VulkanContext& aContext, 
 			VkDescriptorSetLayout aSamplerSetLayout, 
 			VkDescriptorSetLayout aMaterialInfoSetLayout);
-        void drawModel(VkCommandBuffer aCmdBuf, Renderer* aRenderer, const std::string& aPipelineHandle, int modelMatricesSet, std::uint32_t& offset, bool justGeometry = false);
+        void drawModel(VkCommandBuffer aCmdBuf, Renderer* aRenderer, const std::string& aPipelineHandle, std::uint32_t& offset, bool justGeometry = false);
 		void drawNode(Node* node, VkCommandBuffer aCmdBuf, VkPipelineLayout aPipelineLayout, AlphaMode aAlphaMode);
-		void drawNodeGeometry(Node* node, VkCommandBuffer aCmdBuf, AlphaMode aAlphaMode);
+		void drawNodeGeometry(Node* node, VkCommandBuffer aCmdBuf, VkPipelineLayout aPipelineLayout, AlphaMode aAlphaMode);
 
 		Node* getNodeFromIndex(int nodeIndex);
 

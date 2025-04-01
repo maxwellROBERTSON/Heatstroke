@@ -9,6 +9,7 @@ namespace Engine {
 namespace vk {
 
 	struct Node;
+	struct Model;
 
 	struct AnimationChannel {
 		enum PathType {
@@ -45,6 +46,13 @@ namespace vk {
 
 		float start = std::numeric_limits<float>::max();
 		float end = std::numeric_limits<float>::min();
+
+		bool animating = false;
+		// Flag to set whether this animation should loop indefinitely
+		bool loop = false;
+		float timer;
+
+		void update(Model& model, float timeDelta);
 	};
 
 }

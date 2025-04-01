@@ -8,7 +8,7 @@
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
 
-#include "../vulkan/objects/Model.hpp"
+#include "../gltf/Model.hpp"
 
 using namespace physx;
 
@@ -34,7 +34,7 @@ public:
 
 	PhysicsComponent() {};
 
-	void init(PhysicsWorld& pworld,PhysicsType physicsType, Engine::vk::Model& model, glm::mat4& transform, int index) {
+	void init(PhysicsWorld& pworld,PhysicsType physicsType, Engine::vk::Model& model, glm::mat4 transform, int index) {
 
 		entityId = index;
 
@@ -115,13 +115,13 @@ public:
 		}
 	}
 
-	void initComplexShape(PhysicsWorld& pWorld, PhysicsType physicsType, Engine::vk::Model& model, glm::mat4& transform, int index) {
+	void initComplexShape(PhysicsWorld& pWorld, PhysicsType physicsType, Engine::vk::Model& model, glm::mat4 transform, int index) {
 
 		entityId = index;
 
 		// Decompose transform
 		if (!DecomposeTransform(transform, translation, rotation, scale)) {
-			std::cout << "DecomposeTransform failed!" << std::endl;
+			std::cout << "DecomposeTransform failed in initComplexShape!" << std::endl;
 			return;
 		}
 
@@ -136,7 +136,7 @@ public:
 		// based on the model's triangle meshes.
 		// Currently adds a static body per primitive mesh, not sure if thats
 		// a bad or good thing.
-		for (Engine::vk::Node* node : model.nodes) {
+		for (Engine::vk::Node* node : model.linearNodes) {
 			if (node->mesh) {
 				glm::mat4 modelMatrix = node->getModelMatrix();
 				PxVec3 nodeScale(modelMatrix[0][0], modelMatrix[1][1], modelMatrix[2][2]);

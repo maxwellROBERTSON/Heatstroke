@@ -10,6 +10,8 @@
 #endif
 #include <vector>
 #include "../ECS/EntityManager.hpp"
+#include <glm/gtx/matrix_decompose.hpp>
+
 using namespace physx;
 
 class PhysicsWorld {
@@ -48,5 +50,14 @@ public:
 	glm::mat4 ConvertPxTransformToGlmMat4(const PxTransform& transform);
 
 private:
-
+	bool DecomposeTransform(const glm::mat4& matrix, glm::vec3& translation, glm::quat& rotation, glm::vec3& scale)
+	{
+		glm::vec3 skew;
+		glm::vec4 perspective;
+		bool success = glm::decompose(matrix, scale, rotation, translation, skew, perspective);
+		if (success) {
+			rotation = glm::conjugate(rotation);
+		}
+		return success;
+	}
 };

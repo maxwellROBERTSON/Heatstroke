@@ -74,5 +74,56 @@ namespace vk {
 		}
 	}
 
+	void Animation::update(Model& model, float timeDelta) {
+		// Check if we need to stop this animation, unless its a looping animation
+		if (this->timer > this->end) {
+			this->timer = 0.0f;
+			if (!this->loop)
+				this->animating = false;
+			return;
+		}
+
+		bool updated = false;
+
+		for (vk::AnimationChannel& channel : this->channels) {
+			vk::AnimationSampler& sampler = this->samplers[channel.samplerIndex];
+
+			// Iterate through the keyframe times for this sampler
+			for (std::size_t j = 0; j < sampler.keyframeTimes.size() - 1; j++) {
+				float firstKeyframe = sampler.keyframeTimes[j];
+				float secondKeyframe = sampler.keyframeTimes[j + 1];
+
+				// Check if the current animation time lies in between a keyframe time and the next keyframe
+				if ((this->timer < firstKeyframe) || (this->timer > secondKeyframe))
+					continue;
+
+				// Get the interpolation value (how far through) for this keyframe
+				float interp = std::max(0.0f, this->timer - firstKeyframe) / (secondKeyframe - firstKeyframe);
+
+				// Apply transformation
+				switch (channel.pathType) {
+				case vk::AnimationChannel::PathType::TRANSLATION:
+					sampler.translate(channel.node, interp, j);
+					break;
+				case vk::AnimationChannel::PathType::ROTATION:
+					sampler.rotate(channel.node, interp, j);
+					break;
+				case vk::AnimationChannel::PathType::SCALE:
+					sampler.scale(channel.node, interp, j);
+					break;
+				}
+
+				updated = true;
+			}
+		}
+
+		if (updated) {
+			// Update joint matrices of model
+			for (Node* node : model.linearNodes)
+				node->update();
+		}
+
+		this->timer += timeDelta;
+	}
 }
 }

@@ -72,16 +72,17 @@ namespace Engine {
 
 		std::vector<VkDescriptorSetLayout> forwardLayouts;
 		forwardLayouts.emplace_back(this->descriptorLayouts["sceneLayout"].handle);
-		forwardLayouts.emplace_back(this->descriptorLayouts["materialLayout"].handle);
-		forwardLayouts.emplace_back(this->descriptorLayouts["SSBOLayout"].handle);
 		forwardLayouts.emplace_back(this->descriptorLayouts["modelMatricesLayout"].handle);
 		forwardLayouts.emplace_back(this->descriptorLayouts["vertUBOLayout"].handle);
+		forwardLayouts.emplace_back(this->descriptorLayouts["materialLayout"].handle);
+		forwardLayouts.emplace_back(this->descriptorLayouts["SSBOLayout"].handle);
 
 		std::vector<VkDescriptorSetLayout> forwardShadowLayouts;
 		forwardShadowLayouts.emplace_back(this->descriptorLayouts["sceneLayout"].handle);
+		forwardShadowLayouts.emplace_back(this->descriptorLayouts["modelMatricesLayout"].handle);
+		forwardShadowLayouts.emplace_back(this->descriptorLayouts["vertUBOLayout"].handle);
 		forwardShadowLayouts.emplace_back(this->descriptorLayouts["materialLayout"].handle);
 		forwardShadowLayouts.emplace_back(this->descriptorLayouts["SSBOLayout"].handle);
-		forwardShadowLayouts.emplace_back(this->descriptorLayouts["modelMatricesLayout"].handle);
 		forwardShadowLayouts.emplace_back(this->descriptorLayouts["vertUBOLayout"].handle);
 		forwardShadowLayouts.emplace_back(this->descriptorLayouts["shadowMapLayout"].handle);
 
@@ -93,6 +94,7 @@ namespace Engine {
 		std::vector<VkDescriptorSetLayout> shadowLayout;
 		shadowLayout.emplace_back(this->descriptorLayouts["vertUBOLayout"].handle);
 		shadowLayout.emplace_back(this->descriptorLayouts["modelMatricesLayout"].handle);
+		shadowLayout.emplace_back(this->descriptorLayouts["vertUBOLayout"].handle);
 
 		// Pipeline layouts
 		this->pipelineLayouts.emplace("forward", createPipelineLayout(*this->context->window, forwardLayouts, true));
@@ -263,6 +265,30 @@ namespace Engine {
 		isSceneLoaded = true;
 	}
 
+	void Renderer::initialiseJointMatrices() {
+		std::vector<vk::Model>& models = this->game->GetModels();
+		
+		std::vector<int> renderComponentEntities = this->entityManager->GetEntitiesWithComponent<RenderComponent>();
+		for (std::size_t i = 0; i < renderComponentEntities.size(); i++) {
+			int modelIndex = this->entityManager->GetEntityComponent<RenderComponent>(renderComponentEntities[i])->GetModelIndex();
+			vk::Model& model = models[modelIndex];
+
+			for (vk::Node* node : model.linearNodes) {
+				if (!node->mesh)
+					continue;
+
+				node->descriptorBuffer = vk::createBuffer(
+					"jointMatrix",
+					*this->context->allocator,
+					sizeof(glsl::SkinningUniform),
+					VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+					0,
+					VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
+				node->descriptor = createUBODescriptor(*this->context->window, this->descriptorLayouts["vertUBOLayout"].handle, node->descriptorBuffer.buffer);
+			}
+		}
+	}
+
 	void Renderer::cleanModelMatrices()
 	{
 		vmaUnmapMemory(context->allocator->allocator, this->uniformBuffers["modelMatrices"].allocation);
@@ -285,7 +311,7 @@ namespace Engine {
 			int modelIndex = this->entityManager->GetEntityComponent<RenderComponent>(renderComponentEntities[i])->GetModelIndex();
 			vk::Model& model = models[modelIndex];
 
-			this->modelMatrices += model.nodes.size();
+			this->modelMatrices += model.linearNodes.size();
 		}
 
 		VkDeviceSize bufferSize = this->modelMatrices * this->dynamicUBOAlignment;
@@ -347,11 +373,6 @@ namespace Engine {
 	}
 
 	void Renderer::updateAnimations(float timeDelta) {
-		if (!this->animating)
-			return;
-
-		float timeDeltaSecs = timeDelta / 1000.0f;
-
 		std::vector<vk::Model>& models = this->game->GetModels();
 
 		std::vector<int> renderComponentEntities = this->entityManager->GetEntitiesWithComponent<RenderComponent>();
@@ -359,70 +380,17 @@ namespace Engine {
 			int modelIndex = this->entityManager->GetEntityComponent<RenderComponent>(renderComponentEntities[i])->GetModelIndex();
 			vk::Model& model = models[modelIndex];
 
+			// Skip until we find any models with animations
 			if (model.animations.size() == 0)
 				continue;
 			
-			vk::Animation& animation = model.animations[this->animationIndex];
-
-			if (this->animationTimer > animation.end) {
-				this->animationTimer = 0.0f;
-				this->animating = false;
-				return;
-			}
-
-			bool updated = false;
-
-			for (vk::AnimationChannel& channel : animation.channels) {
-				vk::AnimationSampler& sampler = animation.samplers[channel.samplerIndex];
-
-				// Iterate through the keyframe times for this sampler
-				for (std::size_t j = 0; j < sampler.keyframeTimes.size(); j++) {
-					float firstKeyframe = sampler.keyframeTimes[j];
-					float secondKeyframe = sampler.keyframeTimes[j + 1];
-
-					// Check if the current animation time lies in between a keyframe time and the next keyframe
-					if ((this->animationTimer < firstKeyframe) || (this->animationTimer > secondKeyframe))
-						continue;
-
-					float interp = std::max(0.0f, this->animationTimer - firstKeyframe) / (secondKeyframe - firstKeyframe);
-
-					switch (channel.pathType) {
-					case vk::AnimationChannel::PathType::TRANSLATION:
-						sampler.translate(channel.node, interp, j);
-						break;
-					case vk::AnimationChannel::PathType::ROTATION:
-						sampler.rotate(channel.node, interp, j);
-						break;
-					case vk::AnimationChannel::PathType::SCALE:
-						sampler.scale(channel.node, interp, j);
-						break;
-					}
-
-					updated = true;
-				}
-			}
-
-			if (updated) {
-				// Update joint matrices
-				for (vk::Node* node : model.nodes) {
-					if (!node->skin)
-						continue;
-
-					glm::mat4 matrix = node->getModelMatrix();
-					glm::mat4 inverseMatrix = glm::inverse(matrix);
-
-					std::size_t numJoints = std::min((std::uint32_t)node->skin->joints.size(), MAX_JOINTS);
-					for (std::size_t j = 0; j < numJoints; j++) {
-						vk::Node* jointNode = node->skin->joints[j];
-						glm::mat4 jointMatrix = jointNode->getModelMatrix() * node->skin->inverseBindMatrices[j];
-						node->skinUniform.jointMatrix[j] = inverseMatrix * jointMatrix;
-						node->skinUniform.isSkinned = 1;
-					}
-				}
+			// Iterate over this model's animations and try updating any
+			for (std::size_t j = 0; j < model.animations.size(); j++) {
+				vk::Animation& animation = model.animations[j];
+				if (animation.animating)
+					animation.update(model, timeDelta);
 			}
 		}
-
-		this->animationTimer += timeDeltaSecs;
 	}
 
 	void Renderer::updateUniforms() {
@@ -458,12 +426,12 @@ namespace Engine {
 			int modelIndex = this->entityManager->GetEntityComponent<RenderComponent>(renderComponentEntities[i])->GetModelIndex();
 			vk::Model& model = models[modelIndex];
 
-			for (std::size_t j = 0; j < model.nodes.size(); j++) {
+			for (std::size_t j = 0; j < model.linearNodes.size(); j++) {
 				glm::mat4* modelMatrix = (glm::mat4*)((std::uint64_t)this->uniforms.modelMatricesUniform.model + offset);
 				offset += this->dynamicUBOAlignment;
 
 				// Get the models model matrix (the one from the glTF file) and times it by the entities model matrix (post transform)
-				*modelMatrix = this->entityManager->GetEntity(renderComponentEntities[i])->GetModelMatrix() * model.nodes[j]->getModelMatrix();
+				*modelMatrix = this->entityManager->GetEntity(renderComponentEntities[i])->GetModelMatrix() * model.linearNodes[j]->getModelMatrix();
 			}
 		}
 
@@ -635,6 +603,37 @@ namespace Engine {
 			VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
 		);
 
+		std::vector<int> renderComponentEntities = this->entityManager->GetEntitiesWithComponent<RenderComponent>();
+		for (std::size_t i = 0; i < renderComponentEntities.size(); i++) {
+			int modelIndex = this->entityManager->GetEntityComponent<RenderComponent>(renderComponentEntities[i])->GetModelIndex();
+			vk::Model& model = models[modelIndex];
+
+			for (vk::Node* node : model.linearNodes) {
+				if (!node->mesh)
+					continue;
+
+				Utils::bufferBarrier(
+					cmdBuf,
+					node->descriptorBuffer.buffer,
+					VK_ACCESS_UNIFORM_READ_BIT,
+					VK_ACCESS_TRANSFER_WRITE_BIT,
+					VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
+					VK_PIPELINE_STAGE_TRANSFER_BIT
+				);
+
+				vkCmdUpdateBuffer(cmdBuf, node->descriptorBuffer.buffer, 0, sizeof(glsl::SkinningUniform), &node->skinUniform);
+
+				Utils::bufferBarrier(
+					cmdBuf,
+					node->descriptorBuffer.buffer,
+					VK_ACCESS_TRANSFER_WRITE_BIT,
+					VK_ACCESS_UNIFORM_READ_BIT,
+					VK_PIPELINE_STAGE_TRANSFER_BIT,
+					VK_PIPELINE_STAGE_VERTEX_SHADER_BIT
+				);
+			}
+		}
+
 		if (shadow) {
 			Utils::bufferBarrier(
 				cmdBuf,
@@ -672,11 +671,11 @@ namespace Engine {
 
 			vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelines["shadow"].handle);
 
-			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["shadow"].handle, 0, 1, &this->descriptorSets["shadow"], 0, nullptr);
+			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["shadow"].handle, 0, 1, &this->descriptorSets["shadow"], 0, nullptr); // Depth matrix
 
 			vkCmdSetDepthBias(cmdBuf, this->depthBiasConstant, 0.0f, this->depthBiasSlopeFactor);
 
-			drawModels(cmdBuf, models, "shadow", 1, true);
+			drawModels(cmdBuf, models, "shadow", true);
 
 			vkCmdEndRenderPass(cmdBuf);
 		}
@@ -708,15 +707,15 @@ namespace Engine {
 			vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelines["forward"].handle);
 
 		if (shadow) {
-			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["forwardShadow"].handle, 0, 1, &this->descriptorSets["scene"], 0, nullptr);
-			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["forwardShadow"].handle, 4, 1, &this->descriptorSets["shadow"], 0, nullptr);
-			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["forwardShadow"].handle, 5, 1, &this->descriptorSets["shadowMap"], 0, nullptr);
+			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["forwardShadow"].handle, 0, 1, &this->descriptorSets["scene"], 0, nullptr); // Projective matrices
+			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["forwardShadow"].handle, 5, 1, &this->descriptorSets["shadow"], 0, nullptr); // Depth matrix
+			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["forwardShadow"].handle, 6, 1, &this->descriptorSets["shadowMap"], 0, nullptr); // Shadow map
 		}
 		else {
-			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["forward"].handle, 0, 1, &this->descriptorSets["scene"], 0, nullptr);
+			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["forward"].handle, 0, 1, &this->descriptorSets["scene"], 0, nullptr); // Projective matrices
 		}
 
-		drawModels(cmdBuf, models, "forward", 3);
+		drawModels(cmdBuf, models, "forward");
 
 		if (debug)
 			ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmdBuf);
@@ -752,6 +751,37 @@ namespace Engine {
 			VK_PIPELINE_STAGE_TRANSFER_BIT,
 			VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
 		);
+
+		std::vector<int> renderComponentEntities = this->entityManager->GetEntitiesWithComponent<RenderComponent>();
+		for (std::size_t i = 0; i < renderComponentEntities.size(); i++) {
+			int modelIndex = this->entityManager->GetEntityComponent<RenderComponent>(renderComponentEntities[i])->GetModelIndex();
+			vk::Model& model = models[modelIndex];
+
+			for (vk::Node* node : model.linearNodes) {
+				if (!node->mesh)
+					continue;
+
+				Utils::bufferBarrier(
+					cmdBuf,
+					node->descriptorBuffer.buffer,
+					VK_ACCESS_UNIFORM_READ_BIT,
+					VK_ACCESS_TRANSFER_WRITE_BIT,
+					VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
+					VK_PIPELINE_STAGE_TRANSFER_BIT
+				);
+
+				vkCmdUpdateBuffer(cmdBuf, node->descriptorBuffer.buffer, 0, sizeof(glsl::SkinningUniform), &node->skinUniform);
+
+				Utils::bufferBarrier(
+					cmdBuf,
+					node->descriptorBuffer.buffer,
+					VK_ACCESS_TRANSFER_WRITE_BIT,
+					VK_ACCESS_UNIFORM_READ_BIT,
+					VK_PIPELINE_STAGE_TRANSFER_BIT,
+					VK_PIPELINE_STAGE_VERTEX_SHADER_BIT
+				);
+			}
+		}
 
 		Utils::bufferBarrier(
 			cmdBuf,
@@ -813,7 +843,7 @@ namespace Engine {
 
 		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["forward"].handle, 0, 1, &this->descriptorSets["scene"], 0, nullptr);
 
-		drawModels(cmdBuf, models, "forward", 3); // The gBufWrite stage uses same pipelineLayout as forward
+		drawModels(cmdBuf, models, "forward"); // The gBufWrite stage uses same pipelineLayout as forward
 
 		vkCmdNextSubpass(cmdBuf, VK_SUBPASS_CONTENTS_INLINE);
 
@@ -916,13 +946,13 @@ namespace Engine {
 			this->depthSampler.handle);
 	}
 
-	void Renderer::drawModels(VkCommandBuffer cmdBuf, std::vector<vk::Model>& models, std::string handle, int modelMatricesSet, bool justGeometry) {
+	void Renderer::drawModels(VkCommandBuffer cmdBuf, std::vector<vk::Model>& models, std::string handle, bool justGeometry) {
 		std::uint32_t offset = 0;
 
 		std::pair<void*, int> renderComponents = entityManager->GetComponents<RenderComponent>();
 		for (std::size_t i = 0; i < renderComponents.second; i++) {
 			int j = reinterpret_cast<RenderComponent*>(renderComponents.first)[i].GetModelIndex();
-			models[j].drawModel(cmdBuf, this, handle, modelMatricesSet, offset, justGeometry);
+			models[j].drawModel(cmdBuf, this, handle, offset, justGeometry);
 		}
 	}
 
