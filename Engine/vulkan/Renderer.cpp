@@ -5,7 +5,7 @@
 #include "VulkanUtils.hpp"
 #include "VulkanDevice.hpp"
 #include "PipelineCreation.hpp"
-#include "../ECS/RenderComponent.hpp"
+#include "../ECS/Components/RenderComponent.hpp"
 
 #include "Utils.hpp"
 #include "vulkan/vulkan_core.h"
@@ -273,7 +273,7 @@ namespace Engine {
 		std::size_t uboAlignment = this->context->window->device->minUBOAlignment;
 		this->dynamicUBOAlignment = (sizeof(glm::mat4) + uboAlignment - 1) & ~(uboAlignment - 1);
 
-		VkDeviceSize bufferSize = this->dynamicUBOAlignment * entityManager->GetComponentTypeSize<RenderComponent>();
+		VkDeviceSize bufferSize = this->dynamicUBOAlignment * ComponentSizes[RENDER];
 
 		this->uniforms.modelMatricesUniform.model = (glm::mat4*)Utils::allocAligned(bufferSize, this->dynamicUBOAlignment);
 
@@ -357,16 +357,16 @@ namespace Engine {
 	void Renderer::updateModelMatrices()
 	{
 		// Update model matrices
-		std::vector<int> models = this->entityManager->GetEntitiesWithComponent<RenderComponent>();
-		for (std::size_t i = 0; i < models.size(); i++) {
+		std::vector<int> entities = this->entityManager->GetEntitiesWithComponent(RENDER);
+		for (std::size_t i = 0; i < entities.size(); i++) {
 			glm::mat4* modelMatrix = (glm::mat4*)((std::uint64_t)this->uniforms.modelMatricesUniform.model + (i * this->dynamicUBOAlignment));
 
 			// This will need to be changed to get a 'parent' model matrix, not
 			// just the first node's model matrix.
-			*modelMatrix = this->entityManager->GetEntity(models[i])->GetModelMatrix();
+			*modelMatrix = this->entityManager->GetEntity(entities[i])->GetModelMatrix();
 		}
 
-		int size = this->entityManager->GetComponentTypeSize<RenderComponent>() * this->dynamicUBOAlignment;
+		int size = ComponentSizes[RENDER] * this->dynamicUBOAlignment;
 
 		std::memcpy(this->uniformBuffers["modelMatrices"].mapped, this->uniforms.modelMatricesUniform.model, size);
 
@@ -756,11 +756,11 @@ namespace Engine {
 
 	void Renderer::drawModels(VkCommandBuffer& cmdBuf, std::vector<vk::Model>& models, std::string handle, int modelMatricesSet, bool justGeometry)
 	{
-		std::pair<void*, int> renderComponents = entityManager->GetComponents<RenderComponent>();
-		for (std::size_t i = 0; i < renderComponents.second; i++) {
+		std::vector<std::unique_ptr<ComponentBase>>* renderComponents = this->entityManager->GetComponentsOfType(RENDER);
+		for (std::size_t i = 0; i < (*renderComponents).size(); i++) {
 			std::uint32_t offset = i * this->dynamicUBOAlignment;
 			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts[handle].handle, modelMatricesSet, 1, &this->descriptorSets["modelMatrices"], 1, &offset);
-			int j = reinterpret_cast<RenderComponent*>(renderComponents.first)[i].GetModelIndex();
+			int j = reinterpret_cast<RenderComponent*>(renderComponents->at(i).get())->GetModelIndex();
 			models[j].drawModel(cmdBuf, this->pipelineLayouts[handle].handle, justGeometry);
 		}
 	}

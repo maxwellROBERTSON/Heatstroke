@@ -26,7 +26,7 @@ namespace Engine
 		void Start();
 		void Update();
 		void ProcessMessages();
-		void ProcessMessage(int, GameMessage*);
+		void ProcessMessage(int, yojimbo::Message*);
 		void HandleRequestMessage(int, RequestType);
 		void CleanUp();
 
@@ -41,6 +41,6 @@ namespace Engine
 		yojimbo::ClientServerConfig* config;
 		GameAdapter* adapter;
 
-		Engine::Game* mGame;
+		Engine::Game* game;
 	};
 }

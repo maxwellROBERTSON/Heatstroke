@@ -89,7 +89,28 @@ namespace Engine
 
 	void GameClient::ProcessMessage(yojimbo::Message* message)
 	{
+		if (message->GetType() == REQUEST_MESSAGE)
+		{
+			HandleResponseMessage((RequestResponseMessage*)message);
+		}
 		std::cout << "Processing message from server with messageID " << message->GetId() << std::endl;
+	}
+
+	void GameClient::HandleResponseMessage(RequestResponseMessage* message)
+	{
+		int size = message->GetBlockSize();
+		std::vector<uint8_t> data(size);
+		message->GetBlockData();
+		int sizes = message->GetBlockSize();
+		/*if (message->responseType == ResponseType::ENTITY_DATA_RESPONSE)
+		{
+			uint8_t data
+			message->GetBlockData()
+			server->AttachBlockToMessage(clientIndex, message, block, bytes);
+			server->SendServerMessage(clientIndex, yojimbo::CHANNEL_TYPE_RELIABLE_ORDERED, message);
+			server->FreeBlock(clientIndex, block);*/
+		//adapter->factory->ReleaseMessage(message);
+		//server->ReleaseMessage(clientIndex, message);
 	}
 
 	void GameClient::CleanUp()

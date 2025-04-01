@@ -1,34 +1,78 @@
 #include <iostream>
 
 #include "Entity.hpp"
+#include "EntityManager.hpp"
 
-// Public Methods
-
-Entity::Entity(EntityManager* entityManager, int entityId, std::vector<int> typeIndexList)
-	: entityManager(entityManager), entityId(entityId)
+namespace Engine
 {
-	// Add all components to the entity
-	for (int i = 0; i < typeIndexList.size(); i++)
+	class EntityManager;
+
+	// Constructor
+	Entity::Entity(EntityManager* entityManager, int entityId, std::vector<int> indexList)
+		: entityManager(entityManager), entityId(entityId)
 	{
-		componentListId.push_back(typeIndexList[i]);
+		// Add index list to the entity
+		componentTypeIndexList = indexList;
 	}
-}
 
-void Entity::GetData(uint8_t* block)
-{
-	// Matrix
-	uint8_t* bytePtr = reinterpret_cast<uint8_t*>(&modelMatrix);
-	for (size_t i = 0; i < sizeof(glm::mat4); ++i) {
-		block[i] = bytePtr[i];
+	// Getters
+
+	// Get the data for a given entity
+	void Entity::GetData(std::vector<uint8_t>& data)
+	{		
+		// Add the entity's index and model matrix to the vector
+		uint8_t* rawData = reinterpret_cast<uint8_t*>(&entityId);
+		data.insert(data.end(), rawData, rawData + sizeof(entityId));
+		rawData = reinterpret_cast<uint8_t*>(&modelMatrix);
+		data.insert(data.end(), rawData, rawData + sizeof(modelMatrix));
+
+		// If the entity has a component type add its data to the vector
+		ComponentBase* component;
+		for (int i = 0; i < TYPE_COUNT; i++)
+		{
+			if (componentTypeIndexList[i] != -1)
+			{
+				component = entityManager->GetComponentOfEntity(entityId, static_cast<ComponentTypes>(i));
+				component->GetDataArray(data);
+			}
+		}
+
+		//std::vector<uint8_t> data;
+		//size_t numberOfComponents = componentListId.size();
+		//size_t numberOfBytes = (numberOfComponents - 1) / 8 + 1;
+		//uint8_t byte = 0;
+		//data.insert(data.end(), numberOfBytes, byte);
+		//for (size_t i = numberOfBytes; i > 0; i--)
+		//{
+		//	//data[i]
+		//	for (size_t j = 0; j < componentListId.size(); j++)
+		//	{
+		//		if (componentListId[j] != -1)
+		//		{
+		//			entityManager->GetEntityComponent<entityManager->registry->GetTypeIndex(j)>(entityId);
+		//			data[i] = entityManager->componentList[j].first[componentListId[j]];
+		//		}
+		//	}
+		//}
+		// 
+		// 
+		//// Matrix
+		//uint8_t* bytePtr = reinterpret_cast<uint8_t*>(&modelMatrix);
+		//for (size_t i = 0; i < sizeof(glm::mat4); ++i) {
+		//	block[i] = bytePtr[i];
+		//}
+		//block = block + sizeof(glm::mat4);
+		//// Component List
+
 	}
-	block = block + sizeof(glm::mat4)
-	// Component List
 
+	// Setters
+
+	// Set the data for a given entity
+	void Entity::SetData(uint8_t* block)
+	{
+
+	}
+
+	// Private Methods
 }
-
-void Entity::SetData(uint8_t* block)
-{
-
-}
-
-// Private Methods

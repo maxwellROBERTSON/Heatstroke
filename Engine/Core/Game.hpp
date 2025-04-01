@@ -17,7 +17,6 @@
 #include "../vulkan/VulkanContext.hpp"
 #include "../vulkan/Renderer.hpp"
 #include "../GUI/GUI.hpp"
-#include "../ECS/ComponentTypeRegistry.hpp"
 #include "../ECS/EntityManager.hpp"
 #include "../Network/Network.hpp"
 
@@ -49,7 +48,6 @@ namespace Engine
 		inline static Game& Get() { return *game; }
 		inline std::vector<Engine::vk::Model>& GetModels() { return models; }
 		inline bool GetRecreateSwapchain() { return recreateSwapchain; }
-		inline ComponentTypeRegistry& GetRegistry() { return registry; }
 		inline EntityManager& GetEntityManager() { return entityManager; }
 		inline Engine::Renderer& GetRenderer() { return *renderer; }
 		inline PhysicsWorld& GetPhysicsWorld() { return physics_world; }
@@ -75,8 +73,7 @@ namespace Engine
 		static Game* game;
 		std::vector<Engine::vk::Model> models;
 		bool recreateSwapchain;
-		ComponentTypeRegistry registry = ComponentTypeRegistry::Get();
-		EntityManager entityManager = EntityManager(&registry);
+		EntityManager entityManager = EntityManager();
 		PhysicsWorld physics_world;
 		std::unique_ptr<Engine::Renderer> renderer;
 		std::unique_ptr<Engine::GUI> gui;

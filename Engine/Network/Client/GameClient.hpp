@@ -25,6 +25,7 @@ namespace Engine
 		void Update();
 		void ProcessMessages();
 		void ProcessMessage(yojimbo::Message*);
+		void HandleResponseMessage(RequestResponseMessage*);
 		void CleanUp();
 
 		void UpdateStatus();

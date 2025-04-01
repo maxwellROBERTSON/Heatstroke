@@ -14,7 +14,8 @@ namespace Engine
 		:
 		config(config),
 		adapter(adapter),
-		maxClients(maxClients)
+		maxClients(maxClients),
+		game(game)
 	{
 		// Initialise server
 		double time = 1.0;
@@ -27,7 +28,6 @@ namespace Engine
 			time);
 
 		adapter->SetServer(server);
-		mGame = game;
 		Start();
 	}
 
@@ -59,21 +59,11 @@ namespace Engine
 			{
 				for (int j = 0; j < config->numChannels; j++)
 				{
-					GameMessage* message = (GameMessage*)server->ReceiveMessage(i, j);
+					yojimbo::Message* message = server->ReceiveMessage(i, j);
 					while (message != NULL)
 					{
 						ProcessMessage(i, message);
-						// if (message->GetType() == REQUEST_MESSAGE)
-						// {
-						// 	RequestMessage* derived = dynamic_cast<RequestMessage*>(message);
-						// 	HandleRequestMessage(i, static_cast<RequestType>(derived->sequence));
-						// }
-						// else
-						// {
-						// 	ProcessMessage(i, message);
-						// }
 						server->ReleaseMessage(i, message);
-						message = (GameMessage*)server->ReceiveMessage(i, j);
 					}
 				}
 			}
@@ -84,21 +74,28 @@ namespace Engine
 		}
 	}
 
-	void GameServer::ProcessMessage(int clientIndex, GameMessage* message)
+	void GameServer::ProcessMessage(int clientIndex, yojimbo::Message* message)
 	{
 		if (message->GetType() == REQUEST_MESSAGE)
 		{
 			RequestMessage* derived = (RequestMessage*)message;
 			HandleRequestMessage(clientIndex, derived->requestType);
 		}
-		std::cout << "MESSAGE FROM CLIENT " << clientIndex << " " << message->sequence << " MESSAGEID = " << message->GetId() << std::endl;
+		std::cout << "MESSAGE FROM CLIENT " << clientIndex << " WITH: TYPE = " << message->GetType() << ", MESSAGEID = " << message->GetId() << std::endl;
 	}
 
 	void GameServer::HandleRequestMessage(int clientIndex, RequestType requestType)
 	{
 		RequestResponseMessage* message = (RequestResponseMessage*)server->CreateMessage(clientIndex, REQUEST_RESPONSE_MESSAGE);
-		message->requestType = RequestType::ENTITY_DATA;
-		server->SendServerMessage(clientIndex, yojimbo::CHANNEL_TYPE_RELIABLE_ORDERED, message);
+		message->responseType = static_cast<ResponseType>(requestType);
+		if (message->responseType == ResponseType::ENTITY_DATA_RESPONSE)
+		{
+			int bytes = game->GetEntityManager().GetTotalDataSize();
+			uint8_t* block = server->AllocateBlock(clientIndex, bytes);
+			server->AttachBlockToMessage(clientIndex, message, block, bytes);
+			server->SendServerMessage(clientIndex, yojimbo::CHANNEL_TYPE_RELIABLE_ORDERED, message);
+			server->FreeBlock(clientIndex, block);
+		}
 		//adapter->factory->ReleaseMessage(message);
 		//server->ReleaseMessage(clientIndex, message);
 	}

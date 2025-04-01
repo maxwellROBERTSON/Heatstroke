@@ -4,10 +4,6 @@
 #include <glm/vec4.hpp>
 
 #include "../Events/Event.hpp"
-#include "../Events/KeyEvent.hpp"
-#include "../Events/MouseEvent.hpp"
-#include "../Input/Input.hpp"
-#include "../Input/InputCodes.hpp"
 
 struct GLFWwindow;
 

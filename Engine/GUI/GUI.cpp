@@ -1,7 +1,7 @@
 #include "GUI.hpp"
 #include "../Network/Helpers/GameConfig.hpp"
 
-class GLFWwindow;
+struct GLFWwindow;
 
 namespace Engine
 {

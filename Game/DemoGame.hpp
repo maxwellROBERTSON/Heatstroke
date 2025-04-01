@@ -6,12 +6,11 @@
 
 #include "../Engine/Core/Game.hpp"
 
-#include "../Engine/ECS/CameraComponent.hpp"
-#include "../Engine/ECS/ComponentTypeRegistry.hpp"
 #include "../Engine/ECS/EntityManager.hpp"
-#include "../Engine/ECS/NetworkComponent.hpp"
-#include "../Engine/ECS/PhysicsComponent.hpp"
-#include "../Engine/ECS/RenderComponent.hpp"
+#include "../Engine/ECS/Components/CameraComponent.hpp"
+#include "../Engine/ECS/Components/NetworkComponent.hpp"
+#include "../Engine/ECS/Components/PhysicsComponent.hpp"
+#include "../Engine/ECS/Components/RenderComponent.hpp"
 
 #include "../Engine/Physics/PhysicsWorld.hpp"
 
@@ -43,7 +42,6 @@ public:
 	virtual void Update() override;
 	virtual void OnEvent(Engine::Event& e) override;
 
-	void registerComponents();
 	void initialiseModels();
 
 	void loadOfflineEntities();
