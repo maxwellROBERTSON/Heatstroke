@@ -268,9 +268,10 @@ namespace Engine {
 	void Renderer::initialiseJointMatrices() {
 		std::vector<vk::Model>& models = this->game->GetModels();
 		
-		std::vector<int> renderComponentEntities = this->entityManager->GetEntitiesWithComponent<RenderComponent>();
-		for (std::size_t i = 0; i < renderComponentEntities.size(); i++) {
-			int modelIndex = this->entityManager->GetEntityComponent<RenderComponent>(renderComponentEntities[i])->GetModelIndex();
+		std::vector<std::unique_ptr<ComponentBase>>* renderComponents = this->entityManager->GetComponentsOfType(RENDER);
+		for (std::size_t i = 0; i < renderComponents->size(); i++) {
+			RenderComponent* renderComponent = reinterpret_cast<RenderComponent*>((*renderComponents)[i].get());
+			int modelIndex = renderComponent->GetModelIndex();
 			vk::Model& model = models[modelIndex];
 
 			for (vk::Node* node : model.linearNodes) {
@@ -306,9 +307,10 @@ namespace Engine {
 		std::size_t uboAlignment = this->context->window->device->minUBOAlignment;
 		this->dynamicUBOAlignment = (sizeof(glm::mat4) + uboAlignment - 1) & ~(uboAlignment - 1);
 
-		std::vector<int> renderComponentEntities = this->entityManager->GetEntitiesWithComponent<RenderComponent>();
-		for (std::size_t i = 0; i < renderComponentEntities.size(); i++) {
-			int modelIndex = this->entityManager->GetEntityComponent<RenderComponent>(renderComponentEntities[i])->GetModelIndex();
+		std::vector<std::unique_ptr<ComponentBase>>* renderComponents = this->entityManager->GetComponentsOfType(RENDER);
+		for (std::size_t i = 0; i < renderComponents->size(); i++) {
+			RenderComponent* renderComponent = reinterpret_cast<RenderComponent*>((*renderComponents)[i].get());
+			int modelIndex = renderComponent->GetModelIndex();
 			vk::Model& model = models[modelIndex];
 
 			this->modelMatrices += model.linearNodes.size();
@@ -375,9 +377,10 @@ namespace Engine {
 	void Renderer::updateAnimations(float timeDelta) {
 		std::vector<vk::Model>& models = this->game->GetModels();
 
-		std::vector<int> renderComponentEntities = this->entityManager->GetEntitiesWithComponent<RenderComponent>();
-		for (std::size_t i = 0; i < renderComponentEntities.size(); i++) {
-			int modelIndex = this->entityManager->GetEntityComponent<RenderComponent>(renderComponentEntities[i])->GetModelIndex();
+		std::vector<std::unique_ptr<ComponentBase>>* renderComponents = this->entityManager->GetComponentsOfType(RENDER);
+		for (std::size_t i = 0; i < renderComponents->size(); i++) {
+			RenderComponent* renderComponent = reinterpret_cast<RenderComponent*>((*renderComponents)[i].get());
+			int modelIndex = renderComponent->GetModelIndex();
 			vk::Model& model = models[modelIndex];
 
 			// Skip until we find any models with animations
@@ -446,14 +449,12 @@ namespace Engine {
 		std::vector<vk::Model>& models = this->game->GetModels();
 
 		// Update model matrices
-		std::vector<int> entities = this->entityManager->GetEntitiesWithComponent(RENDER);
-		for (std::size_t i = 0; i < entities.size(); i++) {
-			glm::mat4* modelMatrix = (glm::mat4*)((std::uint64_t)this->uniforms.modelMatricesUniform.model + (i * this->dynamicUBOAlignment));
 		std::size_t offset = 0;
 
-		std::vector<int> renderComponentEntities = this->entityManager->GetEntitiesWithComponent<RenderComponent>();
-		for (std::size_t i = 0; i < renderComponentEntities.size(); i++) {
-			int modelIndex = this->entityManager->GetEntityComponent<RenderComponent>(renderComponentEntities[i])->GetModelIndex();
+		std::vector<int> renderEntities = this->entityManager->GetEntitiesWithComponent(RENDER);
+		for (std::size_t i = 0; i < renderEntities.size(); i++) {
+			RenderComponent* renderComponent = reinterpret_cast<RenderComponent*>(this->entityManager->GetComponentOfEntity(renderEntities[i], RENDER));
+			int modelIndex = renderComponent->GetModelIndex();
 			vk::Model& model = models[modelIndex];
 
 			for (std::size_t j = 0; j < model.linearNodes.size(); j++) {
@@ -461,15 +462,9 @@ namespace Engine {
 				offset += this->dynamicUBOAlignment;
 
 				// Get the models model matrix (the one from the glTF file) and times it by the entities model matrix (post transform)
-				*modelMatrix = this->entityManager->GetEntity(renderComponentEntities[i])->GetModelMatrix() * model.linearNodes[j]->getModelMatrix();
+				*modelMatrix = this->entityManager->GetEntity(renderEntities[i])->GetModelMatrix() * model.linearNodes[j]->getModelMatrix();
 			}
 		}
-			// This will need to be changed to get a 'parent' model matrix, not
-			// just the first node's model matrix.
-			*modelMatrix = this->entityManager->GetEntity(entities[i])->GetModelMatrix();
-		}
-
-		int size = ComponentSizes[RENDER] * this->dynamicUBOAlignment;
 
 		int size = this->modelMatrices * this->dynamicUBOAlignment;
 		std::memcpy(this->uniformBuffers["modelMatrices"].mapped, this->uniforms.modelMatricesUniform.model, size);
@@ -577,9 +572,10 @@ namespace Engine {
 			VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
 		);
 
-		std::vector<int> renderComponentEntities = this->entityManager->GetEntitiesWithComponent<RenderComponent>();
-		for (std::size_t i = 0; i < renderComponentEntities.size(); i++) {
-			int modelIndex = this->entityManager->GetEntityComponent<RenderComponent>(renderComponentEntities[i])->GetModelIndex();
+		std::vector<std::unique_ptr<ComponentBase>>* renderComponents = this->entityManager->GetComponentsOfType(RENDER);
+		for (std::size_t i = 0; i < renderComponents->size(); i++) {
+			RenderComponent* renderComponent = reinterpret_cast<RenderComponent*>((*renderComponents)[i].get());
+			int modelIndex = renderComponent->GetModelIndex();
 			vk::Model& model = models[modelIndex];
 
 			for (vk::Node* node : model.linearNodes) {
@@ -726,9 +722,10 @@ namespace Engine {
 			VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
 		);
 
-		std::vector<int> renderComponentEntities = this->entityManager->GetEntitiesWithComponent<RenderComponent>();
-		for (std::size_t i = 0; i < renderComponentEntities.size(); i++) {
-			int modelIndex = this->entityManager->GetEntityComponent<RenderComponent>(renderComponentEntities[i])->GetModelIndex();
+		std::vector<std::unique_ptr<ComponentBase>>* renderComponents = this->entityManager->GetComponentsOfType(RENDER);
+		for (std::size_t i = 0; i < renderComponents->size(); i++) {
+			RenderComponent* renderComponent = reinterpret_cast<RenderComponent*>((*renderComponents)[i].get());
+			int modelIndex = renderComponent->GetModelIndex();
 			vk::Model& model = models[modelIndex];
 
 			for (vk::Node* node : model.linearNodes) {
@@ -920,22 +917,14 @@ namespace Engine {
 			this->depthSampler.handle);
 	}
 
-	void Renderer::drawModels(VkCommandBuffer& cmdBuf, std::vector<vk::Model>& models, std::string handle, int modelMatricesSet, bool justGeometry)
-	{
-		std::vector<std::unique_ptr<ComponentBase>>* renderComponents = this->entityManager->GetComponentsOfType(RENDER);
-		for (std::size_t i = 0; i < (*renderComponents).size(); i++) {
-			std::uint32_t offset = i * this->dynamicUBOAlignment;
-			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts[handle].handle, modelMatricesSet, 1, &this->descriptorSets["modelMatrices"], 1, &offset);
-			int j = reinterpret_cast<RenderComponent*>(renderComponents->at(i).get())->GetModelIndex();
-			models[j].drawModel(cmdBuf, this->pipelineLayouts[handle].handle, justGeometry);
-		}
 	void Renderer::drawModels(VkCommandBuffer cmdBuf, std::vector<vk::Model>& models, std::string handle, bool justGeometry) {
 		std::uint32_t offset = 0;
 
-		std::pair<void*, int> renderComponents = entityManager->GetComponents<RenderComponent>();
-		for (std::size_t i = 0; i < renderComponents.second; i++) {
-			int j = reinterpret_cast<RenderComponent*>(renderComponents.first)[i].GetModelIndex();
-			models[j].drawModel(cmdBuf, this, handle, offset, justGeometry);
+		std::vector<std::unique_ptr<ComponentBase>>* renderComponents = this->entityManager->GetComponentsOfType(RENDER);
+		for (std::size_t i = 0; i < renderComponents->size(); i++) {
+			RenderComponent* renderComponent = reinterpret_cast<RenderComponent*>((*renderComponents)[i].get());
+			int modelIndex = renderComponent->GetModelIndex();
+			models[modelIndex].drawModel(cmdBuf, this, handle, offset, justGeometry);
 		}
 	}
 

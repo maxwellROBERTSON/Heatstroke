@@ -87,16 +87,7 @@ namespace Engine
 			std::cerr << "createMaterial failed!" << std::endl;
 			std::exit(-1);
 		}
-
-
-		// testplane!
-
-		//PxRigidStatic* groundPlane = PxCreatePlane(*gPhysics, PxPlane(0, 1, 0, 0), *gMaterial);
-		//gScene->addActor(*groundPlane);
-
-
 	}
-
 
 	void PhysicsWorld::updateCharacter(PxReal deltatime)
 	{
@@ -140,55 +131,30 @@ namespace Engine
 
 		// get all PhysicsComponent
 		std::vector<std::unique_ptr<ComponentBase>>* physicsComponents = entityManager.GetComponentsOfType(PHYSICS);
-		for (std::size_t i = 0; i < (*physicsComponents).size(); i++) {
+		for (std::size_t i = 0; i < physicsComponents->size(); i++) {
 			PhysicsComponent* p = reinterpret_cast<PhysicsComponent*>((*physicsComponents)[i].get());
 			//glm::mat4 matrix(1.0f);
 			// dynamic update
 			if (p->type == PhysicsComponent::PhysicsType::DYNAMIC)
 			{
-				glm::mat4 matrix = ConvertPxTransformToGlmMat4(p->dynamicBody->getGlobalPose());
-				matrix = glm::scale(matrix, p->scale);
-				entityManager.GetEntity(p->GetEntityId())->SetModelMatrix(matrix);
+				Entity* entity = entityManager.GetEntity(p->GetEntityId());
+
+				PxTransform transform = p->dynamicBody->getGlobalPose();
+				entity->SetPosition(transform.p.x, transform.p.y, transform.p.z);
+				entity->SetRotation(glm::quat(transform.q.w, transform.q.x, transform.q.y, transform.q.z));
+				entity->SetScale(p->scale.x, p->scale.y, p->scale.z);
+
 				continue;
 			}
-	// get all PhysicsComponent
-	std::pair<void*, int> physicsComponents = entityManager.GetComponents<PhysicsComponent>();
-	for (std::size_t i = 0; i < physicsComponents.second; i++) {
-		PhysicsComponent p = reinterpret_cast<PhysicsComponent*>(physicsComponents.first)[i];
-		//glm::mat4 matrix(1.0f);
-		// dynamic update
-		if (p.type == PhysicsComponent::PhysicsType::DYNAMIC)
-		{
-			Entity* entity = entityManager.GetEntity(p.GetEntityId());
-
-			PxTransform transform = p.dynamicBody->getGlobalPose();
-			entity->SetPosition(transform.p.x, transform.p.y, transform.p.z);
-			entity->SetRotation(glm::quat(transform.q.w, transform.q.x, transform.q.y, transform.q.z));
-			entity->SetScale(p.scale.x, p.scale.y, p.scale.z);
-
-			continue;
-		}
 
 			// controller update
 			if (p->type == PhysicsComponent::PhysicsType::CONTROLLER)
 			{
 				PxExtendedVec3 pos = p->controller->getFootPosition();
-				glm::vec3 glmPos = glm::vec3(pos.x, pos.y, pos.z);
-				glm::mat4 matrix = glm::translate(glm::mat4(1.0f), glmPos);
-				matrix = glm::scale(matrix, p->scale);
-
-				entityManager.GetEntity(p->GetEntityId())->SetModelMatrix(matrix);
+				entityManager.GetEntity(p->GetEntityId())->SetPosition(pos.x, pos.y, pos.z);
 			}
 		}
 	}
-		// controller update
-		if (p.type == PhysicsComponent::PhysicsType::CONTROLLER)
-		{
-			PxExtendedVec3 pos = p.controller->getFootPosition();
-			entityManager.GetEntity(p.GetEntityId())->SetPosition(pos.x, pos.y, pos.z);
-		}
-	}
-}
 
 	void PhysicsWorld::cleanupPhysX()
 	{
