@@ -71,7 +71,7 @@ void FPSTest::Update()
 
 	GetRenderer().GetCameraPointer()->updateCamera(this->GetContext().getGLFWWindow(), timeDelta);
 
-	float fixedTimeDelta = std::min(0.016f, timeDelta);
+	float fixedTimeDelta = std::min<float>(0.016f, timeDelta);
 	
 	GetPhysicsWorld().updateCharacter(fixedTimeDelta);
 	// update PVD
