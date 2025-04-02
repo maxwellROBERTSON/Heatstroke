@@ -1,5 +1,3 @@
-#pragma once
-
 #include "Component.hpp"
 
 namespace Engine
@@ -9,6 +7,6 @@ namespace Engine
 		{ComponentTypes::CAMERA, 9},
 		{ComponentTypes::NETWORK, 1},
 		{ComponentTypes::PHYSICS, 23},
-		{ComponentTypes::RENDER, 2}
+		{ComponentTypes::RENDER, 5}
 	};
 }

@@ -1,5 +1,3 @@
-#pragma once
-
 #include "GameClient.hpp"
 
 namespace Engine

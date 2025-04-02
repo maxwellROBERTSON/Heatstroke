@@ -1,5 +1,3 @@
-#pragma once
-
 #include "PhysicsComponent.hpp"
 
 namespace Engine

@@ -186,7 +186,7 @@ namespace Engine
 		}
 
 		// disconnect PVD
-#if defined(WIN32)
+#if defined(_WIN32)
 		if (gPvd)
 		{
 			PxPvdTransport* transport = gPvd->getTransport();
