@@ -1,19 +1,25 @@
 #include "Model.hpp"
 
-#include "../VulkanContext.hpp"
-#include "../VulkanDevice.hpp"
-#include "../PipelineCreation.hpp"
 #include "Uniforms.hpp"
 #include "VulkanUtils.hpp"
 #include "Error.hpp"
 #include "toString.hpp"
+#include "../vulkan/VulkanContext.hpp"
+#include "../vulkan/VulkanDevice.hpp"
+#include "../vulkan/PipelineCreation.hpp"
+#include "../vulkan/Renderer.hpp"
 
 namespace Engine {
 namespace vk {
 
-	glm::mat4 Node::getModelMatrix() {
-		return this->postTransform * (glm::translate(glm::mat4(1.0f), translation) * glm::mat4(rotation) * glm::scale(glm::mat4(1.0f), scale) * this->nodeMatrix);
-	}
+    vk::Node* Model::getNodeFromIndex(int nodeIndex) {
+        for (vk::Node* node : linearNodes) {
+            if (node->index == nodeIndex)
+                return node;
+        }
+
+        return nullptr;
+    }
 
 	void Model::createDescriptorSets(
         const VulkanContext& aContext, 
@@ -22,7 +28,7 @@ namespace vk {
     {
         std::vector<glsl::MaterialInfoBuffer> materialInfos;
         
-        for (Node* node : nodes) {
+        for (Node* node : linearNodes) {
 
             if (!node->mesh) continue;
 
@@ -162,8 +168,6 @@ namespace vk {
         std::memcpy(matInfoPtr, materialInfos.data(), materialInfoSize);
         vmaUnmapMemory(aContext.allocator->allocator, matInfoStaging.allocation);
 
-        //vk::Fence uploadComplete = createFence(*aContext.window);
-
         VkCommandBuffer uploadCmdBuf = createCommandBuffer(*aContext.window);
 
         beginCommandBuffer(uploadCmdBuf);
@@ -200,68 +204,114 @@ namespace vk {
         materialInfoSSBO = materialInfoDescriptors;
 	}
 
-	void Model::drawModel(VkCommandBuffer aCmdBuf, VkPipelineLayout aPipelineLayout, bool justGeometry) {
+	void Model::drawModel(VkCommandBuffer aCmdBuf, Renderer* aRenderer, const std::string& aPipelineHandle, std::uint32_t& offset, bool justGeometry) {
+
+        std::size_t dynamicUBOAlignment = aRenderer->getDynamicUBOAlignment();
+        VkPipelineLayout pipelineLayout = aRenderer->getPipelineLayout(aPipelineHandle).handle;
+        VkDescriptorSet modelMatricesDescriptor = aRenderer->getDescriptorSet("modelMatrices");
+        VkPipeline alphaPipeline = aRenderer->getPipeline(aPipelineHandle + "Alpha").handle;
 
         if (justGeometry) {
 
-            for (Node* node : nodes)
-                drawNodeGeometry(node, aCmdBuf);
+            // Draw opaque nodes first
+            for (Node* node : linearNodes) {
+                vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &modelMatricesDescriptor, 1, &offset); // Model matrices
+                offset += dynamicUBOAlignment;
+                drawNodeGeometry(node, aCmdBuf, pipelineLayout, AlphaMode::ALPHA_OPAQUE);
+            }
+
+            // Do we want to do alpha masking on the shadow pass?
+            // For some models it may make sense if there are large
+            // parts of a mesh that need to be alpha masked and end
+            // subsequently end up being transparent, but will still
+            // cause a shadow.
+            // Alpha masking the shadow pass would mean passing in
+            // the base colour texture and material info SSBO.
+         
+            // Draw alpha masked nodes second
+            //for (Node* node : nodes) {
+            //    vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, modelMatricesSet, 1, &modelMatricesDescriptor, 1, &offset);
+            //    offset += dynamicUBOAlignment;
+            //    drawNodeGeometry(node, aCmdBuf, AlphaMode::ALPHA_MASK);
+            //}
 
             return;
         }
 
-        vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, 2, 1, &materialInfoSSBO, 0, nullptr);
+        vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 4, 1, &materialInfoSSBO, 0, nullptr); // Material SSBO
 
-		for (Node* node : nodes) {
-			drawNode(node, aCmdBuf, aPipelineLayout);
+        std::uint32_t tempOffset = offset;
+
+        // Draw opaque nodes first
+		for (Node* node : linearNodes) {
+            vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &modelMatricesDescriptor, 1, &offset); // Model matrices
+            offset += dynamicUBOAlignment;
+			drawNode(node, aCmdBuf, pipelineLayout, AlphaMode::ALPHA_OPAQUE);
 		}
+
+        offset = tempOffset;
+
+        vkCmdBindPipeline(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, alphaPipeline);
+
+        // Draw alpha masked nodes second
+        for (Node* node : linearNodes) {
+            vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &modelMatricesDescriptor, 1, &offset); // Model matrices
+            offset += dynamicUBOAlignment;
+            drawNode(node, aCmdBuf, pipelineLayout, AlphaMode::ALPHA_MASK);
+        }
 
 	}
 
-	void Model::drawNode(Node* aNode, VkCommandBuffer aCmdBuf, VkPipelineLayout aPipelineLayout) {
+	void Model::drawNode(Node* aNode, VkCommandBuffer aCmdBuf, VkPipelineLayout aPipelineLayout, AlphaMode aAlphaMode) {
 		if (aNode->mesh) {
-            for (Primitive* primitive : aNode->mesh->primitives) {
+            for (std::size_t i = 0; i < aNode->mesh->primitives.size(); i++) {
+                Primitive* primitive = aNode->mesh->primitives[i];
 
-                vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, 1, 1, &primitive->samplerDescriptorSet, 0, nullptr);
-                vkCmdPushConstants(aCmdBuf, aPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(std::uint32_t), &primitive->material.index);
+                if (primitive->material.alphaMode != aAlphaMode)
+                    continue;
 
-                VkBuffer vBuffers[6] = {
+                vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, 2, 1, &aNode->descriptor, 0, nullptr); // Joint matrices
+                vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, 3, 1, &primitive->samplerDescriptorSet, 0, nullptr); // Textures
+                vkCmdPushConstants(aCmdBuf, aPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(std::uint32_t), &i);
+
+                VkBuffer vBuffers[8] = {
                     primitive->posBuffer.buffer,
                     primitive->normBuffer.buffer,
                     primitive->tangentBuffer.buffer,
                     primitive->tex0Buffer.buffer,
                     primitive->tex1Buffer.buffer,
-                    primitive->vertColBuffer.buffer
+                    primitive->vertColBuffer.buffer,
+                    primitive->jointsBuffer.buffer,
+                    primitive->weightsBuffer.buffer
                 };
                 VkBuffer iBuffer = primitive->indicesBuffer.buffer;
-                VkDeviceSize vOffsets[6]{};
+                VkDeviceSize vOffsets[8]{};
                 VkDeviceSize iOffset{};
 
-                vkCmdBindVertexBuffers(aCmdBuf, 0, 6, vBuffers, vOffsets);
+                vkCmdBindVertexBuffers(aCmdBuf, 0, 8, vBuffers, vOffsets);
                 vkCmdBindIndexBuffer(aCmdBuf, iBuffer, 0, VK_INDEX_TYPE_UINT32);
 
                 vkCmdDrawIndexed(aCmdBuf, primitive->indexCount, 1, primitive->firstIndex, 0, 0);
             }
 		}
-
-		//for (Node* child : aNode->children) {
-		//	drawNode(child, aCmdBuf, aPipelineLayout);
-		//}
 	}
 
-    void Model::drawNodeGeometry(Node* aNode, VkCommandBuffer aCmdBuf) {
+    void Model::drawNodeGeometry(Node* aNode, VkCommandBuffer aCmdBuf, VkPipelineLayout aPipelineLayout, AlphaMode aAlphaMode) {
         if (aNode->mesh) {
             for (Primitive* primitive : aNode->mesh->primitives) {
 
+                vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, 2, 1, &aNode->descriptor, 0, nullptr); // Joint matrices
 
-                VkBuffer vBuffers[1] = {
-                    primitive->posBuffer.buffer
+                VkBuffer vBuffers[3] = {
+                    primitive->posBuffer.buffer,
+                    primitive->jointsBuffer.buffer,
+                    primitive->weightsBuffer.buffer
                 };
                 VkBuffer iBuffer = primitive->indicesBuffer.buffer;
-                VkDeviceSize vOffsets[1]{};
+                VkDeviceSize vOffsets[3]{};
                 VkDeviceSize iOffset{};
 
-                vkCmdBindVertexBuffers(aCmdBuf, 0, 1, vBuffers, vOffsets);
+                vkCmdBindVertexBuffers(aCmdBuf, 0, 3, vBuffers, vOffsets);
                 vkCmdBindIndexBuffer(aCmdBuf, iBuffer, 0, VK_INDEX_TYPE_UINT32);
 
                 vkCmdDrawIndexed(aCmdBuf, primitive->indexCount, 1, primitive->firstIndex, 0, 0);
@@ -269,13 +319,67 @@ namespace vk {
         }
     }
 
+    // This method is actually extremely similar to Animation::update() and so could be merged in some way
+    void Model::blendAnimation(Animation& current, Animation& target, float timeDelta, float interpolationTime) {
+        // Kick off target animation if not already
+        if (!target.animating)
+            target.animating = true;
+
+        bool updated = false;
+
+        for (AnimationChannel& channel : target.channels) {
+            vk::AnimationSampler& sampler = target.samplers[channel.samplerIndex];
+
+            for (std::size_t i = 0; i < sampler.keyframeTimes.size() - 1; i++) {
+                float firstKeyframe = sampler.keyframeTimes[i];
+                float secondKeyframe = sampler.keyframeTimes[i + 1];
+
+                if ((target.timer < firstKeyframe) || (target.timer > secondKeyframe))
+                    continue;
+
+                float interp = target.timer / interpolationTime;
+
+                // It interp is greater than 1, we have blended into the target animation
+                if (interp > 1.0f) {
+                    this->blending = false;
+                    target.timer += timeDelta;
+                    return;
+                }
+
+                switch (channel.pathType) {
+                case vk::AnimationChannel::PathType::TRANSLATION:
+                    sampler.translate(channel.node, interp, i, true);
+                    break;
+                case vk::AnimationChannel::PathType::ROTATION:
+                    sampler.rotate(channel.node, interp, i, true);
+                    break;
+                case vk::AnimationChannel::PathType::SCALE:
+                    sampler.scale(channel.node, interp, i, true);
+                    break;
+                }
+
+                updated = true;
+            }
+        }
+
+        if (updated) {
+            // Update joint matrices of model
+            for (Node* node : this->linearNodes)
+                node->update();
+        }
+
+        target.timer += timeDelta;
+    }
+
 	void Model::destroy() {
-        for (Node* node : nodes) {
+        for (Node* node : linearNodes) {
 
             if (!node->mesh) continue;
 
             for (Primitive* primitive : node->mesh->primitives)
                 primitive->~Primitive();
+
+            node->descriptorBuffer.~Buffer();
         }
 	}
 

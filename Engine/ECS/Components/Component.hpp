@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <map>
+#include <cstdint>
 
 namespace Engine
 {
@@ -40,7 +41,7 @@ namespace Engine
         ComponentTypes GetType() const { return T::StaticType(); }
 
         // Type getter in child classes
-        virtual ComponentTypes StaticType() { return ComponentTypes::TYPE_COUNT; }
+        ComponentTypes StaticType() { return ComponentTypes::TYPE_COUNT; }
 
         // Get component data
         virtual void GetDataArray(uint8_t*) = 0;
