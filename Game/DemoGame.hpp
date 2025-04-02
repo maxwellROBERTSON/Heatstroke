@@ -2,15 +2,15 @@
 
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <chrono>
 
 #include "../Engine/Core/Game.hpp"
 
-#include "../Engine/ECS/CameraComponent.hpp"
-#include "../Engine/ECS/ComponentTypeRegistry.hpp"
 #include "../Engine/ECS/EntityManager.hpp"
-#include "../Engine/ECS/NetworkComponent.hpp"
-#include "../Engine/ECS/PhysicsComponent.hpp"
-#include "../Engine/ECS/RenderComponent.hpp"
+#include "../Engine/ECS/Components/CameraComponent.hpp"
+#include "../Engine/ECS/Components/NetworkComponent.hpp"
+#include "../Engine/ECS/Components/PhysicsComponent.hpp"
+#include "../Engine/ECS/Components/RenderComponent.hpp"
 
 #include "../Engine/Physics/PhysicsWorld.hpp"
 
@@ -38,27 +38,22 @@ public:
 		this->Init();
 	}
 	virtual void Init() override;
+	virtual void Render() override;
 	virtual void Update() override;
 	virtual void OnEvent(Engine::Event& e) override;
 
-	void registerComponents();
 	void initialiseModels();
-	void initialisePhysics();
-
-	void RenderGUI();
-	void RenderScene();
 
 	void loadOfflineEntities();
+	void loadOnlineEntities();
 
 	~FPSTest() {
 		for (Engine::vk::Model& model : GetModels())
 			model.destroy();
 	};
 
+	std::chrono::steady_clock::time_point previous;
 	int clientId = 0;
-	bool online = false;
-	bool offline = true;
-	bool isChange = true;
 };
 
 //void loadOfflineEntities(ComponentTypeRegistry& registry, EntityManager& entityManager, PhysicsWorld& pworld);

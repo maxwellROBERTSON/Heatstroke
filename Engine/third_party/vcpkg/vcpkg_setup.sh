@@ -11,20 +11,34 @@ export VCPKG_ROOT="${PWD}"
 # Add vcpkg to PATH
 export PATH="$VCPKG_ROOT:$PATH"
 
-# INSTALLED=$(./vcpkg list | grep "physx")
+INSTALLED=$(./vcpkg list | grep "physx")
 
-# # Check if PhysX is installed
-# if [ -z "$INSTALLED" ]; then
-#     echo "PhysX is not installed. Installing..."
-#     ./vcpkg install physx
-# else
-#     echo "PhysX is already installed:"
-#     echo "$INSTALLED"
-# fi
+# Check if PhysX is installed
+if [ -z "$INSTALLED" ]; then
+    echo "PhysX is not installed. Installing..."
+    ./vcpkg install physx
+else
+    echo "PhysX is already installed:"
+    echo "$INSTALLED"
+fi
 
-# Install PhysX using vcpkg
-echo "Installing PhysX using vcpkg..."
-./vcpkg install physx
+# Check if vulkan is installed
+if command -v vulkaninfo &>/dev/null; then
+    echo "Vulkan is installed."
+else
+    echo "Vulkan SDK is not installed."
+    read -p "Do you want to install Vulkan SDK using vcpkg? (Y:N):" choice
+    case "$choice" in
+        [Yy]*)
+            echo "Installing Vulkan SDK using vcpkg..."
+            ./vcpkg install vulkan
+            echo "Vulkan SDK has been installed successfully!"
+            ;;
+        *)
+            echo "Vulkan SDK installation skipped."
+            ;;
+    esac
+fi
 
 # Set VCPKG_TOOLCHAIN for use with Premake and CMake
 export VCPKG_TOOLCHAIN="${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"

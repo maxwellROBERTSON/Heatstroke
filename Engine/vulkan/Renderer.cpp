@@ -5,7 +5,7 @@
 #include "VulkanUtils.hpp"
 #include "VulkanDevice.hpp"
 #include "PipelineCreation.hpp"
-#include "../ECS/RenderComponent.hpp"
+#include "../ECS/Components/RenderComponent.hpp"
 
 #include "Utils.hpp"
 #include "vulkan/vulkan_core.h"
@@ -273,7 +273,7 @@ namespace Engine {
 		std::size_t uboAlignment = this->context->window->device->minUBOAlignment;
 		this->dynamicUBOAlignment = (sizeof(glm::mat4) + uboAlignment - 1) & ~(uboAlignment - 1);
 
-		VkDeviceSize bufferSize = this->dynamicUBOAlignment * entityManager->GetComponentTypeSize<RenderComponent>();
+		VkDeviceSize bufferSize = this->dynamicUBOAlignment * ComponentSizes[RENDER];
 
 		this->uniforms.modelMatricesUniform.model = (glm::mat4*)Utils::allocAligned(bufferSize, this->dynamicUBOAlignment);
 
@@ -357,16 +357,16 @@ namespace Engine {
 	void Renderer::updateModelMatrices()
 	{
 		// Update model matrices
-		std::vector<int> models = this->entityManager->GetEntitiesWithComponent<RenderComponent>();
-		for (std::size_t i = 0; i < models.size(); i++) {
+		std::vector<int> entities = this->entityManager->GetEntitiesWithComponent(RENDER);
+		for (std::size_t i = 0; i < entities.size(); i++) {
 			glm::mat4* modelMatrix = (glm::mat4*)((std::uint64_t)this->uniforms.modelMatricesUniform.model + (i * this->dynamicUBOAlignment));
 
 			// This will need to be changed to get a 'parent' model matrix, not
 			// just the first node's model matrix.
-			*modelMatrix = this->entityManager->GetEntity(models[i])->GetModelMatrix();
+			*modelMatrix = this->entityManager->GetEntity(entities[i])->GetModelMatrix();
 		}
 
-		int size = this->entityManager->GetComponentTypeSize<RenderComponent>() * this->dynamicUBOAlignment;
+		int size = ComponentSizes[RENDER] * this->dynamicUBOAlignment;
 
 		std::memcpy(this->uniformBuffers["modelMatrices"].mapped, this->uniforms.modelMatricesUniform.model, size);
 
@@ -375,11 +375,7 @@ namespace Engine {
 
 	void Renderer::render(std::vector<vk::Model>& models) {
 		unsigned int modes = (*game->GetRenderModes());
-		if ((modes & (1 << GUIHOME)))
-		{
-			this->renderGUI();
-		}
-		else if ((modes & (1 << GUISETTINGS)))
+		if ((modes & (1 << GUIHOME)) || (modes & (1 << GUISETTINGS)) || (modes & (1 << GUILOADING)) || ((modes & (1 << GUISERVER)) && (modes & (1 << GUIDEBUG))))
 		{
 			this->renderGUI();
 		}
@@ -390,10 +386,6 @@ namespace Engine {
 		else if ((modes & (1 << DEFERRED)))
 		{
 			this->renderDeferred(models, (modes & (1 << GUIDEBUG)));
-		}
-		else
-		{
-			std::cerr << "Unknown RenderMode Config" << std::endl;
 		}
 	}
 
@@ -415,60 +407,6 @@ namespace Engine {
 
 		if (this->uniformBuffers["modelMatrices"].allocation != VK_NULL_HANDLE)
 			vmaUnmapMemory(this->context->allocator->allocator, this->uniformBuffers["modelMatrices"].allocation);
-	}
-
-	void Renderer::modeOn(Engine::RenderMode r)
-	{
-		VkExtent2D swapchainExtent = this->context->window->swapchainExtent;
-
-		std::vector<VkImageView> views;
-
-		if (r == FORWARD)
-		{
-			this->forwardFramebuffers.clear();
-			views.emplace_back(this->buffers["depth"].second.handle);
-			createFramebuffers(*this->context->window, this->forwardFramebuffers, this->renderPasses["forward"].handle, views, swapchainExtent);
-		}
-		else if (r == DEFERRED)
-		{
-			this->deferredFramebuffers.clear();
-			views.emplace_back(this->buffers["normals"].second.handle);
-			views.emplace_back(this->buffers["albedo"].second.handle);
-			views.emplace_back(this->buffers["emissive"].second.handle);
-			views.emplace_back(this->buffers["depth"].second.handle);
-			createFramebuffers(*this->context->window, this->deferredFramebuffers, this->renderPasses["deferred"].handle, views, swapchainExtent);
-
-			this->descriptorSets["deferredShading"] = createDeferredShadingDescriptor(
-				*this->context->window,
-				this->descriptorLayouts["deferredLayout"].handle,
-				this->buffers["depth"].second.handle,
-				this->buffers["normals"].second.handle,
-				this->buffers["albedo"].second.handle,
-				this->buffers["emissive"].second.handle);
-		}
-		
-		if (r == SHADOWS)
-		{
-			this->shadowFramebuffer.clear();
-			views.clear();
-			VkExtent2D shadowExtent = VkExtent2D{ 2048, 2048 };
-			views.emplace_back(this->buffers["shadowDepth"].second.handle);
-			createFramebuffers(*this->context->window, this->shadowFramebuffer, this->renderPasses["shadow"].handle, views, shadowExtent, true);
-
-			this->descriptorSets["shadowMap"] = createImageDescriptor(
-				*this->context->window,
-				this->descriptorLayouts["shadowMapLayout"].handle,
-				this->buffers["shadowDepth"].second.handle,
-				this->depthSampler.handle);
-		}
-	}
-
-	void Renderer::modeOff(Engine::RenderMode r)
-	{
-		//this->framebuffersMap[r].clear();
-		this->forwardFramebuffers.clear();
-		this->deferredFramebuffers.clear();
-		this->shadowFramebuffer.clear();
 	}
 
 	void Renderer::renderGUI()
@@ -818,11 +756,11 @@ namespace Engine {
 
 	void Renderer::drawModels(VkCommandBuffer& cmdBuf, std::vector<vk::Model>& models, std::string handle, int modelMatricesSet, bool justGeometry)
 	{
-		std::pair<void*, int> renderComponents = entityManager->GetComponents<RenderComponent>();
-		for (std::size_t i = 0; i < renderComponents.second; i++) {
+		std::vector<std::unique_ptr<ComponentBase>>* renderComponents = this->entityManager->GetComponentsOfType(RENDER);
+		for (std::size_t i = 0; i < (*renderComponents).size(); i++) {
 			std::uint32_t offset = i * this->dynamicUBOAlignment;
 			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts[handle].handle, modelMatricesSet, 1, &this->descriptorSets["modelMatrices"], 1, &offset);
-			int j = reinterpret_cast<RenderComponent*>(renderComponents.first)[i].GetModelIndex();
+			int j = reinterpret_cast<RenderComponent*>(renderComponents->at(i).get())->GetModelIndex();
 			models[j].drawModel(cmdBuf, this->pipelineLayouts[handle].handle, justGeometry);
 		}
 	}
