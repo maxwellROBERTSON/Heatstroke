@@ -319,6 +319,58 @@ namespace vk {
         }
     }
 
+    // This method is actually extremely similar to Animation::update() and so could be merged in some way
+    void Model::blendAnimation(Animation& current, Animation& target, float timeDelta, float interpolationTime) {
+        // Kick off target animation if not already
+        if (!target.animating)
+            target.animating = true;
+
+        bool updated = false;
+
+        for (AnimationChannel& channel : target.channels) {
+            vk::AnimationSampler& sampler = target.samplers[channel.samplerIndex];
+
+            for (std::size_t i = 0; i < sampler.keyframeTimes.size() - 1; i++) {
+                float firstKeyframe = sampler.keyframeTimes[i];
+                float secondKeyframe = sampler.keyframeTimes[i + 1];
+
+                if ((target.timer < firstKeyframe) || (target.timer > secondKeyframe))
+                    continue;
+
+                float interp = target.timer / interpolationTime;
+
+                // It interp is greater than 1, we have blended into the target animation
+                if (interp > 1.0f) {
+                    this->blending = false;
+                    target.timer += timeDelta;
+                    return;
+                }
+
+                switch (channel.pathType) {
+                case vk::AnimationChannel::PathType::TRANSLATION:
+                    sampler.translate(channel.node, interp, i, true);
+                    break;
+                case vk::AnimationChannel::PathType::ROTATION:
+                    sampler.rotate(channel.node, interp, i, true);
+                    break;
+                case vk::AnimationChannel::PathType::SCALE:
+                    sampler.scale(channel.node, interp, i, true);
+                    break;
+                }
+
+                updated = true;
+            }
+        }
+
+        if (updated) {
+            // Update joint matrices of model
+            for (Node* node : this->linearNodes)
+                node->update();
+        }
+
+        target.timer += timeDelta;
+    }
+
 	void Model::destroy() {
         for (Node* node : linearNodes) {
 

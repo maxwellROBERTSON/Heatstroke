@@ -383,12 +383,39 @@ namespace Engine {
 			// Skip until we find any models with animations
 			if (model.animations.size() == 0)
 				continue;
-			
-			// Iterate over this model's animations and try updating any
-			for (std::size_t j = 0; j < model.animations.size(); j++) {
-				vk::Animation& animation = model.animations[j];
-				if (animation.animating)
-					animation.update(model, timeDelta);
+
+			// Animation queue is empty: 
+			// 1. Render idle animation
+			// Animation queue is not empty:
+			// 1. Blend to first animation in queue
+			// 2. If blended, continue running first animation in queue
+			// 3. Once first animation is completed, pop animation
+			// 4. Check if animation queue is empty. TODO
+			//    - If so, blend to idle and run idle.
+			//    - If not, go to step 1.
+
+
+			// If animation queue is empty just render idle animation
+			if (model.animationQueue.empty()) {
+				model.idleAnimation.update(model, timeDelta);
+			}
+			// Otherwise process animation queue
+			else {
+				// Get first animation in queue
+				vk::Animation& target = model.animationQueue.front();
+				
+				// If this model is still blending, run blendAnimation
+				if (model.blending) {
+					model.blendAnimation(model.idleAnimation, target, timeDelta, 0.2f);
+				}
+				// If not blending then just continue updating front animation
+				else {
+					target.update(model, timeDelta);
+				}
+
+				// Check if target animation is finished
+				if (!target.animating)
+					model.animationQueue.pop();
 			}
 		}
 	}

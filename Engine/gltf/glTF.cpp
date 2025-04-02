@@ -578,6 +578,13 @@ namespace Engine {
 				animation.channels.push_back(channel);
 			}
 
+			// If animation name contains 'idle' set it to loop
+			if (animation.name == "Pistol_IDLE") {
+				animation.loop = true;
+				animation.animating = true;
+				vkModel.idleAnimation = animation;
+			}
+
 			vkModel.animations.push_back(animation);
 		}
 	}

@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <iostream>
+#include <queue>
 
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/quaternion.hpp>
@@ -152,18 +153,21 @@ namespace vk {
 		int meshedNodes;
 
 		int animationIndex = 0; // TEMP
+		// We always want an idle animation for any model that has animations (or at least try to)
+		Animation idleAnimation;
+		std::queue<Animation> animationQueue;
+		bool blending = false;
 
 		// Bounding box of the entire model
 		glm::vec3 bbMin;
 		glm::vec3 bbMax;
 
-		void createDescriptorSets(
-			const VulkanContext& aContext, 
-			VkDescriptorSetLayout aSamplerSetLayout, 
-			VkDescriptorSetLayout aMaterialInfoSetLayout);
+		void createDescriptorSets(const VulkanContext& aContext, VkDescriptorSetLayout aSamplerSetLayout, VkDescriptorSetLayout aMaterialInfoSetLayout);
         void drawModel(VkCommandBuffer aCmdBuf, Renderer* aRenderer, const std::string& aPipelineHandle, std::uint32_t& offset, bool justGeometry = false);
 		void drawNode(Node* node, VkCommandBuffer aCmdBuf, VkPipelineLayout aPipelineLayout, AlphaMode aAlphaMode);
 		void drawNodeGeometry(Node* node, VkCommandBuffer aCmdBuf, VkPipelineLayout aPipelineLayout, AlphaMode aAlphaMode);
+
+		void blendAnimation(Animation& current, Animation& target, float timeDelta, float interpolationTime);
 
 		Node* getNodeFromIndex(int nodeIndex);
 

@@ -34,9 +34,9 @@ namespace vk {
 		std::vector<float> keyframeTimes;
 		std::vector<glm::vec4> outputValues;
 
-		void translate(Node* node, float interpolation, std::size_t index);
-		void rotate(Node* node, float interpolation, std::size_t index);
-		void scale(Node* node, float interpolation, std::size_t index);
+		void translate(Node* node, float interpolation, std::size_t index, bool blend = false);
+		void rotate(Node* node, float interpolation, std::size_t index, bool blend = false);
+		void scale(Node* node, float interpolation, std::size_t index, bool blend = false);
 	};
 
 	struct Animation {

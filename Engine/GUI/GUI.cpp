@@ -258,8 +258,8 @@ namespace Engine
 
 			ImGui::Combo("Animation", &model.animationIndex, list.data(), size, size);
 			if (ImGui::Button("Play Animation")) {
-				if (!model.animations[model.animationIndex].animating)
-					model.animations[model.animationIndex].animating = true;
+				model.animationQueue.push(model.animations[model.animationIndex]);
+				model.blending = true;
 			}
 		}
 
