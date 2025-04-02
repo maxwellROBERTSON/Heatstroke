@@ -4,24 +4,48 @@
 #include <vector>
 #include <unordered_map>
 #include <glm/gtc/matrix_transform.hpp>
+#include <cstdint>
 
-#include "Component.hpp"
+#include "Components/Component.hpp"
 #include "../gltf/glTF.hpp"
 
-class EntityManager;
-
-class Entity
+namespace Engine
 {
-public:
-	Entity(EntityManager*, int entityId, std::vector<int> typeIndexList);
-	~Entity() {};
+	class EntityManager;
 
-	// Getters
-	int GetEntityId() { return entityId; }
-	glm::mat4 GetModelMatrix();
-	int GetComponent(int id) { return componentListId[id]; }
-	std::vector<int> GetComponentIndexArray() { return componentListId; }
+	class Entity
+	{
+	public:
+		Entity(EntityManager*, int, std::vector<int>);
+		~Entity() {};
 
+		// Getters
+
+		// Get the size of an entity
+		size_t GetEntitySize() { return sizeof(entityId) + sizeof(modelMatrix); }
+
+		// Get the data for a given entity
+		void GetData(uint8_t*);
+
+		// Get entity id
+		int GetEntityId() { return entityId; }
+
+		// Get model matrix
+		glm::mat4 GetModelMatrix() { return modelMatrix; }
+
+		// Get a component index of a given type
+		int GetComponent(ComponentTypes t) { return componentTypeIndexList[t]; }
+
+		// Get all components of this entity
+		std::vector<int> GetComponentIndexArray() { return componentTypeIndexList; }
+
+		// Setters
+
+		// Set the data for a given entity
+		void SetData(uint8_t*);
+
+		// Set model matrix
+		void SetModelMatrix(glm::mat4 aModelMatrix) { modelMatrix = aModelMatrix; }
 	// Setters
 	void SetPosition(float x, float y, float z);
 	void SetPosition(glm::vec3 position);
@@ -32,6 +56,10 @@ public:
 	void SetScale(float xScale, float yScale, float zScale);
 	void SetScale(float overallScale);
 
+	private:
+		EntityManager* entityManager;
+		int entityId;
+		glm::mat4 modelMatrix = glm::mat4(1.0f);
 private:
 	EntityManager* entityManager;
 	int entityId;
@@ -44,8 +72,8 @@ private:
 
 	glm::mat4 modelMatrix = glm::mat4(1.0f);
 
-	// Holds a list of components with the type = index and
-	// value = component index in that types list
-	std::vector<int> componentListId;
-
-};
+		// Holds a list of components with the type = index and
+		// value = component index in that types list
+		std::vector<int> componentTypeIndexList;
+	};
+}

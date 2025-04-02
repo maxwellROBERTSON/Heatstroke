@@ -224,7 +224,7 @@ namespace yojimbo
             @param message The message to send.
          */
 
-        virtual void SendMessage( int clientIndex, int channelIndex, Message * message ) = 0;
+        virtual void SendServerMessage( int clientIndex, int channelIndex, Message * message ) = 0;
 
         /**
             Receive a message from a client over a channel.

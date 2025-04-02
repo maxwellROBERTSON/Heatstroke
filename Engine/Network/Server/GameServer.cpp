@@ -1,112 +1,164 @@
 #include "GameServer.hpp"
 
-static const uint8_t DEFAULT_PRIVATE_KEY[yojimbo::KeyBytes] = { 0 };
-
-GameServer::GameServer(
-	yojimbo::ClientServerConfig* config,
-	GameAdapter* adapter,
-	yojimbo::Address address,
-	int maxClients,
-	Engine::Game* game
-)
-	:
-	config(config),
-	adapter(adapter),
-	maxClients(maxClients)
+namespace Engine
 {
-	// Initialise server
-	double time = 1.0;
-	server = YOJIMBO_NEW(yojimbo::GetDefaultAllocator(), yojimbo::Server,
-		yojimbo::GetDefaultAllocator(),
-		DEFAULT_PRIVATE_KEY,
-		address,
-		*config,
-		*adapter,
-		time);
-
-	adapter->SetServer(server);
-	mGame = game;
-	Start();
-}
-
-void GameServer::Start()
-{
-	// Start server
-	server->Start(maxClients);
-	//mGame->Init();
-	Run();
-}
-
-void GameServer::Run()
-{
-	float fixedDt = 1.0f / 120.0f;
-	while (server && server->IsRunning())
+	GameServer::GameServer(
+		yojimbo::ClientServerConfig* config,
+		GameAdapter* adapter,
+		yojimbo::Address address,
+		int maxClients,
+		Engine::Game* game
+	)
+		:
+		config(config),
+		adapter(adapter),
+		maxClients(maxClients),
+		game(game)
 	{
-		double currentTime = yojimbo_time();
-		if (server->GetTime() <= currentTime)
-		{
-			Update(fixedDt);
+		// Initialise server
+		double time = 1.0;
+		server = YOJIMBO_NEW(yojimbo::GetDefaultAllocator(), yojimbo::Server,
+			yojimbo::GetDefaultAllocator(),
+			DEFAULT_PRIVATE_KEY,
+			address,
+			*config,
+			*adapter,
+			time);
+
+		adapter->SetServer(server);
+		Start();
+	}
+
+	void GameServer::Start()
+	{
+		// Start server
+		server->Start(maxClients);
+		serverTime = yojimbo_time();
+	}
+
+	void GameServer::Update()
+	{
+		double time = yojimbo_time();
+		if (serverTime + dt <= yojimbo_time()) {
+			serverTime += dt;
 		}
-		else
+		else {
+			//yojimbo_sleep(m_time - currentTime);
+			return;
+		}
+
+		server->SendPackets();
+		// update server and process messages
+		server->ReceivePackets();
+		ProcessMessages();
+		server->AdvanceTime(dt);
+
+		// ... process client inputs ...
+		// ... update game ...
+		// ... send game state to clients ...
+
+	}
+
+	void GameServer::ProcessMessages()
+	{
+		for (int i = 0; i < maxClients; i++)
 		{
-			yojimbo_sleep(server->GetTime() - currentTime);
+			if (server->IsClientConnected(i))
+			{
+				for (int j = 0; j < config->numChannels; j++)
+				{
+					yojimbo::Message* message = server->ReceiveMessage(i, j);
+					while (message != NULL)
+					{
+						ProcessMessage(i, message);
+						server->ReleaseMessage(i, message);
+						message = server->ReceiveMessage(i, j);
+					}
+				}
+			}
+			else
+			{
+				server->DisconnectClient(i);
+			}
 		}
 	}
-}
 
-void GameServer::Update(float fixedDt)
-{
-	// update server and process messages
-	server->AdvanceTime(server->GetTime() + fixedDt);
-	server->ReceivePackets();
-	ProcessMessages();
-
-	// ... process client inputs ...
-	// ... update game ...
-	// ... send game state to clients ...
-
-	server->SendPackets();
-}
-
-void GameServer::ProcessMessages()
-{
-	for (int i = 0; i < maxClients; i++)
+	void GameServer::ProcessMessage(int clientIndex, yojimbo::Message* message)
 	{
-		if (server->IsClientConnected(i))
+		std::cout << "MESSAGE FROM CLIENT " << clientIndex << " WITH: TYPE = " << message->GetType() << ", MESSAGEID = " << message->GetId() << std::endl;
+		if (message->GetType() == REQUEST_MESSAGE)
 		{
-			for (int j = 0; j < config->numChannels; j++)
+			RequestMessage* derived = (RequestMessage*)message;
+			HandleRequestMessage(clientIndex, derived->requestType);
+		}
+	}
+
+	void GameServer::HandleRequestMessage(int clientIndex, RequestType requestType)
+	{
+		RequestResponseMessage* message = static_cast<RequestResponseMessage*>(server->CreateMessage(clientIndex, REQUEST_RESPONSE_MESSAGE));
+		if (message)
+		{
+			message->responseType = static_cast<ResponseType>(requestType);
+			if (message->responseType == ResponseType::ENTITY_DATA_RESPONSE)
 			{
-				GameMessage* message = (GameMessage*)server->ReceiveMessage(i, j);
-				while (message != NULL)
+				int bytes = game->GetEntityManager().GetTotalDataSize();
+				uint8_t* block = server->AllocateBlock(clientIndex, bytes);
+				if (block)
 				{
-					ProcessMessage(i, message);
-					server->ReleaseMessage(i, message);
-					message = (GameMessage*)server->ReceiveMessage(i, j);
+					game->GetEntityManager().GetAllData(block);
+					server->AttachBlockToMessage(clientIndex, message, block, bytes);
+					server->SendServerMessage(clientIndex, yojimbo::CHANNEL_TYPE_RELIABLE_ORDERED, message);
+					std::cout << "MESSAGE TO CLIENT " << clientIndex << " WITH: TYPE = " << message->GetType() << ", MESSAGEID = ";
+					std::cout << message->GetId() << ", BLOCK SIZE = " << bytes << ", RESPONSETYPE = " << static_cast<int>(message->responseType) << std::endl;
+					//server->SendPackets();
+					//message->DetachBlock();
+					//server->FreeBlock(clientIndex, block);
+				}
+				else
+				{
+					server->ReleaseMessage(clientIndex, message);
 				}
 			}
 		}
 		else
 		{
-			server->DisconnectClient(i);
+			server->ReleaseMessage(clientIndex, message);
 		}
+		//adapter->factory->ReleaseMessage(message);
+		//server->ReleaseMessage(clientIndex, message);
+	}
+
+	void GameServer::CleanUp()
+	{
+		// Clean up server
+		YOJIMBO_DELETE(yojimbo::GetDefaultAllocator(), GameAdapter, adapter);
+		server->Stop();
+		YOJIMBO_DELETE(yojimbo::GetDefaultAllocator(), Server, server);
+		ShutdownYojimbo();
+	}
+
+	void GameServer::UpdateStatus()
+	{
+		;
+	}
+
+	std::map<std::string, std::string> GameServer::GetInfo()
+	{
+		std::map<std::string, std::string> info;
+
+		// Server Info
+		info["Dt"] = std::to_string(dt);
+		info["Max Clients"] = std::to_string(maxClients);
+		info["Num Connected Clients"] = std::to_string(server->GetNumConnectedClients());
+		const uint8_t* addPtr = server->GetAddress().GetAddress4();
+		std::string ipAddress = std::to_string(addPtr[0]) + "." +
+			std::to_string(addPtr[1]) + "." +
+			std::to_string(addPtr[2]) + "." +
+			std::to_string(addPtr[3]);
+		info["Address"] = ipAddress;
+		uint16_t port = server->GetAddress().GetPort();
+		info["Port"] = std::to_string(port);
+
+		return info;
 	}
 }
-
-void GameServer::ProcessMessage(int clientIndex, GameMessage* message)
-{
-	//std::cout << "Processing message from client " << clientIndex << " with messageID " << message->GetId() << std::endl;
-	std::cout << "MESSAGE FROM CLIENT " << clientIndex << " " << message->sequence << " MESSAGEID = " << message->GetId() << std::endl;
-}
-
-void GameServer::CleanUp()
-{
-	// Clean up server
-	YOJIMBO_DELETE(yojimbo::GetDefaultAllocator(), GameAdapter, adapter);
-	YOJIMBO_DELETE(yojimbo::GetDefaultAllocator(), Server, server);
-	ShutdownYojimbo();
-}
-
-//EntityManager* GameServer::GetEntityManager()
-//{
-//	return &entityManager;
-//}

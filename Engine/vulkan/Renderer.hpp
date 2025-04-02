@@ -31,7 +31,7 @@ namespace Engine {
 		Renderer() = default;
 
 		VkRenderPass& GetRenderPass(std::string s);
-		Engine::Camera* GetCamera() { return camera; }
+		Engine::Camera* GetCameraPointer() { return camera; }
 		bool const GetIsSceneLoaded() { return isSceneLoaded; }
 
 		void initialiseRenderer();
@@ -50,8 +50,6 @@ namespace Engine {
 		void finishRendering();
 
 		vk::Buffer createDynamicUniformBuffer();
-		void modeOn(Engine::RenderMode r);
-		void modeOff(Engine::RenderMode r);
 
 		// Getters
 		std::map<std::string, vk::PipelineLayout>& getPipelineLayouts();

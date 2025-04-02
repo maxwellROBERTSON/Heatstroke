@@ -9,55 +9,51 @@
 #include <unistd.h>
 #endif
 #include <vector>
-#include "../ECS/EntityManager.hpp"
-#include <glm/gtx/matrix_decompose.hpp>
+//#include "../ECS/EntityManager.hpp"
+#include "../vulkan/objects/Model.hpp"
 
-using namespace physx;
+namespace Engine
+{
+	using namespace physx;
 
-class PhysicsWorld {
-public:
-	std::vector<PxRigidStatic*> staticBodies;
-	PxFoundation* gFoundation = nullptr;
-	PxPhysics* gPhysics = nullptr;
-	PxScene* gScene = nullptr;
-	PxControllerManager* gControllerManager = nullptr;
-	PxDefaultAllocator gAllocator;
-	static PxDefaultErrorCallback gErrorCallback;
-	PxMaterial* gMaterial = nullptr;
-	PxCapsuleController* controller = nullptr;
-	PxU32 numDynamicRigid = 0;
+	class EntityManager;
 
-	// CapsuleController
-	PxCapsuleController* gCapsuleController = nullptr;
+	class PhysicsWorld {
+	public:
+		std::vector<PxRigidStatic*> staticBodies;
+		PxFoundation* gFoundation = nullptr;
+		PxPhysics* gPhysics = nullptr;
+		PxScene* gScene = nullptr;
+		PxControllerManager* gControllerManager = nullptr;
+		PxDefaultAllocator gAllocator;
+		static PxDefaultErrorCallback gErrorCallback;
+		PxMaterial* gMaterial = nullptr;
+		PxCapsuleController* controller = nullptr;
+		PxU32 numDynamicRigid = 0;
 
-	// PVD
-	#if defined(_WIN32)
-	PxPvd* gPvd = nullptr;
-	PxPvdTransport* gTransport = nullptr;
-	#endif
+		// CapsuleController
+		PxCapsuleController* gCapsuleController = nullptr;
+
+		// PVD
+#if defined(_WIN32)
+		PxPvd* gPvd = nullptr;
+		PxPvdTransport* gTransport = nullptr;
+#endif
 
 
-	PxReal gTimestep = 1.0f / 60.0f; // 60 FPS
+		PxReal gTimestep = 1.0f / 60.0f; // 60 FPS
 
-	void init();
+		void init();
 
-	void updateCharacter(PxReal deltatime);
+		void updateCharacter(PxReal deltatime);
 
-	void updateObjects(EntityManager& entityManager, std::vector<Engine::vk::Model>& models);
+		void updateObjects(Engine::EntityManager& entityManager, std::vector<Engine::vk::Model>& models);
 
-	void cleanupPhysX();
+		void cleanupPhysX();
 
-	glm::mat4 ConvertPxTransformToGlmMat4(const PxTransform& transform);
+		glm::mat4 ConvertPxTransformToGlmMat4(const PxTransform& transform);
 
-private:
-	bool DecomposeTransform(const glm::mat4& matrix, glm::vec3& translation, glm::quat& rotation, glm::vec3& scale)
-	{
-		glm::vec3 skew;
-		glm::vec4 perspective;
-		bool success = glm::decompose(matrix, scale, rotation, translation, skew, perspective);
-		if (success) {
-			rotation = glm::conjugate(rotation);
-		}
-		return success;
-	}
-};
+	private:
+
+	};
+}

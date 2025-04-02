@@ -258,7 +258,7 @@ namespace yojimbo
         return m_clientConnection[clientIndex]->HasMessagesToSend( channelIndex );
     }
 
-    void BaseServer::SendMessage( int clientIndex, int channelIndex, Message * message )
+    void BaseServer::SendServerMessage( int clientIndex, int channelIndex, Message * message )
     {
         yojimbo_assert( clientIndex >= 0 );
         yojimbo_assert( clientIndex < m_maxClients );
