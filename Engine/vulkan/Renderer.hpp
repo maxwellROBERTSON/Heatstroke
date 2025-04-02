@@ -1,10 +1,10 @@
 #pragma once
 
-#include "../Core/RenderMode.hpp"
-#include "objects/Model.hpp"
 #include "Uniforms.hpp"
 #include "Utils.hpp"
+#include "../gltf/Model.hpp"
 #include "../ECS/EntityManager.hpp"
+#include "../Core/RenderMode.hpp"
 #include "../Core/Camera.hpp"
 #include "../Core/Game.hpp"
 
@@ -36,11 +36,13 @@ namespace Engine {
 
 		void initialiseRenderer();
 		void initialiseModelMatrices();
+		void initialiseJointMatrices();
 		void cleanModelMatrices();
 		void attachCamera(Engine::Camera* camera);
 		void initialiseModelDescriptors(std::vector<vk::Model>& models);
 		bool checkSwapchain();
 		bool acquireSwapchainImage();
+		void updateAnimations(float timeDelta);
 		void updateUniforms();
 		void updateModelMatrices();
 		void render(std::vector<vk::Model>& models);
@@ -49,9 +51,25 @@ namespace Engine {
 
 		vk::Buffer createDynamicUniformBuffer();
 
+		// Getters
+		std::map<std::string, vk::PipelineLayout>& getPipelineLayouts();
+		vk::PipelineLayout& getPipelineLayout(const std::string& handle);
+
+		std::map<std::string, vk::Pipeline>& getPipelines();
+		vk::Pipeline& getPipeline(const std::string& handle);
+
+		std::map<std::string, VkDescriptorSet> getDescriptorSets();
+		VkDescriptorSet getDescriptorSet(const std::string& handle);
+
+		std::size_t getDynamicUBOAlignment();
+
 		// Debug things
 		float depthBiasConstant = 7.0f;
 		float depthBiasSlopeFactor = 10.0f;
+
+		float animationTimer = 0.0f;
+		int animationIndex = 0;
+		bool animating = false;
 
 	private:
 		VulkanContext* context;
@@ -81,6 +99,8 @@ namespace Engine {
 		std::vector<vk::Semaphore> renderFinished;
 
 		std::size_t dynamicUBOAlignment;
+		// Number of model matrices when creating dynamic uniform buffer object
+		int modelMatrices;
 
 		Uniforms uniforms;
 
@@ -90,9 +110,8 @@ namespace Engine {
 
 		void renderGUI();
 		void renderForward(std::vector<vk::Model>& models, bool debug);
-		void renderForwardShadows(std::vector<vk::Model>& models, bool debug);
 		void renderDeferred(std::vector<vk::Model>& models, bool debug);
-		void drawModels(VkCommandBuffer& cmdBuf, std::vector<vk::Model>& models, std::string handle, int modelMatricesSet, bool justGeometry = false);
+		void drawModels(VkCommandBuffer cmdBuf, std::vector<vk::Model>& models, std::string handle, bool justGeometry = false);
 
 		void recreateFormatDependents();
 		void recreateSizeDependents();

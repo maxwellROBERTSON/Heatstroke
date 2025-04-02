@@ -5,10 +5,13 @@
 
 #include "Error.hpp"
 #include "toString.hpp"
+#include "Animation.hpp"
 #include "VulkanEnums.hpp"
 #include "VulkanUtils.hpp"
 #include "../vulkan/VulkanDevice.hpp"
 #include "../vulkan/objects/Buffer.hpp"
+
+#define MAX_JOINTS 128u
 
 namespace Engine {
 
@@ -54,18 +57,19 @@ namespace Engine {
 		const tinygltf::Scene& scene = model.scenes[model.defaultScene > -1 ? model.defaultScene : 0];
 
 		// 5. Recurse through scene nodes and get mesh data for each
-
-		std::uint32_t indicesCount = 0, verticesCount = 0;
-
-		// Get indices and vertices count for all nodes in the scene
-		for (std::size_t i = 0; i < model.nodes.size(); i++)
-			getCounts(model, model.nodes[i], indicesCount, verticesCount);
-
-		// Load the node meshes into Vulkan objects
-		for (std::size_t i = 0; i < model.nodes.size(); i++) {
-			tinygltf::Node node = model.nodes[i];
-			loadNodeMeshes(nullptr, node, model, i, vkModel);
+		for (std::size_t i = 0; i < scene.nodes.size(); i++) {
+			tinygltf::Node node = model.nodes[scene.nodes[i]];
+			loadNodes(nullptr, node, model, i, vkModel);
 		}
+
+		// 6. Calculate bounding box of entire model
+		calculateModelBoundingBox(vkModel);
+
+		// 7. Load animation data
+		loadAnimations(model, vkModel);
+
+		// 8. Load skin data
+		loadSkins(model, vkModel);
 
 		createVulkanBuffers(aContext, vkModel);
 
@@ -75,7 +79,7 @@ namespace Engine {
 	void loadMaterials(tinygltf::Model& model, vk::Model& vkModel) {
 		for (tinygltf::Material material : model.materials) {
 			vk::Material vkMaterial{};
-			
+
 			if (material.alphaMode == "MASK") {
 				vkMaterial.alphaMode = vk::AlphaMode::ALPHA_MASK;
 				vkMaterial.alphaCutoff = material.alphaCutoff;
@@ -89,25 +93,25 @@ namespace Engine {
 
 			vkMaterial.emissiveFactor = glm::make_vec3(material.emissiveFactor.data());
 			vkMaterial.emissiveTextureIndex = material.emissiveTexture.index;
-			vkMaterial.emissiveTextureTexCoords = material.emissiveTexture.texCoord;
+			vkMaterial.emissiveTextureTexCoords = vkMaterial.emissiveTextureIndex > -1 ? material.emissiveTexture.texCoord : -1;
 			vkMaterial.emissiveStrength = 1.0f; // This can be changed using a glTF extension, which we may want to account for
 
 			vkMaterial.normalTextureIndex = material.normalTexture.index;
-			vkMaterial.normalTextureTexCoords = material.normalTexture.texCoord;
+			vkMaterial.normalTextureTexCoords = vkMaterial.normalTextureIndex > -1 ? material.normalTexture.texCoord : -1;
 
 			vkMaterial.occlusionTextureIndex = material.occlusionTexture.index;
-			vkMaterial.occlusionTextureTexCoords = material.occlusionTexture.texCoord;
+			vkMaterial.occlusionTextureTexCoords = vkMaterial.occlusionTextureIndex > -1 ? material.occlusionTexture.texCoord : -1;
 			vkMaterial.occlusionStrength = material.occlusionTexture.strength;
 
 			vkMaterial.baseColourFactor = glm::make_vec4(material.pbrMetallicRoughness.baseColorFactor.data());
 			vkMaterial.baseColourTextureIndex = material.pbrMetallicRoughness.baseColorTexture.index;
-			vkMaterial.baseColourTextureTexCoords = material.pbrMetallicRoughness.baseColorTexture.texCoord;
+			vkMaterial.baseColourTextureTexCoords = vkMaterial.baseColourTextureIndex > -1 ? material.pbrMetallicRoughness.baseColorTexture.texCoord : -1;
 
 			vkMaterial.metallicRoughnessTextureIndex = material.pbrMetallicRoughness.metallicRoughnessTexture.index;
-			vkMaterial.metallicRoughnessTextureTexCoords = material.pbrMetallicRoughness.metallicRoughnessTexture.texCoord;
+			vkMaterial.metallicRoughnessTextureTexCoords = vkMaterial.metallicRoughnessTextureIndex > -1 ? material.pbrMetallicRoughness.metallicRoughnessTexture.texCoord : -1;
 			vkMaterial.metallicFactor = material.pbrMetallicRoughness.metallicFactor;
 			vkMaterial.roughnessFactor = material.pbrMetallicRoughness.roughnessFactor;
-			
+
 			vkMaterial.index = vkModel.materials.size();
 
 			vkModel.materials.emplace_back(vkMaterial);
@@ -129,7 +133,7 @@ namespace Engine {
 			vkSampler.magFilter = Utils::getVkFilter(sampler.magFilter);
 			vkSampler.addressModeU = Utils::getVkSamplerAddressMode(sampler.wrapS);
 			vkSampler.addressModeV = Utils::getVkSamplerAddressMode(sampler.wrapT);
-			
+
 			vkModel.samplers.emplace_back(createTextureSampler(aWindow, vkSampler));
 		}
 	}
@@ -149,7 +153,7 @@ namespace Engine {
 			VkFormat format = VK_FORMAT_R8G8B8A8_UNORM;
 
 			// Go through all materials and if the baseColourTextureIndex is this texture
-			// then set format to SRGB format (potentially an expensive operation)
+			// then set format to SRGB format
 			for (const vk::Material& material : vkModel.materials) {
 				if (material.baseColourTextureIndex == i)
 					format = VK_FORMAT_R8G8B8A8_SRGB;
@@ -165,54 +169,42 @@ namespace Engine {
 		}
 	}
 
-	void getCounts(tinygltf::Model& model, tinygltf::Node& node, std::uint32_t& indicesCount, std::uint32_t& verticesCount) {
-		if (!node.children.empty()) {
-			for (std::size_t i = 0; i < node.children.size(); i++)
-				getCounts(model, model.nodes[node.children[i]], indicesCount, verticesCount);
-		}
-
-		if (node.mesh > -1) {
-			const tinygltf::Mesh mesh = model.meshes[node.mesh];
-
-			for (std::size_t i = 0; i < mesh.primitives.size(); i++) {
-				tinygltf::Primitive primitive = mesh.primitives[i];
-				verticesCount += model.accessors[primitive.attributes.find("POSITION")->second].count;
-
-				if (primitive.indices > -1)
-					indicesCount += model.accessors[primitive.indices].count;
-			}
-		}
-	}
-
-	void loadNodeMeshes(vk::Node* parent, tinygltf::Node& node, tinygltf::Model& model, std::uint32_t nodeIndex, vk::Model& vkModel) {
+	void loadNodes(vk::Node* parent, tinygltf::Node& node, tinygltf::Model& model, std::uint32_t nodeIndex, vk::Model& vkModel) {
 		vk::Node* newNode = new vk::Node();
 		newNode->index = nodeIndex;
+		newNode->skinIndex = node.skin;
 		newNode->parent = parent;
 		newNode->nodeMatrix = glm::mat4(1.0f);
 
-		glm::vec3 translation(0.0f);
-		if (node.translation.size() == 3) {
-			translation = glm::make_vec3(node.translation.data());
-			newNode->translation = translation;
-		}
+		bool hasMatrix = false;
 
-		if (node.rotation.size() == 4) {
-			glm::quat quaternion = glm::make_quat(node.rotation.data());
-			newNode->rotation = glm::mat4(quaternion);
-		}
-
-		glm::vec3 scale(1.0f);
-		if (node.scale.size() == 3) {
-			scale = glm::make_vec3(node.scale.data());
-			newNode->scale = scale;
-		}
-
-		if (node.matrix.size() == 16)
+		// glTF spec states that nodes will define a local space transform using either
+		// a matrix OR TRS properties, meaning they are mutually exclusive for a single node.
+		if (node.matrix.size() == 16) {
 			newNode->nodeMatrix = glm::make_mat4x4(node.matrix.data());
+			hasMatrix = true;
+		}
+
+		if (node.translation.size() == 3)
+			newNode->translation = glm::make_vec3(node.translation.data());
+
+		if (node.rotation.size() == 4)
+			newNode->rotation = glm::make_quat(node.rotation.data());
+
+		if (node.scale.size() == 3)
+			newNode->scale = glm::make_vec3(node.scale.data());
+
+		// Recurse through this nodes children
+		if (!node.children.empty()) {
+			for (std::size_t i = 0; i < node.children.size(); i++)
+				loadNodes(newNode, model.nodes[node.children[i]], model, node.children[i], vkModel);
+		}
 
 		if (node.mesh > -1) {
 			const tinygltf::Mesh mesh = model.meshes[node.mesh];
 			vk::Mesh* newMesh = new vk::Mesh(newNode->nodeMatrix);
+
+			vkModel.meshedNodes++;
 
 			for (std::size_t i = 0; i < mesh.primitives.size(); i++) {
 				const tinygltf::Primitive& primitive = mesh.primitives[i];
@@ -229,12 +221,17 @@ namespace Engine {
 				const float* texCoords0Pos = nullptr;
 				const float* texCoords1Pos = nullptr;
 				const float* colourPos = nullptr;
+				const void* jointsPos = nullptr;
+				const float* weightsPos = nullptr;
+
 				int positionByteStride;
 				int normalsByteStride;
 				int tangentByteStride;
 				int texCoords0ByteStride;
 				int texCoords1ByteStride;
 				int colourByteStride;
+				int jointByteStride;
+				int weightByteStride;
 
 				const tinygltf::Accessor& positionAccessor = model.accessors[primitive.attributes.find("POSITION")->second];
 				const tinygltf::BufferView& positionBufView = model.bufferViews[positionAccessor.bufferView];
@@ -262,7 +259,7 @@ namespace Engine {
 				else {
 					getTangentsFromTgen = true;
 				}
-				
+
 				// Get texCoords
 				if (primitive.attributes.find("TEXCOORD_0") != primitive.attributes.end()) {
 					const tinygltf::Accessor& texCoord0Accessor = model.accessors[primitive.attributes.find("TEXCOORD_0")->second];
@@ -277,13 +274,32 @@ namespace Engine {
 					texCoords1Pos = reinterpret_cast<const float*>(&(model.buffers[texCoord1BufView.buffer].data[texCoord1Accessor.byteOffset + texCoord1BufView.byteOffset]));
 					texCoords1ByteStride = texCoord1Accessor.ByteStride(texCoord1BufView) ? (texCoord1Accessor.ByteStride(texCoord1BufView) / sizeof(float)) : tinygltf::GetNumComponentsInType(TINYGLTF_TYPE_VEC2);
 				}
-				
+
 				// Get colour
 				if (primitive.attributes.find("COLOR_0") != primitive.attributes.end()) {
 					const tinygltf::Accessor& colourAccessor = model.accessors[primitive.attributes.find("COLOR_0")->second];
 					const tinygltf::BufferView& colourBufView = model.bufferViews[colourAccessor.bufferView];
 					colourPos = reinterpret_cast<const float*>(&(model.buffers[colourBufView.buffer].data[colourAccessor.byteOffset + colourBufView.byteOffset]));
 					colourByteStride = colourAccessor.ByteStride(colourBufView) ? (colourAccessor.ByteStride(colourBufView) / sizeof(float)) : tinygltf::GetNumComponentsInType(TINYGLTF_TYPE_VEC4);
+				}
+
+				// Get joints
+				int jointComponentType;
+
+				if (primitive.attributes.find("JOINTS_0") != primitive.attributes.end()) {
+					const tinygltf::Accessor& jointsAccessor = model.accessors[primitive.attributes.find("JOINTS_0")->second];
+					const tinygltf::BufferView& jointsBufView = model.bufferViews[jointsAccessor.bufferView];
+					jointsPos = &(model.buffers[jointsBufView.buffer].data[jointsAccessor.byteOffset + jointsBufView.byteOffset]);
+					jointComponentType = jointsAccessor.componentType;
+					jointByteStride = jointsAccessor.ByteStride(jointsBufView) ? (jointsAccessor.ByteStride(jointsBufView) / tinygltf::GetComponentSizeInBytes(jointComponentType)) : tinygltf::GetNumComponentsInType(TINYGLTF_TYPE_VEC4);
+				}
+
+				// Get weights
+				if (primitive.attributes.find("WEIGHTS_0") != primitive.attributes.end()) {
+					const tinygltf::Accessor& weightsAccessor = model.accessors[primitive.attributes.find("WEIGHTS_0")->second];
+					const tinygltf::BufferView& weightsBufView = model.bufferViews[weightsAccessor.bufferView];
+					weightsPos = reinterpret_cast<const float*>(&(model.buffers[weightsBufView.buffer].data[weightsAccessor.byteOffset + weightsBufView.byteOffset]));
+					weightByteStride = weightsAccessor.ByteStride(weightsBufView) ? (weightsAccessor.ByteStride(weightsBufView) / sizeof(float)) : tinygltf::GetNumComponentsInType(TINYGLTF_TYPE_VEC4);
 				}
 
 				if (!hasIndices)
@@ -294,6 +310,7 @@ namespace Engine {
 				const tinygltf::Buffer& indicesBuffer = model.buffers[indicesBufferView.buffer];
 
 				indexCount = indicesAccessor.count;
+				bool hasSkin = (jointsPos && weightsPos);
 
 				// Reserve space in rawData struct
 				vk::RawData rawData(vertexCount, indexCount);
@@ -306,43 +323,66 @@ namespace Engine {
 					rawData.texCoords0.emplace_back(texCoords0Pos ? glm::make_vec2(&texCoords0Pos[j * texCoords0ByteStride]) : glm::vec2(0.0f));
 					rawData.texCoords1.emplace_back(texCoords1Pos ? glm::make_vec2(&texCoords1Pos[j * texCoords1ByteStride]) : glm::vec2(0.0f));
 					rawData.vertexColours.emplace_back(colourPos ? glm::make_vec4(&colourPos[j * colourByteStride]) : glm::vec4(1.0f));
+
+					if (hasSkin) {
+						switch (jointComponentType) {
+						case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT: {
+							const std::uint16_t* buffer = (const std::uint16_t*)jointsPos;
+							rawData.joints.push_back(glm::uvec4(glm::make_vec4(&buffer[j * jointByteStride])));
+							break;
+						}
+						case TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE: {
+							const std::uint8_t* buffer = (const std::uint8_t*)jointsPos;
+							rawData.joints.push_back(glm::vec4(glm::make_vec4(&buffer[j * jointByteStride])));
+							break;
+						}
+						default:
+							throw Utils::Error("Joint component type %d not supported.\n", jointComponentType);
+							return;
+						}
+					}
+					else {
+						rawData.joints.push_back(glm::vec4(0.0f));
+					}
+
+					rawData.weights.push_back(hasSkin ? glm::make_vec4(&weightsPos[j * weightByteStride]) : glm::vec4(1.0f));
 				}
 
 				const void* dataPtr = &(indicesBuffer.data[indicesAccessor.byteOffset + indicesBufferView.byteOffset]);
 
 				// Populate indices
 				switch (indicesAccessor.componentType) {
-					case TINYGLTF_PARAMETER_TYPE_UNSIGNED_INT: {
-						const std::uint32_t* buffer = (const std::uint32_t*)dataPtr;
-						for (std::size_t k = 0; k < indicesAccessor.count; k++)
-							rawData.indices.push_back(buffer[k]);
-						vkModel.indexType = VK_INDEX_TYPE_UINT32;
-						break;
-					}
-					case TINYGLTF_PARAMETER_TYPE_UNSIGNED_SHORT: {
-						const std::uint16_t* buffer = (const std::uint16_t*)dataPtr;
-						for (std::size_t k = 0; k < indicesAccessor.count; k++)
-							rawData.indices.push_back(buffer[k]);
-						vkModel.indexType = VK_INDEX_TYPE_UINT16;
-						break;
-					}
-					// 1 byte indices require an extension for Vulkan to correctly handle them
-					case TINYGLTF_PARAMETER_TYPE_UNSIGNED_BYTE: {
-						//const std::uint8_t* buffer = (const std::uint8_t*)dataPtr;
-						//for (std::size_t k = 0; k < indicesAccessor.count; k++)
-						//	rawData.indices.push_back(buffer[k]);
-						break;
-					}
-					default:
-						throw Utils::Error("Index component type %d not supported.\n", indicesAccessor.componentType);
-						return;
+				case TINYGLTF_PARAMETER_TYPE_UNSIGNED_INT: {
+					const std::uint32_t* buffer = (const std::uint32_t*)dataPtr;
+					for (std::size_t k = 0; k < indicesAccessor.count; k++)
+						rawData.indices.push_back(buffer[k]);
+					vkModel.indexType = VK_INDEX_TYPE_UINT32;
+					break;
+				}
+				case TINYGLTF_PARAMETER_TYPE_UNSIGNED_SHORT: {
+					const std::uint16_t* buffer = (const std::uint16_t*)dataPtr;
+					for (std::size_t k = 0; k < indicesAccessor.count; k++)
+						rawData.indices.push_back(buffer[k]);
+					vkModel.indexType = VK_INDEX_TYPE_UINT16;
+					break;
+				}
+				// 1 byte indices require an extension for Vulkan to correctly handle them
+				//case TINYGLTF_PARAMETER_TYPE_UNSIGNED_BYTE: {
+				//	const std::uint8_t* buffer = (const std::uint8_t*)dataPtr;
+				//	for (std::size_t k = 0; k < indicesAccessor.count; k++)
+				//		rawData.indices.push_back(buffer[k]);
+				//	break;
+				//}
+				default:
+					throw Utils::Error("Index component type %d not supported.\n", indicesAccessor.componentType);
+					return;
 				}
 
 				if (getTangentsFromTgen) {
 					std::vector<tgen::VIndexT> newIndices(rawData.indices.begin(), rawData.indices.end());
 
 					std::vector<tgen::RealT> tgenVertices, tgenTexCoords, tgenNormals;
-					
+
 					for (glm::vec3 vertex : rawData.positions) {
 						tgenVertices.push_back(vertex.x);
 						tgenVertices.push_back(vertex.y);
@@ -379,22 +419,224 @@ namespace Engine {
 
 				vk::Material& material = primitive.material > -1 ? vkModel.materials[primitive.material] : vkModel.materials.back();
 				vk::Primitive* newPrimitive = new vk::Primitive(0, indexCount, vertexCount, rawData, material);
+
+				// Scale bounding box for this node based on given transform properties
+				glm::vec3 scale = hasMatrix ? glm::vec3(newNode->nodeMatrix[0][0], newNode->nodeMatrix[1][1], newNode->nodeMatrix[2][2]) : newNode->scale;
+				bbMin *= scale;
+				bbMax *= scale;
 				newPrimitive->setBounds(bbMin, bbMax);
 				newMesh->primitives.push_back(newPrimitive);
 			}
 
 			newNode->mesh = newMesh;
+
+			// Calculate bounding box for entire node
+			for (vk::Primitive* primitive : newNode->mesh->primitives) {
+				// Get minimum bound for this node
+				if (primitive->min.x < newNode->bbMin.x)
+					newNode->bbMin.x = primitive->min.x;
+				if (primitive->min.y < newNode->bbMin.y)
+					newNode->bbMin.y = primitive->min.y;
+				if (primitive->min.z < newNode->bbMin.z)
+					newNode->bbMin.z = primitive->min.z;
+				// Get maximum bound for this node
+				if (primitive->max.x > newNode->bbMax.x)
+					newNode->bbMax.x = primitive->max.x;
+				if (primitive->max.y > newNode->bbMax.y)
+					newNode->bbMax.y = primitive->max.y;
+				if (primitive->max.z > newNode->bbMax.z)
+					newNode->bbMax.z = primitive->max.z;
+			}
 		}
 
 		if (parent)
 			parent->children.push_back(newNode);
 		else
 			vkModel.nodes.push_back(newNode);
+
+		vkModel.linearNodes.push_back(newNode);
+	}
+
+	void calculateModelBoundingBox(vk::Model& vkModel) {
+		for (vk::Node* node : vkModel.linearNodes) {
+			if (node->bbMin.x < vkModel.bbMin.x)
+				vkModel.bbMin.x = node->bbMin.x;
+			if (node->bbMin.y < vkModel.bbMin.y)
+				vkModel.bbMin.y = node->bbMin.y;
+			if (node->bbMin.z < vkModel.bbMin.z)
+				vkModel.bbMin.z = node->bbMin.z;
+
+			if (node->bbMax.x > vkModel.bbMax.x)
+				vkModel.bbMax.x = node->bbMax.x;
+			if (node->bbMax.y > vkModel.bbMax.y)
+				vkModel.bbMax.y = node->bbMax.y;
+			if (node->bbMax.z > vkModel.bbMax.z)
+				vkModel.bbMax.z = node->bbMax.z;
+		}
+	}
+
+	void loadAnimations(tinygltf::Model& model, vk::Model& vkModel) {
+		if (model.animations.size() == 0)
+			return;
+
+		for (tinygltf::Animation& gltfAnimation : model.animations) {
+			vk::Animation animation{};
+			
+			animation.name = gltfAnimation.name;
+			if (animation.name.empty())
+				animation.name = std::to_string(vkModel.animations.size());
+
+			// Parse samplers
+			for (tinygltf::AnimationSampler& animSampler : gltfAnimation.samplers) {
+				vk::AnimationSampler sampler{};
+			
+				if (animSampler.interpolation == "LINEAR")
+					sampler.interpolationType = vk::AnimationSampler::InterpolationType::LINEAR;
+				if (animSampler.interpolation == "STEP")
+					sampler.interpolationType = vk::AnimationSampler::InterpolationType::STEP;
+				if (animSampler.interpolation == "CUBICSPLINE")
+					sampler.interpolationType = vk::AnimationSampler::InterpolationType::CUBIC_SPLINE;
+
+				// Parse sampler inputs
+				{
+					const tinygltf::Accessor& accessor = model.accessors[animSampler.input];
+					const tinygltf::BufferView& bufView = model.bufferViews[accessor.bufferView];
+					const tinygltf::Buffer& buffer = model.buffers[bufView.buffer];
+
+					const void* dataPtr = &buffer.data[accessor.byteOffset + bufView.byteOffset];
+					const float* bufValues = (const float*)dataPtr;
+
+					for (std::size_t i = 0; i < accessor.count; i++) {
+						sampler.keyframeTimes.push_back(bufValues[i]);
+					}
+
+					for (float time : sampler.keyframeTimes) {
+						if (time < animation.start)
+							animation.start = time;
+						if (time > animation.end)
+							animation.end = time;
+					}
+				}
+
+				// Parse sampler outputs
+				{
+					const tinygltf::Accessor& accessor = model.accessors[animSampler.output];
+					const tinygltf::BufferView& bufView = model.bufferViews[accessor.bufferView];
+					const tinygltf::Buffer& buffer = model.buffers[bufView.buffer];
+				
+					const void* dataPtr = &buffer.data[accessor.byteOffset + bufView.byteOffset];
+
+					switch (accessor.type) {
+					case TINYGLTF_TYPE_VEC3: {
+						const glm::vec3* buf = (const glm::vec3*)dataPtr;
+						
+						for (std::size_t i = 0; i < accessor.count; i++) {
+							sampler.outputValues.push_back(glm::vec4(buf[i], 0.0f));
+						}
+
+						break;
+					}
+					case TINYGLTF_TYPE_VEC4: {
+						const glm::vec4* buf = (const glm::vec4*)dataPtr;
+
+						for (std::size_t i = 0; i < accessor.count; i++) {
+							sampler.outputValues.push_back(glm::vec4(buf[i]));
+						}
+
+						break;
+					}
+					default:
+						std::cout << "Unknown channel type!" << std::endl;
+						break;
+					}
+				}
+
+				animation.samplers.push_back(sampler);
+			}
+
+			// Parse channels
+			for (tinygltf::AnimationChannel& animChannel : gltfAnimation.channels) {
+				vk::AnimationChannel channel{};
+
+				if (animChannel.target_path == "translation")
+					channel.pathType = vk::AnimationChannel::PathType::TRANSLATION;
+				if (animChannel.target_path == "rotation")
+					channel.pathType = vk::AnimationChannel::PathType::ROTATION;
+				if (animChannel.target_path == "scale")
+					channel.pathType = vk::AnimationChannel::PathType::SCALE;
+				if (animChannel.target_path == "weights") {
+					std::cout << "AnimationChannel 'weights' not supported!" << std::endl;
+					continue;
+				}
+
+				channel.samplerIndex = animChannel.sampler;
+				channel.node = vkModel.getNodeFromIndex(animChannel.target_node);
+				
+				if (!channel.node)
+					continue;
+			
+				animation.channels.push_back(channel);
+			}
+
+			// If animation name contains 'idle' set it to loop
+			if (animation.name == "Pistol_IDLE") {
+				animation.loop = true;
+				animation.animating = true;
+				vkModel.idleAnimation = animation;
+			}
+
+			vkModel.animations.push_back(animation);
+		}
+	}
+
+	void loadSkins(tinygltf::Model& model, vk::Model& vkModel) {
+		for (tinygltf::Skin& gltfSkin : model.skins) {
+			vk::Skin* skin = new vk::Skin();
+
+			skin->name = gltfSkin.name;
+
+			// Get skeleton root node
+			if (gltfSkin.skeleton > -1)
+				skin->rootNode = vkModel.getNodeFromIndex(gltfSkin.skeleton);
+
+			// Get inverse bind matrices
+			if (gltfSkin.inverseBindMatrices > -1) {
+				const tinygltf::Accessor& accessor = model.accessors[gltfSkin.inverseBindMatrices];
+				const tinygltf::BufferView& bufView = model.bufferViews[accessor.bufferView];
+				const tinygltf::Buffer& buffer = model.buffers[bufView.buffer];
+
+				skin->inverseBindMatrices.resize(accessor.count);
+				std::memcpy(skin->inverseBindMatrices.data(), &buffer.data[accessor.byteOffset + bufView.byteOffset], accessor.count * sizeof(glm::mat4));
+			}
+
+			// Get joints
+			for (int joint : gltfSkin.joints) {
+				vk::Node* node = vkModel.getNodeFromIndex(joint);
+
+				if (node)
+					skin->joints.push_back(node);
+			}
+
+			if (skin->joints.size() > MAX_JOINTS) {
+				std::cout << "Warning: Number of joints (" << skin->joints.size() << ") exceeds the supported maximum: " << MAX_JOINTS << "." << std::endl;
+			}
+
+			vkModel.skins.push_back(skin);
+		}
+
+		// Give nodes their respective skin
+		for (std::size_t i = 0; i < vkModel.linearNodes.size(); i++) {
+			vk::Node* node = vkModel.linearNodes[i];
+			try {
+				node->skin = vkModel.skins.at(node->skinIndex);
+			}
+			catch (const std::out_of_range& exception) {}
+		}
 	}
 
 	void createVulkanBuffers(const VulkanContext& aContext, vk::Model& vkModel) {
 		// We need to create the buffers for every vertex attribute and indices for every primitive
-		for (vk::Node* node : vkModel.nodes) {
+		for (vk::Node* node : vkModel.linearNodes) {
 
 			if (!node->mesh) continue;
 
@@ -408,6 +650,8 @@ namespace Engine {
 				std::size_t tex0Size = rawData.texCoords0.size() * sizeof(glm::vec2);
 				std::size_t tex1Size = rawData.texCoords1.size() * sizeof(glm::vec2);
 				std::size_t vertColSize = rawData.vertexColours.size() * sizeof(glm::vec4);
+				std::size_t jointsSize = rawData.joints.size() * sizeof(glm::uvec4);
+				std::size_t weightsSize = rawData.weights.size() * sizeof(glm::vec4);
 				std::size_t indicesSize = rawData.indices.size() * (vkModel.indexType == VK_INDEX_TYPE_UINT32 ? sizeof(std::uint32_t) : sizeof(std::uint32_t));
 
 				// GPU sided buffers
@@ -460,6 +704,24 @@ namespace Engine {
 					"vertColGPU",
 					*aContext.allocator,
 					vertColSize,
+					VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+					0,
+					VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
+				);
+
+				vk::Buffer jointsGPUBuf = vk::createBuffer(
+					"jointsGPU",
+					*aContext.allocator,
+					jointsSize,
+					VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+					0,
+					VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
+				);
+
+				vk::Buffer weightsGPUBuf = vk::createBuffer(
+					"weightsGPU",
+					*aContext.allocator,
+					weightsSize,
 					VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 					0,
 					VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
@@ -523,6 +785,22 @@ namespace Engine {
 					VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT
 				);
 
+				vk::Buffer jointsStaging = vk::createBuffer(
+					"jointsStaging",
+					*aContext.allocator,
+					jointsSize,
+					VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+					VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT
+				);
+
+				vk::Buffer weightsStaging = vk::createBuffer(
+					"weightsStaging",
+					*aContext.allocator,
+					weightsSize,
+					VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+					VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT
+				);
+
 				vk::Buffer indicesStaging = vk::createBuffer(
 					"indicesStaging",
 					*aContext.allocator,
@@ -573,6 +851,20 @@ namespace Engine {
 
 				std::memcpy(vertColPtr, rawData.vertexColours.data(), vertColSize);
 				vmaUnmapMemory(aContext.allocator->allocator, vertColStaging.allocation);
+
+				void* jointsPtr = nullptr;
+				if (const auto res = vmaMapMemory(aContext.allocator->allocator, jointsStaging.allocation, &jointsPtr); VK_SUCCESS != res)
+					throw Utils::Error("Mapping memory for writing\n vmaMapMemory() returned %s", Utils::toString(res).c_str());
+
+				std::memcpy(jointsPtr, rawData.joints.data(), jointsSize);
+				vmaUnmapMemory(aContext.allocator->allocator, jointsStaging.allocation);
+
+				void* weightsPtr = nullptr;
+				if (const auto res = vmaMapMemory(aContext.allocator->allocator, weightsStaging.allocation, &weightsPtr); VK_SUCCESS != res)
+					throw Utils::Error("Mapping memory for writing\n vmaMapMemory() returned %s", Utils::toString(res).c_str());
+
+				std::memcpy(weightsPtr, rawData.weights.data(), weightsSize);
+				vmaUnmapMemory(aContext.allocator->allocator, weightsStaging.allocation);
 
 				void* indicesPtr = nullptr;
 				if (const auto res = vmaMapMemory(aContext.allocator->allocator, indicesStaging.allocation, &indicesPtr); VK_SUCCESS != res)
@@ -671,6 +963,34 @@ namespace Engine {
 					VK_PIPELINE_STAGE_VERTEX_INPUT_BIT
 				);
 
+				VkBufferCopy jointsCopy{};
+				jointsCopy.size = jointsSize;
+
+				vkCmdCopyBuffer(uploadCmdBuf, jointsStaging.buffer, jointsGPUBuf.buffer, 1, &jointsCopy);
+
+				Utils::bufferBarrier(
+					uploadCmdBuf,
+					jointsGPUBuf.buffer,
+					VK_ACCESS_TRANSFER_WRITE_BIT,
+					VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,
+					VK_PIPELINE_STAGE_TRANSFER_BIT,
+					VK_PIPELINE_STAGE_VERTEX_INPUT_BIT
+				);
+
+				VkBufferCopy weightsCopy{};
+				weightsCopy.size = weightsSize;
+
+				vkCmdCopyBuffer(uploadCmdBuf, weightsStaging.buffer, weightsGPUBuf.buffer, 1, &weightsCopy);
+
+				Utils::bufferBarrier(
+					uploadCmdBuf,
+					weightsGPUBuf.buffer,
+					VK_ACCESS_TRANSFER_WRITE_BIT,
+					VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,
+					VK_PIPELINE_STAGE_TRANSFER_BIT,
+					VK_PIPELINE_STAGE_VERTEX_INPUT_BIT
+				);
+
 				VkBufferCopy indicesCopy{};
 				indicesCopy.size = indicesSize;
 
@@ -693,6 +1013,8 @@ namespace Engine {
 				primitive->tex0Buffer = std::move(tex0GPUBuf);
 				primitive->tex1Buffer = std::move(tex1GPUBuf);
 				primitive->vertColBuffer = std::move(vertColGPUBuf);
+				primitive->jointsBuffer = std::move(jointsGPUBuf);
+				primitive->weightsBuffer = std::move(weightsGPUBuf);
 				primitive->indicesBuffer = std::move(indicesGPUBuf);
 
 			}
