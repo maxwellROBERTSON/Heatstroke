@@ -194,6 +194,7 @@ void FPSTest::loadOfflineEntities()
 	networkComponent->SetClientId(0);
 
 	// Player 2
+	types = { RENDER };
 	entity = entityManager.AddEntity(types);
 	entity->SetPosition(5.0f, 0.0f, -1.0f);
 	entity->SetRotation(90.0f, glm::vec3(0.0f, 0.0f, 1.0f));
