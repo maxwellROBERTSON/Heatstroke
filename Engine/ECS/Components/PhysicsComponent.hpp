@@ -47,6 +47,9 @@ namespace Engine
 		// Static type getter from Component parent
 		ComponentTypes static StaticType() { return ComponentTypes::PHYSICS; }
 
+		// Static size getter from Component parent
+		size_t static StaticSize() { return sizeof(type) + sizeof(translation) + sizeof(scale) + sizeof(rotation) + sizeof(isPerson) + sizeof(entityId); }
+
 		// Get component data
 		void GetDataArray(uint8_t*) override;
 
@@ -133,6 +136,7 @@ namespace Engine
 		void initComplexShape(PhysicsWorld& pWorld, PhysicsType physicsType, Engine::vk::Model& model, glm::mat4& transform, int index) {
 
 			entityId = index;
+			type = physicsType;
 
 			// Decompose transform
 			if (!DecomposeTransform(transform, translation, rotation, scale)) {
@@ -194,14 +198,14 @@ namespace Engine
 						// Only static triangle meshes are supported for now.
 						// Dynamic triangle mesh geometries are possible but are more complicated
 						// and I don't believe we have a use case for them just yet.
-						if (physicsType != PhysicsType::STATIC)
+						if (type != PhysicsType::STATIC)
 						{
 							std::cerr << "Only static triangle mesh geometries are supported currently!" << std::endl;
-							assert(physicsType == PhysicsType::STATIC);
+							assert(type == PhysicsType::STATIC);
 						}
 						//assert(physicsType == PhysicsType::STATIC, "Only static triangle mesh geometries are supported currently!");
 
-						switch (physicsType) {
+						switch (type) {
 						case PhysicsType::STATIC:
 						{
 							staticBody = pWorld.gPhysics->createRigidStatic(PxTransform(pxTransform));

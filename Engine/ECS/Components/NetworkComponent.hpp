@@ -22,6 +22,9 @@ namespace Engine
 		// Static type getter from Component parent
 		ComponentTypes static StaticType() { return ComponentTypes::NETWORK; }
 
+		// Static size getter from Component parent
+		size_t static StaticSize() { return sizeof(clientId); }
+
 		// Get component data
 		void GetDataArray(uint8_t*) override;
 

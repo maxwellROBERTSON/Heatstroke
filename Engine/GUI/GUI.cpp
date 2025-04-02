@@ -222,6 +222,10 @@ namespace Engine
 				{
 					errorMsg = "";
 					game->loadOnlineEntities();
+					/*uint8_t* block = new uint8_t[game->GetEntityManager().GetTotalDataSize()];
+					game->GetEntityManager().GetAllData(block);
+					game->GetEntityManager().ClearManager();
+					game->GetEntityManager().SetAllData(block);*/
 					game->GetRenderer().initialiseModelMatrices();
 					game->ToggleRenderMode(GUIHOME);
 					game->ToggleRenderMode(GUISERVER);
@@ -395,10 +399,11 @@ namespace Engine
 		Status s = game->GetNetwork().GetStatus();
 		if (s == Status::CLIENT_LOADED)
 		{
-			//game->loadOnlineEntities();
 			game->GetRenderer().initialiseModelMatrices();
 			game->ToggleRenderMode(GUILOADING);
 			game->ToggleRenderMode(FORWARD);
+			GLFWwindow* window = game->GetContext().getGLFWWindow();
+			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 		}
 		else if (s == Status::CLIENT_DISCONNECTED || s == Status::CLIENT_CONNECTION_FAILED)
 		{

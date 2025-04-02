@@ -96,20 +96,38 @@ namespace Engine
 	}
 
 	void GameClient::HandleResponseMessage(RequestResponseMessage* message)
-	{ 
+	{
 		std::cout << "RESPONSE MESSAGE FROM SERVER WITH: TYPE = " << message->GetType() << ", MESSAGEID = ";
 		std::cout << message->GetId() << ", BLOCK SIZE = " << message->GetBlockSize() << ", RESPONSETYPE = " << static_cast<int>(message->responseType) << std::endl;
 		int size = message->GetBlockSize();
 
-		if (message->responseType == ResponseType::ENTITY_DATA_RESPONSE)
+		if (message->responseType == ResponseType::ENTITY_DATA_RESPONSE && status != Status::CLIENT_LOADED)
 		{
 			if (message->GetBlockSize() == 0)
 				throw std::runtime_error("Null block data size");
 			game->GetEntityManager().SetAllData(message->GetBlockData());
+			EntityManager* manager = &(game->GetEntityManager());
+			std::vector<int> vec = manager->GetEntitiesWithComponent(PHYSICS);
+			PhysicsComponent* comp;
+			for (int i = 0; i < vec.size(); i++)
+			{
+				comp = reinterpret_cast<PhysicsComponent*>(manager->GetComponentOfEntity(vec[i], PHYSICS));
+				glm::mat4 mat = manager->GetEntity(vec[i])->GetModelMatrix();
+				if (comp->type == PhysicsComponent::PhysicsType::STATIC)
+				{
+					Engine::vk::Model& model = game->GetModels()[vec[i]];
+					comp->initComplexShape(game->GetPhysicsWorld(), comp->type, model, mat, vec[i]);
+				}
+				else
+				{
+					comp->init(game->GetPhysicsWorld(), comp->type, mat, vec[i]);
+				}
+			}
+			status = Status::CLIENT_LOADED;
 		}
 		else
 		{
-			std::cout << "FAILED" << static_cast<int>(message->responseType) << std::endl;
+			std::cout << "FAILED " << static_cast<int>(message->responseType) << std::endl;
 		}
 	}
 

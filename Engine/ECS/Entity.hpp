@@ -17,6 +17,7 @@ namespace Engine
 	{
 	public:
 		Entity(EntityManager*, int, std::vector<int>);
+		Entity(EntityManager*);
 		~Entity() {};
 
 		// Getters
@@ -25,7 +26,7 @@ namespace Engine
 		size_t GetEntitySize() { return sizeof(entityId) + sizeof(modelMatrix); }
 
 		// Get the data for a given entity
-		void GetData(uint8_t*);
+		void GetDataArray(uint8_t*);
 
 		// Get entity id
 		int GetEntityId() { return entityId; }
@@ -36,16 +37,20 @@ namespace Engine
 		// Get a component index of a given type
 		int GetComponent(ComponentTypes t) { return componentTypeIndexList[t]; }
 
-		// Get all components of this entity
+		// Get component index vector of this entity
 		std::vector<int> GetComponentIndexArray() { return componentTypeIndexList; }
 
 		// Setters
 
 		// Set the data for a given entity
-		void SetData(uint8_t*);
+		void SetDataArray(uint8_t*);
 
 		// Set model matrix
 		void SetModelMatrix(glm::mat4 aModelMatrix) { modelMatrix = aModelMatrix; }
+
+		// Set component index vector of this entity
+		// Only use if null constructor is used
+		void SetComponentIndexArray(std::vector<int> l) { componentTypeIndexList = l; }
 
 	private:
 		EntityManager* entityManager;

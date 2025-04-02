@@ -137,12 +137,11 @@ namespace Engine
 	// update models matrices
 	void PhysicsWorld::updateObjects(Engine::EntityManager& entityManager, std::vector<Engine::vk::Model>& models)
 	{
-
 		// get all PhysicsComponent
 		std::vector<std::unique_ptr<ComponentBase>>* physicsComponents = entityManager.GetComponentsOfType(PHYSICS);
 		for (std::size_t i = 0; i < (*physicsComponents).size(); i++) {
 			PhysicsComponent* p = reinterpret_cast<PhysicsComponent*>((*physicsComponents)[i].get());
-			//glm::mat4 matrix(1.0f);
+			// glm::mat4 matrix(1.0f);
 			// dynamic update
 			if (p->type == PhysicsComponent::PhysicsType::DYNAMIC)
 			{

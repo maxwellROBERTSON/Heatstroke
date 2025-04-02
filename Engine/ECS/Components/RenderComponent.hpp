@@ -22,6 +22,9 @@ namespace Engine
 		// Static type getter from Component parent
 		ComponentTypes static StaticType() { return ComponentTypes::RENDER; }
 
+		// Static size getter from Component parent
+		size_t static StaticSize() { return sizeof(modelIndex) + sizeof(isActive); }
+
 		// Get component data
 		void GetDataArray(uint8_t*) override;
 
@@ -38,6 +41,6 @@ namespace Engine
 
 	private:
 		int modelIndex = -1;
-		int isActive = true;
+		int isActive = 1;
 	};
 }

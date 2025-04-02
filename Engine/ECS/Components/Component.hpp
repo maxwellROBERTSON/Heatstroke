@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <map>
+#include <iostream>
 
 namespace Engine
 {
@@ -22,6 +23,7 @@ namespace Engine
         // Virtual methods for children
         virtual ~ComponentBase() = default;
         virtual ComponentTypes GetType() const = 0;
+        virtual size_t GetSize() const = 0;
         virtual void GetDataArray(uint8_t*) = 0;
     };
 
@@ -36,11 +38,17 @@ namespace Engine
 
         // Getters
 
-        // Get type
+        // Get type size of a type
         ComponentTypes GetType() const { return T::StaticType(); }
 
         // Type getter in child classes
         virtual ComponentTypes StaticType() { return ComponentTypes::TYPE_COUNT; }
+
+        // Get size of a type
+        size_t GetSize() const { return T::StaticSize(); }
+
+        // Size getter in child classes
+        virtual size_t StaticSize() { return 0; }
 
         // Get component data
         virtual void GetDataArray(uint8_t*) = 0;

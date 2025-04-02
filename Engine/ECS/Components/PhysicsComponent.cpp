@@ -19,6 +19,10 @@ namespace Engine
 		std::memcpy(data + offset, &scale, sizeof(scale));
 		offset += sizeof(scale);
 		std::memcpy(data + offset, &rotation, sizeof(rotation));
+		offset += sizeof(rotation);
+		std::memcpy(data + offset, &isPerson, sizeof(isPerson));
+		offset += sizeof(isPerson);
+		std::memcpy(data + offset, &entityId, sizeof(entityId));
 	}
 
 	// Setters
@@ -34,5 +38,9 @@ namespace Engine
 		std::memcpy(&scale, data + offset, sizeof(scale));
 		offset += sizeof(scale);
 		std::memcpy(&rotation, data + offset, sizeof(rotation));
+		offset += sizeof(rotation);
+		std::memcpy(&isPerson, data + offset, sizeof(isPerson));
+		offset += sizeof(isPerson);
+		std::memcpy(&entityId, data + offset, sizeof(entityId));
 	}
 }

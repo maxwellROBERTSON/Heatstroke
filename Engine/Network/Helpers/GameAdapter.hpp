@@ -137,6 +137,8 @@ namespace Engine
             return true;
         }
 
+        YOJIMBO_VIRTUAL_SERIALIZE_FUNCTIONS()
+
         ResponseType responseType;
     };
 

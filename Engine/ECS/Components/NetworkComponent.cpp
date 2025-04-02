@@ -11,6 +11,7 @@ namespace Engine
 		size_t offset = 0;
 
 		std::memcpy(data + offset, &clientId, sizeof(clientId));
+		offset += sizeof(clientId);
 	}
 
 	// Setters

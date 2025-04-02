@@ -4,22 +4,53 @@
 
 namespace Engine
 {
+	// Constructor
+	EntityManager::EntityManager()
+	{
+		// Check map size
+		if (componentMap.size() != ComponentTypes::TYPE_COUNT)
+		{
+			throw std::runtime_error("Size mismatch between componentMap and ComponentTypes");
+		}
+		// Check if ComponentSizes is correct
+		CameraComponent c;
+		if (ComponentSizes[CAMERA] != c.StaticSize())
+			throw std::runtime_error("Size mismatch between: ComponentSizes[CAMERA] and Camera size");
+		NetworkComponent n;
+		if (ComponentSizes[NETWORK] != n.StaticSize())
+			throw std::runtime_error("Size mismatch between: ComponentSizes[NETWORK] and Network size");
+		PhysicsComponent p;
+		if (ComponentSizes[PHYSICS] != p.StaticSize())
+			throw std::runtime_error("Size mismatch between: ComponentSizes[PHYSICS] and Physics size");
+		RenderComponent r;
+		if (ComponentSizes[RENDER] != r.StaticSize())
+			throw std::runtime_error("Size mismatch between: ComponentSizes[RENDER] and Render size");
+	};
+
 	// Getters
 
+	// Format is
+	// | # entities |
+	// | entity_data | * # entites
+	// | # components of type | * # types
+	// | vector of componentIndex | * # entities
+	// | components of type | * # of component types
 	// Get total data size
 	size_t EntityManager::GetTotalDataSize()
 	{
 		if (entities.size() == 0)
 			return 0;
 
-		int noEntities = GetNumberOfEntities();
-		size_t totalSize = noEntities + noEntities * entities[0].GetEntitySize();
+		int numEntities = GetNumberOfEntities();
+		int entitySize = entities[0].GetEntitySize();
+		size_t totalSize = 1 + entities[0].GetEntitySize() * numEntities + TYPE_COUNT + TYPE_COUNT * numEntities;
 		ComponentTypes type;
 		for (int i = 0; i < TYPE_COUNT; i++)
 		{
 			type = static_cast<ComponentTypes>(i);
 			totalSize += (*componentMap[type]).size() * ComponentSizes[type];
 		}
+		return totalSize;
 	}
 
 	// Get a pointer to the component of an entity
@@ -54,7 +85,8 @@ namespace Engine
 
 	// Format is
 	// | # entities |
-	// | # components | * # types
+	// | entity_data | * # entites
+	// | # components of type | * # types
 	// | vector of componentIndex | * # entities
 	// | components of type | * # of component types
 	// Get component data of all entities for all component type
@@ -64,79 +96,126 @@ namespace Engine
 		ComponentTypes type;
 		int numEntities = entities.size();
 
+		// | # entities |
 		block[offset++] = static_cast<uint8_t>(numEntities);
 
+		// | entity_data | * # entites
+		int sizeOfEntity = entities[0].GetEntitySize();
+		for (int i = 0; i < numEntities; i++)
+		{
+			entities[i].GetDataArray(block + offset);
+			offset += sizeOfEntity;
+		}
+
+		// | # components of type | * # types
 		for (int i = 0; i < TYPE_COUNT; i++)
 		{
 			type = static_cast<ComponentTypes>(i);
 			block[offset++] = static_cast<uint8_t>(GetComponentTypeSize(type));
 		}
 
+		// | vector of componentIndex | * # entities
 		std::vector<int> ComponentIndexArray;
 		for (int i = 0; i < numEntities; i++)
 		{
 			ComponentIndexArray = entities[i].GetComponentIndexArray();
 			for (int j = 0; j < TYPE_COUNT; j++)
 			{
+				uint8_t temp = static_cast<uint8_t>(ComponentIndexArray[j]);
 				block[offset + i * TYPE_COUNT + j] = static_cast<uint8_t>(ComponentIndexArray[j]);
 			}
 		}
 
 		offset += numEntities * TYPE_COUNT;
 
+		// | components of type | * # of component types
 		std::vector<std::unique_ptr<ComponentBase>>* components;
+		size_t sizeOfComponent;
 		for (int i = 0; i < TYPE_COUNT; i++)
 		{
 			type = static_cast<ComponentTypes>(i);
 			components = GetComponentsOfType(type);
+			sizeOfComponent = ComponentSizes[type];
+			std::cout << "Start of component " << i << " is " << reinterpret_cast<uintptr_t>(block + offset) << std::endl;
 			for (int j = 0; j < components->size(); j++)
 			{
-				(*components)[i].get()->GetDataArray(block + offset);
+				(*components)[j].get()->GetDataArray(block + offset);
+				offset += sizeOfComponent;
 			}
+			std::cout << "End of component " << i << " is " << reinterpret_cast<uintptr_t>(block + offset) << std::endl;
 		}
 	}
 
 	// Setters
 
+	// Format is
+	// | # entities |
+	// | entity_data | * # entites
+	// | # components of type | * # types
+	// | vector of componentIndex | * # entities
+	// | components of type | * # of component types
 	// Set component data of all entities for all component type
 	void EntityManager::SetAllData(uint8_t* block)
 	{
 		size_t offset = 0;
-		int numEntities = static_cast<int>(block[offset++]);
+		uint8_t* f;
 
+		// | # entities |
+		int numEntities = static_cast<int>(block[offset++]);
+		f = block + offset;
+
+		// | entity_data | * # entites
+		for (int i = 0; i < numEntities; i++)
+		{
+			Entity entity = Entity(this);
+			entity.SetDataArray(block + offset);
+			entities.push_back(entity);
+			offset += entities[0].GetEntitySize();
+			f = block + offset;
+		}
+
+		// | # components of type | * # types
 		std::vector<int> componentCounts = std::vector<int>(TYPE_COUNT);
 		std::vector<int> componentOffsets = std::vector<int>(TYPE_COUNT);
-
 		for (int i = 0; i < TYPE_COUNT; i++)
 		{
 			componentCounts[i] = static_cast<int>(block[offset++]);
 		}
-		int componentSizeCount = 1 + TYPE_COUNT + numEntities * TYPE_COUNT;
+		int componentsSizeCount = 0;
 		for (int i = 0; i < TYPE_COUNT; i++)
 		{
-			componentSizeCount += componentCounts[i] * ComponentSizes[static_cast<ComponentTypes>(i)];
-			componentOffsets[i] = componentSizeCount;
+			componentOffsets[i] = offset + TYPE_COUNT * numEntities + componentsSizeCount;
+			componentsSizeCount += componentCounts[i] * ComponentSizes[static_cast<ComponentTypes>(i)];
+			std::cout << "Assumed start of component " << i << " is " << reinterpret_cast<uintptr_t>(block + componentOffsets[i]) << std::endl;
 		}
+
+		f = block + offset;
 
 		std::vector<int> componentIndexArray = std::vector<int>(TYPE_COUNT);
 		std::vector<ComponentTypes> types;
 		int typesSize;
+		Entity* entity;
 
 		for (int i = 0; i < numEntities; i++)
 		{
-			types = std::vector<ComponentTypes>(TYPE_COUNT);
+			// | vector of componentIndex | * # entities
+			types = std::vector<ComponentTypes>(0);
 			typesSize = 0;
 			for (int j = 0; j < TYPE_COUNT; j++)
 			{
 				componentIndexArray[j] = block[offset + i * TYPE_COUNT + j];
-				if (componentIndexArray[j] != -1)
+				if (componentIndexArray[j] != 255)
 				{
 					types.emplace_back(static_cast<ComponentTypes>(j));
 					typesSize++;
 				}
 			}
 			types.resize(typesSize);
-			Entity* entity = AddEntity(types);
+			entity = &entities[i];
+			AddEntity(&entities[i], types);
+			std::cout << "ADDED entity " << i << std::endl;
+
+			// | components of type | * # of component types
 			ComponentBase* base;
 			for (int j = 0; j < typesSize; j++)
 			{
@@ -144,24 +223,39 @@ namespace Engine
 				switch (types[j])
 				{
 				case CAMERA:
-					reinterpret_cast<CameraComponent*>(base)->SetDataArray(block + componentOffsets[i] + componentIndexArray[types[j]]);
+					std::cout << "Setting the " << componentIndexArray[types[j]] << " of component of type " << types[j] << " at ";
+					std::cout << reinterpret_cast<uintptr_t>(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[CAMERA]) << std::endl;
+					f = block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[CAMERA];
+					reinterpret_cast<CameraComponent*>(base)->SetDataArray(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[CAMERA]);
 					break;
 				case NETWORK:
-					reinterpret_cast<NetworkComponent*>(base)->SetDataArray(block + componentOffsets[i] + componentIndexArray[types[j]]);
+					std::cout << "Setting the " << componentIndexArray[types[j]] << " of component of type " << types[j] << " at ";
+					std::cout << reinterpret_cast<uintptr_t>(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[NETWORK]) << std::endl;
+					f = block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[NETWORK];
+					reinterpret_cast<NetworkComponent*>(base)->SetDataArray(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[NETWORK]);
 					break;
 				case PHYSICS:
-					reinterpret_cast<PhysicsComponent*>(base)->SetDataArray(block + componentOffsets[i] + componentIndexArray[types[j]]);
+					std::cout << "Setting the " << componentIndexArray[types[j]] << " of component of type " << types[j] << " at ";
+					std::cout << reinterpret_cast<uintptr_t>(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[PHYSICS]) << std::endl;
+					f = block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[PHYSICS];
+					reinterpret_cast<PhysicsComponent*>(base)->SetDataArray(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[PHYSICS]);
 					break;
 				case RENDER:
-					reinterpret_cast<RenderComponent*>(base)->SetDataArray(block + componentOffsets[i] + componentIndexArray[types[j]]);
+					std::cout << "Setting the " << componentIndexArray[types[j]] << " of component of type " << types[j] << " at ";
+					std::cout << reinterpret_cast<uintptr_t>(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[RENDER]) << std::endl;
+					f = block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[RENDER];
+					reinterpret_cast<RenderComponent*>(base)->SetDataArray(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[RENDER]);
 					break;
 				default:
 					throw std::runtime_error("Unknown component type");
 				}
+				std::cout << "ADDED component " << types[j] << " to entity " << entity->GetEntityId() << std::endl;
 			}
 		}
 
 		int i = 0;
+
+		// PHYSICS COMPONENT MISALIGNMENT
 
 		/*std::vector<int> ComponentIndexArray;
 		for (int i = 0; i < numEntities; i++)
@@ -186,8 +280,52 @@ namespace Engine
 		}*/
 	}
 
-	// Add an entity with given types
-	Entity* EntityManager::AddEntity(std::vector<ComponentTypes> components)
+	// Add an existing entity to the manager
+	void EntityManager::AddEntity(Entity* entity, std::vector<ComponentTypes> components)
+	{
+		std::vector<int> typeIndexList;
+		int index;
+
+		for (int i = 0; i < TYPE_COUNT; i++)
+		{
+			typeIndexList.push_back(-1);
+		}
+
+		for (int i = 0; i < components.size(); i++)
+		{
+			switch (components[i])
+			{
+			case CAMERA:
+				index = AddComponent(CAMERA);
+				break;
+			case NETWORK:
+				index = AddComponent(NETWORK);
+				break;
+			case PHYSICS:
+				index = AddComponent(PHYSICS);
+				break;
+			case RENDER:
+				index = AddComponent(RENDER);
+				break;
+			default:
+				throw std::runtime_error("Unknown component type");
+			}
+			typeIndexList[components[i]] = index;
+		}
+
+		entity->SetComponentIndexArray(typeIndexList);
+
+		for (int i = 0; i < TYPE_COUNT; i++)
+		{
+			if (typeIndexList[i] != -1)
+			{
+				entitiesWithType[i].push_back(entity->GetEntityId());
+			}
+		}
+	}
+
+	// Make a new entity with given types
+	Entity* EntityManager::MakeNewEntity(std::vector<ComponentTypes> components)
 	{
 		std::vector<int> typeIndexList;
 		int index;

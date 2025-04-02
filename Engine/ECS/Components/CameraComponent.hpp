@@ -28,6 +28,9 @@ namespace Engine
 		// Static type getter from Component parent
 		ComponentTypes static StaticType() { return ComponentTypes::CAMERA; }
 
+		// Static size getter from Component parent
+		size_t static StaticSize() { return sizeof(camera.fov) + sizeof(camera.nearPlane) + sizeof(camera.farPlane) + sizeof(camera.position) + sizeof(camera.frontDirection); }
+
 		// Get component data
 		void GetDataArray(uint8_t*) override;
 

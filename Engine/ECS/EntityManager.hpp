@@ -16,13 +16,7 @@ namespace Engine
 	class EntityManager
 	{
 	public:
-		EntityManager()
-		{
-			if (componentMap.size() != ComponentTypes::TYPE_COUNT)
-			{
-				throw std::runtime_error("Size mismatch between componentMap and ComponentTypes");
-			}
-		};
+		EntityManager();
 		~EntityManager() {}
 
 		// Getters
@@ -59,8 +53,12 @@ namespace Engine
 		// Set component data of all entities for all component type
 		void SetAllData(uint8_t*);
 
+		// Add an existing entity to the manager
+		// ComponentIndexArray overwritten so only use if components not yet initialised
+		void AddEntity(Entity*, std::vector<ComponentTypes>);
+
 		// Add an entity with given types
-		Entity* AddEntity(std::vector<ComponentTypes>);
+		Entity* MakeNewEntity(std::vector<ComponentTypes>);
 
 		// Clears the manager on disconnect
 		void ClearManager();

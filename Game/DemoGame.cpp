@@ -144,10 +144,10 @@ void FPSTest::loadOfflineEntities()
 	RenderComponent* renderComponent;
 	PhysicsComponent* physicsComponent;
 
-	std::vector<ComponentTypes> types = { RENDER, PHYSICS };
+	std::vector<ComponentTypes> types = { PHYSICS, RENDER};
 
 	// Map
-	entity = GetEntityManager().AddEntity(types);
+	entity = GetEntityManager().MakeNewEntity(types);
 	glm::mat4 mapTransform(1.0f);
 	mapTransform = glm::scale(mapTransform, glm::vec3(0.01f, 0.01f, 0.01f));
 	entity->SetModelMatrix(mapTransform);
@@ -157,7 +157,7 @@ void FPSTest::loadOfflineEntities()
 	renderComponent->SetModelIndex(0);
 
 	// Helmet
-	entity = GetEntityManager().AddEntity(types);
+	entity = GetEntityManager().MakeNewEntity(types);
 	glm::mat4 helmetTransform(1.0f);
 	helmetTransform = glm::translate(helmetTransform, glm::vec3(0.0f, 2.0f, 0.0f));
 	helmetTransform = glm::rotate(helmetTransform, glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
@@ -171,7 +171,7 @@ void FPSTest::loadOfflineEntities()
 	renderComponent->SetModelIndex(1);
 
 	// Cube
-	entity = GetEntityManager().AddEntity(types);
+	entity = GetEntityManager().MakeNewEntity(types);
 	glm::mat4 cubeTransform(1.0f);
 	cubeTransform = glm::translate(cubeTransform, glm::vec3(0.3f, 1.0f, -1.0f));
 	cubeTransform = glm::scale(cubeTransform, glm::vec3(0.4f, 0.4f, 0.4f));
@@ -183,8 +183,8 @@ void FPSTest::loadOfflineEntities()
 	renderComponent->SetModelIndex(2);
 
 	// Player 1
-	types = { CAMERA, NETWORK, RENDER, PHYSICS };
-	entity = GetEntityManager().AddEntity(types);
+	types = { CAMERA, NETWORK, PHYSICS, RENDER };
+	entity = GetEntityManager().MakeNewEntity(types);
 	glm::mat4 player1Transform(1.0f);
 	player1Transform = glm::translate(player1Transform, glm::vec3(-5.0f, 1.0f, -1.0f));
 	player1Transform = glm::rotate(player1Transform, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
@@ -200,7 +200,8 @@ void FPSTest::loadOfflineEntities()
 	renderComponent->SetModelIndex(3);
 
 	// Player 2
-	entity = GetEntityManager().AddEntity(types);
+	types = { RENDER };
+	entity = GetEntityManager().MakeNewEntity(types);
 	glm::mat4 player2Transform(1.0f);
 	player2Transform = glm::translate(player2Transform, glm::vec3(5.0f, 1.0f, -1.0f));
 	player2Transform = glm::rotate(player2Transform, glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
@@ -232,10 +233,10 @@ void FPSTest::loadOnlineEntities()
 	RenderComponent* renderComponent;
 	PhysicsComponent* physicsComponent;
 
-	std::vector<ComponentTypes> types = { RENDER, PHYSICS };
+	std::vector<ComponentTypes> types = { PHYSICS, RENDER };
 
 	// Map
-	entity = GetEntityManager().AddEntity(types);
+	entity = GetEntityManager().MakeNewEntity(types);
 	glm::mat4 mapTransform(1.0f);
 	mapTransform = glm::scale(mapTransform, glm::vec3(0.01f, 0.01f, 0.01f));
 	entity->SetModelMatrix(mapTransform);
@@ -245,7 +246,7 @@ void FPSTest::loadOnlineEntities()
 	renderComponent->SetModelIndex(0);
 
 	// Helmet
-	entity = GetEntityManager().AddEntity(types);
+	entity = GetEntityManager().MakeNewEntity(types);
 	glm::mat4 helmetTransform(1.0f);
 	helmetTransform = glm::translate(helmetTransform, glm::vec3(0.0f, 2.0f, 0.0f));
 	helmetTransform = glm::rotate(helmetTransform, glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
@@ -259,7 +260,7 @@ void FPSTest::loadOnlineEntities()
 	renderComponent->SetModelIndex(1);
 
 	// Cube
-	entity = GetEntityManager().AddEntity(types);
+	entity = GetEntityManager().MakeNewEntity(types);
 	glm::mat4 cubeTransform(1.0f);
 	cubeTransform = glm::translate(cubeTransform, glm::vec3(0.3f, 1.0f, -1.0f));
 	cubeTransform = glm::scale(cubeTransform, glm::vec3(0.4f, 0.4f, 0.4f));
@@ -271,8 +272,8 @@ void FPSTest::loadOnlineEntities()
 	renderComponent->SetModelIndex(2);
 
 	// Player 1
-	types = { CAMERA, NETWORK, RENDER, PHYSICS };
-	entity = GetEntityManager().AddEntity(types);
+	types = { CAMERA, NETWORK, PHYSICS, RENDER };
+	entity = GetEntityManager().MakeNewEntity(types);
 	glm::mat4 player1Transform(1.0f);
 	player1Transform = glm::translate(player1Transform, glm::vec3(-5.0f, 1.0f, -1.0f));
 	player1Transform = glm::rotate(player1Transform, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
@@ -288,7 +289,8 @@ void FPSTest::loadOnlineEntities()
 	renderComponent->SetModelIndex(3);
 
 	// Player 2
-	entity = GetEntityManager().AddEntity(types);
+	types = { RENDER };
+	entity = GetEntityManager().MakeNewEntity(types);
 	glm::mat4 player2Transform(1.0f);
 	player2Transform = glm::translate(player2Transform, glm::vec3(5.0f, 1.0f, -1.0f));
 	player2Transform = glm::rotate(player2Transform, glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
