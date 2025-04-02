@@ -24,23 +24,70 @@ void FPSTest::Init()
 	//blocks execution of the rest of the program until the initialiseModelsThread has finished
 	initialiseModelsThread.join();
 
-	Engine::InputManager::addAction("Accept", HS_KEY_A, HS_GAMEPAD_BUTTON_A);
-	Engine::InputManager::addAction("Decline", HS_KEY_B, HS_GAMEPAD_BUTTON_B);
-	Engine::InputManager::addAction("MoveRight", HS_KEY_RIGHT, HS_GAMEPAD_AXIS_RIGHT_X);
+	// Engine::InputManager::addAction("Accept", HS_KEY_A, HS_GAMEPAD_BUTTON_A);
+	// Engine::InputManager::addAction("Decline", HS_KEY_B, HS_GAMEPAD_BUTTON_B);
+	// Engine::InputManager::addAction("MoveRight", HS_KEY_RIGHT, HS_GAMEPAD_AXIS_RIGHT_X);
+	GetPhysicsWorld().init();
 
-	initialisePhysics();
+}
+
+void FPSTest::Render()
+{
+	previous = std::chrono::steady_clock::now();
+	while (!glfwWindowShouldClose(this->GetContext().getGLFWWindow()))
+	{
+		Update();
+	}
+
+	GetRenderer().finishRendering()
 }
 
 void FPSTest::Update()
 {
-	RenderGUI();
+	Engine::InputManager::Update();
+
+	GetNetwork().Update();
+
+	if (GetRenderer().checkSwapchain())
+		return;
+
+	if (GetRenderer().acquireSwapchainImage())
+		return;
+
+	// Calculate time delta
+	const auto now = std::chrono::steady_clock::now();
+	const auto timeDelta = std::chrono::duration_cast<std::chrono::duration<float, std::ratio<1>>>(now - previous).count();
+	previous = now;
+
+	GetRenderer().GetCameraPointer()->updateCamera(this->GetContext().getGLFWWindow(), timeDelta);
+
+	float fixedDeltaTime;
+	if (timeDelta > 0.016f)
+		fixedDeltaTime = timeDelta;
+	else
+		fixedDeltaTime = 0.016f;
+
+
+	GetPhysicsWorld().updateCharacter(fixedDeltaTime);
+	// update PVD
+	GetPhysicsWorld().gScene->simulate(fixedDeltaTime);
+	GetPhysicsWorld().gScene->fetchResults(true);
+	// update physics
+	GetPhysicsWorld().updateObjects(GetEntityManager(), GetModels());
+
+	GetRenderer().updateUniforms();
+
+	GetGUI().makeGUI();
+
+	GetRenderer().render(GetModels());
+	GetRenderer().submitRender();
 }
 
 
 void FPSTest::OnEvent(Engine::Event& e)
 {
 	Game::OnEvent(e);
-	GetRenderer().GetCamera()->OnEvent(this->GetContext().getGLFWWindow(), e);
+	GetRenderer().GetCameraPointer()->OnEvent(this->GetContext().getGLFWWindow(), e);
 }
 
 void FPSTest::registerComponents()
@@ -92,59 +139,52 @@ void FPSTest::initialisePhysics()
 	GetPhysicsWorld().init();
 }
 
-void FPSTest::RenderGUI()
-{
-	// Render loop for GUI before scene
-	// For now just call RenderScene
-	RenderScene();
-}
+// void FPSTest::RenderScene()
+// {
+// 	Engine::Camera camera = Engine::Camera();
 
-void FPSTest::RenderScene()
-{
-	Engine::Camera camera = Engine::Camera();
+// 	GetRenderer().initialiseRenderer();
+// 	GetGUI().initGUI();
+// 	GetRenderer().attachCamera(&camera);
+// 	GetRenderer().initialiseModelDescriptors(GetModels());
 
-	GetRenderer().initialiseRenderer();
-	GetGUI().initGUI();
-	GetRenderer().attachCamera(&camera);
-	GetRenderer().initialiseModelDescriptors(GetModels());
+// 	auto previous = std::chrono::steady_clock::now();
 
-	auto previous = std::chrono::steady_clock::now();
+// 	while (!glfwWindowShouldClose(this->GetContext().getGLFWWindow())) {
+// 		Engine::InputManager::Update();
+// 		if (GetRenderer().checkSwapchain())
+// 			continue;
 
-	while (!glfwWindowShouldClose(this->GetContext().getGLFWWindow())) {
-		Engine::InputManager::Update();
-		if (GetRenderer().checkSwapchain())
-			continue;
+// 		if (GetRenderer().acquireSwapchainImage())
+// 			continue;
 
-		if (GetRenderer().acquireSwapchainImage())
-			continue;
+// 		// Calculate time delta
+// 		const auto now = std::chrono::steady_clock::now();
+// 		const auto timeDelta = std::chrono::duration_cast<std::chrono::duration<float, std::ratio<1>>>(now - previous).count();
+// 		previous = now;
 
-		// Calculate time delta
-		const auto now = std::chrono::steady_clock::now();
-		const auto timeDelta = std::chrono::duration_cast<std::chrono::duration<float, std::ratio<1>>>(now - previous).count();
-		previous = now;
+// 		GetRenderer().GetCamera()->updateCamera(this->GetContext().getGLFWWindow(), timeDelta);
 
-		GetRenderer().GetCamera()->updateCamera(this->GetContext().getGLFWWindow(), timeDelta);
+// 		float fixedDeltaTime = std::min(0.016f, timeDelta);
 
-		float fixedDeltaTime = std::min(0.016f, timeDelta);
+//     GetPhysicsWorld().updateCharacter(fixedDeltaTime);
+// 		// update PVD
+// 		GetPhysicsWorld().gScene->simulate(fixedDeltaTime);
+// 		GetPhysicsWorld().gScene->fetchResults(true);
+// 		// update physics
+// 		GetPhysicsWorld().updateObjects(GetEntityManager(), GetModels());
 
-    GetPhysicsWorld().updateCharacter(fixedDeltaTime);
-		// update PVD
-		GetPhysicsWorld().gScene->simulate(fixedDeltaTime);
-		GetPhysicsWorld().gScene->fetchResults(true);
-		// update physics
-		GetPhysicsWorld().updateObjects(GetEntityManager(), GetModels());
+// 		GetRenderer().updateUniforms();
 
-		GetRenderer().updateUniforms();
+// 		GetGUI().makeGUI();
 
-		GetGUI().makeGUI();
+// 		GetRenderer().render(GetModels());
 
-		GetRenderer().render(GetModels());
+// 		GetRenderer().submitRender();
+// 	}
 
-		GetRenderer().submitRender();
-	}
-
-	GetRenderer().finishRendering();
-}
+// 	GetRenderer().finishRendering();
+// }
 
 void FPSTest::loadOfflineEntities()
 {
@@ -182,7 +222,7 @@ void FPSTest::loadOfflineEntities()
 	// Cube
 	entity = GetEntityManager().AddEntity<RenderComponent, PhysicsComponent>();
 	glm::mat4 cubeTransform(1.0f);
-	cubeTransform = glm::translate(cubeTransform, glm::vec3(0.3f, 1.0f, -1.0f));
+	cubeTransform = glm::translate(cubeTransform, glm::vec3(0.3f, 1.4f, -1.0f)); // anything below 1.4 clips cube below floor, (for me)
 	cubeTransform = glm::scale(cubeTransform, glm::vec3(0.4f, 0.4f, 0.4f));
 	entity->SetModelMatrix(cubeTransform);
 	renderComponent = GetEntityManager().GetEntityComponent<RenderComponent>(entity->GetEntityId());
