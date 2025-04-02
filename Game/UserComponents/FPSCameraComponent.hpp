@@ -1,7 +1,8 @@
 #pragma once
 
-#include "../../ECS/CameraComponent.hpp"
-class FPSCameraComponent : public CameraComponent
+#include "../ECS/Components/CameraComponent.hpp"
+
+class FPSCameraComponent : public Engine::CameraComponent
 {
 public:
 	void UpdateCameraPosition(glm::vec3 pos);

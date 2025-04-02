@@ -1,6 +1,7 @@
 #include "FPSCamera.hpp"
 
 #include "../Events/Event.hpp"
+#include "../Input/Input.hpp"
 #include "../Input/InputCodes.hpp"
 #include "../Input/Keyboard.hpp"
 #include "../Input/Mouse.hpp"
@@ -9,8 +10,6 @@ void FPSCamera::updateCamera(GLFWwindow* aWindow, float timeDelta)
 {
 	if (glfwGetInputMode(aWindow, GLFW_CURSOR) != GLFW_CURSOR_DISABLED)
 		return;
-
-	//std::cout << "FPS CAMERA" << std::endl;
 
 	float speedModifier = 1.5f;
 	float distance = 1.0f * speedModifier * timeDelta;

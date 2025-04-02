@@ -32,7 +32,7 @@ namespace Engine
 		void GetDataArray(uint8_t*) override;
 
 		// Get camera pointer
-		Engine::Camera* GetCamera() { return &camera; }
+		Engine::Camera* GetCamera() { return camera; }
 
 		// Setters	
 
@@ -40,9 +40,9 @@ namespace Engine
 		void SetDataArray(uint8_t*) override;
 
 		// Set camera pointer
-		void SetCamera(Engine::Camera aCamera) { camera = aCamera; }
+		void SetCamera(Engine::Camera* aCamera) { camera = aCamera; }
 
 	private:
-		Engine::Camera camera;
+		Engine::Camera* camera;
 	};
 }

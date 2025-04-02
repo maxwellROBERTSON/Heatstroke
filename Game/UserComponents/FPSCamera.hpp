@@ -1,16 +1,25 @@
 #pragma once
 
 #include "../Core/Camera.hpp"
+#include <iostream>
+#include <string>
 
 class FPSCamera : public Engine::Camera
 {
 public:
-	FPSCamera() : Camera() {}
-	FPSCamera(float fov, float n, float f, glm::vec3 position, glm::vec3 frontDirection) : Camera(fov, n, f, position, frontDirection) {}
+	FPSCamera() : Engine::Camera() {}
+	FPSCamera(const std::string& name, float fov, float n, float f, glm::vec3 position, glm::vec3 frontDirection) : Engine::Camera(fov, n, f, position, frontDirection)
+	{
+		mName = name;
+		std::cout << "CREATED FPS CAMERA" << std::endl;
+	}
 
 	virtual void updateCamera(GLFWwindow* aWindow, float timeDelta) override;
 	//virtual void OnEvent(GLFWwindow* aWindow, Engine::Event& e) override;
 
 	~FPSCamera() {}
+
+	std::string mName;
+
 };
 

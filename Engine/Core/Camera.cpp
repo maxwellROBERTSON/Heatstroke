@@ -3,13 +3,13 @@
 #include <GLFW/glfw3.h>
 
 #include "../Events/Event.hpp"
+#include "../Events/KeyEvent.hpp"
+#include "../Events/MouseEvent.hpp"
+#include "../Input/Input.hpp"
 #include "../Input/InputCodes.hpp"
 #include "../Input/Keyboard.hpp"
 #include "../Input/Mouse.hpp"
 #include <iostream>
-#include "../Events/KeyEvent.hpp"
-#include "../Events/MouseEvent.hpp"
-#include "../Input/Input.hpp"
 
 /*
 * This entire class will probably need reworking, its not the best implementation of a first person camera
@@ -19,18 +19,19 @@
 namespace Engine
 {
 	Camera::Camera(float fov, float _near, float _far, glm::vec3 position, glm::vec3 frontDirection) :
-		fov(fov), nearPlane(_near), farPlane(_far), position(position), frontDirection(frontDirection) {
+		fov(fov), nearPlane(_near), farPlane(_far), position(position), frontDirection(frontDirection)
+	{
 	}
 
 	void Camera::updateCamera(GLFWwindow* aWindow, float timeDelta) {
 		if (glfwGetInputMode(aWindow, GLFW_CURSOR) != GLFW_CURSOR_DISABLED)
 			return;
-	
+
 		auto& mouse = InputManager::getMouse();
 		float speedModifier = 1.0f;
 		if (InputManager::IsPressed(HS_KEY_LEFT_SHIFT)) speedModifier = 3.0f;
 		float distance = 1.0f * speedModifier * timeDelta;
-	
+
 		if (InputManager::IsPressed(HS_KEY_W))
 		{
 			this->position += distance * this->frontDirection;
@@ -55,33 +56,33 @@ namespace Engine
 		{
 			this->position -= distance * glm::vec3(0.0f, 1.0f, 0.0f);
 		}
-	
+
 		if (this->firstClick) {
 			int winX, winY;
 			glfwGetFramebufferSize(aWindow, &winX, &winY);
-	
+
 			this->lastX = (float)winX / 2;
 			this->lastY = (float)winY / 2;
 			this->firstClick = false;
 		}
-	
+
 		float xOffset = mouse.getXPos() - this->lastX;
 		float yOffset = this->lastY - mouse.getYPos();
-	
+
 		this->lastX = mouse.getXPos();
 		this->lastY = mouse.getYPos();
-	
+
 		xOffset *= 0.1f; // Sensitivity multiplier
 		yOffset *= 0.1f;
-	
+
 		this->yaw += xOffset;
 		this->pitch += yOffset;
-	
+
 		if (this->pitch > 89.9f)
 			this->pitch = 89.9f;
 		if (this->pitch < -89.9f)
 			this->pitch = -89.9f;
-	
+
 		glm::vec3 newDir;
 		newDir.x = std::cos(glm::radians(this->yaw)) * std::cos(glm::radians(this->pitch));
 		newDir.y = std::sin(glm::radians(this->pitch));

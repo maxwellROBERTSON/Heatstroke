@@ -34,7 +34,7 @@ namespace Engine
 			this->lastY = other.lastY;
 		}
 
-		void updateCamera(GLFWwindow* aWindow, float timeDelta);
+		virtual void updateCamera(GLFWwindow* aWindow, float timeDelta);
 		void OnEvent(GLFWwindow* aWindow, Engine::Event& e);
 
 		float fov;
