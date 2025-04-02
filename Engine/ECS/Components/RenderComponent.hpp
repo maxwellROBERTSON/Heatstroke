@@ -23,7 +23,7 @@ namespace Engine
 		ComponentTypes static StaticType() { return ComponentTypes::RENDER; }
 
 		// Get component data
-		void GetDataArray(std::vector<uint8_t>&) override;
+		void GetDataArray(uint8_t*) override;
 
 		// Get model index
 		int GetModelIndex() { return modelIndex; }

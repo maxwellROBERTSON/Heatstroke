@@ -29,7 +29,7 @@ namespace Engine
 		ComponentTypes static StaticType() { return ComponentTypes::CAMERA; }
 
 		// Get component data
-		void GetDataArray(std::vector<uint8_t>&) override;
+		void GetDataArray(uint8_t*) override;
 
 		// Get camera pointer
 		Engine::Camera* GetCamera() { return &camera; }

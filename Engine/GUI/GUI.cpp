@@ -142,7 +142,7 @@ namespace Engine
 
 			ImGui::Text("Join a server");
 
-			static char addressStr[15] = "";
+			static char addressStr[15] = "192.168.68.56\0";
 			ImGui::Text("Address:");
 			ImGui::InputText("Address", addressStr, IM_ARRAYSIZE(addressStr));
 
@@ -307,8 +307,8 @@ namespace Engine
 
 		ImGui::Text("List of info would go here", ImVec2(*w / 4, *h / 4));
 
-		glm::vec3 pos = game->GetRenderer().GetCamera()->position;
-		glm::vec3 fDir = game->GetRenderer().GetCamera()->frontDirection;
+		glm::vec3 pos = game->GetRenderer().GetCameraPointer()->position;
+		glm::vec3 fDir = game->GetRenderer().GetCameraPointer()->frontDirection;
 		std::string posStr = "X: " + std::to_string(pos.x) +
 			" Y: " + std::to_string(pos.y) +
 			" Z: " + std::to_string(pos.z);

@@ -48,7 +48,7 @@ namespace Engine
 		ComponentTypes static StaticType() { return ComponentTypes::PHYSICS; }
 
 		// Get component data
-		void GetDataArray(std::vector<uint8_t>&) override;
+		void GetDataArray(uint8_t*) override;
 
 		// Setters
 

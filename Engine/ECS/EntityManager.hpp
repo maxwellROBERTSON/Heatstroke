@@ -19,7 +19,9 @@ namespace Engine
 		EntityManager()
 		{
 			if (componentMap.size() != ComponentTypes::TYPE_COUNT)
+			{
 				throw std::runtime_error("Size mismatch between componentMap and ComponentTypes");
+			}
 		};
 		~EntityManager() {}
 
@@ -36,7 +38,7 @@ namespace Engine
 
 		// Get the entities with a component type
 		std::vector<int> GetEntitiesWithComponent(ComponentTypes type) { return entitiesWithType[type]; }
-
+		
 		// Get total number of components of a type
 		int GetComponentTypeSize(ComponentTypes type) { return (*componentMap[type]).size(); }
 
@@ -50,9 +52,12 @@ namespace Engine
 		std::vector<uint8_t> GetComponentData(ComponentTypes);
 
 		// Get component data of all entities for all component type
-		void GetAllData(uint8_t* block);
+		void GetAllData(uint8_t*);
 
 		// Setters
+
+		// Set component data of all entities for all component type
+		void SetAllData(uint8_t*);
 
 		// Add an entity with given types
 		Entity* AddEntity(std::vector<ComponentTypes>);

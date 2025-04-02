@@ -1,8 +1,5 @@
 #pragma once
 
-#include <iostream>
-#include <yojimbo.h>
-
 #include "GameClient.hpp"
 
 namespace Engine
@@ -10,11 +7,13 @@ namespace Engine
 	GameClient::GameClient(
 		yojimbo::ClientServerConfig* config,
 		GameAdapter* adapter,
-		yojimbo::Address serverAddress)
+		yojimbo::Address serverAddress,
+		Engine::Game* game)
 		:
 		config(config),
 		adapter(adapter),
-		serverAddress(serverAddress)
+		serverAddress(serverAddress),
+		game(game)
 	{
 		// Initialise  client
 		client = YOJIMBO_NEW(yojimbo::GetDefaultAllocator(), yojimbo::Client,
@@ -89,7 +88,7 @@ namespace Engine
 
 	void GameClient::ProcessMessage(yojimbo::Message* message)
 	{
-		if (message->GetType() == REQUEST_MESSAGE)
+		if (message->GetType() == REQUEST_RESPONSE_MESSAGE)
 		{
 			HandleResponseMessage((RequestResponseMessage*)message);
 		}
@@ -97,20 +96,21 @@ namespace Engine
 	}
 
 	void GameClient::HandleResponseMessage(RequestResponseMessage* message)
-	{
+	{ 
+		std::cout << "RESPONSE MESSAGE FROM SERVER WITH: TYPE = " << message->GetType() << ", MESSAGEID = ";
+		std::cout << message->GetId() << ", BLOCK SIZE = " << message->GetBlockSize() << ", RESPONSETYPE = " << static_cast<int>(message->responseType) << std::endl;
 		int size = message->GetBlockSize();
-		std::vector<uint8_t> data(size);
-		message->GetBlockData();
-		int sizes = message->GetBlockSize();
-		/*if (message->responseType == ResponseType::ENTITY_DATA_RESPONSE)
+
+		if (message->responseType == ResponseType::ENTITY_DATA_RESPONSE)
 		{
-			uint8_t data
-			message->GetBlockData()
-			server->AttachBlockToMessage(clientIndex, message, block, bytes);
-			server->SendServerMessage(clientIndex, yojimbo::CHANNEL_TYPE_RELIABLE_ORDERED, message);
-			server->FreeBlock(clientIndex, block);*/
-		//adapter->factory->ReleaseMessage(message);
-		//server->ReleaseMessage(clientIndex, message);
+			if (message->GetBlockSize() == 0)
+				throw std::runtime_error("Null block data size");
+			game->GetEntityManager().SetAllData(message->GetBlockData());
+		}
+		else
+		{
+			std::cout << "FAILED" << static_cast<int>(message->responseType) << std::endl;
+		}
 	}
 
 	void GameClient::CleanUp()
@@ -131,6 +131,8 @@ namespace Engine
 			RequestMessage *message = (RequestMessage*)adapter->factory->CreateMessage(REQUEST_MESSAGE);
 			message->requestType = RequestType::ENTITY_DATA;
 			client->SendClientMessage(yojimbo::CHANNEL_TYPE_RELIABLE_ORDERED, message);
+			std::cout << "MESSAGE TO SERVER WITH: TYPE = " << message->GetType() << ", MESSAGEID = ";
+			std::cout << message->GetId() << ", REQUESTTYPE = " << static_cast<int>(message->requestType) << std::endl;
 		}
 		else if (client->IsDisconnected() && status != Status::CLIENT_DISCONNECTED)
 			status = Status::CLIENT_DISCONNECTED;

@@ -25,7 +25,7 @@ namespace Engine
 		size_t GetEntitySize() { return sizeof(entityId) + sizeof(modelMatrix); }
 
 		// Get the data for a given entity
-		void GetData(std::vector<uint8_t>&);
+		void GetData(uint8_t*);
 
 		// Get entity id
 		int GetEntityId() { return entityId; }
@@ -33,7 +33,7 @@ namespace Engine
 		// Get model matrix
 		glm::mat4 GetModelMatrix() { return modelMatrix; }
 
-		// Get a component of a given type
+		// Get a component index of a given type
 		int GetComponent(ComponentTypes t) { return componentTypeIndexList[t]; }
 
 		// Get all components of this entity
@@ -42,7 +42,7 @@ namespace Engine
 		// Setters
 
 		// Set the data for a given entity
-		void SetData(uint8_t* block);
+		void SetData(uint8_t*);
 
 		// Set model matrix
 		void SetModelMatrix(glm::mat4 aModelMatrix) { modelMatrix = aModelMatrix; }

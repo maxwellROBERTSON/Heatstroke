@@ -1,5 +1,7 @@
 #include "DemoGame.hpp"
 
+#define NOMINMAX
+
 #include <chrono>
 #include <thread>
 #include <future>
@@ -69,9 +71,13 @@ void FPSTest::Update()
 	const auto timeDelta = std::chrono::duration_cast<std::chrono::duration<float, std::ratio<1>>>(now - previous).count();
 	previous = now;
 
-	GetRenderer().GetCamera()->updateCamera(this->GetContext().getGLFWWindow(), timeDelta);
+	GetRenderer().GetCameraPointer()->updateCamera(this->GetContext().getGLFWWindow(), timeDelta);
 
-	float fixedDeltaTime = std::min(0.016f, timeDelta);
+	float fixedDeltaTime;
+	if (timeDelta > 0.016f)
+		fixedDeltaTime = timeDelta;
+	else
+		fixedDeltaTime = 0.016f;
 
 	// update PVD
 	GetPhysicsWorld().gScene->simulate(fixedDeltaTime);
@@ -92,7 +98,7 @@ void FPSTest::OnEvent(Engine::Event& e)
 {
 	Game::OnEvent(e);
 
-	GetRenderer().GetCamera()->OnEvent(this->GetContext().getGLFWWindow(), e);
+	GetRenderer().GetCameraPointer()->OnEvent(this->GetContext().getGLFWWindow(), e);
 	//Engine::EventDispatcher dispatcher(e);
 
 	//dispatcher.Dispatch<Engine::KeyPressedEvent>(

@@ -17,18 +17,18 @@ namespace Engine
             std::cout << "Adapter created.\n";
         }
 #ifdef _DEBUG
-        yojimbo_log_level(YOJIMBO_LOG_LEVEL_DEBUG);
+        yojimbo_log_level(YOJIMBO_LOG_LEVEL_INFO);
 #else
         yojimbo_log_level(YOJIMBO_LOG_LEVEL_INFO);
 #endif
     }
 
-    void Network::InitializeClient(yojimbo::Address serverAddress)
+    void Network::InitializeClient(Game* game, yojimbo::Address serverAddress)
     {
         if (!initialized)
         {
             InitializeNetwork();
-            networkType = std::make_unique<GameClient>(&config, adapter, serverAddress);
+            networkType = std::make_unique<GameClient>(&config, adapter, serverAddress, game);
             initialized = true;
         }
         else

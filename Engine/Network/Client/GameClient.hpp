@@ -17,7 +17,8 @@ namespace Engine
 		GameClient(
 			yojimbo::ClientServerConfig*,
 			GameAdapter*,
-			yojimbo::Address
+			yojimbo::Address,
+			Engine::Game* game
 		);
 		~GameClient() {}
 
@@ -35,9 +36,12 @@ namespace Engine
 		double time = 1.0;
 		float dt = 1.0f / 120.0f;
 
+		yojimbo::Address serverAddress;
+
 		yojimbo::Client* client;
 		yojimbo::ClientServerConfig* config;
 		GameAdapter* adapter;
-		yojimbo::Address serverAddress;
+
+		Engine::Game* game;
 	};
 }

@@ -22,7 +22,7 @@ namespace Engine
         // Virtual methods for children
         virtual ~ComponentBase() = default;
         virtual ComponentTypes GetType() const = 0;
-        virtual void GetDataArray(std::vector<uint8_t>&) = 0;
+        virtual void GetDataArray(uint8_t*) = 0;
     };
 
     template <typename T>
@@ -43,7 +43,7 @@ namespace Engine
         virtual ComponentTypes StaticType() { return ComponentTypes::TYPE_COUNT; }
 
         // Get component data
-        virtual void GetDataArray(std::vector<uint8_t>&) = 0;
+        virtual void GetDataArray(uint8_t*) = 0;
 
         // Setters
 

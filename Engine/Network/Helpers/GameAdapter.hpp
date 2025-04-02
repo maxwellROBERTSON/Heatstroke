@@ -1,11 +1,10 @@
 #pragma once
 
-#include <yojimbo.h>
-
 //#define NOMINMAX           // Avoid conflicts with Windows macros like min/max
 //#define _WIN32_WINNT 0x0601 // Optional, depending on your Windows version
 //#define WINUSERAPI
 
+#include <yojimbo.h>
 #include <iostream>
 
 namespace Engine
@@ -128,6 +127,13 @@ namespace Engine
                 responseType = static_cast<ResponseType>(responseTypeValue);
             }
 
+            int size = GetBlockSize();
+            uint8_t* block = GetBlockData();
+            for (int i = 0; i < size; i++)
+            {
+                serialize_bits(stream, block[i], 8);
+            }
+
             return true;
         }
 
@@ -168,6 +174,12 @@ namespace Engine
                 return message;
             case GAME_BLOCK_MESSAGE:
                 message = YOJIMBO_NEW(allocator, GameBlockMessage);
+                if (!message)
+                    return nullptr;
+                SetMessageType(message, type);
+                return message;
+            case REQUEST_RESPONSE_MESSAGE:
+                message = YOJIMBO_NEW(allocator, RequestResponseMessage);
                 if (!message)
                     return nullptr;
                 SetMessageType(message, type);

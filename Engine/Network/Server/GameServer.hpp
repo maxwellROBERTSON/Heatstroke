@@ -34,6 +34,7 @@ namespace Engine
 		std::map<std::string, std::string> GetInfo();
 
 	private:
+		double serverTime;
 		float dt = 1.0f / 120.0f;
 		int maxClients;
 

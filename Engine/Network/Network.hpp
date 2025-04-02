@@ -22,7 +22,7 @@ namespace Engine
     public:
         Network() {};
         void InitializeNetwork();
-        void InitializeClient(yojimbo::Address);
+        void InitializeClient(Game*, yojimbo::Address);
         void InitializeServer(Game*, uint16_t, int);
         void Update();
         void Reset();

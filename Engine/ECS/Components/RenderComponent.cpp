@@ -6,18 +6,23 @@ namespace Engine
 {
 	// Getters
 
-	void RenderComponent::GetDataArray(std::vector<uint8_t>& data)
+	void RenderComponent::GetDataArray(uint8_t* data)
 	{
-		uint8_t* rawData = reinterpret_cast<uint8_t*>(&modelIndex);
-		data.insert(data.end(), rawData, rawData + sizeof(modelIndex));
-		rawData = reinterpret_cast<uint8_t*>(&isActive);
-		data.insert(data.end(), rawData, rawData + sizeof(isActive));
+		size_t offset = 0;
+
+		std::memcpy(data + offset, &modelIndex, sizeof(modelIndex));
+		offset += sizeof(modelIndex);
+		std::memcpy(data + offset, &isActive, sizeof(isActive));
 	}
 
 	// Setters
 
 	void RenderComponent::SetDataArray(uint8_t* data)
 	{
-		;
+		size_t offset = 0;
+
+		std::memcpy(&modelIndex, data + offset, sizeof(modelIndex));
+		offset += sizeof(modelIndex);
+		std::memcpy(&isActive, data + offset, sizeof(isActive));
 	}
 }

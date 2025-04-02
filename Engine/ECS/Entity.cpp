@@ -18,13 +18,14 @@ namespace Engine
 	// Getters
 
 	// Get the data for a given entity
-	void Entity::GetData(std::vector<uint8_t>& data)
-	{		
-		// Add the entity's index and model matrix to the vector
-		uint8_t* rawData = reinterpret_cast<uint8_t*>(&entityId);
-		data.insert(data.end(), rawData, rawData + sizeof(entityId));
-		rawData = reinterpret_cast<uint8_t*>(&modelMatrix);
-		data.insert(data.end(), rawData, rawData + sizeof(modelMatrix));
+	void Entity::GetData(uint8_t* data)
+	{
+		size_t offset = 0;
+
+		std::memcpy(data + offset, &entityId, sizeof(entityId));
+		offset += sizeof(entityId);
+		std::memcpy(data + offset, &modelMatrix, sizeof(modelMatrix));
+		offset += sizeof(modelMatrix);
 
 		// If the entity has a component type add its data to the vector
 		ComponentBase* component;

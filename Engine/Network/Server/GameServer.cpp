@@ -35,20 +35,30 @@ namespace Engine
 	{
 		// Start server
 		server->Start(maxClients);
+		serverTime = yojimbo_time();
 	}
 
 	void GameServer::Update()
 	{
+		double time = yojimbo_time();
+		if (serverTime + dt <= yojimbo_time()) {
+			serverTime += dt;
+		}
+		else {
+			//yojimbo_sleep(m_time - currentTime);
+			return;
+		}
+
+		server->SendPackets();
 		// update server and process messages
-		server->AdvanceTime(server->GetTime() + dt);
 		server->ReceivePackets();
 		ProcessMessages();
+		server->AdvanceTime(dt);
 
 		// ... process client inputs ...
 		// ... update game ...
 		// ... send game state to clients ...
 
-		server->SendPackets();
 	}
 
 	void GameServer::ProcessMessages()
@@ -64,6 +74,7 @@ namespace Engine
 					{
 						ProcessMessage(i, message);
 						server->ReleaseMessage(i, message);
+						message = server->ReceiveMessage(i, j);
 					}
 				}
 			}
@@ -76,25 +87,44 @@ namespace Engine
 
 	void GameServer::ProcessMessage(int clientIndex, yojimbo::Message* message)
 	{
+		std::cout << "MESSAGE FROM CLIENT " << clientIndex << " WITH: TYPE = " << message->GetType() << ", MESSAGEID = " << message->GetId() << std::endl;
 		if (message->GetType() == REQUEST_MESSAGE)
 		{
 			RequestMessage* derived = (RequestMessage*)message;
 			HandleRequestMessage(clientIndex, derived->requestType);
 		}
-		std::cout << "MESSAGE FROM CLIENT " << clientIndex << " WITH: TYPE = " << message->GetType() << ", MESSAGEID = " << message->GetId() << std::endl;
 	}
 
 	void GameServer::HandleRequestMessage(int clientIndex, RequestType requestType)
 	{
-		RequestResponseMessage* message = (RequestResponseMessage*)server->CreateMessage(clientIndex, REQUEST_RESPONSE_MESSAGE);
-		message->responseType = static_cast<ResponseType>(requestType);
-		if (message->responseType == ResponseType::ENTITY_DATA_RESPONSE)
+		RequestResponseMessage* message = static_cast<RequestResponseMessage*>(server->CreateMessage(clientIndex, REQUEST_RESPONSE_MESSAGE));
+		if (message)
 		{
-			int bytes = game->GetEntityManager().GetTotalDataSize();
-			uint8_t* block = server->AllocateBlock(clientIndex, bytes);
-			server->AttachBlockToMessage(clientIndex, message, block, bytes);
-			server->SendServerMessage(clientIndex, yojimbo::CHANNEL_TYPE_RELIABLE_ORDERED, message);
-			server->FreeBlock(clientIndex, block);
+			message->responseType = static_cast<ResponseType>(requestType);
+			if (message->responseType == ResponseType::ENTITY_DATA_RESPONSE)
+			{
+				int bytes = game->GetEntityManager().GetTotalDataSize();
+				uint8_t* block = server->AllocateBlock(clientIndex, bytes);
+				if (block)
+				{
+					game->GetEntityManager().GetAllData(block);
+					server->AttachBlockToMessage(clientIndex, message, block, bytes);
+					server->SendServerMessage(clientIndex, yojimbo::CHANNEL_TYPE_RELIABLE_ORDERED, message);
+					std::cout << "MESSAGE TO CLIENT " << clientIndex << " WITH: TYPE = " << message->GetType() << ", MESSAGEID = ";
+					std::cout << message->GetId() << ", BLOCK SIZE = " << bytes << ", RESPONSETYPE = " << static_cast<int>(message->responseType) << std::endl;
+					//server->SendPackets();
+					//message->DetachBlock();
+					//server->FreeBlock(clientIndex, block);
+				}
+				else
+				{
+					server->ReleaseMessage(clientIndex, message);
+				}
+			}
+		}
+		else
+		{
+			server->ReleaseMessage(clientIndex, message);
 		}
 		//adapter->factory->ReleaseMessage(message);
 		//server->ReleaseMessage(clientIndex, message);

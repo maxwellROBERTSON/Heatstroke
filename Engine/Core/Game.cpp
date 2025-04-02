@@ -66,7 +66,7 @@ namespace Engine
 
 	void Game::SetClient(yojimbo::Address serverAddress)
 	{
-		network->InitializeClient(serverAddress);
+		network->InitializeClient(this, serverAddress);
 	}
 
 	void Game::SetServer(uint16_t port, int maxClients)

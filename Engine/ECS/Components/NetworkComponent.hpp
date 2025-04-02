@@ -23,7 +23,7 @@ namespace Engine
 		ComponentTypes static StaticType() { return ComponentTypes::NETWORK; }
 
 		// Get component data
-		void GetDataArray(std::vector<uint8_t>&) override;
+		void GetDataArray(uint8_t*) override;
 
 		// Get client id
 		int GetClientId() { return clientId; };

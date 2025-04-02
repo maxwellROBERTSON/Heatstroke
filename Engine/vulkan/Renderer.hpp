@@ -31,7 +31,7 @@ namespace Engine {
 		Renderer() = default;
 
 		VkRenderPass& GetRenderPass(std::string s);
-		Engine::Camera* GetCamera() { return camera; }
+		Engine::Camera* GetCameraPointer() { return camera; }
 		bool const GetIsSceneLoaded() { return isSceneLoaded; }
 
 		void initialiseRenderer();
