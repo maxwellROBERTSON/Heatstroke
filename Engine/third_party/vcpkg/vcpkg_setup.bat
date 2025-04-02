@@ -46,29 +46,6 @@ if not defined VULKAN_SDK (
     echo Vulkan SDK is already set in environment variable: %VULKAN_SDK%
 )
 
-REM Check if Vulkan SDK is installed via system environment variables
-set VOLK_SDK=%VOLK_SDK%
-if not defined VOLK_SDK (
-    REM Check if volk is installed via vcpkg
-    echo here
-    for /f "delims=" %%i in ('vcpkg list ^| findstr "volk"') do set INSTALLED_VOLK=%%i
-    if not defined INSTALLED_VOLK (
-        echo Volk SDK is not installed.
-        echo "Do you want to install Volk SDK using vcpkg? (Y/N):"
-        set /p INSTALL_VOLK="Enter Y or N: "
-        REM Check user's input for installation
-        if /i "!INSTALL_VOLK!"=="Y" (
-            echo Installing volk SDK...
-            .\vcpkg install volk
-        ) else (
-            echo !INSTALL_VOLK!
-            echo Skipping volk SDK installation.
-        )
-    )
-) else (
-    echo Volk SDK is already set in environment variable: %VOLK_SDK%
-)
-
 echo Setting up VCPKG_TOOLCHAIN for use with Premake and CMake...
 set VCPKG_TOOLCHAIN=%VCPKG_ROOT%\scripts\buildsystems\vcpkg.cmake
 
