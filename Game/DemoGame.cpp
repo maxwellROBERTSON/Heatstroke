@@ -193,7 +193,6 @@ void FPSTest::loadOfflineEntities()
 	cameraComponent = reinterpret_cast<CameraComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), CAMERA));
 	cameraComponent->SetCamera(Engine::Camera(100.0f, 0.01f, 256.0f, glm::vec3(-3.0f, 2.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
 	networkComponent = reinterpret_cast<NetworkComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), NETWORK));
-	networkComponent->SetClientId(0);
 	physicsComponent = reinterpret_cast<PhysicsComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
 	physicsComponent->init(GetPhysicsWorld(), PhysicsComponent::PhysicsType::CONTROLLER, player1Transform, entity->GetEntityId());
 	renderComponent = reinterpret_cast<RenderComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), RENDER));
@@ -282,7 +281,6 @@ void FPSTest::loadOnlineEntities()
 	cameraComponent = reinterpret_cast<CameraComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), CAMERA));
 	cameraComponent->SetCamera(Engine::Camera(100.0f, 0.01f, 256.0f, glm::vec3(-3.0f, 2.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
 	networkComponent = reinterpret_cast<NetworkComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), NETWORK));
-	networkComponent->SetClientId(0);
 	physicsComponent = reinterpret_cast<PhysicsComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
 	physicsComponent->init(GetPhysicsWorld(), PhysicsComponent::PhysicsType::CONTROLLER, player1Transform, entity->GetEntityId());
 	renderComponent = reinterpret_cast<RenderComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), RENDER));

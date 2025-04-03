@@ -252,35 +252,17 @@ namespace Engine
 				std::cout << "ADDED component " << types[j] << " to entity " << entity->GetEntityId() << std::endl;
 			}
 		}
+	}
 
-		int i = 0;
-
-		// PHYSICS COMPONENT MISALIGNMENT
-
-		/*std::vector<int> ComponentIndexArray;
-		for (int i = 0; i < numEntities; i++)
-		{
-			ComponentIndexArray = entities[i].GetComponentIndexArray();
-			for (int j = 1; j < TYPE_COUNT + 1; j++)
-			{
-				block[i * TYPE_COUNT + j] = static_cast<uint8_t>(ComponentIndexArray[j]);
-			}
-		}
-
-		offset += numEntities * TYPE_COUNT;
-
-		std::vector<std::unique_ptr<ComponentBase>>* components;
-		for (int i = 0; i < TYPE_COUNT; i++)
-		{
-			components = GetComponentsOfType(static_cast<ComponentTypes>(i));
-			for (int j = 0; j < components->size(); j++)
-			{
-				(*components)[i].get()->GetDataArray(block + offset);
-			}
-		}*/
+	// Set next network component unassigned to a client
+	void EntityManager::AssignNextClient(uint64_t clientId)
+	{
+		NetworkComponent* comp = reinterpret_cast<NetworkComponent*>((*componentMap[NETWORK])[nextNetworkComponent].get());
+		comp->SetClientId(clientId);
 	}
 
 	// Add an existing entity to the manager
+	// ComponentIndexArray overwritten so only use if components not yet initialised
 	void EntityManager::AddEntity(Entity* entity, std::vector<ComponentTypes> components)
 	{
 		std::vector<int> typeIndexList;
@@ -398,6 +380,8 @@ namespace Engine
 			(*componentMap[CAMERA]).emplace_back(std::make_unique<CameraComponent>());
 			break;
 		case NETWORK:
+			if (nextNetworkComponent == -1)
+				nextNetworkComponent = 0;
 			(*componentMap[NETWORK]).emplace_back(std::make_unique<NetworkComponent>());
 			break;
 		case PHYSICS:

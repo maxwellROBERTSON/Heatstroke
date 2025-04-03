@@ -29,7 +29,7 @@ namespace Engine
 		void GetDataArray(uint8_t*) override;
 
 		// Get client id
-		int GetClientId() { return clientId; };
+		uint64_t GetClientId() { return clientId; };
 
 		// Setters
 
@@ -37,9 +37,9 @@ namespace Engine
 		void SetDataArray(uint8_t*) override;
 
 		// Set client id
-		void SetClientId(int aClientId) { clientId = aClientId; }
+		void SetClientId(uint64_t aClientId) { clientId = aClientId; }
 
 	private:
-		int clientId = -1;
+		uint64_t clientId = 0;
 	};
 }

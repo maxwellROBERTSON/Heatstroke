@@ -9,6 +9,7 @@
 
 namespace Engine
 {
+    // Retrieves the number of bits required for a message based on a sequence number
     inline int GetNumBitsForMessage(uint16_t sequence)
     {
         static int messageBitsArray[] = { 1, 320, 120, 4, 256, 45, 11, 13, 101, 100, 84, 95, 203, 2, 3, 8, 512, 5, 3, 7, 50 };
@@ -62,6 +63,7 @@ namespace Engine
         // Add more response types as needed
     };
 
+    // Message to request data of a type
     class RequestMessage : public yojimbo::Message
     {
     public:
@@ -101,16 +103,7 @@ namespace Engine
         YOJIMBO_VIRTUAL_SERIALIZE_FUNCTIONS()
     };
 
-    // For each entity:
-    // Component vector of int = registry.GetNumComponents * sizeof(int)
-    // Matrix = 16 * sizeof(float)
-    // If rendercomp:
-    //  Model index = sizeof(int0
-    // If camera:
-    // fov + near + far + vec3(pos) + vec3(front_dir) = 9 * float
-    // If network:
-    // clientid = int
-
+    // Message to receive data in a block, holds the type of the request mapped to a response type
     class RequestResponseMessage : public yojimbo::BlockMessage
     {
     public:
@@ -151,6 +144,7 @@ namespace Engine
         NUM_GAME_MESSAGE_TYPES
     };
 
+    // Factory class responsible for creating game messages
     class GameMessageFactory : public yojimbo::MessageFactory
     {
     public:
@@ -192,6 +186,7 @@ namespace Engine
         }
     };
 
+    // Adapter class handling server-client interactions and message factories
     class GameAdapter : public yojimbo::Adapter
     {
     public:

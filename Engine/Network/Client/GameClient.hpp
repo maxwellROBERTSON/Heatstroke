@@ -22,19 +22,34 @@ namespace Engine
 		);
 		~GameClient() {}
 
+		// Insecure connection request to server
 		void Connect();
+
+		// Update client at a fixed rate, send and recieve packets, process messages from server, advance client time
 		void Update();
+
+		// Loop through all server messages, process and release
 		void ProcessMessages();
+
+		// Process message type with corresponding function
 		void ProcessMessage(yojimbo::Message*);
+
+		// Handle a response from a request message, given ResponseType set correct data
 		void HandleResponseMessage(RequestResponseMessage*);
+
+		// Clean up client memory using yojimbo
 		void CleanUp();
 
+		// Update network status based on client status
 		void UpdateStatus();
+
+		// Get debugging info for the client
 		std::map<std::string, std::string> GetInfo();
 
 	private:
-		double time = 1.0;
-		float dt = 1.0f / 120.0f;
+		double clientTime;
+
+		uint64_t clientId = 0;
 
 		yojimbo::Address serverAddress;
 

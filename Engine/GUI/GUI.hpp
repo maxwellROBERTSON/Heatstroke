@@ -32,6 +32,7 @@ namespace Engine
 	class GUI
 	{
 	public:
+		// Constructors
 		GUI() {}
 		GUI(Engine::Game* game) : game(game)
 		{

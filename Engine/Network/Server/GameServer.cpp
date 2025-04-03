@@ -17,43 +17,49 @@ namespace Engine
 		maxClients(maxClients),
 		game(game)
 	{
+		// Check max client limit
+		if (maxClients > yojimbo::MaxClients)
+			game->GetNetwork().Reset();
+
 		// Initialise server
-		double time = 1.0;
+		serverTime = yojimbo_time();
 		server = YOJIMBO_NEW(yojimbo::GetDefaultAllocator(), yojimbo::Server,
 			yojimbo::GetDefaultAllocator(),
 			DEFAULT_PRIVATE_KEY,
 			address,
 			*config,
 			*adapter,
-			time);
+			serverTime);
 
 		adapter->SetServer(server);
+
+		game->GetNetwork().SetStatus(Status::SERVER_INITIALIZED);
+
 		Start();
 	}
 
+	// Start the server
 	void GameServer::Start()
 	{
-		// Start server
 		server->Start(maxClients);
-		serverTime = yojimbo_time();
 	}
 
+	// Update server at a fixed rate, send and recieve packets, process messages from clients, advance server time
 	void GameServer::Update()
 	{
-		double time = yojimbo_time();
-		if (serverTime + dt <= yojimbo_time()) {
-			serverTime += dt;
-		}
-		else {
-			//yojimbo_sleep(m_time - currentTime);
+		serverTime = server->GetTime();
+		if (serverTime + dt > yojimbo_time()) {
 			return;
 		}
+		serverTime += dt;
 
 		server->SendPackets();
-		// update server and process messages
+
 		server->ReceivePackets();
+
 		ProcessMessages();
-		server->AdvanceTime(dt);
+
+		server->AdvanceTime(serverTime);
 
 		// ... process client inputs ...
 		// ... update game ...
@@ -61,6 +67,7 @@ namespace Engine
 
 	}
 
+	// Loop through all client messages, process and release
 	void GameServer::ProcessMessages()
 	{
 		for (int i = 0; i < maxClients; i++)
@@ -85,6 +92,7 @@ namespace Engine
 		}
 	}
 
+	// Process message type with corresponding function
 	void GameServer::ProcessMessage(int clientIndex, yojimbo::Message* message)
 	{
 		std::cout << "MESSAGE FROM CLIENT " << clientIndex << " WITH: TYPE = " << message->GetType() << ", MESSAGEID = " << message->GetId() << std::endl;
@@ -95,6 +103,7 @@ namespace Engine
 		}
 	}
 
+	// Handle request messages, given RequestType send correct data
 	void GameServer::HandleRequestMessage(int clientIndex, RequestType requestType)
 	{
 		RequestResponseMessage* message = static_cast<RequestResponseMessage*>(server->CreateMessage(clientIndex, REQUEST_RESPONSE_MESSAGE));
@@ -107,6 +116,7 @@ namespace Engine
 				uint8_t* block = server->AllocateBlock(clientIndex, bytes);
 				if (block)
 				{
+					game->GetEntityManager().AssignNextClient(server->GetClientId(clientIndex));
 					game->GetEntityManager().GetAllData(block);
 					server->AttachBlockToMessage(clientIndex, message, block, bytes);
 					server->SendServerMessage(clientIndex, yojimbo::CHANNEL_TYPE_RELIABLE_ORDERED, message);
@@ -130,25 +140,29 @@ namespace Engine
 		//server->ReleaseMessage(clientIndex, message);
 	}
 
+	// Clean up server memory using yojimbo
 	void GameServer::CleanUp()
 	{
 		// Clean up server
 		YOJIMBO_DELETE(yojimbo::GetDefaultAllocator(), GameAdapter, adapter);
 		server->Stop();
 		YOJIMBO_DELETE(yojimbo::GetDefaultAllocator(), Server, server);
-		ShutdownYojimbo();
 	}
 
+	// Update network status based on clients and server status
 	void GameServer::UpdateStatus()
 	{
 		;
 	}
 
+	// Get debugging info for the server
 	std::map<std::string, std::string> GameServer::GetInfo()
 	{
 		std::map<std::string, std::string> info;
 
 		// Server Info
+		info["Yojimbo Time"] = std::to_string(yojimbo_time());
+		info["Server Time"] = std::to_string(server->GetTime());
 		info["Dt"] = std::to_string(dt);
 		info["Max Clients"] = std::to_string(maxClients);
 		info["Num Connected Clients"] = std::to_string(server->GetNumConnectedClients());

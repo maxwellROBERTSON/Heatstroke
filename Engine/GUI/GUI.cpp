@@ -122,13 +122,29 @@ namespace Engine
 		}
 		if (ImGui::Button("Multi-Player", ImVec2(*w / 4, *h / 4)))
 		{
-			multiplayerSelected = true;
-			serverSelected = false;
+			if (multiplayerSelected)
+			{
+				multiplayerSelected = false;
+				serverSelected = false;
+			}
+			else
+			{
+				multiplayerSelected = true;
+				serverSelected = false;
+			}
 		}
 		if (ImGui::Button("Create a Server", ImVec2(*w / 4, *h / 4)))
 		{
-			multiplayerSelected = false;
-			serverSelected = true;
+			if (serverSelected)
+			{
+				multiplayerSelected = false;
+				serverSelected = false;
+			}
+			else
+			{
+				multiplayerSelected = false;
+				serverSelected = true;
+			}
 		}
 
 		ImVec2 middlePos = ImVec2(*w / 4, *h / 4);
@@ -331,7 +347,7 @@ namespace Engine
 		ImGui::SliderFloat("Depth Bias Constant", &game->GetRenderer().depthBiasConstant, 0.0f, 10.0f);
 		ImGui::SliderFloat("Depth Bias Slope Factor", &game->GetRenderer().depthBiasSlopeFactor, 0.0f, 10.0f);
 
-		if (game->GetNetwork().isInitialized())
+		if (game->GetNetwork().GetStatus() == Status::CLIENT_LOADED)
 		{
 			std::map<std::string, std::string> networkInfo = game->GetNetwork().GetNetworkInfo();
 			for (const auto& [key, value] : networkInfo)

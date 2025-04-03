@@ -273,7 +273,7 @@ namespace Engine {
 		std::size_t uboAlignment = this->context->window->device->minUBOAlignment;
 		this->dynamicUBOAlignment = (sizeof(glm::mat4) + uboAlignment - 1) & ~(uboAlignment - 1);
 
-		VkDeviceSize bufferSize = this->dynamicUBOAlignment * ComponentSizes[RENDER];
+		VkDeviceSize bufferSize = this->dynamicUBOAlignment * entityManager->GetComponentTypeSize(RENDER);
 
 		this->uniforms.modelMatricesUniform.model = (glm::mat4*)Utils::allocAligned(bufferSize, this->dynamicUBOAlignment);
 
@@ -366,7 +366,7 @@ namespace Engine {
 			*modelMatrix = this->entityManager->GetEntity(entities[i])->GetModelMatrix();
 		}
 
-		int size = ComponentSizes[RENDER] * this->dynamicUBOAlignment;
+		int size = entityManager->GetComponentTypeSize(RENDER) * this->dynamicUBOAlignment;
 
 		std::memcpy(this->uniformBuffers["modelMatrices"].mapped, this->uniforms.modelMatricesUniform.model, size);
 

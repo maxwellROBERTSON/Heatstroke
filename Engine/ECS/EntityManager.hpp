@@ -53,6 +53,9 @@ namespace Engine
 		// Set component data of all entities for all component type
 		void SetAllData(uint8_t*);
 
+		// Set next network component unassigned to a client
+		void AssignNextClient(uint64_t);
+
 		// Add an existing entity to the manager
 		// ComponentIndexArray overwritten so only use if components not yet initialised
 		void AddEntity(Entity*, std::vector<ComponentTypes>);
@@ -88,6 +91,9 @@ namespace Engine
 
 		// For each component type, there is an entry, each holding ids of entities with that component type
 		std::vector<std::vector<int>> entitiesWithType = std::vector<std::vector<int>>(TYPE_COUNT);
+
+		// Next available entity with a network component
+		int nextNetworkComponent = -1;
 
 		// For each entity:
 		// Component vector of int = registry.GetNumComponents * sizeof(int)
