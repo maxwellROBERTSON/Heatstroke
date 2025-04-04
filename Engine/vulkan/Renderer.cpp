@@ -347,6 +347,12 @@ namespace Engine {
 
 			this->recreateOthers();
 
+			// Destroy and recreate all semaphores so none are in signaled state, which
+			// may be the case when vkAcquireNextImageKHR returns VK_SUBOPTIMAL_KHR.
+			this->imageAvailable.clear();
+			for (std::size_t i = 0; i < this->context->window->swapViews.size(); i++)
+				this->imageAvailable.emplace_back(createSemaphore(*this->context->window));
+
 			this->recreateSwapchain = false;
 			return true;
 		}
@@ -387,39 +393,7 @@ namespace Engine {
 			if (model.animations.size() == 0)
 				continue;
 
-			// Animation queue is empty: 
-			// 1. Render idle animation
-			// Animation queue is not empty:
-			// 1. Blend to first animation in queue
-			// 2. If blended, continue running first animation in queue
-			// 3. Once first animation is completed, pop animation
-			// 4. Check if animation queue is empty. TODO
-			//    - If so, blend to idle and run idle.
-			//    - If not, go to step 1.
-
-
-			// If animation queue is empty just render idle animation
-			if (model.animationQueue.empty()) {
-				model.idleAnimation.update(model, timeDelta);
-			}
-			// Otherwise process animation queue
-			else {
-				// Get first animation in queue
-				vk::Animation& target = model.animationQueue.front();
-				
-				// If this model is still blending, run blendAnimation
-				if (model.blending) {
-					model.blendAnimation(model.idleAnimation, target, timeDelta, 0.2f);
-				}
-				// If not blending then just continue updating front animation
-				else {
-					target.update(model, timeDelta);
-				}
-
-				// Check if target animation is finished
-				if (!target.animating)
-					model.animationQueue.pop();
-			}
+			model.updateAnimation(timeDelta);
 		}
 	}
 
@@ -466,7 +440,7 @@ namespace Engine {
 			}
 		}
 
-		int size = this->modelMatrices * this->dynamicUBOAlignment;
+		std::size_t size = this->modelMatrices * this->dynamicUBOAlignment;
 		std::memcpy(this->uniformBuffers["modelMatrices"].mapped, this->uniforms.modelMatricesUniform.model, size);
 		vmaFlushAllocation(this->context->allocator->allocator, this->uniformBuffers["modelMatrices"].allocation, 0, size);
 	}

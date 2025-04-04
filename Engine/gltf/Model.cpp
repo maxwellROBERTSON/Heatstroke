@@ -216,7 +216,7 @@ namespace vk {
             // Draw opaque nodes first
             for (Node* node : linearNodes) {
                 vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &modelMatricesDescriptor, 1, &offset); // Model matrices
-                offset += dynamicUBOAlignment;
+                offset += (std::uint32_t)dynamicUBOAlignment;
                 drawNodeGeometry(node, aCmdBuf, pipelineLayout, AlphaMode::ALPHA_OPAQUE);
             }
 
@@ -245,7 +245,7 @@ namespace vk {
         // Draw opaque nodes first
 		for (Node* node : linearNodes) {
             vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &modelMatricesDescriptor, 1, &offset); // Model matrices
-            offset += dynamicUBOAlignment;
+            offset += (std::uint32_t)dynamicUBOAlignment;
 			drawNode(node, aCmdBuf, pipelineLayout, AlphaMode::ALPHA_OPAQUE);
 		}
 
@@ -256,7 +256,7 @@ namespace vk {
         // Draw alpha masked nodes second
         for (Node* node : linearNodes) {
             vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &modelMatricesDescriptor, 1, &offset); // Model matrices
-            offset += dynamicUBOAlignment;
+            offset += (std::uint32_t)dynamicUBOAlignment;
             drawNode(node, aCmdBuf, pipelineLayout, AlphaMode::ALPHA_MASK);
         }
 
@@ -319,13 +319,77 @@ namespace vk {
         }
     }
 
+    void Model::playAnimation() {
+        if (this->animationQueue.size() == 0) {
+            this->idleAnimation.restart();
+            this->animationQueue.push(this->animations[this->animationIndex]);
+            this->blending = true;
+        }
+    }
+
+    void Model::updateAnimation(float timeDelta) {
+        // Animation queue is empty: 
+        // 1. Render idle animation
+        // Animation queue is not empty:
+        // 1. Blend to first animation in queue
+        // 2. If blended, continue running first animation in queue
+        // 3. Once first animation is completed, pop animation
+        // 4. Check if animation queue is empty. TODO
+        //    - If so, blend to idle and run idle.
+        //    - If not, go to step 1.
+
+
+        // If animation queue is empty
+        if (this->animationQueue.empty()) {
+            // and blending is enabled then blend to idle animation
+            if (this->blending) {
+                this->blendAnimation(this->idleAnimation, timeDelta, 0.5f);
+            }
+            // Otherwise just update idle animation
+            else {
+                this->idleAnimation.update(*this, timeDelta);
+            }
+        }
+        // Process animation queue
+        else {
+            // Get first animation in queue
+            vk::Animation& target = this->animationQueue.front();
+
+            // If this model is still blending, run blendAnimation
+            if (this->blending) {
+                this->blendAnimation(target, timeDelta, 0.2f);
+            }
+            // If not blending then just continue updating front animation
+            else {
+                target.update(*this, timeDelta);
+            }
+
+            // Check if target animation is finished
+            if (!target.animating) {
+                // If finished, pop animation from queue and initiate blending to next animation
+                this->animationQueue.pop();
+                this->blending = true;
+            }
+        }
+    }
+
     // This method is actually extremely similar to Animation::update() and so could be merged in some way
-    void Model::blendAnimation(Animation& current, Animation& target, float timeDelta, float interpolationTime) {
+    void Model::blendAnimation(Animation& target, float timeDelta, float interpolationTime) {
         // Kick off target animation if not already
         if (!target.animating)
             target.animating = true;
 
         bool updated = false;
+
+        float interp = this->blendingTimer / interpolationTime;
+
+        // It interp is greater than 1, we have blended into the target animation
+        if (interp > 1.0f) {
+            this->blending = false;
+            this->blendingTimer = 0.0f;
+            target.timer += timeDelta;
+            return;
+        }
 
         for (AnimationChannel& channel : target.channels) {
             vk::AnimationSampler& sampler = target.samplers[channel.samplerIndex];
@@ -336,15 +400,6 @@ namespace vk {
 
                 if ((target.timer < firstKeyframe) || (target.timer > secondKeyframe))
                     continue;
-
-                float interp = target.timer / interpolationTime;
-
-                // It interp is greater than 1, we have blended into the target animation
-                if (interp > 1.0f) {
-                    this->blending = false;
-                    target.timer += timeDelta;
-                    return;
-                }
 
                 switch (channel.pathType) {
                 case vk::AnimationChannel::PathType::TRANSLATION:
@@ -368,6 +423,7 @@ namespace vk {
                 node->update();
         }
 
+        this->blendingTimer += timeDelta;
         target.timer += timeDelta;
     }
 

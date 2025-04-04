@@ -157,6 +157,7 @@ namespace vk {
 		Animation idleAnimation;
 		std::queue<Animation> animationQueue;
 		bool blending = false;
+		float blendingTimer = 0.0f;
 
 		// Bounding box of the entire model
 		glm::vec3 bbMin;
@@ -167,7 +168,9 @@ namespace vk {
 		void drawNode(Node* node, VkCommandBuffer aCmdBuf, VkPipelineLayout aPipelineLayout, AlphaMode aAlphaMode);
 		void drawNodeGeometry(Node* node, VkCommandBuffer aCmdBuf, VkPipelineLayout aPipelineLayout, AlphaMode aAlphaMode);
 
-		void blendAnimation(Animation& current, Animation& target, float timeDelta, float interpolationTime);
+		void playAnimation();
+		void updateAnimation(float timeDelta);
+		void blendAnimation(Animation& target, float timeDelta, float interpolationTime);
 
 		Node* getNodeFromIndex(int nodeIndex);
 

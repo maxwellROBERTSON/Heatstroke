@@ -100,7 +100,7 @@ namespace Engine {
 
 		std::size_t dynamicUBOAlignment;
 		// Number of model matrices when creating dynamic uniform buffer object
-		int modelMatrices;
+		std::size_t modelMatrices;
 
 		Uniforms uniforms;
 

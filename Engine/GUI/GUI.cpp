@@ -1,7 +1,8 @@
 #include "GUI.hpp"
 #include "../Network/Helpers/GameConfig.hpp"
 
-struct GLFWwindow;
+#define GLFW_INCLUDE_VULKAN
+#include <GLFW/glfw3.h>
 
 namespace Engine
 {
@@ -342,10 +343,9 @@ namespace Engine
 			for (std::size_t i = 0; i < size; i++)
 				list.push_back(model.animations[i].name.c_str());
 
-			ImGui::Combo("Animation", &model.animationIndex, list.data(), size, size);
+			ImGui::Combo("Animation", &model.animationIndex, list.data(), (int)size, (int)size);
 			if (ImGui::Button("Play Animation")) {
-				model.animationQueue.push(model.animations[model.animationIndex]);
-				model.blending = true;
+				model.playAnimation();
 			}
 		}
 

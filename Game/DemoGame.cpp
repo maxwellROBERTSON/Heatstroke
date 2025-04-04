@@ -13,6 +13,8 @@
 #include "Error.hpp"
 #include "toString.hpp"
 
+#include <GLFW/glfw3.h>
+
 using namespace Engine;
 
 Camera camera = Camera();

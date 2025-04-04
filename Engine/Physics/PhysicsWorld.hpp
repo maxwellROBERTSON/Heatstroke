@@ -9,7 +9,7 @@
 #include <unistd.h>
 #endif
 #include <vector>
-//#include "../ECS/EntityManager.hpp"
+
 #include "../gltf/Model.hpp"
 
 namespace Engine
@@ -39,7 +39,6 @@ namespace Engine
 		PxPvd* gPvd = nullptr;
 		PxPvdTransport* gTransport = nullptr;
 #endif
-
 
 		PxReal gTimestep = 1.0f / 60.0f; // 60 FPS
 

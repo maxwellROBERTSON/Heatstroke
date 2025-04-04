@@ -317,7 +317,7 @@ namespace Engine {
 		
 		for (std::size_t i = 0; i < aDescriptorSettings.size(); i++) {
 			VkDescriptorSetLayoutBinding binding{};
-			binding.binding = i;
+			binding.binding = (std::uint32_t)i;
 			binding.descriptorType = aDescriptorSettings[i].descriptorType;
 			binding.descriptorCount = 1;
 			binding.stageFlags = aDescriptorSettings[i].shaderStageFlags;
@@ -327,7 +327,7 @@ namespace Engine {
 
 		VkDescriptorSetLayoutCreateInfo layoutInfo{};
 		layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		layoutInfo.bindingCount = layoutBindings.size();
+		layoutInfo.bindingCount = (std::uint32_t)layoutBindings.size();
 		layoutInfo.pBindings = layoutBindings.data();
 
 		VkDescriptorSetLayout layout = VK_NULL_HANDLE;
@@ -349,7 +349,7 @@ namespace Engine {
 
 		VkPipelineLayoutCreateInfo layoutInfo{};
 		layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		layoutInfo.setLayoutCount = aDescriptorSetLayouts.size();
+		layoutInfo.setLayoutCount = (std::uint32_t)aDescriptorSetLayouts.size();
 		layoutInfo.pSetLayouts = aDescriptorSetLayouts.data();
 		layoutInfo.pushConstantRangeCount = aNeedPushConstant ? 1 : 0;
 		layoutInfo.pPushConstantRanges = &pushConstantRange;
@@ -961,7 +961,7 @@ namespace Engine {
 			fbInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 			fbInfo.flags = 0;
 			fbInfo.renderPass = aRenderPass;
-			fbInfo.attachmentCount = attachments.size();
+			fbInfo.attachmentCount = (std::uint32_t)attachments.size();
 			fbInfo.pAttachments = attachments.data();
 			fbInfo.width = aExtent.width;
 			fbInfo.height = aExtent.height;

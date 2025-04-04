@@ -62,7 +62,7 @@ namespace Engine
 	{
 		size_t offset = 0;
 		ComponentTypes type;
-		int numEntities = entities.size();
+		size_t numEntities = entities.size();
 
 		block[offset++] = static_cast<uint8_t>(numEntities);
 
@@ -73,7 +73,7 @@ namespace Engine
 		}
 
 		std::vector<int> ComponentIndexArray;
-		for (int i = 0; i < numEntities; i++)
+		for (size_t i = 0; i < numEntities; i++)
 		{
 			ComponentIndexArray = entities[i].GetComponentIndexArray();
 			for (int j = 0; j < TYPE_COUNT; j++)
@@ -219,14 +219,14 @@ namespace Engine
 			typeIndexList[components[i]] = index;
 		}
 
-		Entity entity = Entity(this, entities.size(), typeIndexList);
+		Entity entity = Entity(this, (int)entities.size(), typeIndexList);
 		entities.push_back(entity);
 
 		for (int i = 0; i < TYPE_COUNT; i++)
 		{
 			if (typeIndexList[i] != -1)
 			{
-				entitiesWithType[i].push_back(entities.size() - 1);
+				entitiesWithType[i].push_back((int)entities.size() - 1);
 			}
 		}
 
@@ -253,7 +253,7 @@ namespace Engine
 	{
 		int index;
 		std::vector<std::unique_ptr<ComponentBase>>& vec = (*componentMap[type]);
-		index = vec.size();
+		index = (int)vec.size();
 		switch (type)
 		{
 		case CAMERA:

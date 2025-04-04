@@ -1,5 +1,7 @@
 #include "Game.hpp"
 
+#include <GLFW/glfw3.h>
+
 namespace Engine
 {
 	Game::Game(const std::string& name, int width, int height)
@@ -44,7 +46,7 @@ namespace Engine
 #ifdef _DEBUG
 		renderModes = 0b0000011;
 #else
-		renderModes = 0b0000010
+		renderModes = 0b0000010;
 #endif
 	}
 

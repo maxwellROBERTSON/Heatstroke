@@ -11,14 +11,12 @@
 #include <vector>
 
 #include <volk/volk.h>
-#if !defined(GLFW_INCLUDE_NONE)
-#define GLFW_INCLUDE_NONE 1
-#endif
-#include <GLFW/glfw3.h>
 
 #include "objects/VkObjects.hpp"
 #include "objects/Texture.hpp"
 #include "../Events/Event.hpp"
+
+struct GLFWwindow;
 
 namespace Engine {
 
