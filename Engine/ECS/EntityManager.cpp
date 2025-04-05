@@ -165,6 +165,8 @@ namespace Engine
 
 	// Format is
 	// | # changed entities |
+	// | entity ID's | * # changed entities
+	// | # changed entity / components | * # types + 1
 	// | num bytes = (num componentTypes + 2 / 8) + 1 | * # changed entities
 	// above bits is form: MSB = e, each less bit corresponds to a componentType
 	// if that componentType for this entity is changed, bit is on
@@ -179,6 +181,24 @@ namespace Engine
 
 		// | # changed entities |
 		block[offset++] = static_cast<uint8_t>(numChangedEntities);
+
+		// | entity ID's | * # changed entities
+		for (auto& [entity, flags] : changedEntitiesAndComponents)
+		{
+			block[offset++] = static_cast<uint8_t>(entity);
+		}
+
+		// | # changed entity / components | * # types + 1
+		for (int i = 0; i < TYPE_COUNT + 1; i++)
+		{
+			int count = 0;
+			for (auto& [entity, flags] : changedEntitiesAndComponents)
+			{
+				if (flags[i] != -1)
+					count++;
+			}
+			block[offset++] = static_cast<uint8_t>(count);
+		}
 
 		// | num bytes = (num componentTypes + 2 / 8) + 1 | * # changed entities
 		int numBytesPer = (TYPE_COUNT + 2) / 8 + 1;
@@ -203,8 +223,11 @@ namespace Engine
 		int sizeOfEntity = entities[0].GetEntitySize();
 		for (auto& [entity, flags] : changedEntitiesAndComponents)
 		{
-			entity->GetDataArray(block + offset);
-			offset += sizeOfEntity;
+			if (flags[0] == 1)
+			{
+				GetEntity(entity)->GetDataArray(block + offset);
+				offset += sizeOfEntity;
+			}
 		}
 
 		// | components of type | * # of changed components of types
@@ -339,31 +362,127 @@ namespace Engine
 
 	// Format is
 	// | # changed entities |
+	// | entity ID's | * # changed entities
+	// | # changed entity / components | * # types + 1
 	// | num bytes = (num componentTypes + 2 / 8) + 1 | * # changed entities
 	// above bits is form: MSB = e, each less bit corresponds to a componentType
 	// if that componentType for this entity is chaned, bit is on
 	// | entity_data | * # changed entites
 	// | components of type | * # of changed components of types
 	// Set all changed entity and component data
-	void EntityManager::SetAllChangedData(uint8_t*)
+	void EntityManager::SetAllChangedData(uint8_t* block)
 	{
-		;
+		size_t offset = 0;
+		uint8_t* f;
+
+		// | # changed entities |
+		int numChangedEntities = static_cast<int>(block[offset++]);
+		f = block + offset;
+
+		// | entity ID's | * # changed entities
+		std::vector<int> entityIdEntityComponentIndex = std::vector<int>(numChangedEntities);
+		for (int i = 0; i < numChangedEntities; i++)
+		{
+			entityIdEntityComponentIndex[i] = static_cast<int>(block[offset++]);
+		}
+
+		// | # changed entity / components | * # types + 1
+		std::vector<int> componentEntityCounts = std::vector<int>(TYPE_COUNT + 1);
+		for (int i = 0; i < TYPE_COUNT + 1; i++)
+		{
+			componentEntityCounts[i] = static_cast<int>(block[offset++]);
+		}
+		std::vector<int> entityComponentOffsets = std::vector<int>(TYPE_COUNT + 1);
+		Entity entity(this);
+		int numBytesPer = (TYPE_COUNT + 2) / 8 + 1;
+		int dataOffset = offset + numBytesPer * numChangedEntities;
+		entityComponentOffsets[0] = dataOffset;
+		size_t entitySize = entity.GetEntitySize();
+		dataOffset += entitySize * componentEntityCounts[0];
+		for (int i = 1; i < TYPE_COUNT + 1; i++)
+		{
+			entityComponentOffsets[i] = dataOffset;
+			dataOffset += ComponentSizes[static_cast<ComponentTypes>(i - 1)] * componentEntityCounts[i];
+		}
+
+		// | num bytes = (num componentTypes + 2 / 8) + 1 | * # changed entities
+		Entity* entityPtr;
+		ComponentBase* base;
+		ComponentTypes type;
+		for (int i = 0; i < numChangedEntities; i++)
+		{
+			entityPtr = GetEntity(entityIdEntityComponentIndex[i]);
+			for (int j = 0; j < numBytesPer; j++)
+			{
+				uint8_t byte = block[offset++];
+
+				// Now, for each bit in the byte, you can check its value
+				for (int k = 0; k < 8 && (j * 8 + k) < TYPE_COUNT + 1; k++)
+				{
+					if (byte & (1 << (7 - k))) // If the corresponding bit is set
+					{
+						if ((j * 8 + k) == 0)
+						{
+							entityPtr->SetDataArray(block + entityComponentOffsets[0]);
+							entityComponentOffsets[0] += entitySize;
+							continue;
+						}
+
+						type = static_cast<ComponentTypes>((j * 8 + k - 1));
+						base = GetComponentOfEntity(entityPtr->GetEntityId(), type);
+
+						switch (type)
+						{
+						case CAMERA:
+							reinterpret_cast<CameraComponent*>(base)->SetDataArray(block + entityComponentOffsets[(j * 8 + k)]);
+							entityComponentOffsets[(j * 8 + k)] += ComponentSizes[CAMERA];
+							break;
+						case NETWORK:
+							reinterpret_cast<NetworkComponent*>(base)->SetDataArray(block + entityComponentOffsets[(j * 8 + k)]);
+							entityComponentOffsets[(j * 8 + k)] += ComponentSizes[NETWORK];
+							break;
+						case PHYSICS:
+							reinterpret_cast<PhysicsComponent*>(base)->SetDataArray(block + entityComponentOffsets[(j * 8 + k)]);
+							entityComponentOffsets[(j * 8 + k)] += ComponentSizes[PHYSICS];
+							break;
+						case RENDER:
+							reinterpret_cast<RenderComponent*>(base)->SetDataArray(block + entityComponentOffsets[(j * 8 + k)]);
+							entityComponentOffsets[(j * 8 + k)] += ComponentSizes[RENDER];
+							break;
+						default:
+							throw std::runtime_error("Unknown component type");
+						}
+						std::cout << "Edited component " << type << " to entity " << entity.GetEntityId() << std::endl;
+					}
+				}
+			}
+		}
 	}
 
 	// Add changed entity
 	void EntityManager::AddChangedEntity(Entity* entity)
 	{
+		int id = entity->GetEntityId();
+		for (auto& pair : changedEntitiesAndComponents)
+		{
+			if (pair.first == id)
+			{
+				return;
+			}
+		}
+
 		std::vector<int> componentFlags(TYPE_COUNT + 1, -1);
 		componentFlags[0] = 1;
-		changedEntitiesAndComponents.emplace_back(entity, componentFlags);
+		changedEntitiesAndComponents.emplace_back(id, componentFlags);
 	}
 
 	// Add changed component
 	void EntityManager::AddChangedComponent(ComponentTypes type, Entity* entity)
 	{
+		int id = entity->GetEntityId();
 		for (auto& pair : changedEntitiesAndComponents)
 		{
-			if (pair.first == entity)
+			if (pair.first == id)
 			{
 				pair.second[static_cast<int>(type) + 1] = entity->GetComponent(type);
 				return;
@@ -374,7 +493,7 @@ namespace Engine
 		std::vector<int> componentFlags(TYPE_COUNT + 1, -1);
 		componentFlags[static_cast<int>(type) + 1] = entity->GetComponent(type);
 
-		changedEntitiesAndComponents.emplace_back(entity, std::move(componentFlags));
+		changedEntitiesAndComponents.emplace_back(id, std::move(componentFlags));
 	}
 
 	// Set next network component unassigned to a client
@@ -482,6 +601,8 @@ namespace Engine
 	void EntityManager::ClearManager()
 	{
 		entities.clear();
+
+		changedEntitiesAndComponents.clear();
 
 		ComponentTypes type;
 		for (int i = 0; i < TYPE_COUNT; i++)

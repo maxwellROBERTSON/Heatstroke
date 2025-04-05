@@ -30,7 +30,8 @@ namespace Engine
 
 		std::memcpy(data + offset, &entityId, sizeof(entityId));
 		offset += sizeof(entityId);
-		std::memcpy(data + offset, &GetModelMatrix(), sizeof(GetModelMatrix()));
+		glm::mat4 mat = GetModelMatrix();
+		std::memcpy(data + offset, &mat, sizeof(GetModelMatrix()));
 	}
 
 	// Get model matrix

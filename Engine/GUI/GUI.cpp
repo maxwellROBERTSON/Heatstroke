@@ -114,8 +114,9 @@ namespace Engine
 		if (ImGui::Button("Single Player", ImVec2(*w / 4, *h / 4)))
 		{
 			game->loadOfflineEntities();
-			uint8_t b[1000];
+			/*uint8_t b[1000];
 			game->GetEntityManager().GetAllChangedData(b);
+			game->GetEntityManager().SetAllChangedData(b);*/
 			game->GetRenderer().initialiseModelMatrices();
 			game->GetRenderer().initialiseJointMatrices();
 			game->ToggleRenderMode(GUIHOME);
@@ -191,8 +192,6 @@ namespace Engine
 				else
 				{
 					errorMsg = "";
-					//game->loadOnlineEntities();
-					//game->GetRenderer().initialiseModelMatrices();
 					game->ToggleRenderMode(GUIHOME);
 					game->ToggleRenderMode(GUILOADING);
 					yojimbo::Address address = yojimbo::Address(addressStr, portNum);
@@ -241,10 +240,6 @@ namespace Engine
 				{
 					errorMsg = "";
 					game->loadOnlineEntities();
-					/*uint8_t* block = new uint8_t[game->GetEntityManager().GetTotalDataSize()];
-					game->GetEntityManager().GetAllData(block);
-					game->GetEntityManager().ClearManager();
-					game->GetEntityManager().SetAllData(block);*/
 					game->GetRenderer().initialiseModelMatrices();
 					game->GetRenderer().initialiseJointMatrices();
 					game->ToggleRenderMode(GUIHOME);

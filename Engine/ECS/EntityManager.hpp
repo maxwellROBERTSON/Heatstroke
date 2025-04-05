@@ -76,8 +76,9 @@ namespace Engine
 	private:
 		// Data to be used when updating client server information
 		// Vector of changed entities and components
-		// Each vector is size TYPE_COUNT + 1 to hold bit for if entity data has changed
-		std::vector<std::pair<Entity*, std::vector<int>>> changedEntitiesAndComponents;
+		// first = entity id,
+		// second = vector(size TYPE_COUNT + 1) to hold bits for if entity or component data has changed
+		std::vector<std::pair<int, std::vector<int>>> changedEntitiesAndComponents;
 
 		// Private used in AddEntity - doesn't add to entity's
 		// vector so mustn't be used except when making a new entity
