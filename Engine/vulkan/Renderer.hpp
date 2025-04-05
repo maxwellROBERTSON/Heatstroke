@@ -27,18 +27,18 @@ namespace Engine {
 
 	class Renderer {
 	public:
-		Renderer(VulkanContext* aContext, EntityManager* entityManager, Engine::Game* game);
+		Renderer(VulkanContext* aContext, EntityManager* entityManager, Game* game);
 		Renderer() = default;
 
 		VkRenderPass& GetRenderPass(std::string s);
-		Engine::Camera* GetCameraPointer() { return camera; }
+		Camera* GetCameraPointer() { return camera; }
 		bool const GetIsSceneLoaded() { return isSceneLoaded; }
 
 		void initialiseRenderer();
 		void initialiseModelMatrices();
 		void initialiseJointMatrices();
 		void cleanModelMatrices();
-		void attachCamera(Engine::Camera* camera);
+		void attachCamera(Camera* camera);
 		void initialiseModelDescriptors(std::vector<vk::Model>& models);
 		bool checkSwapchain();
 		bool acquireSwapchainImage();
@@ -50,6 +50,10 @@ namespace Engine {
 		void finishRendering();
 
 		vk::Buffer createDynamicUniformBuffer();
+		void calculateFPS();
+
+		// Setters
+		void setRecreateSwapchain(bool value);
 
 		// Getters
 		std::map<std::string, vk::PipelineLayout>& getPipelineLayouts();
@@ -63,19 +67,20 @@ namespace Engine {
 
 		std::size_t getDynamicUBOAlignment();
 
+		float getAvgFrameTime();
+		int getAvgFPS();
+
 		// Debug things
 		float depthBiasConstant = 7.0f;
 		float depthBiasSlopeFactor = 10.0f;
 
-		float animationTimer = 0.0f;
-		int animationIndex = 0;
-		bool animating = false;
+		bool vsync = true;
 
 	private:
 		VulkanContext* context;
 		EntityManager* entityManager;
-		Engine::Game* game;
-		Engine::Camera* camera;
+		Game* game;
+		Camera* camera;
 
 		std::map<std::string, vk::RenderPass> renderPasses;
 		std::map<std::string, vk::DescriptorSetLayout> descriptorLayouts;
@@ -105,8 +110,12 @@ namespace Engine {
 		Uniforms uniforms;
 
 		bool isSceneLoaded = false;
-
 		bool recreateSwapchain = false;
+
+		// Frame times / fps variables
+		float frameTime = 0.0f, avgFrameTime = 0.0f, prevTime = 0.1f, lastSecondTime = 0.0f;
+		int avgFps = 0, frames = 0;
+		std::vector<float> frameTimes;
 
 		void renderGUI();
 		void renderForward(std::vector<vk::Model>& models, bool debug);

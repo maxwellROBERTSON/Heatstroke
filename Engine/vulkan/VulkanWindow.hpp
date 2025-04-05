@@ -70,7 +70,7 @@ namespace Engine {
 	};
 
 	std::unique_ptr<VulkanWindow> initialiseVulkan(const std::string& name = "Heatstroke", int width = 1280, int height = 720);
-	SwapChanges recreateSwapchain(VulkanWindow&);
+	SwapChanges recreateSwapchain(VulkanWindow&, VkPresentModeKHR desiredPresentMode = VK_PRESENT_MODE_FIFO_KHR);
 
 	// The device selection process has changed somewhat w.r.t. the one used 
 	// earlier (e.g., with VulkanContext)
@@ -95,7 +95,8 @@ namespace Engine {
 		VkDevice,
 		GLFWwindow*,
 		std::vector<std::uint32_t> const& aQueueFamilyIndices = {},
-		VkSwapchainKHR aOldSwapchain = VK_NULL_HANDLE
+		VkSwapchainKHR aOldSwapchain = VK_NULL_HANDLE,
+		VkPresentModeKHR desiredPresentMode = VK_PRESENT_MODE_FIFO_KHR
 	);
 
 	void getSwapchainImages(VkDevice, VkSwapchainKHR, std::vector<VkImage>&);

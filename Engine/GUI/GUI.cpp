@@ -307,6 +307,10 @@ namespace Engine
 
 		ImGui::Begin("Debug Menu");
 
+		if (ImGui::Checkbox("VSync", &game->GetRenderer().vsync)) {
+			game->GetRenderer().setRecreateSwapchain(true);
+		}
+
 		ImGui::Text("List of info would go here", ImVec2(*w / 4, *h / 4));
 
 		glm::vec3 pos = game->GetRenderer().GetCameraPointer()->position;

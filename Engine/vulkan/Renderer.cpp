@@ -1,5 +1,8 @@
 #include "Renderer.hpp"
 
+#include <numeric>
+#include <format>
+
 #include "Error.hpp"
 #include "toString.hpp"
 #include "VulkanUtils.hpp"
@@ -14,12 +17,13 @@
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_vulkan.h>
 #include <backends/imgui_impl_vulkan.cpp>
+#include <GLFW\glfw3.h>
 
 #define MAX_JOINTS 128u
 
 namespace Engine {
 
-	Renderer::Renderer(VulkanContext* aContext, EntityManager* entityManager, Engine::Game* game) {
+	Renderer::Renderer(VulkanContext* aContext, EntityManager* entityManager, Game* game) {
 		this->context = aContext;
 		this->entityManager = entityManager;
 		this->game = game;
@@ -267,7 +271,7 @@ namespace Engine {
 
 	void Renderer::initialiseJointMatrices() {
 		std::vector<vk::Model>& models = this->game->GetModels();
-		
+
 		std::vector<std::unique_ptr<ComponentBase>>* renderComponents = this->entityManager->GetComponentsOfType(RENDER);
 		for (std::size_t i = 0; i < renderComponents->size(); i++) {
 			RenderComponent* renderComponent = reinterpret_cast<RenderComponent*>((*renderComponents)[i].get());
@@ -336,8 +340,7 @@ namespace Engine {
 			vkDeviceWaitIdle(this->context->window->device->device);
 
 			// Recreate swapchain stuff
-
-			const auto changes = Engine::recreateSwapchain(*this->context->window);
+			const auto changes = Engine::recreateSwapchain(*this->context->window, this->vsync ? VK_PRESENT_MODE_FIFO_KHR : VK_PRESENT_MODE_IMMEDIATE_KHR);
 
 			if (changes.changedFormat)
 				this->recreateFormatDependents();
@@ -902,6 +905,30 @@ namespace Engine {
 		}
 	}
 
+	void Renderer::calculateFPS() {
+		float currTime = glfwGetTime();
+
+		this->frameTime = currTime - this->prevTime;
+		this->frames++;
+		this->frameTimes.push_back(frameTime);
+		if (currTime - this->lastSecondTime >= 1.0f) {
+			this->avgFrameTime = std::reduce(this->frameTimes.begin(), this->frameTimes.end()) / this->frames;
+			this->avgFps = 1 / this->avgFrameTime;
+			this->frameTimes.clear();
+			this->frames = 0;
+			this->lastSecondTime = currTime;
+
+			// Put fps and frame time in window title so we can see them in both debug and release
+			std::string title = std::format("FPS Test Game - Avg FPS: {} - Avg Frame Time: {:.3f}ms", this->avgFps, this->avgFrameTime * 1000.0f);
+			glfwSetWindowTitle(this->context->getGLFWWindow(), title.c_str());
+		}
+		this->prevTime = currTime;
+	}
+
+	void Renderer::setRecreateSwapchain(bool value) {
+		this->recreateSwapchain = value;
+	}
+
 	std::map<std::string, vk::PipelineLayout>& Renderer::getPipelineLayouts() {
 		return this->pipelineLayouts;
 	}
@@ -928,5 +955,13 @@ namespace Engine {
 
 	std::size_t Renderer::getDynamicUBOAlignment() {
 		return this->dynamicUBOAlignment;
+	}
+
+	float Renderer::getAvgFrameTime() {
+		return this->avgFrameTime;
+	}
+	
+	int Renderer::getAvgFPS() {
+		return this->avgFps;
 	}
 }

@@ -54,6 +54,8 @@ namespace Engine {
 			return vk::ShaderModule(aWindow.device->device, smod);
 		}
 
+		std::fprintf(stderr, "Cannot open '%s' for reading\n", aSpirvPath);
+
 		throw Utils::Error("Cannot open '%s' for reading", aSpirvPath);
 	}
 

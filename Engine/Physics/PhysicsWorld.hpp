@@ -40,9 +40,12 @@ namespace Engine
 		PxPvdTransport* gTransport = nullptr;
 #endif
 
+		PxReal gSimulationTimer = 0.0f;
 		PxReal gTimestep = 1.0f / 60.0f; // 60 FPS
 
 		void init();
+
+		void updatePhysics(PxReal timeDelta);
 
 		void updateCharacter(PxReal deltatime);
 
