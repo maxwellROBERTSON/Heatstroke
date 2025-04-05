@@ -97,13 +97,18 @@ namespace Engine
 		// can be much much smaller and more volatile and running gScene->simulate()
 		// every one of those frames can lead to unstable looking physics.
 		// So we use a separate simulation timer and only update the physics
-		// when 1/60th of a second has passed. This is obviously reliant on
-		// the fact we can run the engine and game faster than 60 fps.
+		// when our physics timestep has passed. This is obviously reliant on
+		// the fact we can run the engine and game faster than our timestep
+		// minimum of 1/60th of a second.
 
-		// (Note, having the physics timestep be 1/60 can sometimes look a bit
-		// jittery, so we could use a smaller timestep to get smoother
-		// physics and character movement or possible decrease how much a character
-		// should move per timestep in updateCharacter())
+		// (Note, we use a timestep based on the time delta between 240 fps and
+		// 60 fps, ideally time delta is less than 1/240 so we get the smoothest
+		// character movement, but some hardware may compute a frame slower
+		// and as such, use a bigger timestep, resulting in inconsistent physics. 
+		// If someone has a better way to get smooth character movement then 
+		// please update this method)
+		this->gTimestep = std::clamp(timeDelta, 1.0f / 240.0f, 1.0f / 60.0f);
+
 		this->gSimulationTimer += timeDelta;
 
 		if (this->gSimulationTimer > gTimestep) {
