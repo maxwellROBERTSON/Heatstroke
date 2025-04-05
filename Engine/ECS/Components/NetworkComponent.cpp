@@ -1,6 +1,6 @@
-#pragma once
-
 #include "NetworkComponent.hpp"
+
+#include <cstring>
 
 namespace Engine
 {

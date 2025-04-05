@@ -3,6 +3,7 @@
 #include <vector>
 #include <map>
 #include <iostream>
+#include <cstdint>
 
 namespace Engine
 {
@@ -42,7 +43,7 @@ namespace Engine
         ComponentTypes GetType() const { return T::StaticType(); }
 
         // Type getter in child classes
-        virtual ComponentTypes StaticType() { return ComponentTypes::TYPE_COUNT; }
+        ComponentTypes StaticType() { return ComponentTypes::TYPE_COUNT; }
 
         // Get size of a type
         size_t GetSize() const { return T::StaticSize(); }

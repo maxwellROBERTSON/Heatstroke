@@ -3,6 +3,8 @@
 #include <glm/mat4x4.hpp>
 #include <glm/vec4.hpp>
 
+#define MAX_JOINTS 128u
+
 namespace glsl {
     struct SceneUniform {
         glm::mat4 projection;
@@ -46,5 +48,10 @@ namespace glsl {
 
     struct DepthMVP {
         glm::mat4 depthMVP;
+    };
+
+    struct SkinningUniform {
+        glm::mat4 jointMatrix[MAX_JOINTS]{};
+        int isSkinned = 0;
     };
 }

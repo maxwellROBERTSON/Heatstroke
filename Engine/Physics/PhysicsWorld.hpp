@@ -10,7 +10,7 @@
 #endif
 #include <vector>
 //#include "../ECS/EntityManager.hpp"
-#include "../vulkan/objects/Model.hpp"
+#include "../gltf/Model.hpp"
 
 namespace Engine
 {

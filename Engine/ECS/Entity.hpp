@@ -32,7 +32,7 @@ namespace Engine
 		int GetEntityId() { return entityId; }
 
 		// Get model matrix
-		glm::mat4 GetModelMatrix() { return modelMatrix; }
+		glm::mat4 GetModelMatrix();
 
 		// Get a component index of a given type
 		int GetComponent(ComponentTypes t) { return componentTypeIndexList[t]; }
@@ -62,6 +62,13 @@ namespace Engine
 		bool hasChanged = false;
 		EntityManager* entityManager;
 		int entityId;
+
+		// Flag to set whether model matrix needs to be updated
+		bool dirty = true;
+		glm::vec3 position{};
+		glm::mat4 rotation{ 1.0f };
+		glm::vec3 scale{ 1.0f };
+
 		glm::mat4 modelMatrix = glm::mat4(1.0f);
 
 		// Holds a list of components with the type = index and

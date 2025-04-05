@@ -122,26 +122,26 @@ project "Engine"
     filter { "system:linux", "configurations:Debug" }
         libdirs { "Engine/third_party/vcpkg/packages/physx_x64-linux/debug/lib" }
         links { 
+            "PhysXCharacterKinematic_static_64",
+            "PhysXExtensions_static_64",
             "PhysX_static_64",
             "PhysXPvdSDK_static_64",
             "PhysXVehicle_static_64",
-            "PhysXCharacterKinematic_static_64",
             "PhysXCooking_static_64",
             "PhysXCommon_static_64",
-            "PhysXFoundation_static_64",
-            "PhysXExtensions_static_64"
+            "PhysXFoundation_static_64"
         }
     filter { "system:linux", "configurations:Release" }
         libdirs { "Engine/third_party/vcpkg/packages/physx_x64-linux/lib" }
-        links {
+        links { 
+            "PhysXCharacterKinematic_static_64",
+            "PhysXExtensions_static_64",
             "PhysX_static_64",
             "PhysXPvdSDK_static_64",
             "PhysXVehicle_static_64",
-            "PhysXCharacterKinematic_static_64",
             "PhysXCooking_static_64",
             "PhysXCommon_static_64",
-            "PhysXFoundation_static_64",
-            "PhysXExtensions_static_64"
+            "PhysXFoundation_static_64"
         }
 
     filter { "system:windows", "configurations:Debug" }
@@ -214,37 +214,18 @@ project "Game"
 
     filter "*"
 
-    filter { "system:linux", "configurations:Debug" }
-        libdirs { "Engine/third_party/vcpkg/packages/physx_x64-linux/debug/lib" }
-        links {
-            "PhysX_static_64",
-            "PhysXPvdSDK_static_64",
-            "PhysXVehicle_static_64",
-            "PhysXCharacterKinematic_static_64",
-            "PhysXCooking_static_64",
-            "PhysXCommon_static_64",
-            "PhysXFoundation_static_64",
-            "PhysXExtensions_static_64"
-        }
-    filter { "system:linux", "configurations:Release" }
+    filter { "system:linux" }
         libdirs { "Engine/third_party/vcpkg/packages/physx_x64-linux/lib" }
         links {
+            "PhysXCharacterKinematic_static_64",
+            "PhysXExtensions_static_64",
             "PhysX_static_64",
             "PhysXPvdSDK_static_64",
             "PhysXVehicle_static_64",
-            "PhysXCharacterKinematic_static_64",
             "PhysXCooking_static_64",
             "PhysXCommon_static_64",
-            "PhysXFoundation_static_64",
-            "PhysXExtensions_static_64"
+            "PhysXFoundation_static_64"
         }
-
-    filter "*"
-
-    filter "*"
-
-    filter { "system:linux" }
-        libdirs { "Engine/third_party/vcpkg/packages/physx_x64-linux/tools/libPhysXGpu_64.so" }
 
     filter "*"
     

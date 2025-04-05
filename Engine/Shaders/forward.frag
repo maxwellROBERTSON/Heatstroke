@@ -15,11 +15,11 @@ layout(set = 0, binding = 0) uniform SceneUBO {
 	vec4 position;
 } sceneUbo;
 
-layout(set = 1, binding = 0) uniform sampler2D baseColourMap;
-layout(set = 1, binding = 1) uniform sampler2D metallicRoughness;
-layout(set = 1, binding = 2) uniform sampler2D emissiveMap;
-layout(set = 1, binding = 3) uniform sampler2D occlusionMap;
-layout(set = 1, binding = 4) uniform sampler2D normalMap;
+layout(set = 3, binding = 0) uniform sampler2D baseColourMap;
+layout(set = 3, binding = 1) uniform sampler2D metallicRoughness;
+layout(set = 3, binding = 2) uniform sampler2D emissiveMap;
+layout(set = 3, binding = 3) uniform sampler2D occlusionMap;
+layout(set = 3, binding = 4) uniform sampler2D normalMap;
 
 struct MaterialInfo {
     vec4 emissiveFactor;
@@ -37,7 +37,7 @@ struct MaterialInfo {
     float roughnessFactor;
 };
 
-layout(std430, set = 2, binding = 0) readonly buffer MaterialInfoSSBO {
+layout(std430, set = 4, binding = 0) readonly buffer MaterialInfoSSBO {
     MaterialInfo materialInfo[];
 };
 
@@ -116,7 +116,7 @@ vec3 brdf(vec3 lightDir, vec3 viewDir, vec3 normal, float metallicFactor, float 
 vec3 getNormal() {
     vec3 tangentNormal = texture(normalMap, v2fTexCoord0).xyz * 2.0f - 1.0f;
 
-    vec3 N = normalize(v2fNormal);
+    vec3 N = v2fNormal;
     vec3 T = normalize(v2fTangent.xyz);
     vec3 B = normalize(cross(N, T) * v2fTangent.w);
     mat3 TBN = mat3(T, B, N);
@@ -127,13 +127,6 @@ vec3 getNormal() {
 void main() {
     MaterialInfo matInfo = materialInfo[pushConstants.materialIndex];
 
-    vec3 lightCol = vec3(1.0f);
-    vec3 lightPos = vec3(0.75f, 20.0f, -0.4f);
-
-    vec3 lightDir = normalize(lightPos - v2fPosition);
-    vec3 viewDir = normalize(sceneUbo.position.xyz - v2fPosition);
-    vec3 normal = getNormal();
-
     vec4 albedo;
     if (matInfo.baseColorTexSet > -1) {
         albedo = SRGBtoLINEAR(texture(baseColourMap, matInfo.baseColorTexSet == 0 ? v2fTexCoord0 : v2fTexCoord1)) * matInfo.baseColourFactor;
@@ -142,6 +135,20 @@ void main() {
     }
 
     albedo *= v2fVertexColour;
+
+    if (matInfo.alphaMode == 1) {
+        if (albedo.a < matInfo.alphaCutoff) {
+            discard;
+        }
+    }
+
+    // TODO: Pass these in via a uniform rather than being hardcoded
+    vec3 lightCol = vec3(1.0f);
+    vec3 lightPos = vec3(0.75f, 20.0f, -0.4f);
+
+    vec3 lightDir = normalize(lightPos - v2fPosition);
+    vec3 viewDir = normalize(sceneUbo.position.xyz - v2fPosition);
+    vec3 normal = (matInfo.normalTexSet > -1) ? getNormal() : normalize(v2fNormal);
 
     float metallicFactor = matInfo.metallicFactor;
     float roughnessFactor = matInfo.roughnessFactor;

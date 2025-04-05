@@ -1,6 +1,6 @@
-#pragma once
-
 #include "CameraComponent.hpp"
+
+#include <cstring>
 
 namespace Engine
 {

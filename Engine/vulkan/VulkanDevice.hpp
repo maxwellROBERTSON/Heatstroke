@@ -4,7 +4,7 @@
 
 #include <volk/volk.h>
 
-#include "objects/Model.hpp"
+#include "../gltf/Model.hpp"
 #include "objects/VkObjects.hpp"
 
 namespace Engine {

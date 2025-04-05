@@ -3,7 +3,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/string_cast.hpp>
 #include <glm/gtc/quaternion.hpp>
-#include "../vulkan/objects/Model.hpp"
+#include "../gltf/Model.hpp"
 #include "../ECS/EntityManager.hpp"
 #include "../ECS/Components/PhysicsComponent.hpp"
 #include "../Input/Keyboard.hpp"
@@ -87,16 +87,7 @@ namespace Engine
 			std::cerr << "createMaterial failed!" << std::endl;
 			std::exit(-1);
 		}
-
-
-		// testplane!
-
-		//PxRigidStatic* groundPlane = PxCreatePlane(*gPhysics, PxPlane(0, 1, 0, 0), *gMaterial);
-		//gScene->addActor(*groundPlane);
-
-
 	}
-
 
 	void PhysicsWorld::updateCharacter(PxReal deltatime)
 	{
@@ -137,6 +128,7 @@ namespace Engine
 	// update models matrices
 	void PhysicsWorld::updateObjects(Engine::EntityManager& entityManager, std::vector<Engine::vk::Model>& models)
 	{
+
 		// get all PhysicsComponent
 		std::vector<std::unique_ptr<ComponentBase>>* physicsComponents = entityManager.GetComponentsOfType(PHYSICS);
 		if (physicsComponents == nullptr)
@@ -187,7 +179,7 @@ namespace Engine
 		}
 
 		// disconnect PVD
-#if defined(WIN32)
+#if defined(_WIN32)
 		if (gPvd)
 		{
 			PxPvdTransport* transport = gPvd->getTransport();

@@ -2,14 +2,22 @@
 
 #include <vector>
 #include <iostream>
+#include <queue>
 
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/quaternion.hpp>
 
-#include "Texture.hpp"
-#include "Buffer.hpp"
+#include "Uniforms.hpp"
+#include "Animation.hpp"
+#include "Skin.hpp"
+#include "Node.hpp"
+#include "../vulkan/objects/Texture.hpp"
+#include "../vulkan/objects/Buffer.hpp"
 
 namespace Engine {
+
+	class Renderer;
+
 namespace vk {
 
     struct SamplerInfo {
@@ -60,6 +68,8 @@ namespace vk {
 			texCoords0.reserve(vertexCount);
 			texCoords1.reserve(vertexCount);
 			vertexColours.reserve(vertexCount);
+			joints.reserve(vertexCount);
+			weights.reserve(vertexCount);
 			indices.reserve(indexCount);
 		};
 
@@ -69,6 +79,8 @@ namespace vk {
 		std::vector<glm::vec2> texCoords0;
 		std::vector<glm::vec2> texCoords1;
 		std::vector<glm::vec4> vertexColours;
+		std::vector<glm::uvec4> joints;
+		std::vector<glm::vec4> weights;
 		std::vector<std::uint32_t> indices;
 	};
 
@@ -93,6 +105,8 @@ namespace vk {
 		Buffer tex0Buffer;
 		Buffer tex1Buffer;
 		Buffer vertColBuffer;
+		Buffer jointsBuffer;
+		Buffer weightsBuffer;
 		Buffer indicesBuffer;
 
 		VkDescriptorSet samplerDescriptorSet;
@@ -115,61 +129,48 @@ namespace vk {
 		glm::mat4 matrix;
 	};
 
-	struct Node {
-		Node* parent;
-		Mesh* mesh;
-		std::uint32_t index;
-		std::vector<Node*> children;
-		glm::mat4 nodeMatrix;
-		glm::vec3 translation;
-		glm::vec3 scale{1.f};
-		glm::quat rotation;
-
-		glm::mat4 postTransform{ 1.0f };
-
-		glm::mat4 getModelMatrix();
-		// This method sets the transform that gets applied AFTER
-		// the transforms from the glTF file have been applied.
-		// This method will be moved out of the node part of the model
-		// eventually
-		void setPostTransform(glm::mat4 transform) {
-			this->postTransform = transform;
-		}
-	};
-
     struct Model {
+		// Vector of root nodes for each scene (usually just 1)
 		std::vector<Node*> nodes;
+		// Vector of all nodes linearly (allows for easily iterating over all nodes)
+		std::vector<Node*> linearNodes;
         std::vector<Material> materials;
         std::vector<SamplerInfo> samplerInfos; // Sampler info from tinygltf
 		std::vector<Sampler> samplers; // Actual Vulkan sampler objects
-		Sampler defaultSampler; // Default sampler for when a texture doesn't reference any sampler
         std::vector<Texture> textures;
         std::vector<ImageView> imageViews;
-		
+		std::vector<Animation> animations;
+		std::vector<Skin*> skins;
+
+		Sampler defaultSampler; // Default sampler for when a texture doesn't reference any sampler
 		ImageView dummyImageView;
 		Texture dummyTexture;
 
 		Buffer materialInfoBuffer;
-
 		VkIndexType indexType;
-
 		VkDescriptorSet materialInfoSSBO;
 
-		// set all nodes transform
-		void setMat(glm::mat4 mat) {
-			for (Node* node : nodes)
-			{
-				node->setPostTransform(mat);
-			}
-		};
+		int meshedNodes;
 
-		void createDescriptorSets(
-			const VulkanContext& aContext, 
-			VkDescriptorSetLayout aSamplerSetLayout, 
-			VkDescriptorSetLayout aMaterialInfoSetLayout);
-        void drawModel(VkCommandBuffer aCmdBuf, VkPipelineLayout aPipelineLayout, bool justGeometry = false);
-		void drawNode(Node* node, VkCommandBuffer aCmdBuf, VkPipelineLayout aPipelineLayout);
-		void drawNodeGeometry(Node* node, VkCommandBuffer aCmdBuf);
+		int animationIndex = 0; // TEMP
+		// We always want an idle animation for any model that has animations (or at least try to)
+		Animation idleAnimation;
+		std::queue<Animation> animationQueue;
+		bool blending = false;
+
+		// Bounding box of the entire model
+		glm::vec3 bbMin;
+		glm::vec3 bbMax;
+
+		void createDescriptorSets(const VulkanContext& aContext, VkDescriptorSetLayout aSamplerSetLayout, VkDescriptorSetLayout aMaterialInfoSetLayout);
+        void drawModel(VkCommandBuffer aCmdBuf, Renderer* aRenderer, const std::string& aPipelineHandle, std::uint32_t& offset, bool justGeometry = false);
+		void drawNode(Node* node, VkCommandBuffer aCmdBuf, VkPipelineLayout aPipelineLayout, AlphaMode aAlphaMode);
+		void drawNodeGeometry(Node* node, VkCommandBuffer aCmdBuf, VkPipelineLayout aPipelineLayout, AlphaMode aAlphaMode);
+
+		void blendAnimation(Animation& current, Animation& target, float timeDelta, float interpolationTime);
+
+		Node* getNodeFromIndex(int nodeIndex);
+
 		void destroy();
 	};
 

@@ -117,6 +117,7 @@ namespace Engine
 			uint8_t b[1000];
 			game->GetEntityManager().GetAllChangedData(b);
 			game->GetRenderer().initialiseModelMatrices();
+			game->GetRenderer().initialiseJointMatrices();
 			game->ToggleRenderMode(GUIHOME);
 			game->ToggleRenderMode(FORWARD);
 			GLFWwindow* window = game->GetContext().getGLFWWindow();
@@ -349,7 +350,28 @@ namespace Engine
 		ImGui::SliderFloat("Depth Bias Constant", &game->GetRenderer().depthBiasConstant, 0.0f, 10.0f);
 		ImGui::SliderFloat("Depth Bias Slope Factor", &game->GetRenderer().depthBiasSlopeFactor, 0.0f, 10.0f);
 
-		if (game->GetNetwork().GetStatus() == Status::CLIENT_LOADED)
+		ImGui::Text("Animations:");
+		// Iterate over all models and find ones with animations
+		std::vector<vk::Model>& models = game->GetModels();
+		for (vk::Model& model : models) {
+			if (model.animations.size() == 0)
+				continue;
+
+			// Get the list of animation names
+			std::vector<const char*> list;
+			std::size_t size = model.animations.size();
+			list.reserve(size);
+			for (std::size_t i = 0; i < size; i++)
+				list.push_back(model.animations[i].name.c_str());
+
+			ImGui::Combo("Animation", &model.animationIndex, list.data(), size, size);
+			if (ImGui::Button("Play Animation")) {
+				model.animationQueue.push(model.animations[model.animationIndex]);
+				model.blending = true;
+			}
+		}
+
+		if (game->GetNetwork().isInitialized())
 		{
 			std::map<std::string, std::string> networkInfo = game->GetNetwork().GetNetworkInfo();
 			for (const auto& [key, value] : networkInfo)
