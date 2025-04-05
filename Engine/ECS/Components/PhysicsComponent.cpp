@@ -45,24 +45,28 @@ namespace Engine
 	}
 
 	// Init
-	void PhysicsComponent::Init(PhysicsWorld& pworld, PhysicsType physicsType, glm::mat4& transform, int index) {
-
+	void PhysicsComponent::Init(PhysicsWorld& pworld, PhysicsType physicsType, vk::Model& model, glm::mat4 transform, int index)
+	{
 		entityId = index;
 
 		// parse mat4
-		if (!DecomposeTransform(transform, translation, rotation, scale)) {
+		if (!DecomposeTransform(transform, translation, rotation, scale))
+		{
 			std::cout << "DecomposeTransform failed!" << std::endl;
 			return;
 		}
-		scale.x = glm::length(glm::vec3(transform[0]));
-		scale.y = glm::length(glm::vec3(transform[1]));
-		scale.z = glm::length(glm::vec3(transform[2]));
-
 
 		PxTransform pxTransform(
 			PxVec3(translation.x, translation.y, translation.z),
 			PxQuat(rotation.x, rotation.y, rotation.z, rotation.w)
 		);
+
+		glm::vec3 glmHalfExtent = (model.bbMax - model.bbMin) / 2.0f;
+		PxVec3 halfExtent(std::max(0.001f, glmHalfExtent.x), std::max(0.001f, glmHalfExtent.y), std::max(0.001f, glmHalfExtent.z));
+		halfExtent.x *= scale.x;
+		halfExtent.y *= scale.y;
+		halfExtent.z *= scale.z;
+
 		PxMaterial* material = pworld.gPhysics->createMaterial(0.5f, 0.5f, 0.5f);
 		material->setRestitution(0.0f);
 		type = physicsType;
@@ -74,7 +78,7 @@ namespace Engine
 			staticBody = pworld.gPhysics->createRigidStatic(pxTransform);
 			if (staticBody) {
 				PxShape* shape = PxRigidActorExt::createExclusiveShape(
-					*staticBody, PxBoxGeometry(scale.x, scale.y, scale.z), *material
+					*staticBody, PxBoxGeometry(halfExtent), *material
 				);
 
 				pworld.gScene->addActor(*staticBody);
@@ -89,7 +93,7 @@ namespace Engine
 
 			if (dynamicBody) {
 				PxShape* shape = PxRigidActorExt::createExclusiveShape(
-					*dynamicBody, PxBoxGeometry(scale.x, scale.y, scale.z), *material
+					*dynamicBody, PxBoxGeometry(halfExtent), *material
 				);
 
 				pworld.gScene->addActor(*dynamicBody);
@@ -118,14 +122,12 @@ namespace Engine
 			break;
 		}
 		}
-		//SetComponentHasChanged();
 	}
 
 	// Init complex shape
-	void PhysicsComponent::InitComplexShape(PhysicsWorld& pWorld, PhysicsType physicsType, Engine::vk::Model& model, glm::mat4& transform, int index) {
-
+	void PhysicsComponent::InitComplexShape(PhysicsWorld& pWorld, PhysicsType physicsType, Engine::vk::Model& model, glm::mat4 transform, int index)
+	{
 		entityId = index;
-		type = physicsType;
 
 		// Decompose transform
 		if (!DecomposeTransform(transform, translation, rotation, scale)) {
@@ -146,6 +148,9 @@ namespace Engine
 		// a bad or good thing.
 		for (Engine::vk::Node* node : model.nodes) {
 			if (node->mesh) {
+				glm::mat4 modelMatrix = node->getModelMatrix();
+				PxVec3 nodeScale(modelMatrix[0][0], modelMatrix[1][1], modelMatrix[2][2]);
+
 				for (Engine::vk::Primitive* primitive : node->mesh->primitives) {
 					PxMaterial* material = pWorld.gPhysics->createMaterial(0.5f, 0.5f, 0.5f);
 
@@ -182,19 +187,19 @@ namespace Engine
 
 					PxDefaultMemoryInputData readBuffer(writeBuffer.getData(), writeBuffer.getSize());
 					PxTriangleMesh* triMesh = pWorld.gPhysics->createTriangleMesh(readBuffer);
-					PxTriangleMeshGeometry triMeshGeometry(triMesh, PxMeshScale(pxScale));
+					PxTriangleMeshGeometry triMeshGeometry(triMesh, PxMeshScale(nodeScale));
 
 					// Only static triangle meshes are supported for now.
 					// Dynamic triangle mesh geometries are possible but are more complicated
 					// and I don't believe we have a use case for them just yet.
-					if (type != PhysicsType::STATIC)
+					if (physicsType != PhysicsType::STATIC)
 					{
 						std::cerr << "Only static triangle mesh geometries are supported currently!" << std::endl;
-						assert(type == PhysicsType::STATIC);
+						assert(physicsType == PhysicsType::STATIC);
 					}
 					//assert(physicsType == PhysicsType::STATIC, "Only static triangle mesh geometries are supported currently!");
 
-					switch (type) {
+					switch (physicsType) {
 					case PhysicsType::STATIC:
 					{
 						staticBody = pWorld.gPhysics->createRigidStatic(PxTransform(pxTransform));

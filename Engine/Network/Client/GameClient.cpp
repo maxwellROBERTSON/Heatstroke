@@ -127,14 +127,14 @@ namespace Engine
 				comp = reinterpret_cast<PhysicsComponent*>(manager->GetComponentOfEntity(vec[i], PHYSICS));
 				glm::mat4 mat = manager->GetEntity(vec[i])->GetModelMatrix();
 				PhysicsComponent::PhysicsType type = comp->GetPhysicsType();
+				Engine::vk::Model& model = game->GetModels()[vec[i]];
 				if (type == PhysicsComponent::PhysicsType::STATIC)
 				{
-					Engine::vk::Model& model = game->GetModels()[vec[i]];
 					comp->InitComplexShape(game->GetPhysicsWorld(), type, model, mat, vec[i]);
 				}
 				else
 				{
-					comp->Init(game->GetPhysicsWorld(), type, mat, vec[i]);
+					comp->Init(game->GetPhysicsWorld(), type, model, mat, vec[i]);
 				}
 			}
 			std::vector<int> entitiesWithNetworkComponent = manager->GetEntitiesWithComponent(NETWORK);

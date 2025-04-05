@@ -246,6 +246,7 @@ namespace Engine
 					game->GetEntityManager().ClearManager();
 					game->GetEntityManager().SetAllData(block);*/
 					game->GetRenderer().initialiseModelMatrices();
+					game->GetRenderer().initialiseJointMatrices();
 					game->ToggleRenderMode(GUIHOME);
 					game->ToggleRenderMode(GUISERVER);
 					game->SetServer(portNum, maxClientsNum);
@@ -371,7 +372,7 @@ namespace Engine
 			}
 		}
 
-		if (game->GetNetwork().isInitialized())
+		if (game->GetNetwork().GetStatus() != Status::NETWORK_UNINITIALIZED)
 		{
 			std::map<std::string, std::string> networkInfo = game->GetNetwork().GetNetworkInfo();
 			for (const auto& [key, value] : networkInfo)
@@ -440,6 +441,7 @@ namespace Engine
 		if (s == Status::CLIENT_LOADED)
 		{
 			game->GetRenderer().initialiseModelMatrices();
+			game->GetRenderer().initialiseJointMatrices();
 			game->ToggleRenderMode(GUILOADING);
 			game->ToggleRenderMode(FORWARD);
 			GLFWwindow* window = game->GetContext().getGLFWWindow();

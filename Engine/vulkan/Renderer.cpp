@@ -269,6 +269,9 @@ namespace Engine {
 		std::vector<vk::Model>& models = this->game->GetModels();
 		
 		std::vector<std::unique_ptr<ComponentBase>>* renderComponents = this->entityManager->GetComponentsOfType(RENDER);
+		if (renderComponents == nullptr)
+			return;
+
 		for (std::size_t i = 0; i < renderComponents->size(); i++) {
 			RenderComponent* renderComponent = reinterpret_cast<RenderComponent*>((*renderComponents)[i].get());
 			int modelIndex = renderComponent->GetModelIndex();
@@ -308,12 +311,16 @@ namespace Engine {
 		this->dynamicUBOAlignment = (sizeof(glm::mat4) + uboAlignment - 1) & ~(uboAlignment - 1);
 
 		std::vector<std::unique_ptr<ComponentBase>>* renderComponents = this->entityManager->GetComponentsOfType(RENDER);
-		for (std::size_t i = 0; i < renderComponents->size(); i++) {
-			RenderComponent* renderComponent = reinterpret_cast<RenderComponent*>((*renderComponents)[i].get());
-			int modelIndex = renderComponent->GetModelIndex();
-			vk::Model& model = models[modelIndex];
 
-			this->modelMatrices += model.linearNodes.size();
+		if (renderComponents != nullptr)
+		{
+			for (std::size_t i = 0; i < renderComponents->size(); i++) {
+				RenderComponent* renderComponent = reinterpret_cast<RenderComponent*>((*renderComponents)[i].get());
+				int modelIndex = renderComponent->GetModelIndex();
+				vk::Model& model = models[modelIndex];
+
+				this->modelMatrices += model.linearNodes.size();
+			}
 		}
 
 		VkDeviceSize bufferSize = this->modelMatrices * this->dynamicUBOAlignment;
@@ -378,6 +385,9 @@ namespace Engine {
 		std::vector<vk::Model>& models = this->game->GetModels();
 
 		std::vector<std::unique_ptr<ComponentBase>>* renderComponents = this->entityManager->GetComponentsOfType(RENDER);
+		if (renderComponents == nullptr)
+			return;
+
 		for (std::size_t i = 0; i < renderComponents->size(); i++) {
 			RenderComponent* renderComponent = reinterpret_cast<RenderComponent*>((*renderComponents)[i].get());
 			int modelIndex = renderComponent->GetModelIndex();
@@ -573,6 +583,9 @@ namespace Engine {
 		);
 
 		std::vector<std::unique_ptr<ComponentBase>>* renderComponents = this->entityManager->GetComponentsOfType(RENDER);
+		if (renderComponents == nullptr)
+			return;
+
 		for (std::size_t i = 0; i < renderComponents->size(); i++) {
 			RenderComponent* renderComponent = reinterpret_cast<RenderComponent*>((*renderComponents)[i].get());
 			int modelIndex = renderComponent->GetModelIndex();
@@ -723,6 +736,9 @@ namespace Engine {
 		);
 
 		std::vector<std::unique_ptr<ComponentBase>>* renderComponents = this->entityManager->GetComponentsOfType(RENDER);
+		if (renderComponents == nullptr)
+			return;
+
 		for (std::size_t i = 0; i < renderComponents->size(); i++) {
 			RenderComponent* renderComponent = reinterpret_cast<RenderComponent*>((*renderComponents)[i].get());
 			int modelIndex = renderComponent->GetModelIndex();
@@ -921,6 +937,9 @@ namespace Engine {
 		std::uint32_t offset = 0;
 
 		std::vector<std::unique_ptr<ComponentBase>>* renderComponents = this->entityManager->GetComponentsOfType(RENDER);
+		if (renderComponents == nullptr)
+			return;
+
 		for (std::size_t i = 0; i < renderComponents->size(); i++) {
 			RenderComponent* renderComponent = reinterpret_cast<RenderComponent*>((*renderComponents)[i].get());
 			int modelIndex = renderComponent->GetModelIndex();

@@ -45,6 +45,18 @@ namespace Engine
 		// Set the data for a given entity
 		void SetDataArray(uint8_t*);
 
+		// Position Setters
+		void SetPosition(float x, float y, float z);
+		void SetPosition(glm::vec3 position);
+
+		// Rotation setters
+		void SetRotation(float angInDeg, glm::vec3 axis);
+		void SetRotation(glm::quat rotation);
+
+		// Scale setters
+		void SetScale(float xScale, float yScale, float zScale);
+		void SetScale(float overallScale);
+
 		// Set model matrix
 		void SetModelMatrix(glm::mat4 aModelMatrix) { modelMatrix = aModelMatrix; SetEntityHasChanged(); }
 

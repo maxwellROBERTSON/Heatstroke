@@ -99,17 +99,13 @@ namespace Engine
 		void SetDataArray(uint8_t*) override;
 
 		// Init
-		void Init(PhysicsWorld&, PhysicsType, glm::mat4&, int);
+		void Init(PhysicsWorld&, PhysicsType, vk::Model&, glm::mat4, int);
 
 		// Init complex shape
-		void InitComplexShape(PhysicsWorld&, PhysicsType, Engine::vk::Model&, glm::mat4&, int);
+		void InitComplexShape(PhysicsWorld&, PhysicsType, vk::Model&, glm::mat4, int);
 
 		// Set physics object type STATIC/DYNAMIC/CONTROLLER
 		void SetPhysicsType(PhysicsType t) { type = t; SetComponentHasChanged(); }
-
-					PxCapsuleController* pcontroller = static_cast<PxCapsuleController*>(pworld.gControllerManager->createController(desc));
-					controller = pcontroller;
-					pworld.controller = pcontroller;
 
 		// Set scale vector
 		void SetScale(glm::vec3 s) { scale = s; SetComponentHasChanged(); }
@@ -147,8 +143,5 @@ namespace Engine
 		int entityId = -1;
 
 		bool DecomposeTransform(const glm::mat4&, glm::vec3&, glm::quat&, glm::vec3&);
-	};
-}
-
 	};
 }
