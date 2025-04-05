@@ -139,25 +139,27 @@ namespace Engine
 	{
 		// get all PhysicsComponent
 		std::vector<std::unique_ptr<ComponentBase>>* physicsComponents = entityManager.GetComponentsOfType(PHYSICS);
+		if (physicsComponents == nullptr)
+			return;
 		for (std::size_t i = 0; i < (*physicsComponents).size(); i++) {
 			PhysicsComponent* p = reinterpret_cast<PhysicsComponent*>((*physicsComponents)[i].get());
 			// glm::mat4 matrix(1.0f);
 			// dynamic update
-			if (p->type == PhysicsComponent::PhysicsType::DYNAMIC)
+			if (p->GetPhysicsType() == PhysicsComponent::PhysicsType::DYNAMIC)
 			{
-				glm::mat4 matrix = ConvertPxTransformToGlmMat4(p->dynamicBody->getGlobalPose());
-				matrix = glm::scale(matrix, p->scale);
+				glm::mat4 matrix = ConvertPxTransformToGlmMat4(p->GetDynamicBody()->getGlobalPose());
+				matrix = glm::scale(matrix, p->GetScale());
 				entityManager.GetEntity(p->GetEntityId())->SetModelMatrix(matrix);
 				continue;
 			}
 
 			// controller update
-			if (p->type == PhysicsComponent::PhysicsType::CONTROLLER)
+			if (p->GetPhysicsType() == PhysicsComponent::PhysicsType::CONTROLLER)
 			{
-				PxExtendedVec3 pos = p->controller->getFootPosition();
+				PxExtendedVec3 pos = p->GetController()->getFootPosition();
 				glm::vec3 glmPos = glm::vec3(pos.x, pos.y, pos.z);
 				glm::mat4 matrix = glm::translate(glm::mat4(1.0f), glmPos);
-				matrix = glm::scale(matrix, p->scale);
+				matrix = glm::scale(matrix, p->GetScale());
 
 				entityManager.GetEntity(p->GetEntityId())->SetModelMatrix(matrix);
 			}

@@ -3,10 +3,13 @@
 #include <string>
 
 #include "../Core/Camera.hpp"
+#include "../EntityManager.hpp"
 
 namespace Engine
 {
 	class Camera;
+	class EntityManager;
+	class Entity;
 }
 
 #include "Component.hpp"
@@ -16,7 +19,8 @@ namespace Engine
 	class CameraComponent : public Component<CameraComponent>
 	{
 	public:
-		CameraComponent() {};
+		CameraComponent() : entityManager(nullptr), entity(nullptr) {}
+		CameraComponent(Engine::EntityManager* entityManager, Engine::Entity* entity) : entityManager(entityManager), entity(entity) {}
 
 		void operator=(const CameraComponent& other) override
 		{
@@ -43,9 +47,20 @@ namespace Engine
 		void SetDataArray(uint8_t*) override;
 
 		// Set camera pointer
-		void SetCamera(Engine::Camera aCamera) { camera = aCamera; }
+		void SetCamera(Engine::Camera aCamera) { camera = aCamera; SetComponentHasChanged(); }
+
+		// Set component has changed in entity manager
+		void SetComponentHasChanged();
 
 	private:
+		// EntityManager pointer
+		Engine::EntityManager* entityManager;
+		// Entity pointer
+		Engine::Entity* entity;
+
+		// If component has changed since last network update
+		bool hasChanged = false;
+
 		Engine::Camera camera;
 	};
 }

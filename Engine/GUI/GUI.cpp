@@ -114,6 +114,8 @@ namespace Engine
 		if (ImGui::Button("Single Player", ImVec2(*w / 4, *h / 4)))
 		{
 			game->loadOfflineEntities();
+			uint8_t b[1000];
+			game->GetEntityManager().GetAllChangedData(b);
 			game->GetRenderer().initialiseModelMatrices();
 			game->ToggleRenderMode(GUIHOME);
 			game->ToggleRenderMode(FORWARD);
@@ -158,7 +160,7 @@ namespace Engine
 
 			ImGui::Text("Join a server");
 
-			static char addressStr[15] = "192.168.68.56\0";
+			static char addressStr[16] = "192.168.68.56\0";
 			ImGui::Text("Address:");
 			ImGui::InputText("Address", addressStr, IM_ARRAYSIZE(addressStr));
 

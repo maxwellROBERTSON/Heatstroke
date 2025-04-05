@@ -9,16 +9,16 @@ namespace Engine
 
 	// Constructors
 
+	Entity::Entity(EntityManager* entityManager)
+		: entityManager(entityManager), entityId(-1)
+	{
+	}
+
 	Entity::Entity(EntityManager* entityManager, int entityId, std::vector<int> indexList)
 		: entityManager(entityManager), entityId(entityId)
 	{
 		// Add index list to the entity
 		componentTypeIndexList = indexList;
-	}
-
-	Entity::Entity(EntityManager* entityManager)
-		: entityManager(entityManager)
-	{
 	}
 
 	// Getters
@@ -45,5 +45,13 @@ namespace Engine
 		std::memcpy(&modelMatrix, data + offset, sizeof(modelMatrix));
 	}
 
-	// Private Methods
+	// Set component has changed in entity manager
+	void Entity::SetEntityHasChanged()
+	{
+		if (!hasChanged)
+		{
+			entityManager->AddChangedEntity(this);
+			hasChanged = true;
+		}
+	}
 }

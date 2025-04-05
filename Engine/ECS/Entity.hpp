@@ -16,8 +16,8 @@ namespace Engine
 	class Entity
 	{
 	public:
-		Entity(EntityManager*, int, std::vector<int>);
 		Entity(EntityManager*);
+		Entity(EntityManager*, int, std::vector<int>);
 		~Entity() {};
 
 		// Getters
@@ -46,13 +46,20 @@ namespace Engine
 		void SetDataArray(uint8_t*);
 
 		// Set model matrix
-		void SetModelMatrix(glm::mat4 aModelMatrix) { modelMatrix = aModelMatrix; }
+		void SetModelMatrix(glm::mat4 aModelMatrix) { modelMatrix = aModelMatrix; SetEntityHasChanged(); }
+
+		// Set entity has changed in entity manager
+		void SetEntityHasChanged();
+
+		// Set entity id
+		void SetEntityId(int id) { entityId = id; }
 
 		// Set component index vector of this entity
 		// Only use if null constructor is used
 		void SetComponentIndexArray(std::vector<int> l) { componentTypeIndexList = l; }
 
 	private:
+		bool hasChanged = false;
 		EntityManager* entityManager;
 		int entityId;
 		glm::mat4 modelMatrix = glm::mat4(1.0f);

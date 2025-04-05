@@ -4,13 +4,22 @@
 
 #include "Component.hpp"
 
+#include "../EntityManager.hpp"
+
+namespace Engine
+{
+	class EntityManager;
+	class Entity;
+}
+
 namespace Engine
 {
 
 	class NetworkComponent : public Component<NetworkComponent>
 	{
 	public:
-		NetworkComponent() {};
+		NetworkComponent() : entityManager(nullptr), entity(nullptr) {}
+		NetworkComponent(Engine::EntityManager* entityManager, Engine::Entity* entity) : entityManager(entityManager), entity(entity) {}
 
 		void operator=(const NetworkComponent& other) override
 		{
@@ -37,9 +46,20 @@ namespace Engine
 		void SetDataArray(uint8_t*) override;
 
 		// Set client id
-		void SetClientId(uint64_t aClientId) { clientId = aClientId; }
+		void SetClientId(uint64_t aClientId) { clientId = aClientId; SetComponentHasChanged(); }
+
+		// Set component has changed in entity manager
+		void SetComponentHasChanged();
 
 	private:
+		// EntityManager pointer
+		Engine::EntityManager* entityManager;
+		// Entity pointer
+		Engine::Entity* entity;
+
+		// If component has changed since last network update
+		bool hasChanged = false;
+
 		uint64_t clientId = 0;
 	};
 }

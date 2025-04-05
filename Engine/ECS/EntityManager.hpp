@@ -5,11 +5,6 @@
 #include <memory>
 
 #include "Entity.hpp"
-#include "Components/Component.hpp"
-#include "Components/CameraComponent.hpp"
-#include "Components/NetworkComponent.hpp"
-#include "Components/PhysicsComponent.hpp"
-#include "Components/RenderComponent.hpp"
 
 namespace Engine
 {
@@ -40,7 +35,7 @@ namespace Engine
 		ComponentBase* GetComponentOfEntity(int, ComponentTypes);
 
 		// Get a pointer to all the components of a type
-		std::vector<std::unique_ptr<ComponentBase>>* GetComponentsOfType(ComponentTypes type) { return componentMap[type]; }
+		std::vector<std::unique_ptr<ComponentBase>>* GetComponentsOfType(ComponentTypes type);
 
 		// Get component data of all entities for one component type
 		std::vector<uint8_t> GetComponentData(ComponentTypes);
@@ -48,10 +43,22 @@ namespace Engine
 		// Get component data of all entities for all component type
 		void GetAllData(uint8_t*);
 
+		// Get all changed entity and component data
+		void GetAllChangedData(uint8_t*);
+
 		// Setters
 
 		// Set component data of all entities for all component type
 		void SetAllData(uint8_t*);
+
+		// Set all changed entity and component data
+		void SetAllChangedData(uint8_t*);
+
+		// Add changed entity
+		void AddChangedEntity(Entity* entity);
+
+		// Add changed component
+		void AddChangedComponent(ComponentTypes type, Entity* entity);
 
 		// Set next network component unassigned to a client
 		void AssignNextClient(uint64_t);
@@ -67,9 +74,14 @@ namespace Engine
 		void ClearManager();
 
 	private:
+		// Data to be used when updating client server information
+		// Vector of changed entities and components
+		// Each vector is size TYPE_COUNT + 1 to hold bit for if entity data has changed
+		std::vector<std::pair<Entity*, std::vector<int>>> changedEntitiesAndComponents;
+
 		// Private used in AddEntity - doesn't add to entity's
 		// vector so mustn't be used except when making a new entity
-		int AddComponent(ComponentTypes);
+		int AddComponent(ComponentTypes, Entity*);
 
 		// Vector of entities
 		std::vector<Entity> entities;

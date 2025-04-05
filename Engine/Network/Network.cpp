@@ -68,7 +68,7 @@ namespace Engine
             std::cout << "Adapter created.\n";
         }
 #ifdef _DEBUG
-        yojimbo_log_level(YOJIMBO_LOG_LEVEL_INFO);
+        yojimbo_log_level(YOJIMBO_LOG_LEVEL_DEBUG);
 #else
         yojimbo_log_level(YOJIMBO_LOG_LEVEL_INFO);
 #endif
@@ -122,6 +122,7 @@ namespace Engine
         if (status == Status::NETWORK_UNINITIALIZED)
         {
             std::cout << "Network uninitialized." << std::endl;
+            return;
         }
         else if (status == Status::NETWORK_INITIALIZED)
         {
@@ -134,5 +135,6 @@ namespace Engine
             networkType.reset();
             std::cout << "Network reset." << std::endl;
         }
+        status = Status::NETWORK_UNINITIALIZED;
     }
 }

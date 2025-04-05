@@ -152,7 +152,7 @@ void FPSTest::loadOfflineEntities()
 	mapTransform = glm::scale(mapTransform, glm::vec3(0.01f, 0.01f, 0.01f));
 	entity->SetModelMatrix(mapTransform);
 	physicsComponent = reinterpret_cast<PhysicsComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
-	physicsComponent->initComplexShape(GetPhysicsWorld(), PhysicsComponent::PhysicsType::STATIC, GetModels()[0], mapTransform, entity->GetEntityId());
+	physicsComponent->InitComplexShape(GetPhysicsWorld(), PhysicsComponent::PhysicsType::STATIC, GetModels()[0], mapTransform, entity->GetEntityId());
 	renderComponent = reinterpret_cast<RenderComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), RENDER));
 	renderComponent->SetModelIndex(0);
 
@@ -166,7 +166,7 @@ void FPSTest::loadOfflineEntities()
 	entity->SetModelMatrix(helmetTransform);
 	// configure physics component
 	physicsComponent = reinterpret_cast<PhysicsComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
-	physicsComponent->init(GetPhysicsWorld(), PhysicsComponent::PhysicsType::DYNAMIC, helmetTransform, entity->GetEntityId());
+	physicsComponent->Init(GetPhysicsWorld(), PhysicsComponent::PhysicsType::DYNAMIC, helmetTransform, entity->GetEntityId());
 	renderComponent = reinterpret_cast<RenderComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), RENDER));
 	renderComponent->SetModelIndex(1);
 
@@ -178,7 +178,7 @@ void FPSTest::loadOfflineEntities()
 	entity->SetModelMatrix(cubeTransform);
 	// configure physics component
 	physicsComponent = reinterpret_cast<PhysicsComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
-	physicsComponent->init(GetPhysicsWorld(), PhysicsComponent::PhysicsType::DYNAMIC, cubeTransform, entity->GetEntityId());
+	physicsComponent->Init(GetPhysicsWorld(), PhysicsComponent::PhysicsType::DYNAMIC, cubeTransform, entity->GetEntityId());
 	renderComponent = reinterpret_cast<RenderComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), RENDER));
 	renderComponent->SetModelIndex(2);
 
@@ -194,7 +194,7 @@ void FPSTest::loadOfflineEntities()
 	cameraComponent->SetCamera(Engine::Camera(100.0f, 0.01f, 256.0f, glm::vec3(-3.0f, 2.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
 	networkComponent = reinterpret_cast<NetworkComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), NETWORK));
 	physicsComponent = reinterpret_cast<PhysicsComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
-	physicsComponent->init(GetPhysicsWorld(), PhysicsComponent::PhysicsType::CONTROLLER, player1Transform, entity->GetEntityId());
+	physicsComponent->Init(GetPhysicsWorld(), PhysicsComponent::PhysicsType::CONTROLLER, player1Transform, entity->GetEntityId());
 	renderComponent = reinterpret_cast<RenderComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), RENDER));
 	renderComponent->SetModelIndex(3);
 
@@ -240,7 +240,7 @@ void FPSTest::loadOnlineEntities()
 	mapTransform = glm::scale(mapTransform, glm::vec3(0.01f, 0.01f, 0.01f));
 	entity->SetModelMatrix(mapTransform);
 	physicsComponent = reinterpret_cast<PhysicsComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
-	physicsComponent->initComplexShape(GetPhysicsWorld(), PhysicsComponent::PhysicsType::STATIC, GetModels()[0], mapTransform, entity->GetEntityId());
+	physicsComponent->InitComplexShape(GetPhysicsWorld(), PhysicsComponent::PhysicsType::STATIC, GetModels()[0], mapTransform, entity->GetEntityId());
 	renderComponent = reinterpret_cast<RenderComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), RENDER));
 	renderComponent->SetModelIndex(0);
 
@@ -254,7 +254,7 @@ void FPSTest::loadOnlineEntities()
 	entity->SetModelMatrix(helmetTransform);
 	// configure physics component
 	physicsComponent = reinterpret_cast<PhysicsComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
-	physicsComponent->init(GetPhysicsWorld(), PhysicsComponent::PhysicsType::DYNAMIC, helmetTransform, entity->GetEntityId());
+	physicsComponent->Init(GetPhysicsWorld(), PhysicsComponent::PhysicsType::DYNAMIC, helmetTransform, entity->GetEntityId());
 	renderComponent = reinterpret_cast<RenderComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), RENDER));
 	renderComponent->SetModelIndex(1);
 
@@ -266,7 +266,7 @@ void FPSTest::loadOnlineEntities()
 	entity->SetModelMatrix(cubeTransform);
 	// configure physics component
 	physicsComponent = reinterpret_cast<PhysicsComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
-	physicsComponent->init(GetPhysicsWorld(), PhysicsComponent::PhysicsType::DYNAMIC, cubeTransform, entity->GetEntityId());
+	physicsComponent->Init(GetPhysicsWorld(), PhysicsComponent::PhysicsType::DYNAMIC, cubeTransform, entity->GetEntityId());
 	renderComponent = reinterpret_cast<RenderComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), RENDER));
 	renderComponent->SetModelIndex(2);
 
@@ -282,7 +282,7 @@ void FPSTest::loadOnlineEntities()
 	cameraComponent->SetCamera(Engine::Camera(100.0f, 0.01f, 256.0f, glm::vec3(-3.0f, 2.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
 	networkComponent = reinterpret_cast<NetworkComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), NETWORK));
 	physicsComponent = reinterpret_cast<PhysicsComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
-	physicsComponent->init(GetPhysicsWorld(), PhysicsComponent::PhysicsType::CONTROLLER, player1Transform, entity->GetEntityId());
+	physicsComponent->Init(GetPhysicsWorld(), PhysicsComponent::PhysicsType::CONTROLLER, player1Transform, entity->GetEntityId());
 	renderComponent = reinterpret_cast<RenderComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), RENDER));
 	renderComponent->SetModelIndex(3);
 

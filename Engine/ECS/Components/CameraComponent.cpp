@@ -44,4 +44,14 @@ namespace Engine
         offset += sizeof(camera.position);
         std::memcpy(&camera.frontDirection, data + offset, sizeof(camera.frontDirection));
 	}
+
+    // Set component has changed in entity manager
+    void CameraComponent::SetComponentHasChanged()
+    {
+        if (!hasChanged)
+        {
+            entityManager->AddChangedComponent(StaticType(), entity);
+            hasChanged = true;
+        }
+    }
 }

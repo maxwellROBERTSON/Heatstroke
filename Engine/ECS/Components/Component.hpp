@@ -58,6 +58,9 @@ namespace Engine
         // Set component data
         virtual void SetDataArray(uint8_t* data) = 0;
 
+        // Set component has changed in entity manager
+        virtual void SetComponentHasChanged() = 0;
+
     private:
         int componentId;
     };
