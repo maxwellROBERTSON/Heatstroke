@@ -3,6 +3,7 @@
 #include <chrono>
 #include <thread>
 #include <future>
+#include <type_traits>
 
 #include "../Engine/vulkan/objects/Buffer.hpp"
 #include "../Engine/vulkan/PipelineCreation.hpp"
@@ -16,14 +17,20 @@
 void FPSTest::Init()
 {
 	registerComponents();
-	//create thread which then begins execution of initialiseModels
-	std::thread initialiseModelsThread(&FPSTest::initialiseModels, this);
 
-	std::cout << "Waiting for the execution of modelsThread to finish..." << std::endl;
+	//submit task to initialise Models to thread pool
+	auto modelsFut = threadPool.submit(&FPSTest::initialiseModels, this);
 
-	//blocks execution of the rest of the program until the initialiseModelsThread has finished
-	initialiseModelsThread.join();
-	initialisePhysics();
+	//submit task to initialise Physics to thread pool
+	auto physicsFut = threadPool.submit(&FPSTest::initialisePhysics, this);
+
+	std::cout << "Waiting for model initialisation" << std::endl;
+	//blocks execution of the rest of the program until the initialiseModels Thread has finished
+	modelsFut.get();
+
+	std::cout << "Waiting for physics initialisation" << std::endl;
+	//blocks execution of the rest of the program until the initialisePhysics Thread has finished
+	physicsFut.get();
 }
 
 void FPSTest::Update()
