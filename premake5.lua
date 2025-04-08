@@ -112,14 +112,21 @@ project "Engine"
     files(sources)
     removefiles("**.vcxproj*")
 
-    libdirs { "Engine/third_party/vcpkg/packages/physx_x64-linux/debug/lib" }
-    links(os.matchfiles("Engine/third_party/vcpkg/packages/physx_x64-linux/debug/lib/*.lib"))
-
     filter "*"
         
-    filter { "system:linux", "configurations:Debug" }
+    filter "system:not windows"
         libdirs { "Engine/third_party/vcpkg/packages/physx_x64-linux/debug/lib" }
-        links(os.matchfiles("Engine/third_party/vcpkg/packages/physx_x64-linux/debug/lib/*.lib"))
+        links { 
+            "PhysXExtensions_static_64",
+            "PhysX_static_64",
+            "PhysXPvdSDK_static_64",
+            "PhysXVehicle_static_64",
+            "PhysXCharacterKinematics_static_64",
+            "PhysXCooking_static_64",
+            "PhysXCommon_static_64", 
+            "PhysXFoundation_static_64" 
+        }
+
     filter { "system:linux", "configurations:Release" }
         libdirs { "Engine/third_party/vcpkg/packages/physx_x64-linux/lib" }
         links(os.matchfiles("Engine/third_party/vcpkg/packages/physx_x64-linux/lib/*.lib"))
@@ -130,7 +137,8 @@ project "Engine"
         postbuildcommands {
             '{COPY} "%{wks.location}Engine/third_party/vcpkg/packages/physx_x64-windows/debug/bin/PhysXFoundation_64.dll" "%{wks.location}bin"',
             '{COPY} "%{wks.location}Engine/third_party/vcpkg/packages/physx_x64-windows/debug/bin/PhysXCommon_64.dll" "%{wks.location}bin"',
-            '{COPY} "%{wks.location}Engine/third_party/vcpkg/packages/physx_x64-windows/debug/bin/PhysX_64.dll" "%{wks.location}bin"'
+            '{COPY} "%{wks.location}Engine/third_party/vcpkg/packages/physx_x64-windows/debug/bin/PhysX_64.dll" "%{wks.location}bin"',
+            '{COPY} "%{wks.location}Engine/third_party/vcpkg/packages/physx_x64-windows/debug/bin/PhysXCooking_64.dll" "%{wks.location}bin"'
         }
     filter { "system:windows", "configurations:Release" }
         libdirs { "Engine/third_party/vcpkg/packages/physx_x64-windows/lib" }
@@ -138,7 +146,8 @@ project "Engine"
         postbuildcommands {
             '{COPY} "%{wks.location}Engine/third_party/vcpkg/packages/physx_x64-windows/bin/PhysXFoundation_64.dll" "%{wks.location}bin"',
             '{COPY} "%{wks.location}Engine/third_party/vcpkg/packages/physx_x64-windows/bin/PhysXCommon_64.dll" "%{wks.location}bin"',
-            '{COPY} "%{wks.location}Engine/third_party/vcpkg/packages/physx_x64-windows/bin/PhysX_64.dll" "%{wks.location}bin"'
+            '{COPY} "%{wks.location}Engine/third_party/vcpkg/packages/physx_x64-windows/bin/PhysX_64.dll" "%{wks.location}bin"',
+            '{COPY} "%{wks.location}Engine/third_party/vcpkg/packages/physx_x64-windows/bin/PhysXCooking_64.dll" "%{wks.location}bin"'
         }
 
     filter "*"
@@ -186,6 +195,22 @@ project "Game"
 
     files(sources)
     removefiles("**.vcxproj*")
+
+    filter "system:not windows"
+        libdirs { "Engine/third_party/vcpkg/packages/physx_x64-linux/lib" }
+        links { 
+            "PhysXExtensions_static_64",
+            "PhysX_static_64",
+            "PhysXPvdSDK_static_64",
+            "PhysXVehicle_static_64",
+            "PhysXCharacterKinematic_static_64",
+            "PhysXCooking_static_64",
+            "PhysXCommon_static_64", 
+            "PhysXFoundation_static_64"
+        }
+
+
+    filter "*"
     
     links {
         "Engine",

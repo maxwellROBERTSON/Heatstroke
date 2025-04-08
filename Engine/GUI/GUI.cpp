@@ -1,4 +1,5 @@
 #include "GUI.hpp"
+#include "GLFW/glfw3.h"
 
 class GLFWwindow;
 
@@ -235,6 +236,10 @@ namespace Engine
 
 		ImGui::Text("FrontDir:");
 		ImGui::InputText("##FrontDir", (char*)fDirStr.c_str(), fDirStr.size() + 1, ImGuiInputTextFlags_ReadOnly);
+
+		ImGui::Text("Shadow depth buffer settings:");
+		ImGui::SliderFloat("Depth Bias Constant", &game->GetRenderer().depthBiasConstant, 0.0f, 10.0f);
+		ImGui::SliderFloat("Depth Bias Slope Factor", &game->GetRenderer().depthBiasSlopeFactor, 0.0f, 10.0f);
 
 		ImGui::End();
 	}

@@ -2,7 +2,12 @@
 
 #include "PxPhysicsAPI.h"
 #include <iostream>
+#if defined(_WIN32)
 #include <conio.h>
+#else
+#include <termios.h>
+#include <unistd.h>
+#endif
 #include <vector>
 #include "../ECS/EntityManager.hpp"
 using namespace physx;
@@ -17,26 +22,26 @@ public:
 	PxDefaultAllocator gAllocator;
 	static PxDefaultErrorCallback gErrorCallback;
 	PxMaterial* gMaterial = nullptr;
-
+	PxCapsuleController* controller = nullptr;
 	PxU32 numDynamicRigid = 0;
 
 	// CapsuleController
 	PxCapsuleController* gCapsuleController = nullptr;
 
 	// PVD
+	#if defined(_WIN32)
 	PxPvd* gPvd = nullptr;
 	PxPvdTransport* gTransport = nullptr;
+	#endif
 
 
 	PxReal gTimestep = 1.0f / 60.0f; // 60 FPS
 
 	void init();
 
+	void updateCharacter(PxReal deltatime);
+
 	void updateObjects(EntityManager& entityManager, std::vector<Engine::vk::Model>& models);
-
-	void createCapsuleController();
-
-	void createStaticBox();
 
 	void cleanupPhysX();
 
