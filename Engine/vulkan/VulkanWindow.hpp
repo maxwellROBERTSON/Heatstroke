@@ -59,9 +59,6 @@ namespace Engine {
 
 		VkFormat swapchainFormat;
 		VkExtent2D swapchainExtent;
-
-
-
 	};
 
 	struct SwapChanges {

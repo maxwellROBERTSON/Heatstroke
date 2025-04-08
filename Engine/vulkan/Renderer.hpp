@@ -48,6 +48,7 @@ namespace Engine {
 		void render(std::vector<vk::Model>& models);
 		void submitRender();
 		void finishRendering();
+		void destroyImGui();
 
 		vk::Buffer createDynamicUniformBuffer();
 		void calculateFPS();
@@ -75,6 +76,8 @@ namespace Engine {
 		float depthBiasSlopeFactor = 10.0f;
 
 		bool vsync = true;
+		bool msaa = false;
+		bool delayMSAA = false;
 
 	private:
 		VulkanContext* context;
@@ -93,6 +96,7 @@ namespace Engine {
 		vk::Sampler depthSampler;
 
 		std::vector<vk::Framebuffer> forwardFramebuffers;
+		std::vector<vk::Framebuffer> forwardMSAAFramebuffers;
 		std::vector<vk::Framebuffer> deferredFramebuffers;
 		std::vector<vk::Framebuffer> shadowFramebuffer;
 

@@ -51,6 +51,8 @@ namespace Engine
 		void makeServerGUI(int*, int*);
 		void makeLoadingGUI(int*, int*);
 
+		ImGui_ImplVulkanH_Window imGuiWindow;
+		bool triggeredMSAA = false;
 	private:
 		std::map<Engine::RenderMode, std::function<void(int*, int*)>> functions;
 		Engine::Game* game;

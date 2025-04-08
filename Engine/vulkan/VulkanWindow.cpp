@@ -216,12 +216,23 @@ namespace Engine {
 			throw Utils::Error("No suitable physical device found!");
 
 		VkDeviceSize minUBOAlignment;
+		VkSampleCountFlagBits maxSampleCount = VK_SAMPLE_COUNT_1_BIT;
+
 
 		{
 			VkPhysicalDeviceProperties props;
 			vkGetPhysicalDeviceProperties(window.get()->physicalDevice, &props);
 			std::fprintf(stderr, "Selected device: %s (%d.%d.%d)\n", props.deviceName, VK_API_VERSION_MAJOR(props.apiVersion), VK_API_VERSION_MINOR(props.apiVersion), VK_API_VERSION_PATCH(props.apiVersion));
 			minUBOAlignment = props.limits.minUniformBufferOffsetAlignment;
+		
+			VkSampleCountFlags supportedSampleCount = std::min(props.limits.framebufferColorSampleCounts, props.limits.framebufferDepthSampleCounts);
+			std::vector<VkSampleCountFlagBits> possibleSampleCounts = { VK_SAMPLE_COUNT_64_BIT, VK_SAMPLE_COUNT_32_BIT, VK_SAMPLE_COUNT_16_BIT, VK_SAMPLE_COUNT_8_BIT, VK_SAMPLE_COUNT_4_BIT, VK_SAMPLE_COUNT_2_BIT };
+			for (VkSampleCountFlagBits possibleSampleCount : possibleSampleCounts) {
+				if (supportedSampleCount & possibleSampleCount) {
+					maxSampleCount = possibleSampleCount;
+					break;
+				}
+			}
 		}
 
 		// Create a logical device
@@ -261,6 +272,7 @@ namespace Engine {
 		window.get()->device = createDevice(*window.get(), window.get()->physicalDevice, queueFamilyIndices, enabledDevExensions);
 
 		window.get()->device->minUBOAlignment = minUBOAlignment;
+		window.get()->device->maxSampleCount = maxSampleCount;
 
 		// Retrieve VkQueues
 		vkGetDeviceQueue(window.get()->device->device, window.get()->graphicsFamilyIndex, 0, &window.get()->graphicsQueue);

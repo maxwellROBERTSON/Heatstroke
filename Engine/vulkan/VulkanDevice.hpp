@@ -33,6 +33,7 @@ namespace Engine {
 		VkDescriptorPool dPool = VK_NULL_HANDLE;
 
 		VkDeviceSize minUBOAlignment = 0;
+		VkSampleCountFlagBits maxSampleCount = VK_SAMPLE_COUNT_1_BIT;
 	};
 
 	VkCommandBuffer createCommandBuffer(const VulkanWindow& aWindow);

@@ -209,7 +209,6 @@ namespace vk {
         std::size_t dynamicUBOAlignment = aRenderer->getDynamicUBOAlignment();
         VkPipelineLayout pipelineLayout = aRenderer->getPipelineLayout(aPipelineHandle).handle;
         VkDescriptorSet modelMatricesDescriptor = aRenderer->getDescriptorSet("modelMatrices");
-        VkPipeline alphaPipeline = aRenderer->getPipeline(aPipelineHandle + "Alpha").handle;
 
         if (justGeometry) {
 
@@ -240,6 +239,8 @@ namespace vk {
 
         vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 4, 1, &materialInfoSSBO, 0, nullptr); // Material SSBO
 
+        vkCmdSetCullMode(aCmdBuf, VK_CULL_MODE_BACK_BIT);
+
         std::uint32_t tempOffset = offset;
 
         // Draw opaque nodes first
@@ -251,7 +252,7 @@ namespace vk {
 
         offset = tempOffset;
 
-        vkCmdBindPipeline(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, alphaPipeline);
+        vkCmdSetCullMode(aCmdBuf, VK_CULL_MODE_NONE);
 
         // Draw alpha masked nodes second
         for (Node* node : linearNodes) {
