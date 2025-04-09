@@ -1,5 +1,45 @@
 #include "thread_pool_wait.h"
 
+thread_pool_wait* thread_pool_wait::instance = new thread_pool_wait();
+
+//function to get the single instance of the thread pool class
+thread_pool_wait* thread_pool_wait::get_instance()
+{
+	//if the instance doesn't exist
+	if (thread_pool_wait::instance == nullptr)
+	{
+		//create it
+		thread_pool_wait::thread_pool_wait();
+	}
+
+	//return a pointer to the static instance
+	return thread_pool_wait::instance;
+}
+
+
+//constructor
+thread_pool_wait::thread_pool_wait() : done(false), joiner(threads)
+{
+	//get the number of threads that the system can support
+	unsigned const thread_count = std::thread::hardware_concurrency();
+	std::cout << "Creating thread pool... \n"
+		"Threads avaiable: " << thread_count << std::endl;
+
+	try
+	{
+		for (int i = 0; i < thread_count; i++)
+		{
+			//each thread will run the worker_thread function
+			//create thread, new thread calls worker_thread() from this class, push new thread to threads vector 
+			threads.push_back(std::thread(&thread_pool_wait::worker_thread, this));
+		}
+	}
+	catch (...)
+	{
+		done = true;
+		throw;
+	}
+}
 
 //here tasks (functions) are executed
 void thread_pool_wait::worker_thread()
@@ -25,29 +65,6 @@ void thread_pool_wait::worker_thread()
 	}
 }
 
-//constructor
-thread_pool_wait::thread_pool_wait() : done(false), joiner(threads)
-{
-	//get the number of threads that the system can support
-	unsigned const thread_count = std::thread::hardware_concurrency();
-	std::cout << "Creating thread pool... \n"
-		"Threads avaiable: " << thread_count << std::endl;
-
-	try
-	{
-		for (int i = 0; i < thread_count; i++)
-		{
-			//each thread will run the worker_thread function
-			//create thread, new thread calls worker_thread() from this class, push new thread to threads vector 
-			threads.push_back(std::thread(&thread_pool_wait::worker_thread, this));
-		}
-	}
-	catch (...)
-	{
-		done = true;
-		throw;
-	}
-}
 
 //destructor
 thread_pool_wait::~thread_pool_wait()

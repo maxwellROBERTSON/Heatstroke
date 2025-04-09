@@ -32,11 +32,7 @@ class thread_pool_wait
 	void worker_thread();
 
 public:
-	//constructor
-	thread_pool_wait();
-
-	//destructor
-	~thread_pool_wait();
+	static thread_pool_wait* get_instance();
 
 	//submit free function
 	//submit() puts tasks on the queue and returns a handle to that task to allow the main thread to wait for its completion
@@ -92,4 +88,13 @@ public:
 	}
 
 	void run_pending_task();
+
+private:
+	//constructor
+	thread_pool_wait();
+
+	//destructor
+	~thread_pool_wait();
+
+	static thread_pool_wait *instance;
 };
