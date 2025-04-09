@@ -16,13 +16,15 @@
 
 void FPSTest::Init()
 {
+	this->threadPool = thread_pool_wait::get_instance();
+
 	registerComponents();
 
 	//submit task to initialise Models to thread pool
-	auto modelsFut = threadPool.submit(&FPSTest::initialiseModels, this);
+	auto modelsFut = threadPool->submit(&FPSTest::initialiseModels, this);
 
 	//submit task to initialise Physics to thread pool
-	auto physicsFut = threadPool.submit(&FPSTest::initialisePhysics, this);
+	auto physicsFut = threadPool->submit(&FPSTest::initialisePhysics, this);
 
 	std::cout << "Waiting for model initialisation" << std::endl;
 	//blocks execution of the rest of the program until the initialiseModels Thread has finished

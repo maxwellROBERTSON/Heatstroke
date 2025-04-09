@@ -63,7 +63,7 @@ public:
 	bool online = false;
 	bool offline = true;
 	bool isChange = true;
-	thread_pool_wait threadPool;
+	thread_pool_wait *threadPool;
 };
 
 //void loadOfflineEntities(ComponentTypeRegistry& registry, EntityManager& entityManager, PhysicsWorld& pworld);
