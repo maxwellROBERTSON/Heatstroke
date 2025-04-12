@@ -9,9 +9,12 @@
 #include "../Engine/vulkan/PipelineCreation.hpp"
 #include "../Engine/vulkan/Renderer.hpp"
 #include "../Engine/vulkan/VulkanDevice.hpp"
+#include "../Engine/ECS/Components/AudioComponent.hpp"
 
 #include "Error.hpp"
 #include "toString.hpp"
+
+
 
 using namespace Engine;
 
@@ -19,6 +22,13 @@ Camera camera = Camera();
 
 void FPSTest::Init()
 {
+
+	AudioComponent ac;
+	//ac.AddClip("../Game/assets/AudioClips/Ugh.wav");
+
+	//ac.PlaySound();
+
+
 	//create thread which then begins execution of initialiseModels
 	std::thread initialiseModelsThread(&FPSTest::initialiseModels, this);
 
