@@ -20,31 +20,15 @@ Camera camera = Camera();
 
 void FPSTest::Init()
 {
-
 	this->threadPool = thread_pool_wait::get_instance();
-
-	registerComponents();
-  
-	//create thread which then begins execution of initialiseModels
-	std::thread initialiseModelsThread(&FPSTest::initialiseModels, this);
-
+ 
 	//submit task to initialise Models to thread pool
 	auto modelsFut = threadPool->submit(&FPSTest::initialiseModels, this);
-
-	//submit task to initialise Physics to thread pool
-	auto physicsFut = threadPool->submit(&FPSTest::initialisePhysics, this);
 
 	std::cout << "Waiting for model initialisation" << std::endl;
 	//blocks execution of the rest of the program until the initialiseModels Thread has finished
 	modelsFut.get();
 
-
-	std::cout << "Waiting for physics initialisation" << std::endl;
-	//blocks execution of the rest of the program until the initialisePhysics Thread has finished
-	physicsFut.get();
-
-	//blocks execution of the rest of the program until the initialiseModelsThread has finished
-	initialiseModelsThread.join();
 	GetPhysicsWorld().init();
 	GetRenderer().initialiseRenderer();
 	GetGUI().initGUI();
