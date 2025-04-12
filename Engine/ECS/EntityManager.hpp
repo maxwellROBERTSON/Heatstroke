@@ -5,121 +5,102 @@
 #include <memory>
 
 #include "Entity.hpp"
-#include "Component.hpp"
-#include "ComponentTypeRegistry.hpp"
-#include "RenderComponent.hpp"
+#include "Components/Component.hpp"
+#include "Components/CameraComponent.hpp"
+#include "Components/NetworkComponent.hpp"
+#include "Components/PhysicsComponent.hpp"
+#include "Components/RenderComponent.hpp"
 
-class EntityManager
+namespace Engine
 {
-public:
-	EntityManager(ComponentTypeRegistry* registry) : registry(registry) {};
-	~EntityManager()
+	class EntityManager
 	{
-		for (int i = 0; i < componentList.size(); i++)
+	public:
+		EntityManager()
 		{
-			delete[] componentList[i].first;
-		}
-	}
-
-	// Getters
-	int GetNumberOfEntities();
-	template <typename T>
-	T* GetEntityComponent(int entityId)
-	{
-		int typeIndex = registry->GetComponentID<T>();
-		int componentId = entities[entityId].GetComponent(typeIndex);
-		if (componentId == -1)
-		{
-			return nullptr;
-		}
-		else
-		{
-			return static_cast<T*>(componentList[typeIndex].first) + componentId;
-		}
-	}
-	Entity* GetEntity(int entityId)
-	{
-		return &entities[entityId];
-	}
-	template <typename T>
-	int GetComponentTypeSize()
-	{
-		int typeIndex = registry->GetComponentID<T>();
-		return componentList[typeIndex].second;
-	}
-	template <typename T>
-	std::pair<void*, int> GetComponents()
-	{
-		int typeIndex = registry->GetComponentID<T>();
-		return componentList[typeIndex];
-	}
-	template <typename T>
-	std::vector<int> GetEntitiesWithComponent()
-	{
-		int typeIndex = registry->GetComponentID<T>();
-		return entitiesWithType[typeIndex];
-	}
-
-	// Setters
-	void SetComponentTypesPointers(std::vector<std::pair<void*, int>>);
-	void SetEntitiesWithType();
-	template <typename... Types>
-	Entity* AddEntity()
-	{
-		int numberOfComponentTypes = registry->GetNumberOfComponentTypes();
-
-		std::vector<int> typeIndexList(numberOfComponentTypes, -1);
-		(addComponent<Types>(typeIndexList), ...);
-
-		Entity entity = Entity(this, entities.size(), typeIndexList);
-		entities.push_back(entity);
-
-		for (int i = 0; i < numberOfComponentTypes; i++)
-		{
-			if (typeIndexList[i] != -1)
+			if (componentMap.size() != ComponentTypes::TYPE_COUNT)
 			{
-				entitiesWithType[i].push_back(entities.size() - 1);
+				throw std::runtime_error("Size mismatch between componentMap and ComponentTypes");
 			}
-		}
+		};
+		~EntityManager() {}
 
-		return &entities[entities.size() - 1];
-	}
-	void ClearManager()
-	{
-		entities.clear();
-		for (int i = 0; i < entitiesWithType.size(); i++)
+		// Getters
+
+		// Get total data size
+		size_t GetTotalDataSize();
+
+		// Get total number of entities
+		int GetNumberOfEntities() { return static_cast<int>(entities.size()); }
+
+		// Get a pointer to an entity, given an id
+		Entity* GetEntity(int entityId) { return &entities[entityId]; }
+
+		// Get the entities with a component type
+		std::vector<int> GetEntitiesWithComponent(ComponentTypes type) { return entitiesWithType[type]; }
+		
+		// Get total number of components of a type
+		int GetComponentTypeSize(ComponentTypes type) { return (*componentMap[type]).size(); }
+
+		// Get a pointer to the component of an entity
+		ComponentBase* GetComponentOfEntity(int, ComponentTypes);
+
+		// Get a pointer to all the components of a type
+		std::vector<std::unique_ptr<ComponentBase>>* GetComponentsOfType(ComponentTypes type) { return componentMap[type]; }
+
+		// Get component data of all entities for one component type
+		std::vector<uint8_t> GetComponentData(ComponentTypes);
+
+		// Get component data of all entities for all component type
+		void GetAllData(uint8_t*);
+
+		// Setters
+
+		// Set component data of all entities for all component type
+		void SetAllData(uint8_t*);
+
+		// Add an entity with given types
+		Entity* AddEntity(std::vector<ComponentTypes>);
+
+		// Clears the manager on disconnect
+		void ClearManager();
+
+	private:
+		// Private used in AddEntity - doesn't add to entity's
+		// vector so mustn't be used except when making a new entity
+		int AddComponent(ComponentTypes);
+
+		// Vector of entities
+		std::vector<Entity> entities;
+
+		// Vector for each component type
+		std::vector<std::unique_ptr<ComponentBase>> cameraComponents;
+		std::vector<std::unique_ptr<ComponentBase>> networkComponents;
+		std::vector<std::unique_ptr<ComponentBase>> physicsComponents;
+		std::vector<std::unique_ptr<ComponentBase>> renderComponents;
+
+		// Map of component type vectors
+		std::map<ComponentTypes, std::vector<std::unique_ptr<ComponentBase>>*> componentMap
 		{
-			entitiesWithType[i] = std::vector<int>();
-			delete[] componentList[i].first;
-			componentList[i].first = nullptr;
-			componentList[i].second = 0;
-		}
-	}
+			{ ComponentTypes::CAMERA, &cameraComponents },
+			{ ComponentTypes::NETWORK, &networkComponents },
+			{ ComponentTypes::PHYSICS, &physicsComponents },
+			{ ComponentTypes::RENDER, &renderComponents }
+		};
 
-private:
-	ComponentTypeRegistry* registry;
-	std::vector<Entity> entities;
-	std::vector<std::vector<int>> entitiesWithType;
-	std::vector<std::pair<void*, int>> componentList;
+		// For each component type, there is an entry, each holding ids of entities with that component type
+		std::vector<std::vector<int>> entitiesWithType = std::vector<std::vector<int>>(TYPE_COUNT);
 
-	int localPlayerEntityId = -1;
+		// For each entity:
+		// Component vector of int = registry.GetNumComponents * sizeof(int)
+		// Matrix = 16 * sizeof(float)
+		// If rendercomp:
+		//  Model index = sizeof(int)
+		// If camera:
+		// fov + near + far + vec3(pos) + vec3(front_dir) = 9 * float
+		// If network:
+		// clientid = int
 
-	template <typename T>
-	void addComponent(std::vector<int>& typeIndexList)
-	{
-		int typeIndex = registry->GetComponentID<T>();
-		typeIndexList[typeIndex] = static_cast<int>(componentList[typeIndex].second);
-		T* newMemory = new T[componentList[typeIndex].second + 1];
-		T* oldMemory = static_cast<T*>(componentList[typeIndex].first);
+	};
+}
 
-		for (int i = 0; i < componentList[typeIndex].second; i++)
-		{
-			newMemory[i] = oldMemory[i];
-		}
-
-		delete[] oldMemory;
-
-		componentList[typeIndex].first = static_cast<void*>(newMemory);
-		componentList[typeIndex].second++;
-	}
-};

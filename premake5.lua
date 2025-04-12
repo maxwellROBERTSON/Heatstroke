@@ -33,9 +33,12 @@ workspace "Heatstroke"
 
     local cwd = os.getcwd()
     local shellScript = cwd .. "/Engine/third_party/vcpkg/vcpkg_setup.sh"
+    local bootstrapScript = cwd .. "/Engine/third_party/vcpkg/bootstrap-vcpkg.sh"
     local batchFile = cwd .. "/Engine/third_party/vcpkg/vcpkg_setup.bat"
 
     if os.istarget("linux") then
+        os.execute('chmod 777 "' .. shellScript .. '"')
+        os.execute('chmod 777 "' .. bootstrapScript .. '"')
         os.execute('sh "' .. shellScript .. '"')
     end
     if os.istarget("windows") then
@@ -104,6 +107,8 @@ project "Engine"
 
     filter "system:linux"
         includedirs { "Engine/third_party/vcpkg/packages/physx_x64-linux/include/physx" }
+        -- libdirs { "Engine/third_party/vcpkg/packages/physx_x64-linux/tools" }
+        -- links { "PhysXGpu_64" }
 
     filter "system:windows"
         includedirs { "Engine/third_party/vcpkg/packages/physx_x64-windows/include/physx" }
@@ -115,40 +120,49 @@ project "Engine"
 
     filter "*"
         
-    filter "system:not windows"
+    filter { "system:linux", "configurations:Debug" }
         libdirs { "Engine/third_party/vcpkg/packages/physx_x64-linux/debug/lib" }
         links { 
+            "PhysXCharacterKinematic_static_64",
             "PhysXExtensions_static_64",
             "PhysX_static_64",
             "PhysXPvdSDK_static_64",
             "PhysXVehicle_static_64",
-            "PhysXCharacterKinematics_static_64",
             "PhysXCooking_static_64",
-            "PhysXCommon_static_64", 
-            "PhysXFoundation_static_64" 
+            "PhysXCommon_static_64",
+            "PhysXFoundation_static_64"
         }
-
     filter { "system:linux", "configurations:Release" }
         libdirs { "Engine/third_party/vcpkg/packages/physx_x64-linux/lib" }
-        links(os.matchfiles("Engine/third_party/vcpkg/packages/physx_x64-linux/lib/*.lib"))
+        links { 
+            "PhysXCharacterKinematic_static_64",
+            "PhysXExtensions_static_64",
+            "PhysX_static_64",
+            "PhysXPvdSDK_static_64",
+            "PhysXVehicle_static_64",
+            "PhysXCooking_static_64",
+            "PhysXCommon_static_64",
+            "PhysXFoundation_static_64"
+        }
 
     filter { "system:windows", "configurations:Debug" }
-        libdirs { "Engine/third_party/vcpkg/packages/physx_x64-windows/debug/lib" }
-        links(os.matchfiles("Engine/third_party/vcpkg/packages/physx_x64-windows/debug/lib/*.lib"))
+        libdirs { "Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\debug\\lib" }
+        links(os.matchfiles("Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\debug\\lib\\*.lib"))
         postbuildcommands {
-            '{COPY} "%{wks.location}Engine/third_party/vcpkg/packages/physx_x64-windows/debug/bin/PhysXFoundation_64.dll" "%{wks.location}bin"',
-            '{COPY} "%{wks.location}Engine/third_party/vcpkg/packages/physx_x64-windows/debug/bin/PhysXCommon_64.dll" "%{wks.location}bin"',
-            '{COPY} "%{wks.location}Engine/third_party/vcpkg/packages/physx_x64-windows/debug/bin/PhysX_64.dll" "%{wks.location}bin"',
-            '{COPY} "%{wks.location}Engine/third_party/vcpkg/packages/physx_x64-windows/debug/bin/PhysXCooking_64.dll" "%{wks.location}bin"'
+            "if not exist \"%{wks.location}bin\\PhysXFoundation_64.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\debug\\bin\\PhysXFoundation_64.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\debug\\bin\\PhysXFoundation_64.dll\" \"%{wks.location}bin\"",
+            "if not exist \"%{wks.location}bin\\PhysXCommon_64.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\debug\\bin\\PhysXCommon_64.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\debug\\bin\\PhysXCommon_64.dll\" \"%{wks.location}bin\"",
+            "if not exist \"%{wks.location}bin\\PhysX_64.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\debug\\bin\\PhysX_64.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\debug\\bin\\PhysX_64.dll\" \"%{wks.location}bin\"",
+            "if not exist \"%{wks.location}bin\\PhysXCooking_64.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\debug\\bin\\PhysXCooking_64.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\debug\\bin\\PhysXCooking_64.dll\" \"%{wks.location}bin\""
         }
+
     filter { "system:windows", "configurations:Release" }
-        libdirs { "Engine/third_party/vcpkg/packages/physx_x64-windows/lib" }
-        links(os.matchfiles("Engine/third_party/vcpkg/packages/physx_x64-windows/lib/*.lib"))
+        libdirs { "Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\lib" }
+        links(os.matchfiles("Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\lib\\*.lib"))
         postbuildcommands {
-            '{COPY} "%{wks.location}Engine/third_party/vcpkg/packages/physx_x64-windows/bin/PhysXFoundation_64.dll" "%{wks.location}bin"',
-            '{COPY} "%{wks.location}Engine/third_party/vcpkg/packages/physx_x64-windows/bin/PhysXCommon_64.dll" "%{wks.location}bin"',
-            '{COPY} "%{wks.location}Engine/third_party/vcpkg/packages/physx_x64-windows/bin/PhysX_64.dll" "%{wks.location}bin"',
-            '{COPY} "%{wks.location}Engine/third_party/vcpkg/packages/physx_x64-windows/bin/PhysXCooking_64.dll" "%{wks.location}bin"'
+            "if not exist \"%{wks.location}bin\\PhysXFoundation_64.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\bin\\PhysXFoundation_64.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\debug\\bin\\PhysXFoundation_64.dll\" \"%{wks.location}bin\"",
+            "if not exist \"%{wks.location}bin\\PhysXCommon_64.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\bin\\PhysXCommon_64.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\bin\\PhysXCommon_64.dll\" \"%{wks.location}bin\"",
+            "if not exist \"%{wks.location}bin\\PhysX_64.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\bin\\PhysX_64.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\bin\\PhysX_64.dll\" \"%{wks.location}bin\"",
+            "if not exist \"%{wks.location}bin\\PhysXCooking_64.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\bin\\PhysXCooking_64.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\bin\\PhysXCooking_64.dll\" \"%{wks.location}bin\""
         }
 
     filter "*"
@@ -188,6 +202,8 @@ project "Game"
 
     filter "system:linux"
         includedirs { "Engine/third_party/vcpkg/packages/physx_x64-linux/include/physx" }
+        -- libdirs { "Engine/third_party/vcpkg/packages/physx_x64-linux/tools" }
+        -- links { "PhysXGpu_64" }
 
     filter "system:windows"
         includedirs { "Engine/third_party/vcpkg/packages/physx_x64-windows/include/physx" }
@@ -197,19 +213,20 @@ project "Game"
     files(sources)
     removefiles("**.vcxproj*")
 
-    filter "system:not windows"
+    filter "*"
+
+    filter { "system:linux" }
         libdirs { "Engine/third_party/vcpkg/packages/physx_x64-linux/lib" }
-        links { 
+        links {
+            "PhysXCharacterKinematic_static_64",
             "PhysXExtensions_static_64",
             "PhysX_static_64",
             "PhysXPvdSDK_static_64",
             "PhysXVehicle_static_64",
-            "PhysXCharacterKinematic_static_64",
             "PhysXCooking_static_64",
-            "PhysXCommon_static_64", 
+            "PhysXCommon_static_64",
             "PhysXFoundation_static_64"
         }
-
 
     filter "*"
     

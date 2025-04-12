@@ -7,7 +7,9 @@
 #include "../Events/Event.hpp"
 #include "../Input/Keyboard.hpp"
 #include "../Input/Mouse.hpp"
-
+#include "../Events/KeyEvent.hpp"
+#include "../Events/MouseEvent.hpp"
+#include "../Input/Input.hpp"
 
 /*
 * This entire class will probably need reworking, its not the best implementation of a first person camera

@@ -362,7 +362,7 @@ namespace Engine {
 		return vk::PipelineLayout(aWindow.device->device, layout);
 	}
 
-	vk::Pipeline createForwardPipeline(const VulkanWindow& aWindow, VkRenderPass aRenderPass, VkPipelineLayout aPipelineLayout, bool shadows) {
+	vk::Pipeline createForwardPipeline(const VulkanWindow& aWindow, VkRenderPass aRenderPass, VkPipelineLayout aPipelineLayout, bool shadows, bool alpha) {
 		vk::ShaderModule vert = loadShaderModule(aWindow, Shaders::forwardVert);
 		vk::ShaderModule frag = loadShaderModule(aWindow, Shaders::forwardFrag);
 
@@ -395,7 +395,9 @@ namespace Engine {
 		//    at the same time as texture coordinates, so a optimisation would be to dynamically create render passes
 		//    based on only the attributes that exist in the glTF file, so that we are not sending both at the same time
 		//    as one will just be default values)
-		VkVertexInputBindingDescription vertexInputs[6]{};
+		// 7. Joint indexs for vertex skinning
+		// 8. Weights for vertex skinning
+		VkVertexInputBindingDescription vertexInputs[8]{};
 		vertexInputs[0].binding = 0;
 		vertexInputs[0].stride = sizeof(float) * 3;
 		vertexInputs[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
@@ -414,8 +416,14 @@ namespace Engine {
 		vertexInputs[5].binding = 5;
 		vertexInputs[5].stride = sizeof(float) * 4;
 		vertexInputs[5].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+		vertexInputs[6].binding = 6;
+		vertexInputs[6].stride = sizeof(unsigned int) * 4;
+		vertexInputs[6].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+		vertexInputs[7].binding = 7;
+		vertexInputs[7].stride = sizeof(float) * 4;
+		vertexInputs[7].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
-		VkVertexInputAttributeDescription vertexAttributes[6]{};
+		VkVertexInputAttributeDescription vertexAttributes[8]{};
 		vertexAttributes[0].binding = 0;
 		vertexAttributes[0].location = 0;
 		vertexAttributes[0].format = VK_FORMAT_R32G32B32_SFLOAT;
@@ -440,12 +448,20 @@ namespace Engine {
 		vertexAttributes[5].location = 5;
 		vertexAttributes[5].format = VK_FORMAT_R32G32B32A32_SFLOAT;
 		vertexAttributes[5].offset = 0;
+		vertexAttributes[6].binding = 6;
+		vertexAttributes[6].location = 6;
+		vertexAttributes[6].format = VK_FORMAT_R32G32B32A32_UINT;
+		vertexAttributes[6].offset = 0;
+		vertexAttributes[7].binding = 7;
+		vertexAttributes[7].location = 7;
+		vertexAttributes[7].format = VK_FORMAT_R32G32B32A32_SFLOAT;
+		vertexAttributes[7].offset = 0;
 
 		VkPipelineVertexInputStateCreateInfo inputInfo{};
 		inputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-		inputInfo.vertexBindingDescriptionCount = 6;
+		inputInfo.vertexBindingDescriptionCount = 8;
 		inputInfo.pVertexBindingDescriptions = vertexInputs;
-		inputInfo.vertexAttributeDescriptionCount = 6;
+		inputInfo.vertexAttributeDescriptionCount = 8;
 		inputInfo.pVertexAttributeDescriptions = vertexAttributes;
 
 		VkPipelineInputAssemblyStateCreateInfo assemblyInfo{};
@@ -481,6 +497,10 @@ namespace Engine {
 		rasterInfo.depthBiasEnable = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 		rasterInfo.lineWidth = 1.0f;
 
+		if (alpha) {
+			rasterInfo.cullMode = VK_CULL_MODE_NONE;
+		}
+
 		VkPipelineMultisampleStateCreateInfo samplingInfo{};
 		samplingInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
 		samplingInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
@@ -488,6 +508,14 @@ namespace Engine {
 		VkPipelineColorBlendAttachmentState blendStates[1]{};
 		blendStates[0].blendEnable = VK_FALSE;
 		blendStates[0].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+
+		if (alpha) {
+			blendStates[0].blendEnable = VK_TRUE;
+			blendStates[0].colorBlendOp = VK_BLEND_OP_ADD;
+			blendStates[0].srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+			blendStates[0].dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+			blendStates[0].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+		}
 
 		VkPipelineColorBlendStateCreateInfo blendInfo{};
 		blendInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
@@ -550,7 +578,9 @@ namespace Engine {
 		// 4. Texture coordinates 0
 		// 5. Texture coordinates 1
 		// 6. Vertex colours
-		VkVertexInputBindingDescription vertexInputs[6]{};
+		// 7. Joint indexs for vertex skinning
+		// 8. Weights for vertex skinning
+		VkVertexInputBindingDescription vertexInputs[8]{};
 		vertexInputs[0].binding = 0;
 		vertexInputs[0].stride = sizeof(float) * 3;
 		vertexInputs[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
@@ -569,8 +599,14 @@ namespace Engine {
 		vertexInputs[5].binding = 5;
 		vertexInputs[5].stride = sizeof(float) * 4;
 		vertexInputs[5].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+		vertexInputs[6].binding = 6;
+		vertexInputs[6].stride = sizeof(unsigned int) * 4;
+		vertexInputs[6].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+		vertexInputs[7].binding = 7;
+		vertexInputs[7].stride = sizeof(float) * 4;
+		vertexInputs[7].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
-		VkVertexInputAttributeDescription vertexAttributes[6]{};
+		VkVertexInputAttributeDescription vertexAttributes[8]{};
 		vertexAttributes[0].binding = 0;
 		vertexAttributes[0].location = 0;
 		vertexAttributes[0].format = VK_FORMAT_R32G32B32_SFLOAT;
@@ -595,12 +631,20 @@ namespace Engine {
 		vertexAttributes[5].location = 5;
 		vertexAttributes[5].format = VK_FORMAT_R32G32B32A32_SFLOAT;
 		vertexAttributes[5].offset = 0;
+		vertexAttributes[6].binding = 6;
+		vertexAttributes[6].location = 6;
+		vertexAttributes[6].format = VK_FORMAT_R32G32B32A32_UINT;
+		vertexAttributes[6].offset = 0;
+		vertexAttributes[7].binding = 7;
+		vertexAttributes[7].location = 7;
+		vertexAttributes[7].format = VK_FORMAT_R32G32B32A32_SFLOAT;
+		vertexAttributes[7].offset = 0;
 
 		VkPipelineVertexInputStateCreateInfo inputInfo{};
 		inputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-		inputInfo.vertexBindingDescriptionCount = 6;
+		inputInfo.vertexBindingDescriptionCount = 8;
 		inputInfo.pVertexBindingDescriptions = vertexInputs;
-		inputInfo.vertexAttributeDescriptionCount = 6;
+		inputInfo.vertexAttributeDescriptionCount = 8;
 		inputInfo.pVertexAttributeDescriptions = vertexAttributes;
 
 		VkPipelineInputAssemblyStateCreateInfo assemblyInfo{};
@@ -722,7 +766,7 @@ namespace Engine {
 			throw Utils::Error("Unable to create graphics pipeline\n vkCreateGraphicsPipeline() returned %s", Utils::toString(res).c_str());
 		}
 
-		return { std::move(vk::Pipeline(aWindow.device->device, gBufWritePipe	)), std::move(vk::Pipeline(aWindow.device->device, shadingPipe)) };
+		return { std::move(vk::Pipeline(aWindow.device->device, gBufWritePipe)), std::move(vk::Pipeline(aWindow.device->device, shadingPipe)) };
 	}
 
 	vk::Pipeline createShadowOffscreenPipeline(const VulkanWindow& aWindow, VkRenderPass aRenderPass, VkPipelineLayout aPipelineLayout) {
@@ -734,22 +778,39 @@ namespace Engine {
 		stages[0].module = vert.handle;
 		stages[0].pName = "main";
 
-		VkVertexInputBindingDescription vertexInputs[1]{};
+		// 1. Position
+		// 2. Joints
+		// 3. Joint weights
+		VkVertexInputBindingDescription vertexInputs[3]{};
 		vertexInputs[0].binding = 0;
 		vertexInputs[0].stride = sizeof(float) * 3;
 		vertexInputs[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+		vertexInputs[1].binding = 1;
+		vertexInputs[1].stride = sizeof(unsigned int) * 4;
+		vertexInputs[1].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+		vertexInputs[2].binding = 2;
+		vertexInputs[2].stride = sizeof(float) * 4;
+		vertexInputs[2].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
-		VkVertexInputAttributeDescription vertexAttributes[1]{};
+		VkVertexInputAttributeDescription vertexAttributes[3]{};
 		vertexAttributes[0].binding = 0;
 		vertexAttributes[0].location = 0;
 		vertexAttributes[0].format = VK_FORMAT_R32G32B32_SFLOAT;
 		vertexAttributes[0].offset = 0;
+		vertexAttributes[1].binding = 1;
+		vertexAttributes[1].location = 1;
+		vertexAttributes[1].format = VK_FORMAT_R32G32B32A32_UINT;
+		vertexAttributes[1].offset = 0;
+		vertexAttributes[2].binding = 2;
+		vertexAttributes[2].location = 2;
+		vertexAttributes[2].format = VK_FORMAT_R32G32B32A32_SFLOAT;
+		vertexAttributes[2].offset = 0;
 
 		VkPipelineVertexInputStateCreateInfo inputInfo{};
 		inputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-		inputInfo.vertexBindingDescriptionCount = 1;
+		inputInfo.vertexBindingDescriptionCount = 3;
 		inputInfo.pVertexBindingDescriptions = vertexInputs;
-		inputInfo.vertexAttributeDescriptionCount = 1;
+		inputInfo.vertexAttributeDescriptionCount = 3;
 		inputInfo.pVertexAttributeDescriptions = vertexAttributes;
 
 		VkPipelineInputAssemblyStateCreateInfo assemblyInfo{};

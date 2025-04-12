@@ -93,7 +93,7 @@ namespace yojimbo
 
         bool HasMessagesToSend( int channelIndex ) const;
 
-        void SendMessage( int channelIndex, Message * message );
+        void SendClientMessage( int channelIndex, Message * message );
 
         Message * ReceiveMessage( int channelIndex );
 
