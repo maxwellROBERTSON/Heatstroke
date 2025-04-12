@@ -79,6 +79,7 @@ dofile("Engine/Utils/glslc.lua")
 project "Engine"
     local sources = {
         "Engine/Core/**",
+	"Engine/ThreadPool/**",
         "Engine/Input/**", 
         "Engine/Events/**", 
         "Engine/gltf/**",
