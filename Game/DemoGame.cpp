@@ -3,6 +3,7 @@
 #include <chrono>
 #include <thread>
 #include <future>
+#include <type_traits>
 #include <algorithm>
 
 #include "../Engine/vulkan/objects/Buffer.hpp"
@@ -21,18 +22,21 @@ Camera camera = Camera();
 
 void FPSTest::Init()
 {
-	//create thread which then begins execution of initialiseModels
-	std::thread initialiseModelsThread(&FPSTest::initialiseModels, this);
+	this->threadPool = thread_pool_wait::get_instance();
+ 
+	//submit task to initialise Models to thread pool
+	auto modelsFut = threadPool->submit(&FPSTest::initialiseModels, this);
 
-	std::cout << "Waiting for the execution of modelsThread to finish..." << std::endl;
+	std::cout << "Waiting for model initialisation" << std::endl;
+	//blocks execution of the rest of the program until the initialiseModels Thread has finished
+	modelsFut.get();
 
-	//blocks execution of the rest of the program until the initialiseModelsThread has finished
-	initialiseModelsThread.join();
 	GetPhysicsWorld().init();
 	GetRenderer().initialiseRenderer();
 	GetGUI().initGUI();
 	GetRenderer().attachCamera(&camera);
 	GetRenderer().initialiseModelDescriptors(GetModels());
+
 }
 
 void FPSTest::Render()
