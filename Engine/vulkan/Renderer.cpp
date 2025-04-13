@@ -287,6 +287,7 @@ namespace Engine {
 
 		// Map memory for model matrices dynamic buffer
 		vmaMapMemory(context->allocator->allocator, this->uniformBuffers["modelMatrices"].allocation, &this->uniformBuffers["modelMatrices"].mapped);
+		this->modelMatricesMapped = true;
 
 		this->descriptorSets.emplace("modelMatrices",
 			createModelMatricesDescriptor(
@@ -323,14 +324,13 @@ namespace Engine {
 		}
 	}
 
-	void Renderer::cleanModelMatrices()
-	{
-		vmaUnmapMemory(context->allocator->allocator, this->uniformBuffers["modelMatrices"].allocation);
+	void Renderer::cleanModelMatrices() {
+		if (this->modelMatricesMapped) {
+			vmaUnmapMemory(this->context->allocator->allocator, this->uniformBuffers["modelMatrices"].allocation);
+			this->modelMatricesMapped = false;
+		}
 
-		//this->descriptorSets.erase("sceneDescriptors");
-		this->descriptorSets.erase("modelMatricesDescriptor");
-
-		isSceneLoaded = false;
+		this->isSceneLoaded = false;
 	}
 
 	vk::Buffer Renderer::createDynamicUniformBuffer() {
@@ -524,8 +524,10 @@ namespace Engine {
 
 		this->destroyImGui();
 
-		if (this->uniformBuffers["modelMatrices"].allocation != VK_NULL_HANDLE)
+		if (this->modelMatricesMapped && this->uniformBuffers["modelMatrices"].allocation != VK_NULL_HANDLE) {
 			vmaUnmapMemory(this->context->allocator->allocator, this->uniformBuffers["modelMatrices"].allocation);
+			this->modelMatricesMapped = false;
+		}
 	}
 
 	void Renderer::destroyImGui() {

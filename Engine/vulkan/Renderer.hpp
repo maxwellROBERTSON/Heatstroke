@@ -111,6 +111,7 @@ namespace Engine {
 		std::size_t dynamicUBOAlignment;
 		// Number of model matrices when creating dynamic uniform buffer object
 		std::size_t modelMatrices;
+		bool modelMatricesMapped = false; // Flag to keep track of if model matrices are mapped, this should maybe be done in a better way
 
 		Uniforms uniforms;
 
