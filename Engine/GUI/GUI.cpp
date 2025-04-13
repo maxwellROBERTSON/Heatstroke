@@ -25,9 +25,11 @@ namespace Engine
 		Engine::VulkanWindow* window = &(*game->GetContext().window);
 
 		std::string renderPass = "forward";
-		if (this->game->GetRenderer().msaa) {
+		if (this->game->GetRenderer().msaaIndex != 0) {
 			renderPass += "MSAA";
 		}
+
+		VkSampleCountFlagBits sampleCount = this->game->GetContext().window->device->getSampleCount(this->game->GetRenderer().msaaIndex);
 
 		//init_info.ApiVersion = VK_API_VERSION_1_3;              // Pass in your value of VkApplicationInfo::apiVersion, otherwise will default to header version.
 		init_info.Instance = window->instance;
@@ -53,7 +55,7 @@ namespace Engine
 
 		init_info.MinImageCount = caps.minImageCount < 2 ? 2 : caps.minImageCount;
 		init_info.ImageCount = imageCount;
-		init_info.MSAASamples = this->game->GetRenderer().msaa ? VK_SAMPLE_COUNT_4_BIT : VK_SAMPLE_COUNT_1_BIT;
+		init_info.MSAASamples = this->game->GetRenderer().msaaIndex != 0 ? sampleCount : VK_SAMPLE_COUNT_1_BIT;
 
 		ImGui_ImplVulkan_Init(&init_info);
 	}
@@ -276,6 +278,16 @@ namespace Engine
 			}
 		}
 
+
+		ImGui::Text("Anti Aliasing:");
+		std::pair<const char**, int> msaaOptions = game->GetRenderer().getMSAAOptions();
+		if (ImGui::Combo("MSAA:", &game->GetRenderer().msaaIndex, msaaOptions.first, msaaOptions.second, msaaOptions.second)) {
+			// If MSAA was changed, flag swapchain to be recreated so 
+			// ImGui can be remade with corresponding sample count
+			game->GetRenderer().setRecreateSwapchain(true);
+			this->changedMSAA = true;
+		}
+
 		ImVec2 topRightPos = ImVec2(*w - *w / 6 - 10, 30);
 		ImGui::SetCursorPos(topRightPos);
 		if (ImGui::Button("Disconnect", ImVec2(*w / 6, *h / 6)))
@@ -307,12 +319,6 @@ namespace Engine
 
 		if (ImGui::Checkbox("VSync", &game->GetRenderer().vsync)) {
 			game->GetRenderer().setRecreateSwapchain(true);
-		}
-
-		if (ImGui::Checkbox("MSAA 4x", &game->GetRenderer().msaa)) {
-			this->triggeredMSAA = true;
-			this->game->GetRenderer().delayMSAA = true;
-			this->game->GetRenderer().setRecreateSwapchain(true);
 		}
 
 		ImGui::Text("List of info would go here", ImVec2(*w / 4, *h / 4));

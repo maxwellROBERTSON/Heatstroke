@@ -71,14 +71,15 @@ namespace Engine {
 		float getAvgFrameTime();
 		int getAvgFPS();
 
+		// Returns const char pointer to msaa option strings and number of msaa options
+		std::pair<const char**, int> getMSAAOptions();
+
+		bool vsync = true;
+		int msaaIndex = 0;
+
 		// Debug things
 		float depthBiasConstant = 7.0f;
 		float depthBiasSlopeFactor = 10.0f;
-
-		bool vsync = true;
-		bool msaa = false;
-		bool delayMSAA = false;
-
 	private:
 		VulkanContext* context;
 		EntityManager* entityManager;
@@ -120,6 +121,8 @@ namespace Engine {
 		float frameTime = 0.0f, avgFrameTime = 0.0f, prevTime = 0.1f, lastSecondTime = 0.0f;
 		int avgFps = 0, frames = 0;
 		std::vector<float> frameTimes;
+
+		std::vector<const char*> msaaOptions;
 
 		void renderGUI();
 		void renderForward(std::vector<vk::Model>& models, bool debug);

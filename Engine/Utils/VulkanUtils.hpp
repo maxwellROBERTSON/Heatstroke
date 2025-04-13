@@ -42,4 +42,8 @@ namespace Utils {
 		VkExtent3D aExtent = VkExtent3D{ 1, 1, 1 }
 	);
 
+	// Returns VK_SAMPLE_COUNT_4_BIT if argument is VK_SAMPLE_COUNT_1_BIT,
+	// otherwise just returns the input. Needed since some render passes, attachments,
+	// pipelines etc are MSAA specific which require a sample count above 1.
+	VkSampleCountFlagBits getMSAAMinimum(VkSampleCountFlagBits sampleCount);
 }

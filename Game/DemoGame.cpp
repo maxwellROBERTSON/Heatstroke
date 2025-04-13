@@ -64,6 +64,10 @@ void FPSTest::Update() {
 
 	GetNetwork().Update();
 
+	// Need to process GUI stuff before checking swapchain, since
+	// some GUI settings may require instant swapchain recreation
+	gui.makeGUI();
+
 	if (renderer.checkSwapchain())
 		return;
 
@@ -85,7 +89,6 @@ void FPSTest::Update() {
 
 	renderer.updateAnimations(timeDelta);
 	renderer.updateUniforms();
-	gui.makeGUI();
 
 	renderer.render(GetModels());
 	renderer.submitRender();

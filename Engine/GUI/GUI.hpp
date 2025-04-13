@@ -52,7 +52,7 @@ namespace Engine
 		void makeLoadingGUI(int*, int*);
 
 		ImGui_ImplVulkanH_Window imGuiWindow;
-		bool triggeredMSAA = false;
+		bool changedMSAA = false;
 	private:
 		std::map<Engine::RenderMode, std::function<void(int*, int*)>> functions;
 		Engine::Game* game;
