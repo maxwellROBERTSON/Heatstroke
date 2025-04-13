@@ -37,7 +37,8 @@ namespace Engine
 	// Get model matrix
 	glm::mat4 Entity::GetModelMatrix()
 	{
-		if (this->dirty) {
+		if (this->dirty)
+		{
 			this->modelMatrix = glm::translate(glm::mat4(1.0f), this->position) * this->rotation * glm::scale(glm::mat4(1.0f), this->scale);
 			this->dirty = false;
 		}
@@ -61,12 +62,14 @@ namespace Engine
 	{
 		this->position = glm::vec3(x, y, z);
 		this->dirty = true;
+		std::cout << "Entity " << entityId << "'s position 1 has changed." << std::endl;
 		SetEntityHasChanged();
 	}
 	void Entity::SetPosition(glm::vec3 position)
 	{
 		this->position = position;
 		this->dirty = true;
+		std::cout << "Entity " << entityId << "'s position 2 has changed." << std::endl;
 		SetEntityHasChanged();
 	}
 
@@ -75,12 +78,14 @@ namespace Engine
 	{
 		this->rotation = glm::rotate(glm::mat4(1.0f), glm::radians(angInDeg), axis);
 		this->dirty = true;
+		std::cout << "Entity " << entityId << "'s rotation 1 has changed." << std::endl;
 		SetEntityHasChanged();
 	}
 	void Entity::SetRotation(glm::quat rotation)
 	{
 		this->rotation = glm::mat4(rotation);
 		this->dirty = true;
+		std::cout << "Entity " << entityId << "'s rotation 2 has changed." << std::endl;
 		SetEntityHasChanged();
 	}
 
@@ -89,14 +94,26 @@ namespace Engine
 	{
 		this->scale = glm::vec3(xScale, yScale, zScale);
 		this->dirty = true;
+		std::cout << "Entity " << entityId << "'s scale 1 has changed." << std::endl;
 		SetEntityHasChanged();
 	}
 	void Entity::SetScale(float overallScale)
 	{
 		this->scale = glm::vec3(overallScale);
 		this->dirty = true;
+		std::cout << "Entity " << entityId << "'s scale 2 has changed." << std::endl;
 		SetEntityHasChanged();
 	}
+
+	// Set model matrix with check for if changed
+	void Entity::SetModelMatrix(glm::mat4 aModelMatrix)
+	{
+		if (aModelMatrix != modelMatrix)
+		{
+			modelMatrix = aModelMatrix;
+			SetEntityHasChanged();
+		}
+	} 
 
 	// Set component has changed in entity manager
 	void Entity::SetEntityHasChanged()

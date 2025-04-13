@@ -53,7 +53,7 @@ public:
 	};
 
 	std::chrono::steady_clock::time_point previous;
-	int clientId = 0;
+	int offlineClientId = 0;
 };
 
 //void loadOfflineEntities(ComponentTypeRegistry& registry, EntityManager& entityManager, PhysicsWorld& pworld);

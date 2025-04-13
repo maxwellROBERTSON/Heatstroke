@@ -19,11 +19,14 @@ namespace Engine
 		// Get total data size
 		size_t GetTotalDataSize();
 
+		// Get total size of all the changed data
+		size_t GetTotalChangedDataSize();
+
 		// Get total number of entities
 		int GetNumberOfEntities() { return static_cast<int>(entities.size()); }
 
 		// Get a pointer to an entity, given an id
-		Entity* GetEntity(int entityId) { return &entities[entityId]; }
+		Entity* GetEntity(int entityId) { return entities[entityId].get(); }
 
 		// Get the entities with a component type
 		std::vector<int> GetEntitiesWithComponent(ComponentTypes type) { return entitiesWithType[type]; }
@@ -40,6 +43,9 @@ namespace Engine
 		// Get component data of all entities for one component type
 		std::vector<uint8_t> GetComponentData(ComponentTypes);
 
+		// Get if any changes have been made to the global scene
+		bool HasSceneChanged() { if (changedEntitiesAndComponents.size() != 0) { return true; } else { return false; } }
+
 		// Get component data of all entities for all component type
 		void GetAllData(uint8_t*);
 
@@ -53,6 +59,9 @@ namespace Engine
 
 		// Set all changed entity and component data
 		void SetAllChangedData(uint8_t*);
+
+		// Reset changed entities and components
+		void ResetChanged();
 
 		// Add changed entity
 		void AddChangedEntity(Entity* entity);
@@ -78,14 +87,14 @@ namespace Engine
 		// Vector of changed entities and components
 		// first = entity id,
 		// second = vector(size TYPE_COUNT + 1) to hold bits for if entity or component data has changed
-		std::vector<std::pair<int, std::vector<int>>> changedEntitiesAndComponents;
+		std::vector<std::pair<int, std::vector<int>>> changedEntitiesAndComponents = std::vector<std::pair<int, std::vector<int>>>(0);
 
 		// Private used in AddEntity - doesn't add to entity's
 		// vector so mustn't be used except when making a new entity
 		int AddComponent(ComponentTypes, Entity*);
 
 		// Vector of entities
-		std::vector<Entity> entities;
+		std::vector<std::unique_ptr<Entity>> entities;
 
 		// Vector for each component type
 		std::vector<std::unique_ptr<ComponentBase>> cameraComponents;

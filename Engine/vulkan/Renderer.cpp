@@ -329,8 +329,9 @@ namespace Engine {
 		return vk::createBuffer("dynamicUBO", *this->context->allocator, bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT);
 	}
 
-	void Renderer::attachCamera(Camera* camera) {
-		this->camera = camera;
+	void Renderer::attachCameraComponent(CameraComponent* cameraComponent) {
+		this->cameraComponent = cameraComponent;
+		this->camera = cameraComponent->GetCamera();
 	}
 
 	void Renderer::initialiseModelDescriptors(std::vector<vk::Model>& aModels) {

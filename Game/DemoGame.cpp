@@ -15,7 +15,7 @@
 
 using namespace Engine;
 
-Camera camera = Camera();
+CameraComponent cameraComponent = CameraComponent();
 
 void FPSTest::Init()
 {
@@ -29,7 +29,7 @@ void FPSTest::Init()
 	GetPhysicsWorld().init();
 	GetRenderer().initialiseRenderer();
 	GetGUI().initGUI();
-	GetRenderer().attachCamera(&camera);
+	GetRenderer().attachCameraComponent(&cameraComponent);
 	GetRenderer().initialiseModelDescriptors(GetModels());
 }
 
@@ -60,6 +60,7 @@ void FPSTest::Update() {
 		}
 	}
 
+	EntityManager& e = GetEntityManager();
 	GetNetwork().Update();
 
 	if (renderer.checkSwapchain())
@@ -73,18 +74,22 @@ void FPSTest::Update() {
 	const auto timeDelta = std::chrono::duration_cast<std::chrono::duration<float, std::ratio<1>>>(now - previous).count();
 	previous = now;
 
-	renderer.GetCameraPointer()->updateCamera(this->GetContext().getGLFWWindow(), timeDelta);
+	if (renderer.GetIsSceneLoaded())
+	{
+		renderer.GetCameraComponentPointer()->UpdateCamera(this->GetContext().getGLFWWindow(), timeDelta);
 
-	float fixedTimeDelta = std::min<float>(0.016f, timeDelta);
-	
-	physicsWorld.updateCharacter(fixedTimeDelta);
-	// update PVD
-	physicsWorld.gScene->simulate(fixedTimeDelta);
-	physicsWorld.gScene->fetchResults(true);
-	// update physics
-	physicsWorld.updateObjects(GetEntityManager(), GetModels());
+		float fixedTimeDelta = std::min<float>(0.016f, timeDelta);
 
-	renderer.updateAnimations(timeDelta);
+		physicsWorld.updateCharacter(fixedTimeDelta);
+		// update PVD
+		physicsWorld.gScene->simulate(fixedTimeDelta);
+		physicsWorld.gScene->fetchResults(true);
+		// update physics
+		physicsWorld.updateObjects(GetEntityManager(), GetModels());
+
+		renderer.updateAnimations(timeDelta);
+	}
+
 	renderer.updateUniforms();
 	gui.makeGUI();
 
@@ -215,12 +220,14 @@ void FPSTest::loadOfflineEntities()
 	for (int i = 0; i < entitiesWithNetworkComponent.size(); i++)
 	{
 		networkComponent = reinterpret_cast<NetworkComponent*>(entityManager.GetComponentOfEntity(entitiesWithNetworkComponent[i], NETWORK));
-		if (networkComponent->GetClientId() == clientId)
+		if (networkComponent->GetClientId() == offlineClientId)
 		{
 			cameraComponent = reinterpret_cast<CameraComponent*>(entityManager.GetComponentOfEntity(entitiesWithNetworkComponent[i], CAMERA));
-			GetRenderer().attachCamera(cameraComponent->GetCamera());
+			GetRenderer().attachCameraComponent(cameraComponent);
 		}
 	}
+
+	GetEntityManager().ResetChanged();
 }
 
 void FPSTest::loadOnlineEntities()
@@ -298,14 +305,8 @@ void FPSTest::loadOnlineEntities()
 	renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
 	renderComponent->SetModelIndex(4);
 
-	std::vector<int> entitiesWithNetworkComponent = entityManager.GetEntitiesWithComponent(NETWORK);
-	for (int i = 0; i < entitiesWithNetworkComponent.size(); i++)
-	{
-		networkComponent = reinterpret_cast<NetworkComponent*>(entityManager.GetComponentOfEntity(entitiesWithNetworkComponent[i], NETWORK));
-		if (networkComponent->GetClientId() == clientId)
-		{
-			cameraComponent = reinterpret_cast<CameraComponent*>(entityManager.GetComponentOfEntity(entitiesWithNetworkComponent[i], CAMERA));
-			GetRenderer().attachCamera(cameraComponent->GetCamera());
-		}
-	}
+	GetRenderer().attachCameraComponent(cameraComponent);
+
+	EntityManager& e = GetEntityManager();
+	GetEntityManager().ResetChanged();
 }

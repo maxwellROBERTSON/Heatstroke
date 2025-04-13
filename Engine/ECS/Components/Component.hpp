@@ -62,6 +62,9 @@ namespace Engine
         // Set component has changed in entity manager
         virtual void SetComponentHasChanged() = 0;
 
+        // Toggle has changed boolean
+        virtual void ToggleHasChanged() = 0;
+
     private:
         int componentId;
     };

@@ -1,5 +1,5 @@
-# Masters_Group_Project_Network
-A initial creation of a networking solution to be used in my Master's group project using yojimbo.
+# Heatstroke
+A multiplayer fps engine
 
 To run on windows:
 > premake5 vs2022

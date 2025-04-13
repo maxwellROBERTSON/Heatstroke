@@ -51,6 +51,9 @@ namespace Engine
 		// Set component has changed in entity manager
 		void SetComponentHasChanged();
 
+		// Toggle has changed boolean
+		void ToggleHasChanged() { hasChanged = !hasChanged; }
+
 	private:
 		// EntityManager pointer
 		Engine::EntityManager* entityManager;
@@ -60,6 +63,6 @@ namespace Engine
 		// If component has changed since last network update
 		bool hasChanged = false;
 
-		uint64_t clientId = 0;
+		uint64_t clientId = -1;
 	};
 }

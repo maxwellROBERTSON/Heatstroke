@@ -45,6 +45,15 @@ namespace Engine
         std::memcpy(&camera.frontDirection, data + offset, sizeof(camera.frontDirection));
 	}
 
+    // Update camera using Camera class
+    void CameraComponent::UpdateCamera(GLFWwindow* aWindow, float timeDelta)
+    {
+        Camera tempCamera = camera;
+        camera.updateCamera(aWindow, timeDelta);
+        if (!(camera == tempCamera))
+            SetComponentHasChanged();
+    }
+
     // Set component has changed in entity manager
     void CameraComponent::SetComponentHasChanged()
     {

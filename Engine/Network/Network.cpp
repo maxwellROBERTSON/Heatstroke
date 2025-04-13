@@ -66,7 +66,7 @@ namespace Engine
             std::cout << "Adapter created.\n";
         }
 #ifdef _DEBUG
-        yojimbo_log_level(YOJIMBO_LOG_LEVEL_DEBUG);
+        yojimbo_log_level(YOJIMBO_LOG_LEVEL_INFO);
 #else
         yojimbo_log_level(YOJIMBO_LOG_LEVEL_INFO);
 #endif
@@ -80,6 +80,11 @@ namespace Engine
         {
             InitializeNetwork();
             networkType = std::make_unique<GameClient>(&config, adapter, serverAddress, game);
+            if (true)
+            {
+                config;
+                int i = 0;
+            }
         }
         else
         {
@@ -133,6 +138,7 @@ namespace Engine
             networkType.reset();
             std::cout << "Network reset." << std::endl;
         }
+        ShutdownYojimbo();
         status = Status::NETWORK_UNINITIALIZED;
     }
 }

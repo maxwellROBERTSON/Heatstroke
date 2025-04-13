@@ -113,10 +113,41 @@ namespace Engine
 		ImGui::Text("Demo game made using Heatstroke", ImVec2(*w / 4, *h / 4));
 		if (ImGui::Button("Single Player", ImVec2(*w / 4, *h / 4)))
 		{
-			game->loadOfflineEntities();
+			game->loadOnlineEntities();
 			/*uint8_t b[1000];
-			game->GetEntityManager().GetAllChangedData(b);
-			game->GetEntityManager().SetAllChangedData(b);*/
+			game->GetEntityManager().GetAllData(b);
+			game->GetEntityManager().ClearManager();
+			game->GetEntityManager().SetAllData(b);
+			EntityManager* manager = &(game->GetEntityManager());
+			std::vector<int> vec = manager->GetEntitiesWithComponent(PHYSICS);
+			PhysicsComponent* comp;
+			for (int i = 0; i < vec.size(); i++)
+			{
+				comp = reinterpret_cast<PhysicsComponent*>(manager->GetComponentOfEntity(vec[i], PHYSICS));
+				glm::mat4 mat = manager->GetEntity(vec[i])->GetModelMatrix();
+				PhysicsComponent::PhysicsType type = comp->GetPhysicsType();
+				Engine::vk::Model& model = game->GetModels()[vec[i]];
+				if (type == PhysicsComponent::PhysicsType::STATIC)
+				{
+					comp->InitComplexShape(game->GetPhysicsWorld(), type, model, mat, vec[i]);
+				}
+				else
+				{
+					comp->Init(game->GetPhysicsWorld(), type, model, mat, vec[i]);
+				}
+			}
+			std::vector<int> entitiesWithNetworkComponent = manager->GetEntitiesWithComponent(NETWORK);
+			NetworkComponent* networkComponent;
+			for (int i = 0; i < entitiesWithNetworkComponent.size(); i++)
+			{
+				networkComponent = reinterpret_cast<NetworkComponent*>(manager->GetComponentOfEntity(entitiesWithNetworkComponent[i], NETWORK));
+				if (networkComponent->GetClientId() == 0)
+				{
+					CameraComponent* cameraComponent = reinterpret_cast<CameraComponent*>(manager->GetComponentOfEntity(entitiesWithNetworkComponent[i], CAMERA));
+					game->GetRenderer().attachCameraComponent(cameraComponent);
+					break;
+				}
+			}*/
 			game->GetRenderer().initialiseModelMatrices();
 			game->GetRenderer().initialiseJointMatrices();
 			game->ToggleRenderMode(GUIHOME);
@@ -162,7 +193,7 @@ namespace Engine
 
 			ImGui::Text("Join a server");
 
-			static char addressStr[16] = "192.168.68.56\0";
+			static char addressStr[16] = "192.168.68.60\0";
 			ImGui::Text("Address:");
 			ImGui::InputText("Address", addressStr, IM_ARRAYSIZE(addressStr));
 

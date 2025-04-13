@@ -46,11 +46,17 @@ namespace Engine
 		// Set component data
 		void SetDataArray(uint8_t*) override;
 
+		// Update camera using Camera class
+		void UpdateCamera(GLFWwindow*, float);
+
 		// Set camera pointer
 		void SetCamera(Engine::Camera aCamera) { camera = aCamera; SetComponentHasChanged(); }
 
 		// Set component has changed in entity manager
 		void SetComponentHasChanged();
+
+		// Toggle has changed boolean
+		void ToggleHasChanged() { hasChanged = !hasChanged; }
 
 	private:
 		// EntityManager pointer

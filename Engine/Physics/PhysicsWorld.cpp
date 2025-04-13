@@ -128,7 +128,6 @@ namespace Engine
 	// update models matrices
 	void PhysicsWorld::updateObjects(Engine::EntityManager& entityManager, std::vector<Engine::vk::Model>& models)
 	{
-
 		// get all PhysicsComponent
 		std::vector<std::unique_ptr<ComponentBase>>* physicsComponents = entityManager.GetComponentsOfType(PHYSICS);
 		if (physicsComponents == nullptr)

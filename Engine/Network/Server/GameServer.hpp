@@ -36,8 +36,14 @@ namespace Engine
 		// Process message type with corresponding function
 		void ProcessMessage(int, yojimbo::Message*);
 
-		// Handle request messages, given RequestType send correct data
-		void HandleRequestMessage(int, RequestType);
+		// Handle a message receieved message
+		void HandleSendMessageReceived(int);
+
+		// Handle a request for entity data
+		void HandleRequestEntityData(int);
+
+		// Handle a client update for entity data
+		void HandleClientUpdateEntityData(int, ClientUpdateEntityData*);
 
 		// Clean up server memory using yojimbo
 		void CleanUp();

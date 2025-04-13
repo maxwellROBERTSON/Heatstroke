@@ -58,10 +58,13 @@ namespace Engine
 		void SetScale(float overallScale);
 
 		// Set model matrix
-		void SetModelMatrix(glm::mat4 aModelMatrix) { modelMatrix = aModelMatrix; SetEntityHasChanged(); }
+		void SetModelMatrix(glm::mat4 aModelMatrix);
 
 		// Set entity has changed in entity manager
 		void SetEntityHasChanged();
+
+		// Toggle has changed boolean
+		void ToggleHasChanged() { hasChanged = !hasChanged; }
 
 		// Set entity id
 		void SetEntityId(int id) { entityId = id; }

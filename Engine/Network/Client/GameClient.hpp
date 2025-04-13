@@ -34,8 +34,11 @@ namespace Engine
 		// Process message type with corresponding function
 		void ProcessMessage(yojimbo::Message*);
 
-		// Handle a response from a request message, given ResponseType set correct data
-		void HandleResponseMessage(RequestResponseMessage*);
+		// Send game message with any updated entities
+		void SendGameUpdate();
+
+		// Handle a response from a request for entity data
+		void HandleResponseEntityData(ResponseEntityData*);
 
 		// Clean up client memory using yojimbo
 		void CleanUp();

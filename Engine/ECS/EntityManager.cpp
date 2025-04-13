@@ -47,8 +47,8 @@ namespace Engine
 			return 0;
 
 		int numEntities = GetNumberOfEntities();
-		int entitySize = entities[0].GetEntitySize();
-		size_t totalSize = 1 + entities[0].GetEntitySize() * numEntities + TYPE_COUNT + TYPE_COUNT * numEntities;
+		int entitySize = entities[0].get()->GetEntitySize();
+		size_t totalSize = 1 + entities[0].get()->GetEntitySize() * numEntities + TYPE_COUNT + TYPE_COUNT * numEntities;
 		ComponentTypes type;
 		for (int i = 0; i < TYPE_COUNT; i++)
 		{
@@ -58,10 +58,51 @@ namespace Engine
 		return totalSize;
 	}
 
+	// Format is
+	// | # changed entities |
+	// | entity ID's | * # changed entities
+	// | # changed entity / components | * # types + 1
+	// | num bytes = (num componentTypes + 2 / 8) + 1 | * # changed entities
+	// above bits is form: MSB = e, each less bit corresponds to a componentType
+	// if that componentType for this entity is changed, bit is on
+	// | entity_data | * # changed entites
+	// | components of type | * # of changed components of types
+	// Get total size of all the changed data
+	size_t EntityManager::GetTotalChangedDataSize()
+	{
+		size_t baseSize = 1 + changedEntitiesAndComponents.size() * 3;
+		size_t totalSize = baseSize;
+
+		int entitySize = entities[0].get()->GetEntitySize();
+		for (int i = 0; i < changedEntitiesAndComponents.size(); i++)
+		{
+			if (changedEntitiesAndComponents[i].second[0] != -1)
+			{
+				totalSize += entitySize;
+			}
+			for (int j = 1; j < TYPE_COUNT + 1; j++)
+			{
+				if (changedEntitiesAndComponents[i].second[j] != -1)
+				{
+					totalSize += ComponentSizes[static_cast<ComponentTypes>(j - 1)];
+				}
+			}
+		}
+
+		if (totalSize == baseSize)
+		{
+			return 0;
+		}
+		else
+		{
+			return totalSize;
+		}
+	}
+
 	// Get a pointer to the component of an entity
 	ComponentBase* EntityManager::GetComponentOfEntity(int entityId, ComponentTypes type)
 	{
-		int index = entities[entityId].GetComponent(type);
+		int index = entities[entityId].get()->GetComponent(type);
 		if (index == -1)
 		{
 			return nullptr;
@@ -117,10 +158,10 @@ namespace Engine
 		block[offset++] = static_cast<uint8_t>(numEntities);
 
 		// | entity_data | * # entites
-		int sizeOfEntity = entities[0].GetEntitySize();
+		int sizeOfEntity = entities[0].get()->GetEntitySize();
 		for (int i = 0; i < numEntities; i++)
 		{
-			entities[i].GetDataArray(block + offset);
+			entities[i].get()->GetDataArray(block + offset);
 			offset += sizeOfEntity;
 		}
 
@@ -135,7 +176,7 @@ namespace Engine
 		std::vector<int> ComponentIndexArray;
 		for (int i = 0; i < numEntities; i++)
 		{
-			ComponentIndexArray = entities[i].GetComponentIndexArray();
+			ComponentIndexArray = entities[i].get()->GetComponentIndexArray();
 			for (int j = 0; j < TYPE_COUNT; j++)
 			{
 				uint8_t temp = static_cast<uint8_t>(ComponentIndexArray[j]);
@@ -153,13 +194,11 @@ namespace Engine
 			type = static_cast<ComponentTypes>(i);
 			components = GetComponentsOfType(type);
 			sizeOfComponent = ComponentSizes[type];
-			std::cout << "Start of component " << i << " is " << reinterpret_cast<uintptr_t>(block + offset) << std::endl;
 			for (int j = 0; j < components->size(); j++)
 			{
 				(*components)[j].get()->GetDataArray(block + offset);
 				offset += sizeOfComponent;
 			}
-			std::cout << "End of component " << i << " is " << reinterpret_cast<uintptr_t>(block + offset) << std::endl;
 		}
 	}
 
@@ -220,7 +259,7 @@ namespace Engine
 		}
 
 		// | entity_data | * # changed entites
-		int sizeOfEntity = entities[0].GetEntitySize();
+		int sizeOfEntity = entities[0].get()->GetEntitySize();
 		for (auto& [entity, flags] : changedEntitiesAndComponents)
 		{
 			if (flags[0] == 1)
@@ -238,7 +277,6 @@ namespace Engine
 			type = static_cast<ComponentTypes>(i - 1);
 			components = GetComponentsOfType(type);
 			sizeOfComponent = ComponentSizes[type];
-			std::cout << "Start of component " << i << " is " << reinterpret_cast<uintptr_t>(block + offset) << std::endl;
 			for (int j = 0; j < changedEntitiesAndComponents.size(); j++)
 			{
 				int index = changedEntitiesAndComponents[j].second[i];
@@ -248,7 +286,6 @@ namespace Engine
 					offset += sizeOfComponent;
 				}
 			}
-			std::cout << "End of component " << i << " is " << reinterpret_cast<uintptr_t>(block + offset) << std::endl;
 		}
 	}
 
@@ -273,10 +310,10 @@ namespace Engine
 		// | entity_data | * # entites
 		for (int i = 0; i < numEntities; i++)
 		{
-			Entity entity = Entity(this);
-			entity.SetDataArray(block + offset);
-			entities.push_back(entity);
-			offset += entities[0].GetEntitySize();
+			entities.push_back(std::make_unique<Entity>(this));
+			Entity* entity = entities.back().get();
+			entity->SetDataArray(block + offset);
+			offset += entities[0].get()->GetEntitySize();
 			f = block + offset;
 		}
 
@@ -292,7 +329,6 @@ namespace Engine
 		{
 			componentOffsets[i] = offset + TYPE_COUNT * numEntities + componentsSizeCount;
 			componentsSizeCount += componentCounts[i] * ComponentSizes[static_cast<ComponentTypes>(i)];
-			std::cout << "Assumed start of component " << i << " is " << reinterpret_cast<uintptr_t>(block + componentOffsets[i]) << std::endl;
 		}
 
 		f = block + offset;
@@ -317,8 +353,8 @@ namespace Engine
 				}
 			}
 			types.resize(typesSize);
-			entity = &entities[i];
-			AddEntity(&entities[i], types);
+			entity = entities[i].get();
+			AddEntity(entity, types);
 			std::cout << "ADDED entity " << i << std::endl;
 
 			// | components of type | * # of component types
@@ -459,9 +495,52 @@ namespace Engine
 		}
 	}
 
+	// Reset changed entities and components
+	void EntityManager::ResetChanged()
+	{
+		Entity* entity;
+		std::vector<int> indexArray;
+		ComponentBase* base;
+		ComponentTypes type;
+		entities;
+		for (int i = 0; i < changedEntitiesAndComponents.size(); i++)
+		{
+			entity = GetEntity(changedEntitiesAndComponents[i].first);
+			indexArray = entity->GetComponentIndexArray();
+			if (changedEntitiesAndComponents[i].second[0] != -1)
+				entity->ToggleHasChanged();
+			for (int j = 1; j < TYPE_COUNT + 1; j++)
+			{
+				if (indexArray[j - 1] == -1 || changedEntitiesAndComponents[i].second[j] == -1)
+					continue;
+				type = static_cast<ComponentTypes>(j - 1);
+				base = GetComponentOfEntity(changedEntitiesAndComponents[i].first, type);
+				switch (type)
+				{
+				case CAMERA:
+					reinterpret_cast<CameraComponent*>(base)->ToggleHasChanged();
+					break;
+				case NETWORK:
+					reinterpret_cast<NetworkComponent*>(base)->ToggleHasChanged();
+					break;
+				case PHYSICS:
+					reinterpret_cast<PhysicsComponent*>(base)->ToggleHasChanged();
+					break;
+				case RENDER:
+					reinterpret_cast<RenderComponent*>(base)->ToggleHasChanged();
+					break;
+				default:
+					throw std::runtime_error("Unknown component type");
+				}
+			}
+		}
+		changedEntitiesAndComponents = std::vector<std::pair<int, std::vector<int>>>(0);
+	}
+
 	// Add changed entity
 	void EntityManager::AddChangedEntity(Entity* entity)
 	{
+		std::cout << "Entity " << entity->GetEntityId() << " has changed." << std::endl;
 		int id = entity->GetEntityId();
 		for (auto& pair : changedEntitiesAndComponents)
 		{
@@ -479,6 +558,7 @@ namespace Engine
 	// Add changed component
 	void EntityManager::AddChangedComponent(ComponentTypes type, Entity* entity)
 	{
+		std::cout << "Entity " << entity->GetEntityId() << "'s " << type << " component has changed." << std::endl;
 		int id = entity->GetEntityId();
 		for (auto& pair : changedEntitiesAndComponents)
 		{
@@ -499,6 +579,7 @@ namespace Engine
 	// Set next network component unassigned to a client
 	void EntityManager::AssignNextClient(uint64_t clientId)
 	{
+		this;
 		NetworkComponent* comp = reinterpret_cast<NetworkComponent*>((*componentMap[NETWORK])[nextNetworkComponent].get());
 		comp->SetClientId(clientId);
 	}
@@ -559,23 +640,24 @@ namespace Engine
 			typeIndexList.push_back(-1);
 		}
 
-		entities.push_back(Entity(this));
+		entities.push_back(std::make_unique<Entity>(this));
+		Entity* entity = entities.back().get();
 
 		for (int i = 0; i < components.size(); i++)
 		{
 			switch (components[i])
 			{
 			case CAMERA:
-				index = AddComponent(CAMERA, &entities[entities.size() - 1]);
+				index = AddComponent(CAMERA, entity);
 				break;
 			case NETWORK:
-				index = AddComponent(NETWORK, &entities[entities.size() - 1]);
+				index = AddComponent(NETWORK, entity);
 				break;
 			case PHYSICS:
-				index = AddComponent(PHYSICS, &entities[entities.size() - 1]);
+				index = AddComponent(PHYSICS, entity);
 				break;
 			case RENDER:
-				index = AddComponent(RENDER, &entities[entities.size() - 1]);
+				index = AddComponent(RENDER, entity);
 				break;
 			default:
 				throw std::runtime_error("Unknown component type");
@@ -583,8 +665,8 @@ namespace Engine
 			typeIndexList[components[i]] = index;
 		}
 
-		entities[entities.size() - 1].SetComponentIndexArray(typeIndexList);
-		entities[entities.size() - 1].SetEntityId(entities.size() - 1);
+		entity->SetComponentIndexArray(typeIndexList);
+		entity->SetEntityId(entities.size() - 1);
 
 		for (int i = 0; i < TYPE_COUNT; i++)
 		{
@@ -594,7 +676,7 @@ namespace Engine
 			}
 		}
 
-		return &entities[entities.size() - 1];
+		return entity;
 	}
 
 	// Clears the manager on disconnect
@@ -617,6 +699,8 @@ namespace Engine
 	// vector so mustn't be used except when making a new entity
 	int EntityManager::AddComponent(ComponentTypes type, Entity* entity)
 	{
+		if (type == NETWORK)
+			int ls = 0;
 		int index;
 		std::vector<std::unique_ptr<ComponentBase>>& vec = (*componentMap[type]);
 		index = vec.size();
@@ -624,17 +708,21 @@ namespace Engine
 		{
 		case CAMERA:
 			(*componentMap[CAMERA]).emplace_back(std::make_unique<CameraComponent>(this, entity));
+			//std::cout << "Camera for " << entity << std::endl;
 			break;
 		case NETWORK:
 			if (nextNetworkComponent == -1)
 				nextNetworkComponent = 0;
 			(*componentMap[NETWORK]).emplace_back(std::make_unique<NetworkComponent>(this, entity));
+			//std::cout << "Network for " << entity << std::endl;
 			break;
 		case PHYSICS:
 			(*componentMap[PHYSICS]).emplace_back(std::make_unique<PhysicsComponent>(this, entity));
+			//std::cout << "Physics for " << entity << std::endl;
 			break;
 		case RENDER:
 			(*componentMap[RENDER]).emplace_back(std::make_unique<RenderComponent>(this, entity));
+			//std::cout << "Render for " << entity << std::endl;
 			break;
 		default:
 			throw std::runtime_error("Unknown component type");

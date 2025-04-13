@@ -7,6 +7,7 @@
 #include "../Core/RenderMode.hpp"
 #include "../Core/Camera.hpp"
 #include "../Core/Game.hpp"
+#include "../ECS/Components/CameraComponent.hpp"
 
 namespace Engine
 {
@@ -30,15 +31,11 @@ namespace Engine {
 		Renderer(VulkanContext* aContext, EntityManager* entityManager, Engine::Game* game);
 		Renderer() = default;
 
-		VkRenderPass& GetRenderPass(std::string s);
-		Engine::Camera* GetCameraPointer() { return camera; }
-		bool const GetIsSceneLoaded() { return isSceneLoaded; }
-
 		void initialiseRenderer();
 		void initialiseModelMatrices();
 		void initialiseJointMatrices();
 		void cleanModelMatrices();
-		void attachCamera(Engine::Camera* camera);
+		void attachCameraComponent(Engine::CameraComponent* cameraComponent);
 		void initialiseModelDescriptors(std::vector<vk::Model>& models);
 		bool checkSwapchain();
 		bool acquireSwapchainImage();
@@ -52,6 +49,11 @@ namespace Engine {
 		vk::Buffer createDynamicUniformBuffer();
 
 		// Getters
+		VkRenderPass& GetRenderPass(std::string s);
+		Engine::CameraComponent* GetCameraComponentPointer() { return cameraComponent; }
+		Engine::Camera* GetCameraPointer() { return camera; }
+		bool const GetIsSceneLoaded() { return isSceneLoaded; }
+
 		std::map<std::string, vk::PipelineLayout>& getPipelineLayouts();
 		vk::PipelineLayout& getPipelineLayout(const std::string& handle);
 
@@ -75,6 +77,7 @@ namespace Engine {
 		VulkanContext* context;
 		EntityManager* entityManager;
 		Engine::Game* game;
+		Engine::CameraComponent* cameraComponent;
 		Engine::Camera* camera;
 
 		std::map<std::string, vk::RenderPass> renderPasses;

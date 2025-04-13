@@ -54,6 +54,9 @@ namespace Engine
 		// Set component has changed in entity manager
 		void SetComponentHasChanged();
 
+		// Toggle has changed boolean
+		void ToggleHasChanged() { hasChanged = !hasChanged; }
+
 	private:
 		// EntityManager pointer
 		Engine::EntityManager* entityManager;
