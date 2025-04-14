@@ -14,6 +14,8 @@
 #include "Error.hpp"
 #include "toString.hpp"
 
+#include <GLFW/glfw3.h>
+
 using namespace Engine;
 
 Camera camera = Camera();
@@ -66,6 +68,10 @@ void FPSTest::Update() {
 
 	GetNetwork().Update();
 
+	// Need to process GUI stuff before checking swapchain, since
+	// some GUI settings may require instant swapchain recreation
+	gui.makeGUI();
+
 	if (renderer.checkSwapchain())
 		return;
 
@@ -77,20 +83,16 @@ void FPSTest::Update() {
 	const auto timeDelta = std::chrono::duration_cast<std::chrono::duration<float, std::ratio<1>>>(now - previous).count();
 	previous = now;
 
+	renderer.calculateFPS();
+
 	renderer.GetCameraPointer()->updateCamera(this->GetContext().getGLFWWindow(), timeDelta);
 
-	float fixedTimeDelta = std::min<float>(0.016f, timeDelta);
-	
-	physicsWorld.updateCharacter(fixedTimeDelta);
-	// update PVD
-	physicsWorld.gScene->simulate(fixedTimeDelta);
-	physicsWorld.gScene->fetchResults(true);
 	// update physics
+	physicsWorld.updatePhysics(timeDelta);
 	physicsWorld.updateObjects(GetEntityManager(), GetModels());
 
 	renderer.updateAnimations(timeDelta);
 	renderer.updateUniforms();
-	gui.makeGUI();
 
 	renderer.render(GetModels());
 	renderer.submitRender();
@@ -181,7 +183,7 @@ void FPSTest::loadOfflineEntities()
 	renderComponent->SetModelIndex(2);
 	physicsComponent = reinterpret_cast<PhysicsComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
 	physicsComponent->init(physicsWorld, PhysicsComponent::PhysicsType::DYNAMIC, models[renderComponent->GetModelIndex()], entity->GetModelMatrix(), entity->GetEntityId());
-
+	
 	// Player 1
 	types = { CAMERA, NETWORK, RENDER, PHYSICS };
 	entity = entityManager.AddEntity(types);
@@ -196,7 +198,7 @@ void FPSTest::loadOfflineEntities()
 	cameraComponent->SetCamera(Engine::Camera(100.0f, 0.01f, 256.0f, glm::vec3(-3.0f, 2.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
 	networkComponent = reinterpret_cast<NetworkComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), NETWORK));
 	networkComponent->SetClientId(0);
-
+	
 	// Player 2
 	types = { RENDER };
 	entity = entityManager.AddEntity(types);
@@ -214,6 +216,18 @@ void FPSTest::loadOfflineEntities()
 	entity->SetScale(0.5f);
 	renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
 	renderComponent->SetModelIndex(4);
+
+	//types = { RENDER, NETWORK, CAMERA };
+	//entity = entityManager.AddEntity(types);
+	//entity->SetPosition(-1.0f, 1.0f, 0.0f);
+	//entity->SetRotation(-90.0f, glm::vec3(0.0f, 1.0f, 0.0f));
+	//entity->SetScale(0.5f);
+	//renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
+	//renderComponent->SetModelIndex(0);
+	//cameraComponent = reinterpret_cast<CameraComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), CAMERA));
+	//cameraComponent->SetCamera(Engine::Camera(100.0f, 0.01f, 256.0f, glm::vec3(-3.0f, 2.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
+	//networkComponent = reinterpret_cast<NetworkComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), NETWORK));
+	//networkComponent->SetClientId(0);
 
 	std::vector<int> entitiesWithNetworkComponent = entityManager.GetEntitiesWithComponent(NETWORK);
 	for (int i = 0; i < entitiesWithNetworkComponent.size(); i++)

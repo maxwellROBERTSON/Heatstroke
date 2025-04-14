@@ -53,6 +53,7 @@ namespace vk {
 		float timer;
 
 		void update(Model& model, float timeDelta);
+		void restart();
 	};
 
 }

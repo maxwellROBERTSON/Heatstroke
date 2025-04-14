@@ -24,6 +24,11 @@
 
 #include "../Input/InputCodes.hpp"
 
+#if !defined(GLFW_INCLUDE_NONE)
+#define GLFW_INCLUDE_NONE 1
+#endif
+#include <GLFW/glfw3.h>
+
 namespace Engine {
 
 	VulkanWindow::~VulkanWindow()
@@ -211,12 +216,21 @@ namespace Engine {
 			throw Utils::Error("No suitable physical device found!");
 
 		VkDeviceSize minUBOAlignment;
-
+		std::size_t maxSampleCountIndex = 0;
 		{
 			VkPhysicalDeviceProperties props;
 			vkGetPhysicalDeviceProperties(window.get()->physicalDevice, &props);
 			std::fprintf(stderr, "Selected device: %s (%d.%d.%d)\n", props.deviceName, VK_API_VERSION_MAJOR(props.apiVersion), VK_API_VERSION_MINOR(props.apiVersion), VK_API_VERSION_PATCH(props.apiVersion));
 			minUBOAlignment = props.limits.minUniformBufferOffsetAlignment;
+		
+			VkSampleCountFlags supportedSampleCount = std::min(props.limits.framebufferColorSampleCounts, props.limits.framebufferDepthSampleCounts);
+			std::vector<VkSampleCountFlagBits> possibleSampleCounts = { VK_SAMPLE_COUNT_1_BIT, VK_SAMPLE_COUNT_2_BIT, VK_SAMPLE_COUNT_4_BIT, VK_SAMPLE_COUNT_8_BIT, VK_SAMPLE_COUNT_16_BIT, VK_SAMPLE_COUNT_32_BIT, VK_SAMPLE_COUNT_64_BIT };
+			for (std::size_t i = possibleSampleCounts.size() - 1; i >= 0; i--) {
+				if (possibleSampleCounts[i] & supportedSampleCount) {
+					maxSampleCountIndex = i;
+					break;
+				}
+			}
 		}
 
 		// Create a logical device
@@ -256,6 +270,7 @@ namespace Engine {
 		window.get()->device = createDevice(*window.get(), window.get()->physicalDevice, queueFamilyIndices, enabledDevExensions);
 
 		window.get()->device->minUBOAlignment = minUBOAlignment;
+		window.get()->device->maxSampleCountIndex = maxSampleCountIndex;
 
 		// Retrieve VkQueues
 		vkGetDeviceQueue(window.get()->device->device, window.get()->graphicsFamilyIndex, 0, &window.get()->graphicsQueue);
@@ -281,7 +296,7 @@ namespace Engine {
 		return window;
 	}
 
-	SwapChanges recreateSwapchain(VulkanWindow& aWindow) {
+	SwapChanges recreateSwapchain(VulkanWindow& aWindow, VkPresentModeKHR desiredPresentMode) {
 		const auto oldFormat = aWindow.swapchainFormat;
 		const auto oldExtent = aWindow.swapchainExtent;
 
@@ -301,7 +316,7 @@ namespace Engine {
 
 		try {
 			std::tie(aWindow.swapchain, aWindow.swapchainFormat, aWindow.swapchainExtent) =
-				createSwapchain(aWindow.physicalDevice, aWindow.surface, aWindow.device->device, aWindow.window, queueFamilyIndices, oldSwapchain);
+				createSwapchain(aWindow.physicalDevice, aWindow.surface, aWindow.device->device, aWindow.window, queueFamilyIndices, oldSwapchain, desiredPresentMode);
 		}
 		catch (...) {
 			aWindow.swapchain = oldSwapchain;
@@ -499,7 +514,15 @@ namespace Engine {
 		return res;
 	}
 
-	std::tuple<VkSwapchainKHR, VkFormat, VkExtent2D> createSwapchain(VkPhysicalDevice aPhysicalDev, VkSurfaceKHR aSurface, VkDevice aDevice, GLFWwindow* aWindow, std::vector<std::uint32_t> const& aQueueFamilyIndices, VkSwapchainKHR aOldSwapchain) {
+	std::tuple<VkSwapchainKHR, VkFormat, VkExtent2D> createSwapchain(
+		VkPhysicalDevice aPhysicalDev, 
+		VkSurfaceKHR aSurface, 
+		VkDevice aDevice, 
+		GLFWwindow* aWindow, 
+		std::vector<std::uint32_t> const& aQueueFamilyIndices, 
+		VkSwapchainKHR aOldSwapchain, 
+		VkPresentModeKHR desiredPresentMode) 
+	{
 		auto const formats = getSurfaceFormats(aPhysicalDev, aSurface);
 		auto const modes = getPresentModes(aPhysicalDev, aSurface);
 
@@ -516,8 +539,8 @@ namespace Engine {
 			}
 		}
 
-		VkPresentModeKHR presentMode = VK_PRESENT_MODE_FIFO_KHR;
-		if (modes.count(VK_PRESENT_MODE_FIFO_RELAXED_KHR))
+		VkPresentModeKHR presentMode = desiredPresentMode;
+		if (desiredPresentMode == VK_PRESENT_MODE_FIFO_KHR && modes.count(VK_PRESENT_MODE_FIFO_RELAXED_KHR))
 			presentMode = VK_PRESENT_MODE_FIFO_RELAXED_KHR;
 
 		VkSurfaceCapabilitiesKHR caps;

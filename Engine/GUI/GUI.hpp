@@ -8,10 +8,6 @@
 #include <backends/imgui_impl_vulkan.h>
 //#include "../third_party/imgui/misc/fonts/IconFontCppHeaders/IconsFontAwesome5.h"
 
-//#define GLFW_INCLUDE_NONE
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
-
 #include "../vulkan/VulkanContext.hpp"
 #include "../vulkan/VulkanDevice.hpp"
 #include "../Input/Keyboard.hpp"
@@ -55,6 +51,8 @@ namespace Engine
 		void makeServerGUI(int*, int*);
 		void makeLoadingGUI(int*, int*);
 
+		ImGui_ImplVulkanH_Window imGuiWindow;
+		bool changedMSAA = false;
 	private:
 		std::map<Engine::RenderMode, std::function<void(int*, int*)>> functions;
 		Engine::Game* game;

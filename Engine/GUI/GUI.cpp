@@ -1,25 +1,19 @@
 #include "GUI.hpp"
 #include "../Network/Helpers/GameConfig.hpp"
 
-struct GLFWwindow;
+#define GLFW_INCLUDE_VULKAN
+#include <GLFW/glfw3.h>
 
 namespace Engine
 {
 	void GUI::initGUI()
 	{
-		//ImGui_ImplVulkan_LoadFunctions(vkGetInstanceProcAddr, vkGetDeviceProcAddr);
 		IMGUI_CHECKVERSION();
 		ImGuiContext* ImGuiContext = ImGui::CreateContext();
 		ImGui::SetCurrentContext(ImGuiContext);
 		ImGuiIO& io = ImGui::GetIO();
 		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
 		io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
-		//ImFontConfig config;
-		//config.MergeMode = true;
-		//config.GlyphMinAdvanceX = 13.0f; // Use if you want to make the icon monospaced
-		//static const ImWchar icon_ranges[] = { ICON_MIN_FA, ICON_MAX_FA, 0 };
-		//std::string s = "../Engine/third_party/imgui/misc/fonts/FontAwesome.ttf";
-		//io.Fonts->AddFontFromFileTTF(s.c_str(), 13.0f, &config, icon_ranges);
 
 		// Setup Dear ImGui style
 		ImGui::StyleColorsDark();
@@ -30,6 +24,13 @@ namespace Engine
 		ImGui_ImplVulkan_InitInfo init_info = {};
 		Engine::VulkanWindow* window = &(*game->GetContext().window);
 
+		std::string renderPass = "forward";
+		if (this->game->GetRenderer().msaaIndex != 0) {
+			renderPass += "MSAA";
+		}
+
+		VkSampleCountFlagBits sampleCount = this->game->GetContext().window->device->getSampleCount(this->game->GetRenderer().msaaIndex);
+
 		//init_info.ApiVersion = VK_API_VERSION_1_3;              // Pass in your value of VkApplicationInfo::apiVersion, otherwise will default to header version.
 		init_info.Instance = window->instance;
 		init_info.PhysicalDevice = window->physicalDevice;
@@ -37,7 +38,7 @@ namespace Engine
 		init_info.QueueFamily = window->graphicsFamilyIndex;
 		init_info.Queue = window->graphicsQueue;
 		init_info.DescriptorPool = window->device->dPool;
-		init_info.RenderPass = game->GetRenderer().GetRenderPass("forward");
+		init_info.RenderPass = game->GetRenderer().GetRenderPass(renderPass);
 		init_info.Subpass = 0;
 
 		VkSurfaceCapabilitiesKHR caps;
@@ -54,7 +55,7 @@ namespace Engine
 
 		init_info.MinImageCount = caps.minImageCount < 2 ? 2 : caps.minImageCount;
 		init_info.ImageCount = imageCount;
-		init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+		init_info.MSAASamples = this->game->GetRenderer().msaaIndex != 0 ? sampleCount : VK_SAMPLE_COUNT_1_BIT;
 
 		ImGui_ImplVulkan_Init(&init_info);
 	}
@@ -277,6 +278,16 @@ namespace Engine
 			}
 		}
 
+
+		ImGui::Text("Anti Aliasing:");
+		std::pair<const char**, int> msaaOptions = game->GetRenderer().getMSAAOptions();
+		if (ImGui::Combo("MSAA:", &game->GetRenderer().msaaIndex, msaaOptions.first, msaaOptions.second, msaaOptions.second)) {
+			// If MSAA was changed, flag swapchain to be recreated so 
+			// ImGui can be remade with corresponding sample count
+			game->GetRenderer().setRecreateSwapchain(true);
+			this->changedMSAA = true;
+		}
+
 		ImVec2 topRightPos = ImVec2(*w - *w / 6 - 10, 30);
 		ImGui::SetCursorPos(topRightPos);
 		if (ImGui::Button("Disconnect", ImVec2(*w / 6, *h / 6)))
@@ -305,6 +316,10 @@ namespace Engine
 		ImGui::NewFrame();
 
 		ImGui::Begin("Debug Menu");
+
+		if (ImGui::Checkbox("VSync", &game->GetRenderer().vsync)) {
+			game->GetRenderer().setRecreateSwapchain(true);
+		}
 
 		ImGui::Text("List of info would go here", ImVec2(*w / 4, *h / 4));
 
@@ -342,10 +357,9 @@ namespace Engine
 			for (std::size_t i = 0; i < size; i++)
 				list.push_back(model.animations[i].name.c_str());
 
-			ImGui::Combo("Animation", &model.animationIndex, list.data(), size, size);
+			ImGui::Combo("Animation", &model.animationIndex, list.data(), (int)size, (int)size);
 			if (ImGui::Button("Play Animation")) {
-				model.animationQueue.push(model.animations[model.animationIndex]);
-				model.blending = true;
+				model.playAnimation();
 			}
 		}
 

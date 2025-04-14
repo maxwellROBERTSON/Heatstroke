@@ -82,7 +82,7 @@ namespace Engine {
 
 			if (material.alphaMode == "MASK") {
 				vkMaterial.alphaMode = vk::AlphaMode::ALPHA_MASK;
-				vkMaterial.alphaCutoff = material.alphaCutoff;
+				vkMaterial.alphaCutoff = (float)material.alphaCutoff;
 			}
 			else if (material.alphaMode == "BLEND") {
 				vkMaterial.alphaMode = vk::AlphaMode::ALPHA_BLEND;
@@ -101,7 +101,7 @@ namespace Engine {
 
 			vkMaterial.occlusionTextureIndex = material.occlusionTexture.index;
 			vkMaterial.occlusionTextureTexCoords = vkMaterial.occlusionTextureIndex > -1 ? material.occlusionTexture.texCoord : -1;
-			vkMaterial.occlusionStrength = material.occlusionTexture.strength;
+			vkMaterial.occlusionStrength = (float)material.occlusionTexture.strength;
 
 			vkMaterial.baseColourFactor = glm::make_vec4(material.pbrMetallicRoughness.baseColorFactor.data());
 			vkMaterial.baseColourTextureIndex = material.pbrMetallicRoughness.baseColorTexture.index;
@@ -109,10 +109,10 @@ namespace Engine {
 
 			vkMaterial.metallicRoughnessTextureIndex = material.pbrMetallicRoughness.metallicRoughnessTexture.index;
 			vkMaterial.metallicRoughnessTextureTexCoords = vkMaterial.metallicRoughnessTextureIndex > -1 ? material.pbrMetallicRoughness.metallicRoughnessTexture.texCoord : -1;
-			vkMaterial.metallicFactor = material.pbrMetallicRoughness.metallicFactor;
-			vkMaterial.roughnessFactor = material.pbrMetallicRoughness.roughnessFactor;
+			vkMaterial.metallicFactor = (float)material.pbrMetallicRoughness.metallicFactor;
+			vkMaterial.roughnessFactor = (float)material.pbrMetallicRoughness.roughnessFactor;
 
-			vkMaterial.index = vkModel.materials.size();
+			vkMaterial.index = (int)vkModel.materials.size();
 
 			vkModel.materials.emplace_back(vkMaterial);
 		}
@@ -169,7 +169,7 @@ namespace Engine {
 		}
 	}
 
-	void loadNodes(vk::Node* parent, tinygltf::Node& node, tinygltf::Model& model, std::uint32_t nodeIndex, vk::Model& vkModel) {
+	void loadNodes(vk::Node* parent, tinygltf::Node& node, tinygltf::Model& model, std::size_t nodeIndex, vk::Model& vkModel) {
 		vk::Node* newNode = new vk::Node();
 		newNode->index = nodeIndex;
 		newNode->skinIndex = node.skin;
@@ -238,7 +238,7 @@ namespace Engine {
 				bufferPos = reinterpret_cast<const float*>(&(model.buffers[positionBufView.buffer].data[positionAccessor.byteOffset + positionBufView.byteOffset]));
 				bbMin = glm::vec3(positionAccessor.minValues[0], positionAccessor.minValues[1], positionAccessor.minValues[2]);
 				bbMax = glm::vec3(positionAccessor.maxValues[0], positionAccessor.maxValues[1], positionAccessor.maxValues[2]);
-				vertexCount = positionAccessor.count;
+				vertexCount = (std::uint32_t)positionAccessor.count;
 				positionByteStride = positionAccessor.ByteStride(positionBufView) ? (positionAccessor.ByteStride(positionBufView) / sizeof(float)) : tinygltf::GetNumComponentsInType(TINYGLTF_TYPE_VEC3);
 
 				// Get normals
@@ -309,7 +309,7 @@ namespace Engine {
 				const tinygltf::BufferView& indicesBufferView = model.bufferViews[indicesAccessor.bufferView];
 				const tinygltf::Buffer& indicesBuffer = model.buffers[indicesBufferView.buffer];
 
-				indexCount = indicesAccessor.count;
+				indexCount = (std::uint32_t)indicesAccessor.count;
 				bool hasSkin = (jointsPos && weightsPos);
 
 				// Reserve space in rawData struct
@@ -630,7 +630,7 @@ namespace Engine {
 			try {
 				node->skin = vkModel.skins.at(node->skinIndex);
 			}
-			catch (const std::out_of_range& exception) {}
+			catch (const std::out_of_range&) {}
 		}
 	}
 

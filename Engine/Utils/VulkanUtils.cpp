@@ -79,4 +79,10 @@ namespace Utils {
 		vkCmdCopyBufferToImage(aCmdBuff, aBuff, aImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
 	}
 
+	VkSampleCountFlagBits getMSAAMinimum(VkSampleCountFlagBits sampleCount) {
+		if (sampleCount & VK_SAMPLE_COUNT_1_BIT)
+			return VK_SAMPLE_COUNT_4_BIT;
+		return sampleCount;
+	}
+
 }

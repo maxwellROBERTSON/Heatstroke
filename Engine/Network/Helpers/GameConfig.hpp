@@ -1,5 +1,7 @@
 #pragma once
 
+#include <map>
+
 #include "GameAdapter.hpp"
 
 namespace Engine
