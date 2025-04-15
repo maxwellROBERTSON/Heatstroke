@@ -40,6 +40,9 @@ namespace Engine
 		// Handle a response from a request for entity data
 		void HandleResponseEntityData(ResponseEntityData*);
 
+		// Handle a server update message 
+		void HandleServerUpdateEntityData(ServerUpdateEntityData*);
+
 		// Clean up client memory using yojimbo
 		void CleanUp();
 

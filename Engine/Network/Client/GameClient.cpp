@@ -105,24 +105,23 @@ namespace Engine
 	// Process message type with corresponding function
 	void GameClient::ProcessMessage(yojimbo::Message* message)
 	{
+		std::cout << GameMessageTypeStrings[message->GetType()] << " FROM SERVER WITH MESSAGEID = " << message->GetId() << std::endl;
 		if (message->GetType() == RESPONSE_ENTITY_DATA)
 		{
 			HandleResponseEntityData((ResponseEntityData*)message);
 		}
 		else if (message->GetType() == SERVER_UPDATE_ENTITY_DATA)
 		{
-			ServerUpdateEntityData* derived = (ServerUpdateEntityData*)message;
-			std::cout << GameMessageTypeStrings[derived->GetType()] << " FROM SERVER WITH: ";
-			std::cout << "MESSAGEID = " << derived->GetId();
-			std::cout << ", BLOCK SIZE = " << derived->GetBlockSize() << std::endl;
-			int blockSize = derived->GetBlockSize();
+			HandleServerUpdateEntityData((ServerUpdateEntityData*)message);
 		}
 	}
 
 	// Send game message with any updated entities
 	void GameClient::SendGameUpdate()
 	{
-		int bytes = game->GetEntityManager().GetTotalChangedDataSize();
+		if (game->GetNetwork().GetStatus() != Status::CLIENT_ACTIVE)
+			game->GetNetwork().SetStatus(Status::CLIENT_ACTIVE);
+		size_t bytes = game->GetEntityManager().GetTotalChangedDataSize();
 		if (bytes == 0)
 			return;
 		ClientUpdateEntityData* message = static_cast<ClientUpdateEntityData*>(client->CreateMessage(CLIENT_UPDATE_ENTITY_DATA));
@@ -143,11 +142,8 @@ namespace Engine
 				client->SendClientMessage(yojimbo::CHANNEL_TYPE_UNRELIABLE_UNORDERED, message);
 				std::cout << GameMessageTypeStrings[CLIENT_UPDATE_ENTITY_DATA] << " TO SERVER WITH: ";
 				std::cout << "MESSAGEID = " << message->GetId() << ", BLOCK SIZE = " << 1024 << std::endl;
-				game->GetEntityManager().ResetChanged(); 
+				game->GetEntityManager().ResetChanged();
 				return; 
-				//server->SendPackets();
-				//message->DetachBlock();
-				//server->FreeBlock(clientIndex, block);
 			}
 			else
 			{
@@ -163,10 +159,7 @@ namespace Engine
 	{
 		int blockSize = message->GetBlockSize();
 
-		std::cout << GameMessageTypeStrings[message->GetType()] << " FROM SERVER WITH: ";
-		std::cout << "MESSAGEID = " << message->GetId() << ", BLOCK SIZE = " << blockSize << std::endl;
-
-		if (game->GetNetwork().GetStatus() != Status::CLIENT_LOADED)
+		if (game->GetNetwork().GetStatus() != Status::CLIENT_ACTIVE)
 		{
 			if (blockSize != 0)
 			{
@@ -218,19 +211,19 @@ namespace Engine
 						}
 					}
 				}
-				game->GetNetwork().SetStatus(Status::CLIENT_LOADED);
+				game->GetNetwork().SetStatus(Status::CLIENT_INITIALIZING_DATA);
 				game->GetEntityManager().ResetChanged();
 
-				ClientInitialized* message = static_cast<ClientInitialized*>(client->CreateMessage(CLIENT_INITIALIZED));
-				if (message)
+				ClientInitialized* initMessage = static_cast<ClientInitialized*>(client->CreateMessage(CLIENT_INITIALIZED));
+				if (initMessage)
 				{
 					if (!client->CanSendMessage(yojimbo::CHANNEL_TYPE_RELIABLE_ORDERED))
 					{
 						std::cout << "MESSAGE QUEUE NOT AVAILABLE FOR " << GameMessageTypeStrings[CLIENT_INITIALIZED] << std::endl;
-						client->ReleaseMessage(message);
+						client->ReleaseMessage(initMessage);
 						return;
 					}
-					client->SendClientMessage(yojimbo::CHANNEL_TYPE_RELIABLE_ORDERED, message);
+					client->SendClientMessage(yojimbo::CHANNEL_TYPE_RELIABLE_ORDERED, initMessage);
 					std::cout << GameMessageTypeStrings[CLIENT_INITIALIZED] << " TO SERVER WITH: ";
 					std::cout << "MESSAGEID = " << message->GetId() << std::endl;
 					return;
@@ -248,6 +241,33 @@ namespace Engine
 		}
 	}
 
+	// Handle a server update message 
+	void GameClient::HandleServerUpdateEntityData(ServerUpdateEntityData* message)
+	{
+		int blockSize = message->GetBlockSize();
+		/*if (blockSize == 0)
+			throw std::runtime_error("Null block data size");*/
+
+		if (game->GetNetwork().GetStatus() == Status::CLIENT_ACTIVE)
+		{
+			if (blockSize != 0)
+			{
+				game->GetEntityManager().SetAllChangedData(message->GetBlockData());
+				game->GetEntityManager().ResetChanged();
+				std::cout << "Data updated from server" << std::endl;
+			}
+			else
+			{
+				std::cout << "FAILED, BLOCK SIZE IS 0." << std::endl;
+			}
+		}
+		else
+		{
+			std::cout << "FAILED, CLIENT NOT YET ACTIVE." << std::endl;
+		}
+		//int blockSize = message->GetBlockSize();
+	}
+
 	// Clean up client memory using yojimbo
 	void GameClient::CleanUp()
 	{
@@ -255,8 +275,9 @@ namespace Engine
 		YOJIMBO_DELETE(yojimbo::GetDefaultAllocator(), GameAdapter, adapter);
 		Status status = game->GetNetwork().GetStatus();
 		if (status == Status::CLIENT_CONNECTED ||
-			status == Status::CLIENT_LOADING ||
-			status == Status::CLIENT_LOADED
+			status == Status::CLIENT_LOADING_DATA ||
+			status == Status::CLIENT_INITIALIZING_DATA ||
+			status == Status::CLIENT_ACTIVE
 			)
 			client->Disconnect();
 		YOJIMBO_DELETE(yojimbo::GetDefaultAllocator(), Client, client);
@@ -273,7 +294,7 @@ namespace Engine
 		}
 		else if (client->IsConnected())
 		{
-			if (status == Status::CLIENT_LOADED || status == Status::CLIENT_LOADING)
+			if (status == Status::CLIENT_LOADING_DATA || status == Status::CLIENT_INITIALIZING_DATA || status == Status::CLIENT_ACTIVE)
 				return;
 			clientTime = yojimbo_time();
 			RequestEntityData* message = static_cast<RequestEntityData*>(client->CreateMessage(REQUEST_ENTITY_DATA));
@@ -286,7 +307,7 @@ namespace Engine
 			std::cout << GameMessageTypeStrings[REQUEST_ENTITY_DATA] << " TO SERVER WITH: ";
 			std::cout << "MESSAGEID = " << message->GetId() << std::endl;
 			game->GetEntityManager().ResetChanged();
-			game->GetNetwork().SetStatus(Status::CLIENT_LOADING);
+			game->GetNetwork().SetStatus(Status::CLIENT_LOADING_DATA);
 			//client->ReleaseMessage(message);
 		}
 		else if (client->IsDisconnected())

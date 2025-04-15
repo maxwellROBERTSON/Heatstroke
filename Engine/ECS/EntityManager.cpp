@@ -41,13 +41,13 @@ namespace Engine
 	// | vector of componentIndex | * # entities
 	// | components of type | * # of component types
 	// Get total data size
-	size_t EntityManager::GetTotalDataSize()
+	int EntityManager::GetTotalDataSize()
 	{
 		if (entities.size() == 0)
 			return 0;
 
 		int numEntities = GetNumberOfEntities();
-		int entitySize = entities[0].get()->GetEntitySize();
+		size_t entitySize = entities[0].get()->GetEntitySize();
 		size_t totalSize = 1 + entities[0].get()->GetEntitySize() * numEntities + TYPE_COUNT + TYPE_COUNT * numEntities;
 		ComponentTypes type;
 		for (int i = 0; i < TYPE_COUNT; i++)
@@ -55,7 +55,7 @@ namespace Engine
 			type = static_cast<ComponentTypes>(i);
 			totalSize += (*componentMap[type]).size() * ComponentSizes[type];
 		}
-		return totalSize;
+		return (int)totalSize;
 	}
 
 	// Format is
@@ -68,12 +68,12 @@ namespace Engine
 	// | entity_data | * # changed entites
 	// | components of type | * # of changed components of types
 	// Get total size of all the changed data
-	size_t EntityManager::GetTotalChangedDataSize()
+	int EntityManager::GetTotalChangedDataSize()
 	{
 		size_t baseSize = 1 + changedEntitiesAndComponents.size() * 3;
 		size_t totalSize = baseSize;
 
-		int entitySize = entities[0].get()->GetEntitySize();
+		size_t entitySize = entities[0].get()->GetEntitySize();
 		for (int i = 0; i < changedEntitiesAndComponents.size(); i++)
 		{
 			if (changedEntitiesAndComponents[i].second[0] != -1)
@@ -95,7 +95,7 @@ namespace Engine
 		}
 		else
 		{
-			return totalSize;
+			return (int)totalSize;
 		}
 	}
 
@@ -158,8 +158,8 @@ namespace Engine
 		block[offset++] = static_cast<uint8_t>(numEntities);
 
 		// | entity_data | * # entites
-		int sizeOfEntity = entities[0].get()->GetEntitySize();
-		for (int i = 0; i < numEntities; i++)
+		size_t sizeOfEntity = entities[0].get()->GetEntitySize();
+		for (size_t i = 0; i < numEntities; i++)
 		{
 			entities[i].get()->GetDataArray(block + offset);
 			offset += sizeOfEntity;
@@ -216,7 +216,7 @@ namespace Engine
 	{
 		size_t offset = 0;
 		ComponentTypes type;
-		int numChangedEntities = changedEntitiesAndComponents.size();
+		size_t numChangedEntities = changedEntitiesAndComponents.size();
 		std::cout << "numChangedEntities: " << numChangedEntities << std::endl;
 
 		// | # changed entities |
@@ -264,7 +264,7 @@ namespace Engine
 		}
 
 		// | entity_data | * # changed entites
-		int sizeOfEntity = entities[0].get()->GetEntitySize();
+		size_t sizeOfEntity = entities[0].get()->GetEntitySize();
 		for (auto& [entity, flags] : changedEntitiesAndComponents)
 		{
 			if (flags[0] == 1)
@@ -334,13 +334,13 @@ namespace Engine
 		}
 
 		// | # components of type | * # types
-		std::vector<int> componentCounts = std::vector<int>(TYPE_COUNT);
-		std::vector<int> componentOffsets = std::vector<int>(TYPE_COUNT);
+		std::vector<size_t> componentCounts = std::vector<size_t>(TYPE_COUNT);
+		std::vector<size_t> componentOffsets = std::vector<size_t>(TYPE_COUNT);
 		for (int i = 0; i < TYPE_COUNT; i++)
 		{
-			componentCounts[i] = static_cast<int>(block[offset++]);
+			componentCounts[i] = static_cast<size_t>(block[offset++]);
 		}
-		int componentsSizeCount = 0;
+		size_t componentsSizeCount = 0;
 		for (int i = 0; i < TYPE_COUNT; i++)
 		{
 			componentOffsets[i] = offset + TYPE_COUNT * numEntities + componentsSizeCount;
@@ -441,15 +441,15 @@ namespace Engine
 		}
 
 		// | # changed entity / components | * # types + 1
-		std::vector<int> componentEntityCounts = std::vector<int>(TYPE_COUNT + 1);
+		std::vector<size_t> componentEntityCounts = std::vector<size_t>(TYPE_COUNT + 1);
 		for (int i = 0; i < TYPE_COUNT + 1; i++)
 		{
-			componentEntityCounts[i] = static_cast<int>(block[offset++]);
+			componentEntityCounts[i] = static_cast<size_t>(block[offset++]);
 		}
-		std::vector<int> entityComponentOffsets = std::vector<int>(TYPE_COUNT + 1);
+		std::vector<size_t> entityComponentOffsets = std::vector<size_t>(TYPE_COUNT + 1);
 		Entity entity(this);
 		int numBytesPer = (TYPE_COUNT + 2) / 8 + 1;
-		int dataOffset = offset + numBytesPer * numChangedEntities;
+		size_t dataOffset = offset + numBytesPer * numChangedEntities;
 		entityComponentOffsets[0] = dataOffset;
 		size_t entitySize = entity.GetEntitySize();
 		dataOffset += entitySize * componentEntityCounts[0];
@@ -685,7 +685,7 @@ namespace Engine
 		}
 
 		entity->SetComponentIndexArray(typeIndexList);
-		entity->SetEntityId(entities.size() - 1);
+		entity->SetEntityId((int)entities.size() - 1);
 
 		for (int i = 0; i < TYPE_COUNT; i++)
 		{

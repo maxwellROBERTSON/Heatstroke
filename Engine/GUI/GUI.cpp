@@ -478,7 +478,7 @@ namespace Engine
 		ImGui::Begin("Loading Menu", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 
 		Status s = game->GetNetwork().GetStatus();
-		if (s == Status::CLIENT_LOADED)
+		if (s == Status::CLIENT_INITIALIZING_DATA)
 		{
 			game->GetRenderer().initialiseModelMatrices();
 			game->GetRenderer().initialiseJointMatrices();

@@ -18,10 +18,10 @@ namespace Engine
 		// Getters
 
 		// Get total data size
-		size_t GetTotalDataSize();
+		int GetTotalDataSize();
 
 		// Get total size of all the changed data
-		size_t GetTotalChangedDataSize();
+		int GetTotalChangedDataSize();
 
 		// Get total number of entities
 		int GetNumberOfEntities() { return static_cast<int>(entities.size()); }

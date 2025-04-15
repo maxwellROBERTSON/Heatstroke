@@ -93,18 +93,10 @@ void FPSTest::Update() {
 		physicsWorld.updatePhysics(timeDelta);
 		physicsWorld.updateObjects(GetEntityManager(), GetModels());
 
-		//physicsWorld.updateCharacter(fixedTimeDelta);
-		//// update PVD
-		//physicsWorld.gScene->simulate(fixedTimeDelta);
-		//physicsWorld.gScene->fetchResults(true);
-		//// update physics
-		//physicsWorld.updateObjects(GetEntityManager(), GetModels());
-
 		renderer.updateAnimations(timeDelta);
 	}
 
 	renderer.updateUniforms();
-	//gui.makeGUI();
 	renderer.render(GetModels());
 	renderer.submitRender();
 }
@@ -139,15 +131,15 @@ void FPSTest::initialiseModels()
 {
 	// Here we would load all relevant glTF models and put them in the models vector
 	tinygltf::Model sponza = Engine::loadFromFile("Game/assets/Sponza/glTF/Sponza.gltf");
-	/*tinygltf::Model helmet = Engine::loadFromFile("Game/assets/DamagedHelmet.gltf");
-	tinygltf::Model cube = Engine::loadFromFile("Game/assets/Cube.gltf");*/
+	tinygltf::Model helmet = Engine::loadFromFile("Game/assets/DamagedHelmet.gltf");
+	tinygltf::Model cube = Engine::loadFromFile("Game/assets/Cube.gltf");
 	tinygltf::Model character = Engine::loadFromFile("Game/assets/Character/scene.gltf");
-	/*tinygltf::Model pistol = Engine::loadFromFile("Game/assets/Assets/guns/pistol1/scene.gltf");*/
+	tinygltf::Model pistol = Engine::loadFromFile("Game/assets/Assets/guns/pistol1/scene.gltf");
 	GetModels().emplace_back(Engine::makeVulkanModel(this->GetContext(), sponza));
-	/*GetModels().emplace_back(Engine::makeVulkanModel(this->GetContext(), helmet));
-	GetModels().emplace_back(Engine::makeVulkanModel(this->GetContext(), cube));*/
+	GetModels().emplace_back(Engine::makeVulkanModel(this->GetContext(), helmet));
+	GetModels().emplace_back(Engine::makeVulkanModel(this->GetContext(), cube));
 	GetModels().emplace_back(Engine::makeVulkanModel(this->GetContext(), character));
-	/*GetModels().emplace_back(Engine::makeVulkanModel(this->GetContext(), pistol));*/
+	GetModels().emplace_back(Engine::makeVulkanModel(this->GetContext(), pistol));
 
 	std::cout << "Models created" << std::endl;
 }
@@ -205,9 +197,9 @@ void FPSTest::loadOfflineEntities()
 	entity->SetRotation(90.0f, glm::vec3(0.0f, 0.0f, 1.0f));
 	entity->SetScale(30.0f);
 	renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
-	renderComponent->SetModelIndex(1); // changed
+	renderComponent->SetModelIndex(3); // changed
 	physicsComponent = reinterpret_cast<PhysicsComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
-	physicsComponent->Init(physicsWorld, PhysicsComponent::PhysicsType::CONTROLLER, models[renderComponent->GetModelIndex()], entity->GetModelMatrix(), entity->GetEntityId(), false, false);
+	physicsComponent->Init(physicsWorld, PhysicsComponent::PhysicsType::CONTROLLER, models[renderComponent->GetModelIndex()], entity->GetModelMatrix(), entity->GetEntityId(), true, true);
 	entityManager.AddSimulatedPhysicsEntity(entity->GetEntityId());
 	cameraComponent = reinterpret_cast<CameraComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), CAMERA));
 	cameraComponent->SetCamera(Engine::Camera(100.0f, 0.01f, 256.0f, glm::vec3(-3.0f, 2.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
@@ -251,7 +243,7 @@ void FPSTest::loadOnlineEntities()
 	// Pointers
 	Entity* entity;
 	CameraComponent* cameraComponent;
-	NetworkComponent* networkComponent;
+	// NetworkComponent* networkComponent;
 	RenderComponent* renderComponent;
 	PhysicsComponent* physicsComponent;
 
@@ -271,16 +263,16 @@ void FPSTest::loadOnlineEntities()
 	entityManager.AddSimulatedPhysicsEntity(entity->GetEntityId());
 
 	// Helmet
-	//entity = entityManager.MakeNewEntity(types);
-	//entity->SetPosition(0.0f, 2.0f, 0.0f);
-	//entity->SetRotation(90.0f, glm::vec3(0.0f, 1.0f, 0.0f));
-	//entity->SetScale(0.2f);
-	//// configure physics component
-	//renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
-	//renderComponent->SetModelIndex(1);
-	//physicsComponent = reinterpret_cast<PhysicsComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
-	//physicsComponent->Init(physicsWorld, PhysicsComponent::PhysicsType::DYNAMIC, models[renderComponent->GetModelIndex()], entity->GetModelMatrix(), entity->GetEntityId(), false, false);
-	//entityManager.AddSimulatedPhysicsEntity(entity->GetEntityId());
+	entity = entityManager.MakeNewEntity(types);
+	entity->SetPosition(0.0f, 2.0f, 0.0f);
+	entity->SetRotation(90.0f, glm::vec3(0.0f, 1.0f, 0.0f));
+	entity->SetScale(0.2f);
+	// configure physics component
+	renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
+	renderComponent->SetModelIndex(1);
+	physicsComponent = reinterpret_cast<PhysicsComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
+	physicsComponent->Init(physicsWorld, PhysicsComponent::PhysicsType::DYNAMIC, models[renderComponent->GetModelIndex()], entity->GetModelMatrix(), entity->GetEntityId(), false, false);
+	entityManager.AddSimulatedPhysicsEntity(entity->GetEntityId());
 
 	// Cube
 	//entity = entityManager.MakeNewEntity(types);
@@ -299,7 +291,7 @@ void FPSTest::loadOnlineEntities()
 	entity->SetRotation(90.0f, glm::vec3(0.0f, 0.0f, 1.0f));
 	entity->SetScale(30.0f);
 	renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
-	renderComponent->SetModelIndex(1); // changed
+	renderComponent->SetModelIndex(3); // changed
 	physicsComponent = reinterpret_cast<PhysicsComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
 	physicsComponent->Init(physicsWorld, PhysicsComponent::PhysicsType::CONTROLLER, models[renderComponent->GetModelIndex()], entity->GetModelMatrix(), entity->GetEntityId(), false, false);
 	//entityManager.AddSimulatedPhysicsEntity(entity->GetEntityId());

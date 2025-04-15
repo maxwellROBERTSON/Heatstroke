@@ -43,10 +43,12 @@ namespace Engine
             return "Disconnected.";
         case Status::CLIENT_CONNECTION_FAILED:
             return "Connection Failed.";
-        case Status::CLIENT_LOADING:
+        case Status::CLIENT_LOADING_DATA:
             return "Loading Scene.";
-        case Status::CLIENT_LOADED:
-            return "Loaded Scene.";
+        case Status::CLIENT_INITIALIZING_DATA:
+            return "Initializing Scene.";
+        case Status::CLIENT_ACTIVE:
+            return "Client ready to communicate with server.";
         default:
             return "Unknown";
         }

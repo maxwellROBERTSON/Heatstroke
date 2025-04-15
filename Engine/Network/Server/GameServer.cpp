@@ -120,9 +120,9 @@ namespace Engine
 	// Handle a client update of the entity data
 	void GameServer::HandleClientUpdateEntityData(int clientIndex, ClientUpdateEntityData* message)
 	{
-		if (message->GetBlockSize() == 0)
-			throw std::runtime_error("Null block data size");
 		int blockSize = message->GetBlockSize();
+		/*if (blockSize == 0)
+			throw std::runtime_error("Null block data size");*/
 
 		if (game->GetNetwork().GetStatus() == Status::SERVER_INITIALIZED)
 		{
@@ -177,7 +177,6 @@ namespace Engine
 							server->SendServerMessage(client, yojimbo::CHANNEL_TYPE_UNRELIABLE_UNORDERED, message);
 							std::cout << GameMessageTypeStrings[SERVER_UPDATE_ENTITY_DATA] << " TO CLIENT " << client << " WITH: ";
 							std::cout << "MESSAGEID = " << message->GetId() << ", BLOCK SIZE = " << 1024 << std::endl;
-							game->GetEntityManager().ResetChanged();
 							return;
 						}
 						else
@@ -194,6 +193,7 @@ namespace Engine
 					loadedClients.erase(it);
 				}
 			}
+			game->GetEntityManager().ResetChanged();
 		}
 		/*else
 		{

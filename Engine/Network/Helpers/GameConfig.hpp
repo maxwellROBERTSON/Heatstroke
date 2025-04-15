@@ -23,8 +23,9 @@ namespace Engine
         CLIENT_CONNECTED,
         CLIENT_DISCONNECTED,
         CLIENT_CONNECTION_FAILED,
-        CLIENT_LOADING,
-        CLIENT_LOADED
+        CLIENT_LOADING_DATA,
+		CLIENT_INITIALIZING_DATA,
+        CLIENT_ACTIVE
     };
 
 	static const uint8_t DEFAULT_PRIVATE_KEY[yojimbo::KeyBytes] = { 0 };

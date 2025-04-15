@@ -208,10 +208,10 @@ namespace Engine
 					PxMaterial* material = pWorld.gPhysics->createMaterial(0.5f, 0.5f, 0.5f);
 
 					PxTriangleMeshDesc triMeshDesc;
-					triMeshDesc.points.count = primitive->rawData.positions.size();
+					triMeshDesc.points.count = (PxU32)primitive->rawData.positions.size();
 					triMeshDesc.points.stride = sizeof(glm::vec3);
 					triMeshDesc.points.data = primitive->rawData.positions.data();
-					triMeshDesc.triangles.count = primitive->rawData.indices.size() / 3;
+					triMeshDesc.triangles.count = (PxU32)primitive->rawData.indices.size() / 3;
 					triMeshDesc.triangles.stride = sizeof(std::uint32_t) * 3;
 					triMeshDesc.triangles.data = primitive->rawData.indices.data();
 
