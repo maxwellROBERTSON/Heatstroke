@@ -40,7 +40,7 @@ namespace Engine
 		std::vector<int> GetEntitiesWithComponent(ComponentTypes type) { return entitiesWithType[type]; }
 		
 		// Get total number of components of a type
-		int GetComponentTypeSize(ComponentTypes type) { return (*componentMap[type]).size(); }
+		int GetComponentTypeSize(ComponentTypes type) { return (int)(*componentMap[type]).size(); }
 
 		// Get a pointer to the component of an entity
 		ComponentBase* GetComponentOfEntity(int, ComponentTypes);

@@ -30,6 +30,10 @@
 #include "../Input/InputCodes.hpp"
 #include "../Input/Joystick.hpp"
 
+#include "../ThreadPool//thread_pool_wait.h"
+
+
+
 class FPSTest : public Engine::Game
 {
 public:
@@ -54,6 +58,11 @@ public:
 
 	std::chrono::steady_clock::time_point previous;
 	int clientId = 0;
+
+	bool online = false;
+	bool offline = true;
+	bool isChange = true;
+	thread_pool_wait *threadPool;
 };
 
 //void loadOfflineEntities(ComponentTypeRegistry& registry, EntityManager& entityManager, PhysicsWorld& pworld);

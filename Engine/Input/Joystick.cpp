@@ -1,5 +1,7 @@
 #include "Joystick.hpp"
 
+#include <GLFW/glfw3.h>
+
 namespace Engine
 {
 
@@ -49,7 +51,7 @@ namespace Engine
 			return;
 		}
 
-		for (unsigned b = 0; b < buttonCount; ++b) {
+		for (int b = 0; b < buttonCount; ++b) {
 			const int glfwButtonState = buttons[b];
 
 			ButtonState buttonState;
@@ -77,7 +79,7 @@ namespace Engine
 		//  Update each axis
 		int axisCount;
 		const float* axes = glfwGetJoystickAxes(joyStickIndex, &axisCount);
-		for (unsigned a = 0; a < axisCount; ++a) {
+		for (int a = 0; a < axisCount; ++a) {
 			mAxisStates[a] = axes[a];
 		}
 	}

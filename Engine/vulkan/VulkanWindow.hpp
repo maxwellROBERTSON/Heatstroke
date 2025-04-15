@@ -11,14 +11,12 @@
 #include <vector>
 
 #include <volk/volk.h>
-#if !defined(GLFW_INCLUDE_NONE)
-#define GLFW_INCLUDE_NONE 1
-#endif
-#include <GLFW/glfw3.h>
 
 #include "objects/VkObjects.hpp"
 #include "objects/Texture.hpp"
 #include "../Events/Event.hpp"
+
+struct GLFWwindow;
 
 namespace Engine {
 
@@ -61,9 +59,6 @@ namespace Engine {
 
 		VkFormat swapchainFormat;
 		VkExtent2D swapchainExtent;
-
-
-
 	};
 
 	struct SwapChanges {
@@ -72,7 +67,7 @@ namespace Engine {
 	};
 
 	std::unique_ptr<VulkanWindow> initialiseVulkan(const std::string& name = "Heatstroke", int width = 1280, int height = 720);
-	SwapChanges recreateSwapchain(VulkanWindow&);
+	SwapChanges recreateSwapchain(VulkanWindow&, VkPresentModeKHR desiredPresentMode = VK_PRESENT_MODE_FIFO_KHR);
 
 	// The device selection process has changed somewhat w.r.t. the one used 
 	// earlier (e.g., with VulkanContext)
@@ -97,7 +92,8 @@ namespace Engine {
 		VkDevice,
 		GLFWwindow*,
 		std::vector<std::uint32_t> const& aQueueFamilyIndices = {},
-		VkSwapchainKHR aOldSwapchain = VK_NULL_HANDLE
+		VkSwapchainKHR aOldSwapchain = VK_NULL_HANDLE,
+		VkPresentModeKHR desiredPresentMode = VK_PRESENT_MODE_FIFO_KHR
 	);
 
 	void getSwapchainImages(VkDevice, VkSwapchainKHR, std::vector<VkImage>&);

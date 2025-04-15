@@ -17,7 +17,7 @@ namespace vk {
 		Mesh* mesh;
 		Skin* skin;
 		std::uint32_t skinIndex = -1;
-		std::uint32_t index;
+		std::size_t index;
 		std::vector<Node*> children;
 
 		glm::mat4 nodeMatrix;

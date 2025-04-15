@@ -146,5 +146,10 @@ namespace vk {
 
 		this->timer += timeDelta;
 	}
+
+	void Animation::restart() {
+		this->animating = false;
+		this->timer = 0.0f;
+	}
 }
 }

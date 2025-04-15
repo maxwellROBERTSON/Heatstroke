@@ -101,7 +101,7 @@ namespace Engine
 			message->responseType = static_cast<ResponseType>(requestType);
 			if (message->responseType == ResponseType::ENTITY_DATA_RESPONSE)
 			{
-				int bytes = game->GetEntityManager().GetTotalDataSize();
+				int bytes = (int)game->GetEntityManager().GetTotalDataSize();
 				uint8_t* block = server->AllocateBlock(clientIndex, bytes);
 				if (block)
 				{
