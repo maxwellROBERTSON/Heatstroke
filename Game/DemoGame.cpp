@@ -36,7 +36,6 @@ void FPSTest::Init()
 	GetGUI().initGUI();
 	GetRenderer().attachCamera(&camera);
 	GetRenderer().initialiseModelDescriptors(GetModels());
-
 }
 
 void FPSTest::Render()
