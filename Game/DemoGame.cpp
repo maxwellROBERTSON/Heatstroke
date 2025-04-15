@@ -11,11 +11,8 @@
 #include "../Engine/vulkan/Renderer.hpp"
 #include "../Engine/vulkan/VulkanDevice.hpp"
 
-
 #include "Error.hpp"
 #include "toString.hpp"
-#include "../Engine/ECS/Components/AudioComponent.hpp"
-#include "../Engine/Audio/SoundSource.h"
 
 #include <GLFW/glfw3.h>
 
@@ -39,7 +36,6 @@ void FPSTest::Init()
 	GetGUI().initGUI();
 	GetRenderer().attachCamera(&camera);
 	GetRenderer().initialiseModelDescriptors(GetModels());
-
 }
 
 void FPSTest::Render()
