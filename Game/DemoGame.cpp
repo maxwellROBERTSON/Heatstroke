@@ -17,6 +17,8 @@
 #include "../Engine/ECS/Components/AudioComponent.hpp"
 #include "../Engine/Audio/SoundSource.h"
 
+#include <GLFW/glfw3.h>
+
 using namespace Engine;
 
 Camera camera = Camera();
