@@ -49,7 +49,7 @@ namespace Engine
 
 		void AddClip(std::string path);
 		//perform this on a thread?
-		void PlaySound();
+		void playSound();
 	};
 }
 

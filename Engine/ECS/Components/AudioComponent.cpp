@@ -29,7 +29,9 @@ void Engine::AudioComponent::AddClip(std::string path)
 
 
 //perform this on a separate thread?
-void Engine::AudioComponent::PlaySound()
+void Engine::AudioComponent::playSound()
 {
 	speaker->Play(soundClip);
 }
+
+

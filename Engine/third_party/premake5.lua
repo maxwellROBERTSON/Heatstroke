@@ -17,6 +17,7 @@ includedirs("tgen/include")
 includedirs("tinygltf/")
 includedirs("imgui/")
 
+
 defines("GLM_FORCE_RADIANS=1")
 defines("GLM_FORCE_SIZE_T_LENGTH=1")
 defines("GLM_ENABLE_EXPERIMENTAL=1")
@@ -184,6 +185,7 @@ project("imgui")
     files("imgui/backend/**.cpp")
     files("imgui/misc/**/**.h**")
     files("imgui/misc/**/**.cpp")
+
 
 -- project("stb")
 --     kind "StaticLib"

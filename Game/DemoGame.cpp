@@ -9,11 +9,12 @@
 #include "../Engine/vulkan/PipelineCreation.hpp"
 #include "../Engine/vulkan/Renderer.hpp"
 #include "../Engine/vulkan/VulkanDevice.hpp"
-#include "../Engine/ECS/Components/AudioComponent.hpp"
+
 
 #include "Error.hpp"
 #include "toString.hpp"
-
+#include "../Engine/ECS/Components/AudioComponent.hpp"
+#include "../Engine/Audio/SoundSource.h"
 
 
 using namespace Engine;
@@ -22,11 +23,9 @@ Camera camera = Camera();
 
 void FPSTest::Init()
 {
-
 	AudioComponent ac;
-	//ac.AddClip("../Game/assets/AudioClips/Ugh.wav");
-
-	//ac.PlaySound();
+	ac.AddClip("Game\\assets\\AudioClips\\Ugh.wav");
+	ac.playSound();
 
 
 	//create thread which then begins execution of initialiseModels

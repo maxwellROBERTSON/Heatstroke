@@ -1,7 +1,7 @@
 #pragma once
 
 //dependencies
-#include "../third_party/AL/al.h"
+#include "../AL/al.h"
 #include <vector>
 
 //storage of sound file

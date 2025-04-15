@@ -82,7 +82,8 @@ dofile("Engine/Utils/glslc.lua")
 project "Engine"
     local sources = {
         "Engine/Core/**",
-	"Engine/Audio/**",
+	    "Engine/Audio/**",
+	    "Engine/ThreadPool/**",
         "Engine/Input/**", 
         "Engine/Events/**", 
         "Engine/gltf/**",
@@ -146,14 +147,25 @@ project "Engine"
         }
 
     filter { "system:windows", "configurations:Debug" }
-        libdirs { "Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\debug\\lib" }
-        links(os.matchfiles("Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\debug\\lib\\*.lib"))
+        libdirs { "Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\debug\\lib",
+                  "Engine\\third_party\\AL\\lib" 
+                }
+        links(os.matchfiles("Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\debug\\lib\\*.lib"), "OpenAL32")
         postbuildcommands {
             "if not exist \"%{wks.location}bin\\PhysXFoundation_64.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\debug\\bin\\PhysXFoundation_64.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\debug\\bin\\PhysXFoundation_64.dll\" \"%{wks.location}bin\"",
             "if not exist \"%{wks.location}bin\\PhysXCommon_64.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\debug\\bin\\PhysXCommon_64.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\debug\\bin\\PhysXCommon_64.dll\" \"%{wks.location}bin\"",
             "if not exist \"%{wks.location}bin\\PhysX_64.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\debug\\bin\\PhysX_64.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\debug\\bin\\PhysX_64.dll\" \"%{wks.location}bin\"",
             "if not exist \"%{wks.location}bin\\PhysXCooking_64.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\debug\\bin\\PhysXCooking_64.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\debug\\bin\\PhysXCooking_64.dll\" \"%{wks.location}bin\""
         }
+
+        filter { "system:windows" }
+        libdirs {
+                  "Engine\\third_party\\AL\\lib"                  
+                }
+        links{ "OpenAL32", "sndfile"}
+
+
+
 
     filter { "system:windows", "configurations:Release" }
         libdirs { "Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\lib" }
@@ -214,6 +226,12 @@ project "Game"
     removefiles("**.vcxproj*")
 
     filter "*"
+
+    filter { "system:windows", "configurations:Debug" }
+        libdirs {
+                  "Engine\\third_party\\AL\\lib"                  
+                }
+        links{ "OpenAL32", "sndfile"}
 
     filter { "system:linux" }
         libdirs { "Engine/third_party/vcpkg/packages/physx_x64-linux/lib" }
