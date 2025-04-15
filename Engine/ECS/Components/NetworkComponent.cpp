@@ -21,9 +21,14 @@ namespace Engine
 	void NetworkComponent::SetDataArray(uint8_t* data)
 	{
 		size_t offset = 0;
-
-		std::memcpy(&clientId, data + offset, sizeof(clientId));
+		if (std::memcmp(&clientId, data + offset, sizeof(clientId)) != 0)
+		{
+			std::memcpy(&clientId, data + offset, sizeof(clientId));
+			SetComponentHasChanged();
+		}
+		offset += sizeof(clientId);
 	}
+
 
 	// Set component has changed in entity manager
 	void NetworkComponent::SetComponentHasChanged()

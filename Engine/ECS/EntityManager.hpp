@@ -5,6 +5,7 @@
 #include <memory>
 
 #include "Entity.hpp"
+#include "Components/PhysicsComponent.hpp"
 
 namespace Engine
 {
@@ -52,6 +53,9 @@ namespace Engine
 		// Get all changed entity and component data
 		void GetAllChangedData(uint8_t*);
 
+		// Get physics components of entities to be simulated locally
+		std::vector<ComponentBase*> GetSimulatedPhysicsComponents();
+
 		// Setters
 
 		// Set component data of all entities for all component type
@@ -78,6 +82,9 @@ namespace Engine
 
 		// Add an entity with given types
 		Entity* MakeNewEntity(std::vector<ComponentTypes>);
+
+		// Add physics entity to be simulated locally
+		void AddSimulatedPhysicsEntity(int entityId) { simulatedPhysicsEntities.emplace_back(entityId); }
 
 		// Clears the manager on disconnect
 		void ClearManager();
@@ -116,6 +123,9 @@ namespace Engine
 
 		// Next available entity with a network component
 		int nextNetworkComponent = -1;
+
+		// Vector of entities with physics components that need to be updated locally per frame
+		std::vector<int> simulatedPhysicsEntities;
 
 		// For each entity:
 		// Component vector of int = registry.GetNumComponents * sizeof(int)

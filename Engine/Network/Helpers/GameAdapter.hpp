@@ -29,19 +29,6 @@ namespace Engine
     RESPONSE_CHAT_MESSAGES,
     COUNT*/
 
-    class MessageReceived : public yojimbo::Message
-    {
-    public:
-        MessageReceived() {}
-
-        template <typename Stream> bool Serialize(Stream& stream)
-        {
-            return true;
-        }
-
-        YOJIMBO_VIRTUAL_SERIALIZE_FUNCTIONS();
-    };
-
     class RequestEntityData : public yojimbo::Message
     {
     public:
@@ -75,6 +62,19 @@ namespace Engine
         YOJIMBO_VIRTUAL_SERIALIZE_FUNCTIONS();
     };
 
+    class ClientInitialized : public yojimbo::Message
+    {
+    public:
+        ClientInitialized() {}
+
+        template <typename Stream> bool Serialize(Stream& stream)
+        {
+            return true;
+        }
+
+        YOJIMBO_VIRTUAL_SERIALIZE_FUNCTIONS();
+    };
+
     class ClientUpdateEntityData : public yojimbo::BlockMessage
     {
     public:
@@ -95,21 +95,43 @@ namespace Engine
         YOJIMBO_VIRTUAL_SERIALIZE_FUNCTIONS();
     };
 
+    class ServerUpdateEntityData : public yojimbo::BlockMessage
+    {
+    public:
+        ServerUpdateEntityData() {}
+
+        template <typename Stream> bool Serialize(Stream& stream)
+        {
+            int size = GetBlockSize();
+            uint8_t* block = GetBlockData();
+            for (int i = 0; i < size; i++)
+            {
+                serialize_bits(stream, block[i], 8);
+            }
+
+            return true;
+        }
+
+        YOJIMBO_VIRTUAL_SERIALIZE_FUNCTIONS();
+    };
+
     enum GameMessageType
     {
-        MESSAGE_RECEIVED,
         REQUEST_ENTITY_DATA,
         RESPONSE_ENTITY_DATA,
+        CLIENT_INITIALIZED,
         CLIENT_UPDATE_ENTITY_DATA,
+        SERVER_UPDATE_ENTITY_DATA,
         NUM_GAME_MESSAGE_TYPES
     };
 
     const std::string GameMessageTypeStrings[] =
     {
-        "MESSAGE_RECEIVED",
         "REQUEST_ENTITY_DATA",
         "RESPONSE_ENTITY_DATA",
+        "CLIENT_INITIALIZED",
         "CLIENT_UPDATE_ENTITY_DATA",
+        "SERVER_UPDATE_ENTITY_DATA",
         "NUM_GAME_MESSAGE_TYPES"
     };
 
@@ -125,12 +147,6 @@ namespace Engine
             (void)allocator;
             switch (type)
             {
-            case MESSAGE_RECEIVED:
-                message = YOJIMBO_NEW(allocator, MessageReceived);
-                if (!message)
-                    return nullptr;
-                SetMessageType(message, type);
-                return message;
             case REQUEST_ENTITY_DATA:
                 message = YOJIMBO_NEW(allocator, RequestEntityData);
                 if (!message)
@@ -143,8 +159,20 @@ namespace Engine
                     return nullptr;
                 SetMessageType(message, type);
                 return message;
+            case CLIENT_INITIALIZED:
+                message = YOJIMBO_NEW(allocator, ClientInitialized);
+                if (!message)
+                    return nullptr;
+                SetMessageType(message, type);
+                return message;
             case CLIENT_UPDATE_ENTITY_DATA:
                 message = YOJIMBO_NEW(allocator, ClientUpdateEntityData);
+                if (!message)
+                    return nullptr;
+                SetMessageType(message, type);
+                return message;
+            case SERVER_UPDATE_ENTITY_DATA:
+                message = YOJIMBO_NEW(allocator, ServerUpdateEntityData);
                 if (!message)
                     return nullptr;
                 SetMessageType(message, type);

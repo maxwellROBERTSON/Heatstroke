@@ -1,4 +1,4 @@
-#include "PhysicsComponent.hpp"
+﻿#include "PhysicsComponent.hpp"
 
 namespace Engine
 {
@@ -31,21 +31,54 @@ namespace Engine
 	{
 		size_t offset = 0;
 
-		std::memcpy( &type, data + offset, sizeof(type));
+		if (std::memcmp(&type, data + offset, sizeof(type)) != 0)
+		{
+			std::memcpy(&type, data + offset, sizeof(type));
+			SetComponentHasChanged();
+		}
 		offset += sizeof(type);
-		std::memcpy(&translation, data + offset, sizeof(translation));
+
+		if (std::memcmp(&translation, data + offset, sizeof(translation)) != 0)
+		{
+			std::memcpy(&translation, data + offset, sizeof(translation));
+			SetComponentHasChanged();
+		}
 		offset += sizeof(translation);
-		std::memcpy(&scale, data + offset, sizeof(scale));
+
+		if (std::memcmp(&scale, data + offset, sizeof(scale)) != 0)
+		{
+			std::memcpy(&scale, data + offset, sizeof(scale));
+			SetComponentHasChanged();
+		}
 		offset += sizeof(scale);
-		std::memcpy(&rotation, data + offset, sizeof(rotation));
+
+		if (std::memcmp(&rotation, data + offset, sizeof(rotation)) != 0)
+		{
+			std::memcpy(&rotation, data + offset, sizeof(rotation));
+			SetComponentHasChanged();
+		}
 		offset += sizeof(rotation);
-		std::memcpy(&isPerson, data + offset, sizeof(isPerson));
+
+		if (std::memcmp(&isPerson, data + offset, sizeof(isPerson)) != 0)
+		{
+			std::memcpy(&isPerson, data + offset, sizeof(isPerson));
+			SetComponentHasChanged();
+		}
 		offset += sizeof(isPerson);
-		std::memcpy(&entityId, data + offset, sizeof(entityId));
+
+		if (std::memcmp(&entityId, data + offset, sizeof(entityId)) != 0)
+		{
+			std::memcpy(&entityId, data + offset, sizeof(entityId));
+			SetComponentHasChanged();
+		}
+		offset += sizeof(entityId);
 	}
 
+
 	// Init
-	void PhysicsComponent::Init(PhysicsWorld& pworld, PhysicsType physicsType, vk::Model& model, glm::mat4 transform, int index)
+	// isClient = true if the system using the function is a client (not the server)
+	// isLocalPlayer = true if this entity is the local client's entity
+	void PhysicsComponent::Init(PhysicsWorld& pworld, PhysicsType physicsType, vk::Model& model, glm::mat4 transform, int index, bool isClient, bool isLocalPlayer)
 	{
 		entityId = index;
 
@@ -75,6 +108,11 @@ namespace Engine
 		{
 		case PhysicsType::STATIC:
 		{
+			if (isClient && !isLocalPlayer)
+			{
+				break;
+			}
+
 			staticBody = pworld.gPhysics->createRigidStatic(pxTransform);
 			if (staticBody) {
 				PxShape* shape = PxRigidActorExt::createExclusiveShape(
@@ -91,19 +129,34 @@ namespace Engine
 		{
 			dynamicBody = pworld.gPhysics->createRigidDynamic(pxTransform);
 
-			if (dynamicBody) {
-				PxShape* shape = PxRigidActorExt::createExclusiveShape(
-					*dynamicBody, PxBoxGeometry(halfExtent), *material
-				);
+			if (!dynamicBody) break;
 
-				pworld.gScene->addActor(*dynamicBody);
+			PxShape* shape = PxRigidActorExt::createExclusiveShape(
+				*dynamicBody, PxBoxGeometry(halfExtent), *material
+			);
+
+			if (isClient && !isLocalPlayer)
+			{
+				// Remote entity on client → make kinematic
+				dynamicBody->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, true);
+			}
+
+			pworld.gScene->addActor(*dynamicBody);
+
+			if (!(isClient && !isLocalPlayer))
+			{
+				// Only server or local-controlled entities count for simulation stats
 				pworld.numDynamicRigid++;
 			}
+
 			break;
 		}
 
 		case PhysicsType::CONTROLLER:
 		{
+			if ((!isClient) || (isClient && !isLocalPlayer))
+				break;
+
 			// set ControllerDescription
 			PxCapsuleControllerDesc desc;
 			desc.height = 1.f;

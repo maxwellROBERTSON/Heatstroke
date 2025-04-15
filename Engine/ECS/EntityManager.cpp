@@ -217,6 +217,7 @@ namespace Engine
 		size_t offset = 0;
 		ComponentTypes type;
 		int numChangedEntities = changedEntitiesAndComponents.size();
+		std::cout << "numChangedEntities: " << numChangedEntities << std::endl;
 
 		// | # changed entities |
 		block[offset++] = static_cast<uint8_t>(numChangedEntities);
@@ -224,6 +225,10 @@ namespace Engine
 		// | entity ID's | * # changed entities
 		for (auto& [entity, flags] : changedEntitiesAndComponents)
 		{
+			std::cout << "Entity " << entity << " with flags ";
+			for (int i : flags)
+				std::cout << i << " ";
+			std::cout << std::endl;
 			block[offset++] = static_cast<uint8_t>(entity);
 		}
 
@@ -287,6 +292,17 @@ namespace Engine
 				}
 			}
 		}
+	}
+
+	// Get physics components of entities to be simulated locally
+	std::vector<ComponentBase*> EntityManager::GetSimulatedPhysicsComponents()
+	{
+		std::vector<ComponentBase*> returnVec;
+		for (int i = 0; i < simulatedPhysicsEntities.size(); i++)
+		{
+			returnVec.emplace_back(GetComponentOfEntity(simulatedPhysicsEntities[i], PHYSICS));
+		}
+		return returnVec;
 	}
 
 	// Setters
@@ -413,6 +429,7 @@ namespace Engine
 
 		// | # changed entities |
 		int numChangedEntities = static_cast<int>(block[offset++]);
+		std::cout << "numChangedEntities: " << numChangedEntities << std::endl;
 		f = block + offset;
 
 		// | entity ID's | * # changed entities
@@ -420,6 +437,7 @@ namespace Engine
 		for (int i = 0; i < numChangedEntities; i++)
 		{
 			entityIdEntityComponentIndex[i] = static_cast<int>(block[offset++]);
+			std::cout << "Entity ID " << entityIdEntityComponentIndex[i] << std::endl;
 		}
 
 		// | # changed entity / components | * # types + 1
@@ -459,6 +477,7 @@ namespace Engine
 					{
 						if ((j * 8 + k) == 0)
 						{
+							std::cout << "Changed entity " << i << std::endl;
 							entityPtr->SetDataArray(block + entityComponentOffsets[0]);
 							entityComponentOffsets[0] += entitySize;
 							continue;
@@ -488,7 +507,7 @@ namespace Engine
 						default:
 							throw std::runtime_error("Unknown component type");
 						}
-						std::cout << "Edited component " << type << " to entity " << entity.GetEntityId() << std::endl;
+						std::cout << "Edited component " << type << " of entity " << entityPtr->GetEntityId() << std::endl;
 					}
 				}
 			}
@@ -502,7 +521,6 @@ namespace Engine
 		std::vector<int> indexArray;
 		ComponentBase* base;
 		ComponentTypes type;
-		entities;
 		for (int i = 0; i < changedEntitiesAndComponents.size(); i++)
 		{
 			entity = GetEntity(changedEntitiesAndComponents[i].first);
@@ -546,6 +564,7 @@ namespace Engine
 		{
 			if (pair.first == id)
 			{
+				pair.second[0] = true;
 				return;
 			}
 		}

@@ -122,18 +122,15 @@ namespace Engine
 			PxControllerFilters filters;
 			this->controller->move(displacement, 0.01f, deltatime, filters);
 		}
-
 	}
 
 	// update models matrices
 	void PhysicsWorld::updateObjects(Engine::EntityManager& entityManager, std::vector<Engine::vk::Model>& models)
 	{
-		// get all PhysicsComponent
-		std::vector<std::unique_ptr<ComponentBase>>* physicsComponents = entityManager.GetComponentsOfType(PHYSICS);
-		if (physicsComponents == nullptr)
-			return;
-		for (std::size_t i = 0; i < (*physicsComponents).size(); i++) {
-			PhysicsComponent* p = reinterpret_cast<PhysicsComponent*>((*physicsComponents)[i].get());
+		// get all PhysicsComponents which are simulated locally
+		std::vector<ComponentBase*> physicsComponents = entityManager.GetSimulatedPhysicsComponents();
+		for (std::size_t i = 0; i < physicsComponents.size(); i++) {
+			PhysicsComponent* p = reinterpret_cast<PhysicsComponent*>(physicsComponents[i]);
 			// glm::mat4 matrix(1.0f);
 			// dynamic update
 			if (p->GetPhysicsType() == PhysicsComponent::PhysicsType::DYNAMIC)

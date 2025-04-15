@@ -61,6 +61,8 @@ namespace Engine
 
 		ProcessMessages();
 
+		QueueStateMessages();
+
 		server->SendPackets();
 
 		/*std::cout << "Yojimbo Time: " << yojimbo_time() << std::endl;
@@ -103,7 +105,11 @@ namespace Engine
 		std::cout << GameMessageTypeStrings[message->GetType()] << " FROM CLIENT " << clientIndex << " WITH MESSAGEID = " << message->GetId() << std::endl;
 		if (message->GetType() == REQUEST_ENTITY_DATA)
 		{
-			HandleRequestEntityData(clientIndex);
+			connectionQueue.push_back(clientIndex);
+		}
+		else if (message->GetType() == CLIENT_INITIALIZED)
+		{
+			loadedClients.push_back(clientIndex);
 		}
 		else if (message->GetType() == CLIENT_UPDATE_ENTITY_DATA)
 		{
@@ -111,24 +117,87 @@ namespace Engine
 		}
 	}
 
-	// Send a message receieved message
-	void GameServer::HandleSendMessageReceived(int clientIndex)
+	// Handle a client update of the entity data
+	void GameServer::HandleClientUpdateEntityData(int clientIndex, ClientUpdateEntityData* message)
 	{
-		/*MessageReceived* message = static_cast<MessageReceived*>(server->CreateMessage(clientIndex, MESSAGE_RECEIVED));
-		if (message)
+		if (message->GetBlockSize() == 0)
+			throw std::runtime_error("Null block data size");
+		int blockSize = message->GetBlockSize();
+
+		if (game->GetNetwork().GetStatus() == Status::SERVER_INITIALIZED)
 		{
-			if (!server->CanSendMessage(clientIndex, yojimbo::CHANNEL_TYPE_RELIABLE_ORDERED))
+			if (blockSize != 0)
 			{
-				std::cout << "MESSAGE QUEUE NOT AVAILABLE FOR " << GameMessageTypeStrings[MESSAGE_RECEIVED] << " TO CLIENT " << clientIndex << std::endl;
-				return;
+				game->GetEntityManager().SetAllChangedData(message->GetBlockData());
+				std::cout << "Data updated from client " << clientIndex << std::endl;
 			}
-			server->SendServerMessage(clientIndex, yojimbo::CHANNEL_TYPE_RELIABLE_ORDERED, message);
-			std::cout << GameMessageTypeStrings[MESSAGE_RECEIVED] << " TO CLIENT " << clientIndex << " WITH: ";
-			std::cout << "MESSAGEID = " << message->GetId() << std::endl;
+			else
+			{
+				std::cout << "FAILED, BLOCK SIZE IS 0." << std::endl;
+			}
 		}
 		else
 		{
-			std::cout << "FAILED TO SEND " << GameMessageTypeStrings[MESSAGE_RECEIVED] << " TO CLIENT " << clientIndex << std::endl;
+			std::cout << "FAILED, SERVER NOT YET INITIALISED." << std::endl;
+		}
+	}
+
+	// Send entity state update to each client, if new client, send all data
+	void GameServer::QueueStateMessages()
+	{
+		for (int client : connectionQueue)
+		{
+			HandleRequestEntityData(client);
+			auto it = std::find(connectionQueue.begin(), connectionQueue.end(), client);
+			connectionQueue.erase(it);
+		}
+
+		int bytes = game->GetEntityManager().GetTotalChangedDataSize();
+		if (bytes != 0)
+		{
+			for (int client : loadedClients)
+			{
+				if (server->IsClientConnected(client))
+				{
+					ServerUpdateEntityData* message = static_cast<ServerUpdateEntityData*>(server->CreateMessage(client, SERVER_UPDATE_ENTITY_DATA));
+					if (message)
+					{
+						uint8_t* block = server->AllocateBlock(client, 1024);
+						std::cout << "Block allocated at: " << static_cast<void*>(block) << std::endl;
+						if (block)
+						{
+							game->GetEntityManager().GetAllChangedData(block);
+							server->AttachBlockToMessage(client, message, block, 1024);
+							if (!server->CanSendMessage(client, yojimbo::CHANNEL_TYPE_UNRELIABLE_UNORDERED))
+							{
+								std::cout << "MESSAGE QUEUE NOT AVAILABLE FOR " << GameMessageTypeStrings[SERVER_UPDATE_ENTITY_DATA] << std::endl;
+								server->ReleaseMessage(client, message);
+								return;
+							}
+							server->SendServerMessage(client, yojimbo::CHANNEL_TYPE_UNRELIABLE_UNORDERED, message);
+							std::cout << GameMessageTypeStrings[SERVER_UPDATE_ENTITY_DATA] << " TO CLIENT " << client << " WITH: ";
+							std::cout << "MESSAGEID = " << message->GetId() << ", BLOCK SIZE = " << 1024 << std::endl;
+							game->GetEntityManager().ResetChanged();
+							return;
+						}
+						else
+						{
+							std::cout << "Block allocation failed." << std::endl;
+							server->ReleaseMessage(client, message);
+						}
+					}
+					std::cout << "FAILED TO SEND " << GameMessageTypeStrings[SERVER_UPDATE_ENTITY_DATA] << " TO CLIENT " << client << std::endl;
+				}
+				else
+				{
+					auto it = std::find(loadedClients.begin(), loadedClients.end(), client);
+					loadedClients.erase(it);
+				}
+			}
+		}
+		/*else
+		{
+			std::cout << "SERVER STATE UNCHANGED. NO " << GameMessageTypeStrings[RESPONSE_ENTITY_DATA] << " MESSAGE SENT TO CLIENTS" << std::endl;
 		}*/
 	}
 
@@ -166,14 +235,6 @@ namespace Engine
 		std::cout << "FAILED TO SEND " << GameMessageTypeStrings[RESPONSE_ENTITY_DATA] << " TO CLIENT " << clientIndex << std::endl;
 		//adapter->factory->ReleaseMessage(message);
 		//server->ReleaseMessage(clientIndex, message);
-	}
-
-	// Handle a response for entity data
-	void GameServer::HandleClientUpdateEntityData(int clientIndex, ClientUpdateEntityData* message)
-	{
-		if (message->GetBlockSize() == 0)
-			throw std::runtime_error("Null block data size");
-		HandleSendMessageReceived(clientIndex);
 	}
 
 	// Clean up server memory using yojimbo

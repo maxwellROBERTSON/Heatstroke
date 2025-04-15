@@ -113,7 +113,7 @@ namespace Engine
 		ImGui::Text("Demo game made using Heatstroke", ImVec2(*w / 4, *h / 4));
 		if (ImGui::Button("Single Player", ImVec2(*w / 4, *h / 4)))
 		{
-			game->loadOnlineEntities();
+			game->loadOfflineEntities();
 			/*uint8_t b[1000];
 			game->GetEntityManager().GetAllData(b);
 			game->GetEntityManager().ClearManager();
@@ -274,7 +274,7 @@ namespace Engine
 					game->GetRenderer().initialiseModelMatrices();
 					game->GetRenderer().initialiseJointMatrices();
 					game->ToggleRenderMode(GUIHOME);
-					game->ToggleRenderMode(GUISERVER);
+					game->ToggleRenderMode(FORWARD);
 					game->SetServer(portNum, maxClientsNum);
 				}
 			}

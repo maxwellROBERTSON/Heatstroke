@@ -61,16 +61,9 @@ namespace Engine
 		clientTime = client->GetTime();
 		double t = yojimbo_time();
 		if (clientTime + dt > yojimbo_time()) {
-			clientTime += dt;
+			return;
 		}
-
-		/*if (block != nullptr)
-		{
-			std::cout << "Releasing block." << std::endl;
-			client->FreeBlock(block);
-			message = nullptr;
-			block = nullptr;
-		}*/
+		clientTime += dt;
 
 		clientTime += dt;
 		client->AdvanceTime(clientTime);
@@ -85,14 +78,12 @@ namespace Engine
 
 			if (game->GetEntityManager().HasSceneChanged() && !client->HasMessagesToSend(yojimbo::CHANNEL_TYPE_UNRELIABLE_UNORDERED))
 			{
-				;// SendGameUpdate();
+				SendGameUpdate();
 			}
 
 			// ... do connected stuff ...
-
-			// send a message when space is pressed
 		}
-		//FreeCurrentBlock();
+
 		client->SendPackets();
 	}
 
@@ -118,6 +109,14 @@ namespace Engine
 		{
 			HandleResponseEntityData((ResponseEntityData*)message);
 		}
+		else if (message->GetType() == SERVER_UPDATE_ENTITY_DATA)
+		{
+			ServerUpdateEntityData* derived = (ServerUpdateEntityData*)message;
+			std::cout << GameMessageTypeStrings[derived->GetType()] << " FROM SERVER WITH: ";
+			std::cout << "MESSAGEID = " << derived->GetId();
+			std::cout << ", BLOCK SIZE = " << derived->GetBlockSize() << std::endl;
+			int blockSize = derived->GetBlockSize();
+		}
 	}
 
 	// Send game message with any updated entities
@@ -137,7 +136,7 @@ namespace Engine
 				client->AttachBlockToMessage(message, block, 1024);
 				if (!client->CanSendMessage(yojimbo::CHANNEL_TYPE_UNRELIABLE_UNORDERED))
 				{
-					std::cout << "MESSAGE QUEUE NOT AVAILABLE FOR " << GameMessageTypeStrings[MESSAGE_RECEIVED] << std::endl;
+					std::cout << "MESSAGE QUEUE NOT AVAILABLE FOR " << GameMessageTypeStrings[CLIENT_UPDATE_ENTITY_DATA] << std::endl;
 					client->ReleaseMessage(message);
 					return;
 				}
@@ -156,7 +155,7 @@ namespace Engine
 				client->ReleaseMessage(message);
 			}
 		}
-		std::cout << "FAILED TO SEND " << GameMessageTypeStrings[MESSAGE_RECEIVED] << " TO SERVER" << std::endl;
+		std::cout << "FAILED TO SEND " << GameMessageTypeStrings[CLIENT_UPDATE_ENTITY_DATA] << " TO SERVER" << std::endl;
 	}
 
 	// Handle a response from a request for entity data
@@ -173,36 +172,70 @@ namespace Engine
 			{
 				game->GetEntityManager().SetAllData(message->GetBlockData());
 				EntityManager* manager = &(game->GetEntityManager());
-				std::vector<int> vec = manager->GetEntitiesWithComponent(PHYSICS);
-				PhysicsComponent* comp;
-				for (int i = 0; i < vec.size(); i++)
-				{
-					comp = reinterpret_cast<PhysicsComponent*>(manager->GetComponentOfEntity(vec[i], PHYSICS));
-					glm::mat4 mat = manager->GetEntity(vec[i])->GetModelMatrix();
-					PhysicsComponent::PhysicsType type = comp->GetPhysicsType();
-					Engine::vk::Model& model = game->GetModels()[vec[i]];
-					if (type == PhysicsComponent::PhysicsType::STATIC)
-					{
-						comp->InitComplexShape(game->GetPhysicsWorld(), type, model, mat, vec[i]);
-					}
-					else
-					{
-						comp->Init(game->GetPhysicsWorld(), type, model, mat, vec[i]);
-					}
-				}
+
 				std::vector<int> entitiesWithNetworkComponent = manager->GetEntitiesWithComponent(NETWORK);
+				int thisClientEntity = 0;
 				NetworkComponent* networkComponent;
 				for (int i = 0; i < entitiesWithNetworkComponent.size(); i++)
 				{
 					networkComponent = reinterpret_cast<NetworkComponent*>(manager->GetComponentOfEntity(entitiesWithNetworkComponent[i], NETWORK));
 					if (networkComponent->GetClientId() == clientId)
 					{
+						thisClientEntity = entitiesWithNetworkComponent[i];
 						CameraComponent* cameraComponent = reinterpret_cast<CameraComponent*>(manager->GetComponentOfEntity(entitiesWithNetworkComponent[i], CAMERA));
 						game->GetRenderer().attachCameraComponent(cameraComponent);
 						break;
 					}
 				}
+
+				std::vector<int> vec = manager->GetEntitiesWithComponent(PHYSICS);
+				PhysicsComponent* physicsComp;
+				for (int i = 0; i < vec.size(); i++)
+				{
+					physicsComp = reinterpret_cast<PhysicsComponent*>(manager->GetComponentOfEntity(vec[i], PHYSICS));
+					glm::mat4 mat = manager->GetEntity(vec[i])->GetModelMatrix();
+					PhysicsComponent::PhysicsType type = physicsComp->GetPhysicsType();
+					Engine::vk::Model& model = game->GetModels()[vec[i]];
+					if (type == PhysicsComponent::PhysicsType::STATIC)
+					{
+						physicsComp->InitComplexShape(game->GetPhysicsWorld(), type, model, mat, vec[i]);
+					}
+					else
+					{
+						//if (networkComp != nullptr && vec[i] == thisClientEntity)
+						if (vec[i] == thisClientEntity)
+						{
+							physicsComp->Init(game->GetPhysicsWorld(), type, model, mat, vec[i], true, true);
+							manager->AddSimulatedPhysicsEntity(vec[i]);
+						}
+						/*else if (networkComp != nullptr)
+						{
+							physicsComp->Init(game->GetPhysicsWorld(), type, model, mat, vec[i], true, false);
+						}*/
+						else
+						{
+							physicsComp->Init(game->GetPhysicsWorld(), type, model, mat, vec[i], true, false);
+						}
+					}
+				}
 				game->GetNetwork().SetStatus(Status::CLIENT_LOADED);
+				game->GetEntityManager().ResetChanged();
+
+				ClientInitialized* message = static_cast<ClientInitialized*>(client->CreateMessage(CLIENT_INITIALIZED));
+				if (message)
+				{
+					if (!client->CanSendMessage(yojimbo::CHANNEL_TYPE_RELIABLE_ORDERED))
+					{
+						std::cout << "MESSAGE QUEUE NOT AVAILABLE FOR " << GameMessageTypeStrings[CLIENT_INITIALIZED] << std::endl;
+						client->ReleaseMessage(message);
+						return;
+					}
+					client->SendClientMessage(yojimbo::CHANNEL_TYPE_RELIABLE_ORDERED, message);
+					std::cout << GameMessageTypeStrings[CLIENT_INITIALIZED] << " TO SERVER WITH: ";
+					std::cout << "MESSAGEID = " << message->GetId() << std::endl;
+					return;
+				}
+				std::cout << "FAILED TO SEND " << GameMessageTypeStrings[CLIENT_INITIALIZED] << " TO SERVER" << std::endl;
 			}
 			else
 			{
@@ -278,10 +311,21 @@ namespace Engine
 		info["Client Time"] = std::to_string(clientTime);
 		info["Dt"] = std::to_string(dt);
 		info["Client Address"] = std::to_string(*client->GetAddress().GetAddress4());
+		const uint8_t* addPtr = client->GetAddress().GetAddress4();
+		std::string ipAddress = std::to_string(addPtr[0]) + "." +
+			std::to_string(addPtr[1]) + "." +
+			std::to_string(addPtr[2]) + "." +
+			std::to_string(addPtr[3]);
+		info["Client Address"] = ipAddress;
 		if (client->IsConnected())
 		{
 			info["Client Connected"] = "true";
-			info["Server Address"] = std::to_string(*serverAddress.GetAddress4());
+			addPtr = serverAddress.GetAddress4();
+			ipAddress = std::to_string(addPtr[0]) + "." +
+				std::to_string(addPtr[1]) + "." +
+				std::to_string(addPtr[2]) + "." +
+				std::to_string(addPtr[3]);
+			info["Server Address"] = ipAddress;
 		}
 		else
 		{

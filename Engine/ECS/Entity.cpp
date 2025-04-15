@@ -3,6 +3,8 @@
 #include "Entity.hpp"
 #include "EntityManager.hpp"
 
+#include <glm/gtx/string_cast.hpp>
+
 namespace Engine
 {
 	class EntityManager;
@@ -51,10 +53,19 @@ namespace Engine
 	void Entity::SetDataArray(uint8_t* data)
 	{
 		size_t offset = 0;
-
-		std::memcpy(&entityId, data + offset, sizeof(entityId));
+		
+		if (std::memcmp(&entityId, data + offset, sizeof(entityId)) != 0)
+		{
+			std::memcpy(&entityId, data + offset, sizeof(entityId));
+			SetEntityHasChanged();
+		}
 		offset += sizeof(entityId);
-		std::memcpy(&modelMatrix, data + offset, sizeof(modelMatrix));
+		if (std::memcmp(&modelMatrix, data + offset, sizeof(modelMatrix)) != 0)
+		{
+			std::cout << "Model matrix memcpy." << std::endl;
+			std::memcpy(&modelMatrix, data + offset, sizeof(modelMatrix));
+			SetEntityHasChanged();
+		}
 	}
 
 	// Position Setters
@@ -111,6 +122,7 @@ namespace Engine
 		if (aModelMatrix != modelMatrix)
 		{
 			modelMatrix = aModelMatrix;
+			std::cout << "Entity 1's model matrix: " << glm::to_string(this->GetModelMatrix()) << std::endl;
 			SetEntityHasChanged();
 		}
 	} 

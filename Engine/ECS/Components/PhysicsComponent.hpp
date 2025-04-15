@@ -99,7 +99,7 @@ namespace Engine
 		void SetDataArray(uint8_t*) override;
 
 		// Init
-		void Init(PhysicsWorld&, PhysicsType, vk::Model&, glm::mat4, int);
+		void Init(PhysicsWorld&, PhysicsType, vk::Model&, glm::mat4, int, bool, bool);
 
 		// Init complex shape
 		void InitComplexShape(PhysicsWorld&, PhysicsType, vk::Model&, glm::mat4, int);

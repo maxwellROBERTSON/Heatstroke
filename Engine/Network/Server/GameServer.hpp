@@ -36,14 +36,14 @@ namespace Engine
 		// Process message type with corresponding function
 		void ProcessMessage(int, yojimbo::Message*);
 
-		// Handle a message receieved message
-		void HandleSendMessageReceived(int);
+		// Handle a client update on entity data
+		void HandleClientUpdateEntityData(int, ClientUpdateEntityData*);
+
+		// Queue entity state messages to connected clients, if new client, send all data
+		void QueueStateMessages();
 
 		// Handle a request for entity data
 		void HandleRequestEntityData(int);
-
-		// Handle a client update for entity data
-		void HandleClientUpdateEntityData(int, ClientUpdateEntityData*);
 
 		// Clean up server memory using yojimbo
 		void CleanUp();
@@ -57,6 +57,13 @@ namespace Engine
 	private:
 		double serverTime;
 		int maxClients;
+
+		// Client sends a request for entity data, which moves it into the connection queue
+		// Once server, sends the response for entity data, it is removed from the connection queue
+		// It is only added to the loadedClients once a ClientInitialized message is recevied,
+		// And then it is ready for frequent server update messages
+		std::vector<int> connectionQueue;
+		std::vector<int> loadedClients;
 
 		yojimbo::Server* server;
 		yojimbo::ClientServerConfig* config;

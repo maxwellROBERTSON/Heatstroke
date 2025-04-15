@@ -30,20 +30,45 @@ namespace Engine
 	// Setters
 
 	// Set component data
-	void CameraComponent::SetDataArray(uint8_t* data)
-	{
+    void CameraComponent::SetDataArray(uint8_t* data)
+    {
         size_t offset = 0;
 
-        std::memcpy(&camera.fov, data + offset, sizeof(camera.fov));
+        if (std::memcmp(&camera.fov, data + offset, sizeof(camera.fov)) != 0)
+        {
+            std::memcpy(&camera.fov, data + offset, sizeof(camera.fov));
+            SetComponentHasChanged();
+        }
         offset += sizeof(camera.fov);
-        std::memcpy(&camera.nearPlane, data + offset, sizeof(camera.nearPlane));
+
+        if (std::memcmp(&camera.nearPlane, data + offset, sizeof(camera.nearPlane)) != 0)
+        {
+            std::memcpy(&camera.nearPlane, data + offset, sizeof(camera.nearPlane));
+            SetComponentHasChanged();
+        }
         offset += sizeof(camera.nearPlane);
-        std::memcpy(&camera.farPlane, data + offset, sizeof(camera.farPlane));
+
+        if (std::memcmp(&camera.farPlane, data + offset, sizeof(camera.farPlane)) != 0)
+        {
+            std::memcpy(&camera.farPlane, data + offset, sizeof(camera.farPlane));
+            SetComponentHasChanged();
+        }
         offset += sizeof(camera.farPlane);
-        std::memcpy(&camera.position, data + offset, sizeof(camera.position));
+
+        if (std::memcmp(&camera.position, data + offset, sizeof(camera.position)) != 0)
+        {
+            std::memcpy(&camera.position, data + offset, sizeof(camera.position));
+            SetComponentHasChanged();
+        }
         offset += sizeof(camera.position);
-        std::memcpy(&camera.frontDirection, data + offset, sizeof(camera.frontDirection));
-	}
+
+        if (std::memcmp(&camera.frontDirection, data + offset, sizeof(camera.frontDirection)) != 0)
+        {
+            std::memcpy(&camera.frontDirection, data + offset, sizeof(camera.frontDirection));
+            SetComponentHasChanged();
+        }
+    }
+
 
     // Update camera using Camera class
     void CameraComponent::UpdateCamera(GLFWwindow* aWindow, float timeDelta)

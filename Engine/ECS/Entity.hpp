@@ -79,7 +79,7 @@ namespace Engine
 		int entityId;
 
 		// Flag to set whether model matrix needs to be updated
-		bool dirty = true;
+		bool dirty = false;
 		glm::vec3 position{};
 		glm::mat4 rotation{ 1.0f };
 		glm::vec3 scale{ 1.0f };
