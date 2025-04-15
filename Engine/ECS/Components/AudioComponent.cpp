@@ -13,12 +13,32 @@ Engine::AudioComponent::AudioComponent()
 	soundClip = -1;
 }
 
-void Engine::AudioComponent::GetDataArray(uint8_t*)
+void Engine::AudioComponent::GetDataArray(uint8_t* data)
 {
+	uint32_t offset = 0;
+	
+	std::memcpy(data + offset, &soundDevice, sizeof(soundDevice));
+	offset += sizeof(soundDevice);
+	std::memcpy(data + offset, &speaker, sizeof(speaker));
+	offset += sizeof(speaker);
+	std::memcpy(data + offset, &soundBuffer, sizeof(soundBuffer));
+	offset += sizeof(soundBuffer);
+	std::memcpy(data + offset, &soundClip, sizeof(soundClip));
+	offset += sizeof(soundClip);
 }
 
-void Engine::AudioComponent::SetDataArray(uint8_t*)
+void Engine::AudioComponent::SetDataArray(uint8_t* data)
 {
+	uint32_t offset = 0;
+
+	std::memcpy(&soundDevice, data + offset, sizeof(soundDevice));
+	offset += sizeof(soundDevice);
+	std::memcpy(&speaker, data + offset, sizeof(speaker));
+	offset += sizeof(speaker);
+	std::memcpy(&soundBuffer, data + offset, sizeof(soundBuffer));
+	offset += sizeof(soundBuffer);
+	std::memcpy(&soundClip, data + offset, sizeof(soundClip));
+	offset += sizeof(soundClip);
 }
 
 
