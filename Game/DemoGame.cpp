@@ -3,6 +3,7 @@
 #include <chrono>
 #include <thread>
 #include <future>
+#include <type_traits>
 #include <algorithm>
 
 #include "../Engine/vulkan/objects/Buffer.hpp"
@@ -13,7 +14,7 @@
 #include "Error.hpp"
 #include "toString.hpp"
 
-#include <glm/gtx/string_cast.hpp>
+#include <GLFW/glfw3.h>
 
 using namespace Engine;
 
@@ -21,13 +22,15 @@ CameraComponent cameraComponent = CameraComponent();
 
 void FPSTest::Init()
 {
-	//create thread which then begins execution of initialiseModels
-	std::thread initialiseModelsThread(&FPSTest::initialiseModels, this);
+	this->threadPool = thread_pool_wait::get_instance();
+ 
+	//submit task to initialise Models to thread pool
+	auto modelsFut = threadPool->submit(&FPSTest::initialiseModels, this);
 
-	std::cout << "Waiting for the execution of modelsThread to finish..." << std::endl;
+	std::cout << "Waiting for model initialisation" << std::endl;
+	//blocks execution of the rest of the program until the initialiseModels Thread has finished
+	modelsFut.get();
 
-	//blocks execution of the rest of the program until the initialiseModelsThread has finished
-	initialiseModelsThread.join();
 	GetPhysicsWorld().init();
 	GetRenderer().initialiseRenderer();
 	GetGUI().initGUI();
@@ -65,6 +68,10 @@ void FPSTest::Update() {
 	EntityManager& e = GetEntityManager();
 	GetNetwork().Update();
 
+	// Need to process GUI stuff before checking swapchain, since
+	// some GUI settings may require instant swapchain recreation
+	gui.makeGUI();
+
 	if (renderer.checkSwapchain())
 		return;
 
@@ -78,23 +85,26 @@ void FPSTest::Update() {
 
 	if (renderer.GetIsSceneLoaded())
 	{
+		renderer.calculateFPS();
 		renderer.GetCameraComponentPointer()->UpdateCamera(this->GetContext().getGLFWWindow(), timeDelta);
 
 		float fixedTimeDelta = std::min<float>(0.016f, timeDelta);
 
-		physicsWorld.updateCharacter(fixedTimeDelta);
-		// update PVD
-		physicsWorld.gScene->simulate(fixedTimeDelta);
-		physicsWorld.gScene->fetchResults(true);
-		// update physics
+		physicsWorld.updatePhysics(timeDelta);
 		physicsWorld.updateObjects(GetEntityManager(), GetModels());
+
+		//physicsWorld.updateCharacter(fixedTimeDelta);
+		//// update PVD
+		//physicsWorld.gScene->simulate(fixedTimeDelta);
+		//physicsWorld.gScene->fetchResults(true);
+		//// update physics
+		//physicsWorld.updateObjects(GetEntityManager(), GetModels());
 
 		renderer.updateAnimations(timeDelta);
 	}
 
 	renderer.updateUniforms();
-	gui.makeGUI();
-
+	//gui.makeGUI();
 	renderer.render(GetModels());
 	renderer.submitRender();
 }

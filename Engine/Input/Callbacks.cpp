@@ -1,17 +1,18 @@
 #include "Callbacks.hpp"
 
+#include <iostream>
+
 #include "Input.hpp"
 #include "InputCodes.hpp"
 #include "Joystick.hpp"
 #include "Keyboard.hpp"
 #include "Mouse.hpp"
-
-#include <iostream>
-
 #include "../Events/Event.hpp"
 #include "../Events/KeyEvent.hpp"
 #include "../Events/MouseEvent.hpp"
 #include "../Events/WindowEvent.hpp"
+
+#include <GLFW/glfw3.h>
 
 namespace Engine {
 	void onWindowClose(GLFWwindow* aWindow)

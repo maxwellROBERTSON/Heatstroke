@@ -1,5 +1,8 @@
 #include "Renderer.hpp"
 
+#include <numeric>
+#include <format>
+
 #include "Error.hpp"
 #include "toString.hpp"
 #include "VulkanUtils.hpp"
@@ -14,15 +17,21 @@
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_vulkan.h>
 #include <backends/imgui_impl_vulkan.cpp>
+#include <GLFW\glfw3.h>
 
 #define MAX_JOINTS 128u
 
 namespace Engine {
 
-	Renderer::Renderer(VulkanContext* aContext, EntityManager* entityManager, Engine::Game* game) {
+	Renderer::Renderer(VulkanContext* aContext, EntityManager* entityManager, Game* game) {
 		this->context = aContext;
 		this->entityManager = entityManager;
 		this->game = game;
+
+		std::size_t msaaOptionsSize = this->context->window->device->maxSampleCountIndex;
+		for (std::size_t i = 0; i < msaaOptionsSize + 1; i++) {
+			this->msaaOptions.push_back(this->context->window->device->msaaOptions[i]);
+		}
 	}
 
 	VkRenderPass& Renderer::GetRenderPass(std::string s)
@@ -33,8 +42,11 @@ namespace Engine {
 	void Renderer::initialiseRenderer() {
 		// Render passes
 		this->renderPasses.emplace("forward", createRenderPass(*this->context->window));
+		// Use 4 bit sample initially since Vulkan spec states implementations must support at least 1 and 4 bit sample counts.
+		this->renderPasses.emplace("forwardMSAA", createRenderPassMSAA(*this->context->window, VK_SAMPLE_COUNT_4_BIT));
 		this->renderPasses.emplace("deferred", createDeferredRenderPass(*this->context->window));
 		this->renderPasses.emplace("shadow", createShadowRenderPass(*this->context->window));
+		this->renderPasses.emplace("ui", createUIRenderPass(*this->context->window));
 
 		// Descriptor Layouts
 		std::vector<DescriptorSetting> sceneSetting = { {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT} };
@@ -109,10 +121,10 @@ namespace Engine {
 			this->pipelineLayouts["forward"].handle,
 			this->pipelineLayouts["deferred"].handle);
 
-		this->pipelines.emplace("forward", createForwardPipeline(*this->context->window, this->renderPasses["forward"].handle, this->pipelineLayouts["forward"].handle, false, false));
-		this->pipelines.emplace("forwardAlpha", createForwardPipeline(*this->context->window, this->renderPasses["forward"].handle, this->pipelineLayouts["forward"].handle, false, true));
-		this->pipelines.emplace("forwardShadow", createForwardPipeline(*this->context->window, this->renderPasses["forward"].handle, this->pipelineLayouts["forwardShadow"].handle, true, false));
-		this->pipelines.emplace("forwardShadowAlpha", createForwardPipeline(*this->context->window, this->renderPasses["forward"].handle, this->pipelineLayouts["forwardShadow"].handle, true, true));
+		this->pipelines.emplace("forward", createForwardPipeline(*this->context->window, this->renderPasses["forward"].handle, this->pipelineLayouts["forward"].handle, false));
+		this->pipelines.emplace("forwardMSAA", createForwardPipeline(*this->context->window, this->renderPasses["forwardMSAA"].handle, this->pipelineLayouts["forward"].handle, false, VK_SAMPLE_COUNT_4_BIT));
+		this->pipelines.emplace("forwardShadow", createForwardPipeline(*this->context->window, this->renderPasses["forward"].handle, this->pipelineLayouts["forwardShadow"].handle, true));
+		this->pipelines.emplace("forwardShadowMSAA", createForwardPipeline(*this->context->window, this->renderPasses["forwardMSAA"].handle, this->pipelineLayouts["forwardShadow"].handle, true, VK_SAMPLE_COUNT_4_BIT));
 		this->pipelines.emplace("gBufWrite", std::move(std::get<0>(deferredPipelines)));
 		this->pipelines.emplace("deferred", std::move(std::get<1>(deferredPipelines)));
 		this->pipelines.emplace("shadow", createShadowOffscreenPipeline(*this->context->window, this->renderPasses["shadow"].handle, this->pipelineLayouts["shadow"].handle));
@@ -141,6 +153,22 @@ namespace Engine {
 			VkExtent2D {2048, 2048} }; // Probably will want to make the shadow map resolution more easily editable, rather than hardcoding it everywhere
 		this->buffers.emplace("shadowDepth", createTextureBuffer(*this->context, shadowDepthTexture));
 
+		TextureBufferSetting multisampleColorTexture = {
+			this->context->window->swapchainFormat,
+			VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+			VK_IMAGE_ASPECT_COLOR_BIT,
+			this->context->window->swapchainExtent,
+			VK_SAMPLE_COUNT_4_BIT };
+		this->buffers.emplace("multisampleColour", createTextureBuffer(*this->context, multisampleColorTexture));
+
+		TextureBufferSetting multisampleDepthTexture = {
+			VK_FORMAT_D32_SFLOAT_S8_UINT,
+			VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+			VK_IMAGE_ASPECT_DEPTH_BIT,
+			this->context->window->swapchainExtent,
+			VK_SAMPLE_COUNT_4_BIT };
+		this->buffers.emplace("multisampleDepth", createTextureBuffer(*this->context, multisampleDepthTexture));
+
 		// Framebuffers
 		VkExtent2D swapchainExtent = this->context->window->swapchainExtent;
 		VkExtent2D shadowExtent = VkExtent2D{ 2048, 2048 };
@@ -148,6 +176,11 @@ namespace Engine {
 		std::vector<VkImageView> forwardViews;
 		forwardViews.emplace_back(this->buffers["depth"].second.handle);
 		createFramebuffers(*this->context->window, this->forwardFramebuffers, this->renderPasses["forward"].handle, forwardViews, swapchainExtent);
+
+		std::vector<VkImageView> forwardMSAAViews;
+		forwardMSAAViews.emplace_back(this->buffers["multisampleColour"].second.handle);
+		forwardMSAAViews.emplace_back(this->buffers["multisampleDepth"].second.handle);
+		createFramebuffers(*this->context->window, this->forwardMSAAFramebuffers, this->renderPasses["forwardMSAA"].handle, forwardMSAAViews, swapchainExtent);
 
 		std::vector<VkImageView> deferredViews;
 		// Must be emplaced in the vector in the *EXACT* same order as defined in the render pass
@@ -254,6 +287,7 @@ namespace Engine {
 
 		// Map memory for model matrices dynamic buffer
 		vmaMapMemory(context->allocator->allocator, this->uniformBuffers["modelMatrices"].allocation, &this->uniformBuffers["modelMatrices"].mapped);
+		this->modelMatricesMapped = true;
 
 		this->descriptorSets.emplace("modelMatrices",
 			createModelMatricesDescriptor(
@@ -267,7 +301,7 @@ namespace Engine {
 
 	void Renderer::initialiseJointMatrices() {
 		std::vector<vk::Model>& models = this->game->GetModels();
-		
+
 		std::vector<std::unique_ptr<ComponentBase>>* renderComponents = this->entityManager->GetComponentsOfType(RENDER);
 		if (renderComponents == nullptr)
 			return;
@@ -293,14 +327,13 @@ namespace Engine {
 		}
 	}
 
-	void Renderer::cleanModelMatrices()
-	{
-		vmaUnmapMemory(context->allocator->allocator, this->uniformBuffers["modelMatrices"].allocation);
+	void Renderer::cleanModelMatrices() {
+		if (this->modelMatricesMapped) {
+			vmaUnmapMemory(this->context->allocator->allocator, this->uniformBuffers["modelMatrices"].allocation);
+			this->modelMatricesMapped = false;
+		}
 
-		//this->descriptorSets.erase("sceneDescriptors");
-		this->descriptorSets.erase("modelMatricesDescriptor");
-
-		isSceneLoaded = false;
+		this->isSceneLoaded = false;
 	}
 
 	vk::Buffer Renderer::createDynamicUniformBuffer() {
@@ -341,19 +374,41 @@ namespace Engine {
 
 	bool Renderer::checkSwapchain() {
 		if (this->recreateSwapchain) {
+			// Handle minimisation
+			int width, height;
+			glfwGetFramebufferSize(this->context->getGLFWWindow(), &width, &height);
+			// Loop indefinitely until framebuffer size becomes non-zero (window is no longer minimised)
+			while (width == 0 || height == 0) {
+				glfwGetFramebufferSize(this->context->getGLFWWindow(), &width, &height);
+				glfwWaitEvents();
+			}
+
 			vkDeviceWaitIdle(this->context->window->device->device);
 
 			// Recreate swapchain stuff
+			const auto changes = Engine::recreateSwapchain(*this->context->window, this->vsync ? VK_PRESENT_MODE_FIFO_KHR : VK_PRESENT_MODE_IMMEDIATE_KHR);
 
-			const auto changes = Engine::recreateSwapchain(*this->context->window);
-
-			if (changes.changedFormat)
+			// We also need to recreate format and size dependents if MSAA is changed
+			if (changes.changedFormat || this->game->GetGUI().changedMSAA)
 				this->recreateFormatDependents();
 
-			if (changes.changedSize)
+			if (changes.changedSize || this->game->GetGUI().changedMSAA)
 				this->recreateSizeDependents();
 
+			// If we changed MSAA setting, recreate ImGui context to match MSAA samples
+			if (this->game->GetGUI().changedMSAA) {
+				this->destroyImGui();
+				this->game->GetGUI().initGUI();
+				this->game->GetGUI().changedMSAA = false;
+			}
+
 			this->recreateOthers();
+
+			// Destroy and recreate all semaphores so none are in signaled state, which
+			// may be the case when vkAcquireNextImageKHR returns VK_SUBOPTIMAL_KHR.
+			this->imageAvailable.clear();
+			for (std::size_t i = 0; i < this->context->window->swapViews.size(); i++)
+				this->imageAvailable.emplace_back(createSemaphore(*this->context->window));
 
 			this->recreateSwapchain = false;
 			return true;
@@ -398,39 +453,7 @@ namespace Engine {
 			if (model.animations.size() == 0)
 				continue;
 
-			// Animation queue is empty: 
-			// 1. Render idle animation
-			// Animation queue is not empty:
-			// 1. Blend to first animation in queue
-			// 2. If blended, continue running first animation in queue
-			// 3. Once first animation is completed, pop animation
-			// 4. Check if animation queue is empty. TODO
-			//    - If so, blend to idle and run idle.
-			//    - If not, go to step 1.
-
-
-			// If animation queue is empty just render idle animation
-			if (model.animationQueue.empty()) {
-				model.idleAnimation.update(model, timeDelta);
-			}
-			// Otherwise process animation queue
-			else {
-				// Get first animation in queue
-				vk::Animation& target = model.animationQueue.front();
-				
-				// If this model is still blending, run blendAnimation
-				if (model.blending) {
-					model.blendAnimation(model.idleAnimation, target, timeDelta, 0.2f);
-				}
-				// If not blending then just continue updating front animation
-				else {
-					target.update(model, timeDelta);
-				}
-
-				// Check if target animation is finished
-				if (!target.animating)
-					model.animationQueue.pop();
-			}
+			model.updateAnimation(timeDelta);
 		}
 	}
 
@@ -477,7 +500,7 @@ namespace Engine {
 			}
 		}
 
-		int size = this->modelMatrices * this->dynamicUBOAlignment;
+		std::size_t size = this->modelMatrices * this->dynamicUBOAlignment;
 		std::memcpy(this->uniformBuffers["modelMatrices"].mapped, this->uniforms.modelMatricesUniform.model, size);
 		vmaFlushAllocation(this->context->allocator->allocator, this->uniformBuffers["modelMatrices"].allocation, 0, size);
 	}
@@ -510,12 +533,18 @@ namespace Engine {
 	void Renderer::finishRendering() {
 		vkDeviceWaitIdle(this->context->window->device->device);
 
+		this->destroyImGui();
+
+		if (this->modelMatricesMapped && this->uniformBuffers["modelMatrices"].allocation != VK_NULL_HANDLE) {
+			vmaUnmapMemory(this->context->allocator->allocator, this->uniformBuffers["modelMatrices"].allocation);
+			this->modelMatricesMapped = false;
+		}
+	}
+
+	void Renderer::destroyImGui() {
 		ImGui_ImplVulkan_Shutdown();
 		ImGui_ImplGlfw_Shutdown();
 		ImGui::DestroyContext();
-
-		if (this->uniformBuffers["modelMatrices"].allocation != VK_NULL_HANDLE)
-			vmaUnmapMemory(this->context->allocator->allocator, this->uniformBuffers["modelMatrices"].allocation);
 	}
 
 	void Renderer::renderGUI()
@@ -526,23 +555,37 @@ namespace Engine {
 		beginCommandBuffer(cmdBuf, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
 		// Clear attachments
-		VkClearValue clearValues[2]{};
-		clearValues[0].color.float32[0] = 0.1f;
-		clearValues[0].color.float32[1] = 0.1f;
-		clearValues[0].color.float32[2] = 0.1f;
-		clearValues[0].color.float32[3] = 1.0f;
+		std::vector<VkClearValue> clearValues;
+		VkClearValue colourClearValue{};
+		colourClearValue.color = { {0.1f, 0.1f, 0.1f, 1.0f} };
+		VkClearValue depthClearValue{};
+		depthClearValue.depthStencil.depth = 1.0f;
 
-		clearValues[1].depthStencil.depth = 1.0f;
+		bool msaaFlag = this->msaaIndex != 0;
+
+		if (msaaFlag) {
+			clearValues.emplace_back(colourClearValue);
+			clearValues.emplace_back(colourClearValue);
+			clearValues.emplace_back(depthClearValue);
+		}
+		else {
+			clearValues.emplace_back(colourClearValue);
+			clearValues.emplace_back(depthClearValue);
+		}
+
+		std::string renderPass = "forward";
+		if (msaaFlag)
+			renderPass += "MSAA";
 
 		// Initialise render pass
 		VkRenderPassBeginInfo passInfo{};
 		passInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		passInfo.renderPass = this->renderPasses["forward"].handle;
-		passInfo.framebuffer = this->forwardFramebuffers[this->imageIndex].handle;
+		passInfo.renderPass = this->renderPasses[renderPass].handle;
+		passInfo.framebuffer = msaaFlag ? this->forwardMSAAFramebuffers[this->imageIndex].handle : this->forwardFramebuffers[this->imageIndex].handle;
 		passInfo.renderArea.offset = VkOffset2D{ 0, 0 };
-		passInfo.renderArea.extent = context->window->swapchainExtent;
-		passInfo.clearValueCount = 2;
-		passInfo.pClearValues = clearValues;
+		passInfo.renderArea.extent = this->context->window->swapchainExtent;
+		passInfo.clearValueCount = clearValues.size();
+		passInfo.pClearValues = clearValues.data();
 
 		vkCmdBeginRenderPass(cmdBuf, &passInfo, VK_SUBPASS_CONTENTS_INLINE);
 
@@ -665,44 +708,64 @@ namespace Engine {
 		}
 
 		// Clear attachments
-		VkClearValue clearValues[2]{};
-		clearValues[0].color.float32[0] = 0.1f;
-		clearValues[0].color.float32[1] = 0.1f;
-		clearValues[0].color.float32[2] = 0.1f;
-		clearValues[0].color.float32[3] = 1.0f;
+		std::vector<VkClearValue> clearValues;
+		VkClearValue colourClearValue{};
+		colourClearValue.color = { {0.1f, 0.1f, 0.1f, 1.0f} };
+		VkClearValue depthClearValue{};
+		depthClearValue.depthStencil.depth = 1.0f;
 
-		clearValues[1].depthStencil.depth = 1.0f;
+		bool msaaFlag = this->msaaIndex != 0;
+
+		if (msaaFlag) {
+			clearValues.emplace_back(colourClearValue);
+			clearValues.emplace_back(colourClearValue);
+			clearValues.emplace_back(depthClearValue);
+		}
+		else {
+			clearValues.emplace_back(colourClearValue);
+			clearValues.emplace_back(depthClearValue);
+		}
+
+		std::string renderPass = "forward";
+		std::string pipeline = "forward";
+		std::string pipelineLayout = "forward";
+		if (shadow) {
+			pipeline += "Shadow";
+			pipelineLayout += "Shadow";
+		}
+		if (msaaFlag) {
+			renderPass += "MSAA";
+			pipeline += "MSAA";
+		}
 
 		// Initialise render pass
 		VkRenderPassBeginInfo passInfo{};
 		passInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		passInfo.renderPass = this->renderPasses["forward"].handle;
-		passInfo.framebuffer = this->forwardFramebuffers[this->imageIndex].handle;
+		passInfo.renderPass = this->renderPasses[renderPass].handle;
+		passInfo.framebuffer = msaaFlag ? this->forwardMSAAFramebuffers[this->imageIndex].handle : this->forwardFramebuffers[this->imageIndex].handle;
 		passInfo.renderArea.offset = VkOffset2D{ 0, 0 };
 		passInfo.renderArea.extent = this->context->window->swapchainExtent;
-		passInfo.clearValueCount = 2;
-		passInfo.pClearValues = clearValues;
+		passInfo.clearValueCount = clearValues.size();
+		passInfo.pClearValues = clearValues.data();
 
 		vkCmdBeginRenderPass(cmdBuf, &passInfo, VK_SUBPASS_CONTENTS_INLINE);
 		
-		if (shadow)
-			vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelines["forwardShadow"].handle);
-		else
-			vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelines["forward"].handle);
+		vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelines[pipeline].handle);
 
 		if (shadow) {
-			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["forwardShadow"].handle, 0, 1, &this->descriptorSets["scene"], 0, nullptr); // Projective matrices
-			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["forwardShadow"].handle, 5, 1, &this->descriptorSets["shadow"], 0, nullptr); // Depth matrix
-			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["forwardShadow"].handle, 6, 1, &this->descriptorSets["shadowMap"], 0, nullptr); // Shadow map
+			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts[pipelineLayout].handle, 0, 1, &this->descriptorSets["scene"], 0, nullptr); // Projective matrices
+			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts[pipelineLayout].handle, 5, 1, &this->descriptorSets["shadow"], 0, nullptr); // Depth matrix
+			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts[pipelineLayout].handle, 6, 1, &this->descriptorSets["shadowMap"], 0, nullptr); // Shadow map
 		}
 		else {
-			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["forward"].handle, 0, 1, &this->descriptorSets["scene"], 0, nullptr); // Projective matrices
+			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts[pipelineLayout].handle, 0, 1, &this->descriptorSets["scene"], 0, nullptr); // Projective matrices
 		}
 
-		drawModels(cmdBuf, models, "forward");
+		drawModels(cmdBuf, models, pipelineLayout);
 
-		if (debug)
+		if (debug) {
 			ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmdBuf);
+		}
 
 		vkCmdEndRenderPass(cmdBuf);
 
@@ -852,12 +915,17 @@ namespace Engine {
 	}
 
 	void Renderer::recreateFormatDependents() {
+		VkSampleCountFlagBits sampleCount = this->context->window->device->getSampleCount(this->msaaIndex);
+
 		this->renderPasses["forward"] = createRenderPass(*this->context->window);
+		this->renderPasses["forwardMSAA"] = createRenderPassMSAA(*this->context->window, Utils::getMSAAMinimum(sampleCount));
 		this->renderPasses["deferred"] = createDeferredRenderPass(*this->context->window);
 		this->renderPasses["shadow"] = createShadowRenderPass(*this->context->window);
 	}
 
 	void Renderer::recreateSizeDependents() {
+		VkSampleCountFlagBits sampleCount = this->context->window->device->getSampleCount(this->msaaIndex);
+
 		TextureBufferSetting depthTexture = {
 			VK_FORMAT_D32_SFLOAT_S8_UINT,
 			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
@@ -880,6 +948,22 @@ namespace Engine {
 			VK_IMAGE_ASPECT_DEPTH_BIT,
 			VkExtent2D {2048, 2048} };
 		this->buffers["shadowDepth"] = createTextureBuffer(*this->context, shadowDepthTexture);
+
+		TextureBufferSetting multisampleColorTexture = {
+			this->context->window->swapchainFormat,
+			VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+			VK_IMAGE_ASPECT_COLOR_BIT,
+			this->context->window->swapchainExtent,
+			Utils::getMSAAMinimum(sampleCount) }; 
+		this->buffers["multisampleColour"] = createTextureBuffer(*this->context, multisampleColorTexture);
+
+		TextureBufferSetting multisampleDepthTexture = {
+			VK_FORMAT_D32_SFLOAT_S8_UINT,
+			VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+			VK_IMAGE_ASPECT_DEPTH_BIT,
+			this->context->window->swapchainExtent,
+			Utils::getMSAAMinimum(sampleCount) };
+		this->buffers["multisampleDepth"] = createTextureBuffer(*this->context, multisampleDepthTexture);
 	
 		std::tuple<vk::Pipeline, vk::Pipeline> deferredPipelines = createDeferredPipelines(
 			*this->context->window,
@@ -887,10 +971,10 @@ namespace Engine {
 			this->pipelineLayouts["forward"].handle,
 			this->pipelineLayouts["deferred"].handle);
 
-		this->pipelines["forward"] = createForwardPipeline(*this->context->window, this->renderPasses["forward"].handle, this->pipelineLayouts["forward"].handle, false, false);
-		this->pipelines["forwardAlpha"] = createForwardPipeline(*this->context->window, this->renderPasses["forward"].handle, this->pipelineLayouts["forward"].handle, false, true);
-		this->pipelines["forwardShadow"] = createForwardPipeline(*this->context->window, this->renderPasses["forward"].handle, this->pipelineLayouts["forwardShadow"].handle, true, false);
-		this->pipelines["forwardShadowAlpha"] = createForwardPipeline(*this->context->window, this->renderPasses["forward"].handle, this->pipelineLayouts["forwardShadow"].handle, true, true);
+		this->pipelines["forward"] = createForwardPipeline(*this->context->window, this->renderPasses["forward"].handle, this->pipelineLayouts["forward"].handle, false);
+		this->pipelines["forwardMSAA"] = createForwardPipeline(*this->context->window, this->renderPasses["forwardMSAA"].handle, this->pipelineLayouts["forward"].handle, false, Utils::getMSAAMinimum(sampleCount));
+		this->pipelines["forwardShadow"] = createForwardPipeline(*this->context->window, this->renderPasses["forward"].handle, this->pipelineLayouts["forwardShadow"].handle, true);
+		this->pipelines["forwardShadowMSAA"] = createForwardPipeline(*this->context->window, this->renderPasses["forwardMSAA"].handle, this->pipelineLayouts["forwardShadow"].handle, true, Utils::getMSAAMinimum(sampleCount));
 		this->pipelines["gBufWrite"] = std::move(std::get<0>(deferredPipelines));
 		this->pipelines["deferred"] = std::move(std::get<1>(deferredPipelines));
 		this->pipelines["shadow"] = createShadowOffscreenPipeline(*this->context->window, this->renderPasses["shadow"].handle, this->pipelineLayouts["shadow"].handle);
@@ -901,12 +985,18 @@ namespace Engine {
 		VkExtent2D shadowExtent = VkExtent2D{ 2048, 2048 };
 
 		this->forwardFramebuffers.clear();
+		this->forwardMSAAFramebuffers.clear();
 		this->deferredFramebuffers.clear();
 		this->shadowFramebuffer.clear();
 
 		std::vector<VkImageView> forwardViews;
 		forwardViews.emplace_back(this->buffers["depth"].second.handle);
 		createFramebuffers(*this->context->window, this->forwardFramebuffers, this->renderPasses["forward"].handle, forwardViews, swapchainExtent);
+
+		std::vector<VkImageView> forwardMSAAViews;
+		forwardMSAAViews.emplace_back(this->buffers["multisampleColour"].second.handle);
+		forwardMSAAViews.emplace_back(this->buffers["multisampleDepth"].second.handle);
+		createFramebuffers(*this->context->window, this->forwardMSAAFramebuffers, this->renderPasses["forwardMSAA"].handle, forwardMSAAViews, swapchainExtent);
 
 		std::vector<VkImageView> deferredViews;
 		// Must be emplaced in the vector in the *EXACT* same order as defined in the render pass
@@ -948,6 +1038,30 @@ namespace Engine {
 		}
 	}
 
+	void Renderer::calculateFPS() {
+		float currTime = glfwGetTime();
+
+		this->frameTime = currTime - this->prevTime;
+		this->frames++;
+		this->frameTimes.push_back(frameTime);
+		if (currTime - this->lastSecondTime >= 1.0f) {
+			this->avgFrameTime = std::reduce(this->frameTimes.begin(), this->frameTimes.end()) / this->frames;
+			this->avgFps = 1 / this->avgFrameTime;
+			this->frameTimes.clear();
+			this->frames = 0;
+			this->lastSecondTime = currTime;
+
+			// Put fps and frame time in window title so we can see them in both debug and release
+			std::string title = std::format("FPS Test Game - Avg FPS: {} - Avg Frame Time: {:.3f}ms", this->avgFps, this->avgFrameTime * 1000.0f);
+			glfwSetWindowTitle(this->context->getGLFWWindow(), title.c_str());
+		}
+		this->prevTime = currTime;
+	}
+
+	void Renderer::setRecreateSwapchain(bool value) {
+		this->recreateSwapchain = value;
+	}
+
 	std::map<std::string, vk::PipelineLayout>& Renderer::getPipelineLayouts() {
 		return this->pipelineLayouts;
 	}
@@ -974,5 +1088,17 @@ namespace Engine {
 
 	std::size_t Renderer::getDynamicUBOAlignment() {
 		return this->dynamicUBOAlignment;
+	}
+
+	float Renderer::getAvgFrameTime() {
+		return this->avgFrameTime;
+	}
+	
+	int Renderer::getAvgFPS() {
+		return this->avgFps;
+	}
+
+	std::pair<const char**, int> Renderer::getMSAAOptions() {
+		return { this->msaaOptions.data(), (int)this->msaaOptions.size() };
 	}
 }

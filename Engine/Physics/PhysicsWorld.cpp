@@ -89,6 +89,36 @@ namespace Engine
 		}
 	}
 
+	void PhysicsWorld::updatePhysics(PxReal timeDelta) {
+		// Previously, when we didn't have the option of turning VSync off,
+		// the timeDelta was 1/x where x was the refresh rate of the users
+		// monitor, which most of the time was slightly less than 0.016f (1/60).
+		// Since we now give the option of turning off vsync, the frame time
+		// can be much much smaller and more volatile and running gScene->simulate()
+		// every one of those frames can lead to unstable looking physics.
+		// So we use a separate simulation timer and only update the physics
+		// when our physics timestep has passed. This is obviously reliant on
+		// the fact we can run the engine and game faster than our timestep
+		// minimum of 1/60th of a second.
+
+		// (Note, we use a timestep based on the time delta between 240 fps and
+		// 60 fps, ideally time delta is less than 1/240 so we get the smoothest
+		// character movement, but some hardware may compute a frame slower
+		// and as such, use a bigger timestep, resulting in inconsistent physics. 
+		// If someone has a better way to get smooth character movement then 
+		// please update this method)
+		this->gTimestep = std::clamp(timeDelta, 1.0f / 240.0f, 1.0f / 60.0f);
+
+		this->gSimulationTimer += timeDelta;
+
+		if (this->gSimulationTimer > gTimestep) {
+			this->updateCharacter(gTimestep);
+			this->gScene->simulate(gTimestep);
+			this->gScene->fetchResults(true);
+			this->gSimulationTimer -= gTimestep;
+		}
+	}
+
 	void PhysicsWorld::updateCharacter(PxReal deltatime)
 	{
 		//if (this->controller)
@@ -101,6 +131,7 @@ namespace Engine
 		if (this->controller)
 		{
 			PxVec3 displacement(0.0f, -9.81f * deltatime, 0.0f);
+			PxVec3 old = displacement;
 			float speed = 5.0f;
 
 			//auto& keys = Engine::Keyboard::getKeyStates();
@@ -119,8 +150,13 @@ namespace Engine
 				displacement.x += speed * deltatime;
 			}
 
-			PxControllerFilters filters;
-			this->controller->move(displacement, 0.01f, deltatime, filters);
+			// Only run PxController::move() if we actually moved, since this
+			// method is quite expensive to run every frame if we are not moving
+			if (old != displacement) {
+				PxControllerFilters filters;
+				this->controller->move(displacement, 0.01f, deltatime, filters);
+			}
+
 		}
 	}
 

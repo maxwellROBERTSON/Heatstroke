@@ -1,13 +1,13 @@
 #pragma once
 
 #include <string>
-#include "Component.hpp"
-#include "PxPhysicsAPI.h"
-#include "../Physics/PhysicsWorld.hpp"
+
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
 
+#include "Component.hpp"
+#include "../Physics/PhysicsWorld.hpp"
 #include "../../gltf/Model.hpp"
 
 #ifdef OS_LINUX

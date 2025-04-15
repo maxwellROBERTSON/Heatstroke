@@ -54,6 +54,8 @@ namespace Engine {
 			return vk::ShaderModule(aWindow.device->device, smod);
 		}
 
+		std::fprintf(stderr, "Cannot open '%s' for reading\n", aSpirvPath);
+
 		throw Utils::Error("Cannot open '%s' for reading", aSpirvPath);
 	}
 
@@ -66,7 +68,7 @@ namespace Engine {
 		attachments[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		attachments[0].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
-		attachments[1].format = VK_FORMAT_D32_SFLOAT_S8_UINT; // Maybe dont need 32-bit for depth. Maybe dont even need this exact format if we dont end up doing anything with the stencil buffer
+		attachments[1].format = VK_FORMAT_D32_SFLOAT_S8_UINT;
 		attachments[1].samples = VK_SAMPLE_COUNT_1_BIT;
 		attachments[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 		attachments[1].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -108,6 +110,89 @@ namespace Engine {
 		VkRenderPassCreateInfo passInfo{};
 		passInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
 		passInfo.attachmentCount = 2;
+		passInfo.pAttachments = attachments;
+		passInfo.subpassCount = 1;
+		passInfo.pSubpasses = subpasses;
+		passInfo.dependencyCount = 2;
+		passInfo.pDependencies = deps;
+
+		VkRenderPass rpass = VK_NULL_HANDLE;
+		if (const auto res = vkCreateRenderPass(aWindow.device->device, &passInfo, nullptr, &rpass); VK_SUCCESS != res) {
+			throw Utils::Error("Unable to create render pass\n vkCreateRenderPass() returned %s\n", Utils::toString(res).c_str());
+		}
+
+		return vk::RenderPass(aWindow.device->device, rpass);
+	}
+
+	vk::RenderPass createRenderPassMSAA(const VulkanWindow& aWindow, VkSampleCountFlagBits sampleCount) {
+		VkAttachmentDescription attachments[3]{};
+		// Framebuffer attachment in which multisampled colour attachment will be resolved to.
+		attachments[0].format = aWindow.swapchainFormat;
+		attachments[0].samples = VK_SAMPLE_COUNT_1_BIT;
+		attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		attachments[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		attachments[0].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+		// Multisampled colour attachment
+		attachments[1].format = aWindow.swapchainFormat;
+		attachments[1].samples = sampleCount;
+		attachments[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		attachments[1].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		attachments[1].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		attachments[1].finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+		// Mutlisampled depth attachment
+		attachments[2].format = VK_FORMAT_D32_SFLOAT_S8_UINT;
+		attachments[2].samples = sampleCount;
+		attachments[2].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		attachments[2].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		attachments[2].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		attachments[2].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		attachments[2].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+
+		// The attachment we are resolving to (the swapchain attachment)
+		VkAttachmentReference resolveAttachment{};
+		resolveAttachment.attachment = 0;
+		resolveAttachment.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+		// The multisampled colour attachment
+		VkAttachmentReference colourAttachment{};
+		colourAttachment.attachment = 1;
+		colourAttachment.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+		// The multisampled depth attachment
+		VkAttachmentReference depthAttachment{};
+		depthAttachment.attachment = 2;
+		depthAttachment.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+		VkSubpassDescription subpasses[1]{};
+		subpasses[0].pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+		subpasses[0].colorAttachmentCount = 1;
+		subpasses[0].pResolveAttachments = &resolveAttachment;
+		subpasses[0].pColorAttachments = &colourAttachment;
+		subpasses[0].pDepthStencilAttachment = &depthAttachment;
+
+		VkSubpassDependency deps[2]{};
+		deps[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+		deps[0].srcSubpass = VK_SUBPASS_EXTERNAL;
+		deps[0].srcAccessMask = 0;
+		deps[0].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		deps[0].dstSubpass = 0;
+		deps[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		deps[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+
+		deps[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+		deps[1].srcSubpass = VK_SUBPASS_EXTERNAL;
+		deps[1].srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+		deps[1].srcStageMask = VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+		deps[1].dstSubpass = 0;
+		deps[1].dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
+		deps[1].dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+
+		VkRenderPassCreateInfo passInfo{};
+		passInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+		passInfo.attachmentCount = 3;
 		passInfo.pAttachments = attachments;
 		passInfo.subpassCount = 1;
 		passInfo.pSubpasses = subpasses;
@@ -312,12 +397,56 @@ namespace Engine {
 		return vk::RenderPass(aWindow.device->device, rpass);
 	}
 
+	vk::RenderPass createUIRenderPass(const VulkanWindow& aWindow) {
+		VkAttachmentDescription attachments[1]{};
+		attachments[0].format = aWindow.swapchainFormat;
+		attachments[0].samples = VK_SAMPLE_COUNT_1_BIT;
+		attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+		attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		attachments[0].initialLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+		attachments[0].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+		VkAttachmentReference subpassAttachments[1]{};
+		subpassAttachments[0].attachment = 0;
+		subpassAttachments[0].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+		VkSubpassDescription subpasses[1]{};
+		subpasses[0].pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+		subpasses[0].colorAttachmentCount = 1;
+		subpasses[0].pColorAttachments = subpassAttachments;
+
+		VkSubpassDependency deps[1]{};
+		deps[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+		deps[0].srcSubpass = VK_SUBPASS_EXTERNAL;
+		deps[0].srcAccessMask = 0;
+		deps[0].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		deps[0].dstSubpass = 0;
+		deps[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		deps[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+
+		VkRenderPassCreateInfo passInfo{};
+		passInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+		passInfo.attachmentCount = 1;
+		passInfo.pAttachments = attachments;
+		passInfo.subpassCount = 1;
+		passInfo.pSubpasses = subpasses;
+		passInfo.dependencyCount = 1;
+		passInfo.pDependencies = deps;
+
+		VkRenderPass rpass = VK_NULL_HANDLE;
+		if (const auto res = vkCreateRenderPass(aWindow.device->device, &passInfo, nullptr, &rpass); VK_SUCCESS != res) {
+			throw Utils::Error("Unable to create render pass\n vkCreateRenderPass() returned %s\n", Utils::toString(res).c_str());
+		}
+
+		return vk::RenderPass(aWindow.device->device, rpass);
+	}
+
 	vk::DescriptorSetLayout createDescriptorLayout(const VulkanWindow& aWindow, std::vector<DescriptorSetting> aDescriptorSettings) {
 		std::vector<VkDescriptorSetLayoutBinding> layoutBindings;
 		
 		for (std::size_t i = 0; i < aDescriptorSettings.size(); i++) {
 			VkDescriptorSetLayoutBinding binding{};
-			binding.binding = i;
+			binding.binding = (std::uint32_t)i;
 			binding.descriptorType = aDescriptorSettings[i].descriptorType;
 			binding.descriptorCount = 1;
 			binding.stageFlags = aDescriptorSettings[i].shaderStageFlags;
@@ -327,7 +456,7 @@ namespace Engine {
 
 		VkDescriptorSetLayoutCreateInfo layoutInfo{};
 		layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		layoutInfo.bindingCount = layoutBindings.size();
+		layoutInfo.bindingCount = (std::uint32_t)layoutBindings.size();
 		layoutInfo.pBindings = layoutBindings.data();
 
 		VkDescriptorSetLayout layout = VK_NULL_HANDLE;
@@ -349,7 +478,7 @@ namespace Engine {
 
 		VkPipelineLayoutCreateInfo layoutInfo{};
 		layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		layoutInfo.setLayoutCount = aDescriptorSetLayouts.size();
+		layoutInfo.setLayoutCount = (std::uint32_t)aDescriptorSetLayouts.size();
 		layoutInfo.pSetLayouts = aDescriptorSetLayouts.data();
 		layoutInfo.pushConstantRangeCount = aNeedPushConstant ? 1 : 0;
 		layoutInfo.pPushConstantRanges = &pushConstantRange;
@@ -362,7 +491,7 @@ namespace Engine {
 		return vk::PipelineLayout(aWindow.device->device, layout);
 	}
 
-	vk::Pipeline createForwardPipeline(const VulkanWindow& aWindow, VkRenderPass aRenderPass, VkPipelineLayout aPipelineLayout, bool shadows, bool alpha) {
+	vk::Pipeline createForwardPipeline(const VulkanWindow& aWindow, VkRenderPass aRenderPass, VkPipelineLayout aPipelineLayout, bool shadows, VkSampleCountFlagBits msaaSamples) {
 		vk::ShaderModule vert = loadShaderModule(aWindow, Shaders::forwardVert);
 		vk::ShaderModule frag = loadShaderModule(aWindow, Shaders::forwardFrag);
 
@@ -497,25 +626,16 @@ namespace Engine {
 		rasterInfo.depthBiasEnable = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 		rasterInfo.lineWidth = 1.0f;
 
-		if (alpha) {
-			rasterInfo.cullMode = VK_CULL_MODE_NONE;
-		}
-
 		VkPipelineMultisampleStateCreateInfo samplingInfo{};
 		samplingInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-		samplingInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+		samplingInfo.rasterizationSamples = msaaSamples;
 
 		VkPipelineColorBlendAttachmentState blendStates[1]{};
-		blendStates[0].blendEnable = VK_FALSE;
+		blendStates[0].blendEnable = VK_TRUE;
+		blendStates[0].colorBlendOp = VK_BLEND_OP_ADD;
+		blendStates[0].srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+		blendStates[0].dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
 		blendStates[0].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-
-		if (alpha) {
-			blendStates[0].blendEnable = VK_TRUE;
-			blendStates[0].colorBlendOp = VK_BLEND_OP_ADD;
-			blendStates[0].srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-			blendStates[0].dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-			blendStates[0].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-		}
 
 		VkPipelineColorBlendStateCreateInfo blendInfo{};
 		blendInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
@@ -531,6 +651,15 @@ namespace Engine {
 		depthInfo.minDepthBounds = 0.0f;
 		depthInfo.maxDepthBounds = 1.0f;
 
+		VkDynamicState dynamicStates = {
+			VK_DYNAMIC_STATE_CULL_MODE
+		};
+
+		VkPipelineDynamicStateCreateInfo dynamicInfo{};
+		dynamicInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+		dynamicInfo.dynamicStateCount = 1;
+		dynamicInfo.pDynamicStates = &dynamicStates;
+
 		VkGraphicsPipelineCreateInfo pipeInfo{};
 		pipeInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
 		pipeInfo.stageCount = 2;
@@ -543,7 +672,7 @@ namespace Engine {
 		pipeInfo.pMultisampleState = &samplingInfo;
 		pipeInfo.pDepthStencilState = &depthInfo;
 		pipeInfo.pColorBlendState = &blendInfo;
-		pipeInfo.pDynamicState = nullptr;
+		pipeInfo.pDynamicState = &dynamicInfo;
 		pipeInfo.layout = aPipelineLayout;
 		pipeInfo.renderPass = aRenderPass;
 		pipeInfo.subpass = 0;
@@ -913,7 +1042,7 @@ namespace Engine {
 		imageInfo.extent.depth = 1;
 		imageInfo.mipLevels = 1;
 		imageInfo.arrayLayers = 1;
-		imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+		imageInfo.samples = aBufferSetting.samples;
 		imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
 		imageInfo.usage = aBufferSetting.imageUsage;
 		imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
@@ -921,12 +1050,16 @@ namespace Engine {
 
 		VmaAllocationCreateInfo allocInfo{};
 		allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+		allocInfo.requiredFlags = aBufferSetting.allocationRequiredFlags;
+		allocInfo.preferredFlags = aBufferSetting.allocationPreferredFlags;
 
 		VkImage image = VK_NULL_HANDLE;
 		VmaAllocation allocation = VK_NULL_HANDLE;
 
-		if (const auto res = vmaCreateImage(aContext.allocator->allocator, &imageInfo, &allocInfo, &image, &allocation, nullptr); VK_SUCCESS != res)
-			throw Utils::Error("Unable to allocate depth buffer image.\n vmaCreateImage() returned %s", Utils::toString(res).c_str());
+		if (const auto res = vmaCreateImage(aContext.allocator->allocator, &imageInfo, &allocInfo, &image, &allocation, nullptr); VK_SUCCESS != res) {
+			std::fprintf(stderr, "Unable to allocate depth buffer image.\n vmaCreateImage() returned %s\n", Utils::toString(res).c_str());
+			throw Utils::Error("Unable to allocate depth buffer image.\n vmaCreateImage() returned %s\n", Utils::toString(res).c_str());
+		}
 
 		vk::Texture Image(aContext.allocator->allocator, "depth", image, allocation);
 
@@ -961,7 +1094,7 @@ namespace Engine {
 			fbInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 			fbInfo.flags = 0;
 			fbInfo.renderPass = aRenderPass;
-			fbInfo.attachmentCount = attachments.size();
+			fbInfo.attachmentCount = (std::uint32_t)attachments.size();
 			fbInfo.pAttachments = attachments.data();
 			fbInfo.width = aExtent.width;
 			fbInfo.height = aExtent.height;
