@@ -45,6 +45,11 @@ workspace "Heatstroke"
         os.execute('"' .. batchFile .. '"')
     end
 
+    if os.isdir("bin") == false then
+        os.mkdir("bin")
+    end
+
+
     filter "system:linux"
         links "dl"
         defines {"OS_LINUX"}
@@ -143,10 +148,8 @@ project "Engine"
         }
 
     filter { "system:windows", "configurations:Debug" }
-        libdirs { "Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\debug\\lib",
-                  "Engine\\third_party\\AL\\lib" 
-                }
-        links(os.matchfiles("Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\debug\\lib\\*.lib"), "OpenAL32")
+        libdirs { "Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\debug\\lib"}
+        links(os.matchfiles("Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\debug\\lib\\*.lib"))
         postbuildcommands {
             "if not exist \"%{wks.location}bin\\PhysXFoundation_64.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\debug\\bin\\PhysXFoundation_64.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\debug\\bin\\PhysXFoundation_64.dll\" \"%{wks.location}bin\"",
             "if not exist \"%{wks.location}bin\\PhysXCommon_64.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\debug\\bin\\PhysXCommon_64.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\debug\\bin\\PhysXCommon_64.dll\" \"%{wks.location}bin\"",
@@ -154,11 +157,11 @@ project "Engine"
             "if not exist \"%{wks.location}bin\\PhysXCooking_64.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\debug\\bin\\PhysXCooking_64.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\debug\\bin\\PhysXCooking_64.dll\" \"%{wks.location}bin\""
         }
 
-        filter { "system:windows" }
+        filter {"system:windows" }
         libdirs {
                   "Engine\\third_party\\AL\\lib"                  
                 }
-        links{ "OpenAL32", "sndfile"}
+        links{"OpenAL32", "sndfile"}
 
 
 
