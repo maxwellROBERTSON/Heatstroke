@@ -89,6 +89,9 @@ public:
 
 	void run_pending_task();
 
+	std::condition_variable tasksInQueue;
+	std::mutex mut;
+
 private:
 	//constructor
 	thread_pool_wait();

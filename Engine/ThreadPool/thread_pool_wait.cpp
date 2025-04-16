@@ -52,18 +52,14 @@ void thread_pool_wait::worker_thread()
 		//function wrapper for void argumentless functions, this is the object functions from the queue will be assigned to
 		function_wrapper task;
 
-		if (work_queue.try_pop(task))
-		{
-			std::thread::id this_id = std::this_thread::get_id();
-			std::cout << "#: " << this_id << std::endl;
-			//if try_pop is successful task is returned with a task off the queue which can be executed
-			task(); //execute task
-		}
-		else
-		{
-			//nothing on the queue
-			std::this_thread::yield(); //give up control so other threads can work
-		}
+		//get work from the queue
+		work_queue.wait_and_pop(task); //thread sleeps while waiting
+
+		std::thread::id this_id = std::this_thread::get_id();
+		std::cout << "#: " << this_id << std::endl;
+
+		//when wait_and_pop returns with a task
+		task(); //execute task
 	}
 }
 
