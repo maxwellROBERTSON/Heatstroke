@@ -10,18 +10,27 @@
 #include "../Engine/vulkan/PipelineCreation.hpp"
 #include "../Engine/vulkan/Renderer.hpp"
 #include "../Engine/vulkan/VulkanDevice.hpp"
+#include "../ECS/Components/AudioComponent.hpp"
 
 #include "Error.hpp"
 #include "toString.hpp"
 
 #include <GLFW/glfw3.h>
 
+
 using namespace Engine;
 
 Camera camera = Camera();
 
+AudioComponent ac;
+
 void FPSTest::Init()
 {
+	
+	ac.AddClip("Pain", "Game\\assets\\AudioClips\\Ugh.wav");
+	ac.AddClip("Dialogue", "Game\\assets\\AudioClips\\Moron.wav");
+	
+	
 	this->threadPool = thread_pool_wait::get_instance();
  
 	//submit task to initialise Models to thread pool
@@ -64,6 +73,19 @@ void FPSTest::Update() {
 			std::cout << "A BUTTON PRESSED" << std::endl;
 		}
 	}
+
+	auto keyboard = Engine::InputManager::getKeyboard();
+	if (keyboard.isPressed(HS_KEY_W))
+	{
+		ac.playSound("Pain", true);
+	}
+
+	if (keyboard.isPressed(HS_KEY_S))
+	{
+		ac.playSound("Dialogue", true);
+	}
+
+	
 
 	GetNetwork().Update();
 

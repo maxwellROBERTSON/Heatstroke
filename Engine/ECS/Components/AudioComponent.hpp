@@ -2,6 +2,7 @@
 
 #include <string>
 #include <iostream>
+#include "../third_party/AL/al.h"
 
 #include "Component.hpp"
 
@@ -37,6 +38,8 @@ namespace Engine
 		// Set component data
 		void SetDataArray(uint8_t*) override;
 
+		//current state
+		ALint state;
 
 		//creates a sound device
 		SoundDevice* soundDevice;
@@ -44,12 +47,21 @@ namespace Engine
 		SoundSource* speaker;
 		//what reads the sound file data
 		SoundBuffer* soundBuffer;
-		//std::vector<uint32_t> soundClip;
-		uint32_t soundClip;
+		
+		uint32_t soundClipCurrentlyPlaying;
 
-		void AddClip(std::string path);
-		//perform this on a thread?
-		void playSound();
+		//name of clip (key) and buffer (value)
+		std::map <std::string, uint32_t> soundClips;
+
+		void AddClip(std::string key, std::string path);
+
+		void playSound(std::string key, bool interupt = false);
+
+		bool isPlaying();
+
+		void setActiveClip(std::string key);
+
+		void getState();
 	};
 }
 

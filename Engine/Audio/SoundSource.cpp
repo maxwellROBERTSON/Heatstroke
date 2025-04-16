@@ -37,3 +37,8 @@ void SoundSource::Play(const ALuint bufferToPlay)
 	//which is already playing, the source will restart at the beginning.When the attached
 	//buffer(s) are done playing, the source will progress to the AL_STOPPED state.
 }
+
+void SoundSource::Stop()
+{
+	alSourceStop(p_Source);
+}
