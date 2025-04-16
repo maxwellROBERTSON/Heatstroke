@@ -21,8 +21,7 @@ thread_pool_wait* thread_pool_wait::get_instance()
 thread_pool_wait::thread_pool_wait() : done(false), joiner(threads)
 {
 	//get the number of threads that the system can support
-	unsigned const thread_count = 2;
-		//std::thread::hardware_concurrency() > 2 ? std::thread::hardware_concurrency() - 2 : std::thread::hardware_concurrency();
+	unsigned const thread_count = std::thread::hardware_concurrency();
 
 
 	std::cout << "Creating thread pool... \n"
