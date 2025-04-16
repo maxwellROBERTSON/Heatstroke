@@ -94,9 +94,17 @@ namespace Engine
 	}
 
 	void Entity::SetRotation(float angInDeg, glm::vec3 axis) {
-		this->rotation = glm::rotate(glm::mat4(1.0f), glm::radians(angInDeg), axis);
+		//this->rotation = glm::rotate(GetRotation(), glm::radians(angInDeg), axis);
+		//this->rotation = glm::rotate(glm::mat4(1.0f), glm::radians(angInDeg), axis);
 		this->dirty = true;
 	}
+
+	void Entity::SetRotation(glm::mat4 aRotation)
+	{
+		this->rotation = aRotation;
+		this->dirty = true;
+	}
+
 
 	void Entity::SetRotation(glm::quat rotation) {
 		this->rotation = glm::mat4(rotation);
@@ -111,6 +119,15 @@ namespace Engine
 	void Entity::SetScale(float overallScale) {
 		this->scale = glm::vec3(overallScale);
 		this->dirty = true;
+	}
+
+	void Entity::SetFrontDirection(float cameraYaw)
+	{
+		glm::vec3 newDir;
+		newDir.x = std::cos(glm::radians(cameraYaw));
+		newDir.y = 0.0f;
+		newDir.z = std::sin(glm::radians(cameraYaw));
+		this->frontDirection = glm::normalize(newDir);
 	}
 
 }

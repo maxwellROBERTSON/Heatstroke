@@ -2,23 +2,23 @@
 
 #include <memory>
 
-#include "RenderMode.hpp"
-#include "Camera.hpp"
+#include "../ECS/EntityManager.hpp"
 #include "../Events/Event.hpp"
-#include "../Events/RenderModeEvent.hpp"
 #include "../Events/KeyEvent.hpp"
 #include "../Events/MouseEvent.hpp"
+#include "../Events/RenderModeEvent.hpp"
 #include "../Events/WindowEvent.hpp"
+#include "../GUI/GUI.hpp"
 #include "../Input/Callbacks.hpp"
 #include "../Input/Input.hpp"
 #include "../Input/InputCodes.hpp"
-#include "../vulkan/VulkanContext.hpp"
-#include "../Physics/PhysicsWorld.hpp"
-#include "../vulkan/VulkanContext.hpp"
-#include "../vulkan/Renderer.hpp"
-#include "../GUI/GUI.hpp"
-#include "../ECS/EntityManager.hpp"
 #include "../Network/Network.hpp"
+#include "../Physics/PhysicsWorld.hpp"
+#include "../vulkan/Renderer.hpp"
+#include "../vulkan/VulkanContext.hpp"
+
+#include "Camera.hpp"
+#include "RenderMode.hpp"
 
 namespace Engine
 {
@@ -36,6 +36,7 @@ namespace Engine
 		virtual void Render() {}
 		virtual void Update() {}
 		virtual void Run();
+		virtual void DrawGUI() {}
 		virtual void OnEvent(Event& e);
 
 		virtual void loadOfflineEntities() {}

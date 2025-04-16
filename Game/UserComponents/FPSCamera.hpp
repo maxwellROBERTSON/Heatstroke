@@ -11,7 +11,6 @@ public:
 	FPSCamera(const std::string& name, float fov, float n, float f, glm::vec3 position, glm::vec3 frontDirection) : Engine::Camera(fov, n, f, position, frontDirection)
 	{
 		mName = name;
-		std::cout << "CREATED FPS CAMERA" << std::endl;
 	}
 
 	virtual void updateCamera(GLFWwindow* aWindow, float timeDelta) override;
@@ -20,6 +19,5 @@ public:
 	~FPSCamera() {}
 
 	std::string mName;
-
 };
 

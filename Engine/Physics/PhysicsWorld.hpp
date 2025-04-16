@@ -12,6 +12,10 @@
 //#include "../ECS/EntityManager.hpp"
 #include "../gltf/Model.hpp"
 
+
+#include "../ECS/EntityManager.hpp"
+#include "../ECS/Entity.hpp"
+
 namespace Engine
 {
 	using namespace physx;
@@ -45,7 +49,7 @@ namespace Engine
 
 		void init();
 
-		void updateCharacter(PxReal deltatime);
+		void updateCharacter(Entity* playerEntity, PxReal deltatime);
 
 		void updateObjects(Engine::EntityManager& entityManager, std::vector<Engine::vk::Model>& models);
 

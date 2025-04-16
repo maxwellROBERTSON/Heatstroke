@@ -8,7 +8,7 @@ namespace Engine {
 	}
 	ButtonState Mouse::getButtonState(int aButton)
 	{
-		return ButtonState();
+		return mButtonStates[aButton];
 	}
 	float Mouse::getXPos()
 	{
@@ -24,7 +24,7 @@ namespace Engine {
 	}
 	bool Mouse::isPressed(int aButton)
 	{
-		return false;
+		return getButtonState(aButton) == ButtonState::PRESSED;
 	}
 }
 

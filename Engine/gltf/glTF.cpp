@@ -3,13 +3,13 @@
 #include <glm/gtc/type_ptr.inl>
 #include <tgen.h>
 
+#include "../vulkan/objects/Buffer.hpp"
+#include "../vulkan/VulkanDevice.hpp"
+#include "Animation.hpp"
 #include "Error.hpp"
 #include "toString.hpp"
-#include "Animation.hpp"
 #include "VulkanEnums.hpp"
 #include "VulkanUtils.hpp"
-#include "../vulkan/VulkanDevice.hpp"
-#include "../vulkan/objects/Buffer.hpp"
 
 #define MAX_JOINTS 128u
 
@@ -317,7 +317,16 @@ namespace Engine {
 
 				// Populate per-vertex attributes
 				for (std::size_t j = 0; j < vertexCount; j++) {
-					rawData.positions.emplace_back(glm::make_vec3(&bufferPos[j * positionByteStride]));
+					glm::vec3 rawDataPos = glm::make_vec3(&bufferPos[j * positionByteStride]);
+					//glm::vec4 newPos = glm::vec4(rawDataPos.x, rawDataPos.y, rawDataPos.z, 1);
+					//glm::mat4 transform = glm::translate(glm::mat4(), glm::vec3(0.0f, -2.0f, 0.0f));
+					//newPos *= transform;
+					//newPos /= newPos.w;
+					//glm::vec3 newPos = rawDataPos - glm::vec3(0.0f, 1.0f, 0.0f);
+					//rawDataPos = rawDataPos * glm::translate(glm::mat4(), glm::vec3(0.0, -1.0, 0.0));
+					//rawData.positions.emplace_back(newPos);
+					//rawData.positions.emplace_back(glm::vec3(newPos.x, newPos.y, newPos.z));
+					rawData.positions.emplace_back(rawDataPos);
 					rawData.normals.emplace_back(glm::normalize(glm::vec3(normalsPos ? glm::make_vec3(&normalsPos[j * normalsByteStride]) : glm::vec3(0.0f))));
 					rawData.tangents.emplace_back(glm::vec4(tangentPos ? glm::make_vec4(&tangentPos[j * tangentByteStride]) : glm::vec4(0.0f)));
 					rawData.texCoords0.emplace_back(texCoords0Pos ? glm::make_vec2(&texCoords0Pos[j * texCoords0ByteStride]) : glm::vec2(0.0f));
@@ -366,13 +375,13 @@ namespace Engine {
 					vkModel.indexType = VK_INDEX_TYPE_UINT16;
 					break;
 				}
-				// 1 byte indices require an extension for Vulkan to correctly handle them
-				//case TINYGLTF_PARAMETER_TYPE_UNSIGNED_BYTE: {
-				//	const std::uint8_t* buffer = (const std::uint8_t*)dataPtr;
-				//	for (std::size_t k = 0; k < indicesAccessor.count; k++)
-				//		rawData.indices.push_back(buffer[k]);
-				//	break;
-				//}
+														   // 1 byte indices require an extension for Vulkan to correctly handle them
+														   //case TINYGLTF_PARAMETER_TYPE_UNSIGNED_BYTE: {
+														   //	const std::uint8_t* buffer = (const std::uint8_t*)dataPtr;
+														   //	for (std::size_t k = 0; k < indicesAccessor.count; k++)
+														   //		rawData.indices.push_back(buffer[k]);
+														   //	break;
+														   //}
 				default:
 					throw Utils::Error("Index component type %d not supported.\n", indicesAccessor.componentType);
 					return;
@@ -481,7 +490,7 @@ namespace Engine {
 
 		for (tinygltf::Animation& gltfAnimation : model.animations) {
 			vk::Animation animation{};
-			
+
 			animation.name = gltfAnimation.name;
 			if (animation.name.empty())
 				animation.name = std::to_string(vkModel.animations.size());
@@ -489,7 +498,7 @@ namespace Engine {
 			// Parse samplers
 			for (tinygltf::AnimationSampler& animSampler : gltfAnimation.samplers) {
 				vk::AnimationSampler sampler{};
-			
+
 				if (animSampler.interpolation == "LINEAR")
 					sampler.interpolationType = vk::AnimationSampler::InterpolationType::LINEAR;
 				if (animSampler.interpolation == "STEP")
@@ -523,13 +532,13 @@ namespace Engine {
 					const tinygltf::Accessor& accessor = model.accessors[animSampler.output];
 					const tinygltf::BufferView& bufView = model.bufferViews[accessor.bufferView];
 					const tinygltf::Buffer& buffer = model.buffers[bufView.buffer];
-				
+
 					const void* dataPtr = &buffer.data[accessor.byteOffset + bufView.byteOffset];
 
 					switch (accessor.type) {
 					case TINYGLTF_TYPE_VEC3: {
 						const glm::vec3* buf = (const glm::vec3*)dataPtr;
-						
+
 						for (std::size_t i = 0; i < accessor.count; i++) {
 							sampler.outputValues.push_back(glm::vec4(buf[i], 0.0f));
 						}
@@ -571,10 +580,10 @@ namespace Engine {
 
 				channel.samplerIndex = animChannel.sampler;
 				channel.node = vkModel.getNodeFromIndex(animChannel.target_node);
-				
+
 				if (!channel.node)
 					continue;
-			
+
 				animation.channels.push_back(channel);
 			}
 

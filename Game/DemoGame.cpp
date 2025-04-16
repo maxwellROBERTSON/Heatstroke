@@ -1,9 +1,9 @@
 #include "DemoGame.hpp"
 
+#include <algorithm>
 #include <chrono>
 #include <future>
 #include <thread>
-#include <algorithm>
 
 #include "../Engine/vulkan/objects/Buffer.hpp"
 #include "../Engine/vulkan/PipelineCreation.hpp"
@@ -11,9 +11,16 @@
 #include "../Engine/vulkan/VulkanDevice.hpp"
 
 #include "Error.hpp"
+#include "glm/gtx/string_cast.hpp"
 #include "toString.hpp"
 
+#include <imgui.h>
+
 using namespace Engine;
+
+float fireDelay = 1.0f;
+//bool canFire = true;
+bool canFire = false;
 
 void FPSTest::Init()
 {
@@ -28,14 +35,16 @@ void FPSTest::Init()
 	// Cameras
 	sceneCam = Camera(100.0f, 0.01f, 256.0f, glm::vec3(-3.0f, 2.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 
+	playerEntity = 0;
+	mapEntity = 0;
+	playerCam = FPSCamera("Player Cam", 100.0f, 0.01f, 256.0f, playerPos, glm::vec3(0.0f, 0.0f, 1.0f));
+
 	GetPhysicsWorld().init();
 	GetRenderer().initialiseRenderer();
 	GetGUI().initGUI();
-	//GetRenderer().attachCamera(&playerCam);
-	GetRenderer().attachCamera(&sceneCam);
+	GetRenderer().attachCamera(&playerCam);
+	//GetRenderer().attachCamera(&sceneCam);
 	GetRenderer().initialiseModelDescriptors(GetModels());
-
-
 }
 
 void FPSTest::Render()
@@ -85,14 +94,59 @@ void FPSTest::Update() {
 
 	float fixedTimeDelta = std::min<float>(0.016f, timeDelta);
 
-	if (camMode == CameraMode::PLAYER)
-		physicsWorld.updateCharacter(fixedTimeDelta);
-	
+	//fireDelay -= fixedTimeDelta;
+	//if (fireDelay <= 0.0f)
+	//	canFire = true;
+
 	// update PVD
 	physicsWorld.gScene->simulate(fixedTimeDelta);
 	physicsWorld.gScene->fetchResults(true);
 	// update physics
 	physicsWorld.updateObjects(GetEntityManager(), GetModels());
+
+	if (camMode == CameraMode::PLAYER && playerEntity != nullptr)
+	{
+		physicsWorld.updateCharacter(playerEntity, fixedTimeDelta);
+
+		PhysicsComponent* physicsComponent = reinterpret_cast<PhysicsComponent*>(GetEntityManager().GetComponentOfEntity(playerEntity->GetEntityId(), PHYSICS));
+		FPSCameraComponent* cameraComponent = reinterpret_cast<FPSCameraComponent*>(GetEntityManager().GetComponentOfEntity(playerEntity->GetEntityId(), CAMERA));
+		cameraComponent->SetCameraOffset(cameraOffset);
+		//std::cout << glm::to_string(cameraPos) << std::endl;
+
+		playerEntity->frontDirection = cameraComponent->GetFrontDirection();
+		playerEntity->frontDirection.y = 0.0f;
+		//playerPos = playerEntity->GetPosition();
+		////playerPos -= glm::vec3(0.0f, 0.0f, 0.5f);
+		//playerPos -= glm::vec3(0.0f, 1.0f, 0.0f);
+		//playerEntity->SetPosition(playerPos);
+		glm::mat4 playerRotation = glm::mat4(1.0f);
+		playerRotation = glm::rotate(playerRotation, glm::radians(-cameraComponent->GetCamera()->yaw + 90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		playerRotation = glm::rotate(playerRotation, glm::radians(-cameraComponent->GetCamera()->pitch), glm::vec3(1.0f, 0.0f, 0.0f));
+		playerEntity->SetRotation(playerRotation);
+		//playerPos = playerEntity->GetPosition();
+		//playerPos += glm::vec3(0.0f, 0.0f, 0.5f);
+		//playerPos += glm::vec3(0.0f, 1.0f, 0.0f);
+		//playerEntity->SetPosition(playerPos);
+		glm::vec3 cameraPos = playerEntity->GetPosition();
+		cameraComponent->UpdateCameraPosition(cameraPos);
+
+
+		if (Engine::InputManager::getMouse().isPressed(HS_MOUSE_BUTTON_LEFT))
+		{
+			if (canFire)
+			{
+				RenderComponent* playerRenderComponent = reinterpret_cast<RenderComponent*>(GetEntityManager().GetComponentOfEntity(playerEntity->GetEntityId(), RENDER));
+				int playerModelIndex = playerRenderComponent->GetModelIndex();
+				std::vector<vk::Model>& models = GetModels();
+				models[playerModelIndex].animationQueue.push(models[playerModelIndex].animations[3]);
+				models[playerModelIndex].blending = true;
+				canFire = false;
+				fireDelay = 1.0f;
+			}
+		}
+	}
+
+
 
 	renderer.updateAnimations(timeDelta);
 	renderer.updateUniforms();
@@ -115,6 +169,7 @@ void FPSTest::OnEvent(Engine::Event& e)
 				{
 				case FPSTest::SCENE:
 					camMode = FPSTest::PLAYER;
+
 					break;
 				case FPSTest::PLAYER:
 					camMode = FPSTest::SCENE;
@@ -128,20 +183,41 @@ void FPSTest::OnEvent(Engine::Event& e)
 		});
 }
 
+void FPSTest::DrawGUI()
+{
+	FPSCameraComponent* cameraComponent = reinterpret_cast<FPSCameraComponent*>(GetEntityManager().GetComponentOfEntity(playerEntity->GetEntityId(), CAMERA));
+
+	ImGui::Begin("Game:");
+	ImGui::Text("GAME DEBUG");
+	ImGui::Text("Player Rotations:");
+	ImGui::SliderFloat("Cam: Pitch", &cameraComponent->GetCamera()->pitch, -60.0f, 60.0f);
+	ImGui::SliderFloat("Cam: Yaw", &cameraComponent->GetCamera()->yaw, -360.0f, 360.0f);
+	ImGui::InputFloat3("Cam Offset: ", &cameraOffset.x);
+	//ImGui::Text("Yaw: %f, Pitch: %f", cameraComponent->GetCamera()->yaw, cameraComponent->GetCamera()->pitch);
+	ImGui::Text("Game Settings:");
+	ImGui::InputFloat("Fire Delay", &fireDelay);
+	if (ImGui::Checkbox("Cam Can Rotate", &camCanRotate))
+	{
+		cameraComponent->setRotationEnabled(camCanRotate);
+		int winX, winY;
+		glfwGetFramebufferSize(this->GetContext().getGLFWWindow(), &winX, &winY);
+		cameraComponent->GetCamera()->lastX = (float)winX / 2;
+		cameraComponent->GetCamera()->lastY = (float)winY / 2;
+		cameraComponent->GetCamera()->yaw = 0.0f;
+		cameraComponent->GetCamera()->pitch = 0.0f;
+	};
+	ImGui::End();
+}
+
 void FPSTest::initialiseModels()
 {
 	// Here we would load all relevant glTF models and put them in the models vector
-	//tinygltf::Model sponza = Engine::loadFromFile("Game/assets/Assets/maps/pipeline/scene.gltf");
 	tinygltf::Model sponza = Engine::loadFromFile("Game/assets/Sponza/glTF/Sponza.gltf");
-	tinygltf::Model helmet = Engine::loadFromFile("Game/assets/DamagedHelmet.gltf");
-	tinygltf::Model cube = Engine::loadFromFile("Game/assets/Cube.gltf");
-	tinygltf::Model character = Engine::loadFromFile("Game/assets/Character/scene.gltf");
-	tinygltf::Model pistol = Engine::loadFromFile("Game/assets/Assets/guns/pistol1/scene.gltf");
+	tinygltf::Model pistol = Engine::loadFromFile("Game/assets/Assets/guns/rifle/scene.gltf");
+	//tinygltf::Model pistol = Engine::loadFromFile("Game/assets/Assets/guns/pistol1/scene.gltf");
+	//tinygltf::Model pistol = Engine::loadFromFile("Game/assets/Assets/guns/pistolTest2/scene.gltf");
 
 	GetModels().emplace_back(Engine::makeVulkanModel(this->GetContext(), sponza));
-	GetModels().emplace_back(Engine::makeVulkanModel(this->GetContext(), helmet));
-	GetModels().emplace_back(Engine::makeVulkanModel(this->GetContext(), cube));
-	GetModels().emplace_back(Engine::makeVulkanModel(this->GetContext(), character));
 	GetModels().emplace_back(Engine::makeVulkanModel(this->GetContext(), pistol));
 
 	std::cout << "Models created" << std::endl;
@@ -149,9 +225,9 @@ void FPSTest::initialiseModels()
 void FPSTest::loadOfflineEntities()
 {
 	// Pointers
-	Entity* entity;
-	CameraComponent* cameraComponent;
-	NetworkComponent* networkComponent;
+	//Entity* entity;
+	//CameraComponent* cameraComponent;
+	//NetworkComponent* networkComponent;
 	RenderComponent* renderComponent;
 	PhysicsComponent* physicsComponent;
 
@@ -160,81 +236,41 @@ void FPSTest::loadOfflineEntities()
 
 	std::vector<Engine::vk::Model>& models = GetModels();
 
+	// Map
 	std::vector<ComponentTypes> types = { RENDER, PHYSICS };
-	entity = entityManager.AddEntity(types);
-	renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
+	mapEntity = entityManager.AddEntity(types);
+	renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(mapEntity->GetEntityId(), RENDER));
 	renderComponent->SetModelIndex(0);
-	physicsComponent = reinterpret_cast<PhysicsComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
-	physicsComponent->initComplexShape(physicsWorld, PhysicsComponent::PhysicsType::STATIC, models[renderComponent->GetModelIndex()], entity->GetModelMatrix(), entity->GetEntityId());
-
-	// Helmet
-	entity = entityManager.AddEntity(types);
-	entity->SetPosition(0.0f, 2.0f, 0.0f);
-	entity->SetRotation(90.0f, glm::vec3(0.0f, 1.0f, 0.0f));
-	entity->SetScale(0.2f);
-	// configure physics component
-	renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
-	renderComponent->SetModelIndex(1);
-	physicsComponent = reinterpret_cast<PhysicsComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
-	physicsComponent->init(physicsWorld, PhysicsComponent::PhysicsType::DYNAMIC, models[renderComponent->GetModelIndex()], entity->GetModelMatrix(), entity->GetEntityId());
-
-	// Cube
-	entity = entityManager.AddEntity(types);
-	entity->SetPosition(0.3f, 1.0f, -1.0f);
-	// configure physics component
-	renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
-	renderComponent->SetModelIndex(2);
-	physicsComponent = reinterpret_cast<PhysicsComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
-	physicsComponent->init(physicsWorld, PhysicsComponent::PhysicsType::DYNAMIC, models[renderComponent->GetModelIndex()], entity->GetModelMatrix(), entity->GetEntityId());
+	physicsComponent = reinterpret_cast<PhysicsComponent*>(entityManager.GetComponentOfEntity(mapEntity->GetEntityId(), PHYSICS));
+	physicsComponent->initComplexShape(physicsWorld, PhysicsComponent::PhysicsType::STATIC, models[renderComponent->GetModelIndex()], mapEntity->GetModelMatrix(), mapEntity->GetEntityId());
 
 	// Player 1
-	types = { CAMERA, NETWORK, RENDER, PHYSICS };
-	entity = GetEntityManager().AddEntity(types);
-	glm::mat4 player1Transform(1.0f);
-	player1Transform = glm::translate(player1Transform, glm::vec3(-5.0f, 1.0f, -1.0f));
-	player1Transform = glm::rotate(player1Transform, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	player1Transform = glm::scale(player1Transform, glm::vec3(1.0f, 1.0f, 1.0f));
-	entity->SetModelMatrix(player1Transform);
-	playerCam = FPSCamera("Player Cam", 100.0f, 0.01f, 256.0f, glm::vec3(-5.0f, 2.0f, -1.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-	cameraComponent = reinterpret_cast<FPSCameraComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), CAMERA));
+	types = { CAMERA, RENDER, PHYSICS };
+	playerEntity = GetEntityManager().AddEntity(types);
+	playerEntity->SetScale(0.5f);
+	playerEntity->SetPosition(playerPos);
+
+
+
+
+	//playerEntity->SetRotation(90.0f, glm::vec3(0.0f, 1.0f, 0.0f));
+	//glm::vec3 cameraPos = playerPos + glm::vec3(0.0f, 2.0f, 0.0f);
+
+	CameraComponent* cameraComponent = reinterpret_cast<FPSCameraComponent*>(GetEntityManager().GetComponentOfEntity(playerEntity->GetEntityId(), CAMERA));
 	cameraComponent->SetCamera(&playerCam);
-	networkComponent = reinterpret_cast<NetworkComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), NETWORK));
-	networkComponent->SetClientId(0);
-	renderComponent = reinterpret_cast<RenderComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), RENDER));
-	renderComponent->SetModelIndex(3);
-	physicsComponent = reinterpret_cast<PhysicsComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
-	physicsComponent->init(GetPhysicsWorld(), PhysicsComponent::PhysicsType::CONTROLLER, player1Transform, entity->GetEntityId());
+	renderComponent = reinterpret_cast<RenderComponent*>(GetEntityManager().GetComponentOfEntity(playerEntity->GetEntityId(), RENDER));
+	renderComponent->SetModelIndex(1);
+	physicsComponent = reinterpret_cast<PhysicsComponent*>(GetEntityManager().GetComponentOfEntity(playerEntity->GetEntityId(), PHYSICS));
+	physicsComponent->init(physicsWorld, PhysicsComponent::PhysicsType::CONTROLLER, models[renderComponent->GetModelIndex()], playerEntity->GetModelMatrix(), playerEntity->GetEntityId());
 
-	// Player 2
-	types = { RENDER };
-	entity = entityManager.AddEntity(types);
-	entity->SetPosition(5.0f, 0.0f, -1.0f);
-	entity->SetRotation(90.0f, glm::vec3(0.0f, 0.0f, 1.0f));
-	entity->SetScale(30.0f);
-	renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
-	renderComponent->SetModelIndex(3);
-
-	// Pistol
-	types = { RENDER };
-	entity = entityManager.AddEntity(types);
-	entity->SetPosition(-1.0f, 1.0f, 0.0f);
-	entity->SetRotation(-90.0f, glm::vec3(0.0f, 1.0f, 0.0f));
-	entity->SetScale(0.5f);
-	renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
-	renderComponent->SetModelIndex(4);
-
-	std::vector<int> entitiesWithNetworkComponent = entityManager.GetEntitiesWithComponent(NETWORK);
-	for (int i = 0; i < entitiesWithNetworkComponent.size(); i++)
-	{
-		networkComponent = reinterpret_cast<NetworkComponent*>(entityManager.GetComponentOfEntity(entitiesWithNetworkComponent[i], NETWORK));
-		if (networkComponent->GetClientId() == clientId)
-		{
-			cameraComponent = reinterpret_cast<CameraComponent*>(entityManager.GetComponentOfEntity(entitiesWithNetworkComponent[i], CAMERA));
-			GetRenderer().attachCamera(cameraComponent->GetCamera());
-			//fpsCameraComponent = reinterpret_cast<FPSCameraComponent*>(GetEntityManager().GetComponentOfEntity(entitiesWithNetworkComponent[i], CAMERA));
-			//GetRenderer().attachCamera(fpsCameraComponent->GetCamera());
-		}
-	}
+	//// Pistol
+	//types = { RENDER };
+	//entity = entityManager.AddEntity(types);
+	//entity->SetPosition(-1.0f, 1.0f, 0.0f);
+	//entity->SetRotation(-90.0f, glm::vec3(0.0f, 1.0f, 0.0f));
+	//entity->SetScale(0.5f);
+	//renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
+	//renderComponent->SetModelIndex(4);
 }
 
 void FPSTest::loadOnlineEntities()
@@ -261,49 +297,25 @@ void FPSTest::loadOnlineEntities()
 	physicsComponent->initComplexShape(physicsWorld, PhysicsComponent::PhysicsType::STATIC, models[renderComponent->GetModelIndex()], entity->GetModelMatrix(), entity->GetEntityId());
 
 	// Helmet
-	entity = GetEntityManager().AddEntity(types);
-	glm::mat4 helmetTransform(1.0f);
-	helmetTransform = glm::translate(helmetTransform, glm::vec3(0.0f, 2.0f, 0.0f));
-	helmetTransform = glm::rotate(helmetTransform, glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	helmetTransform = glm::rotate(helmetTransform, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-	helmetTransform = glm::scale(helmetTransform, glm::vec3(0.2f, 0.2f, 0.2f));
-	entity->SetModelMatrix(helmetTransform);
-	renderComponent = reinterpret_cast<RenderComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), RENDER));
-	renderComponent->SetModelIndex(1);
-
+	entity = entityManager.AddEntity(types);
+	entity->SetPosition(0.0f, 2.0f, 0.0f);
+	entity->SetRotation(90.0f, glm::vec3(0.0f, 1.0f, 0.0f));
+	entity->SetScale(0.2f);
 	// configure physics component
-	physicsComponent = reinterpret_cast<PhysicsComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
-	physicsComponent->init(GetPhysicsWorld(), PhysicsComponent::PhysicsType::DYNAMIC, helmetTransform, entity->GetEntityId());
+	renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
+	renderComponent->SetModelIndex(1);
+	physicsComponent = reinterpret_cast<PhysicsComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
+	physicsComponent->init(physicsWorld, PhysicsComponent::PhysicsType::DYNAMIC, models[renderComponent->GetModelIndex()], entity->GetModelMatrix(), entity->GetEntityId());
 
 	// Cube
-	entity = GetEntityManager().AddEntity(types);
-	glm::mat4 cubeTransform(1.0f);
-	cubeTransform = glm::translate(cubeTransform, glm::vec3(0.3f, 2.0f, -1.0f)); // y values below 2 clips below floor (for me)
-	cubeTransform = glm::scale(cubeTransform, glm::vec3(0.4f, 0.4f, 0.4f));
-	entity->SetModelMatrix(cubeTransform);
+	entity = entityManager.AddEntity(types);
+	entity->SetPosition(0.3f, 1.0f, -1.0f);
 	// configure physics component
-	renderComponent = reinterpret_cast<RenderComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), RENDER));
+	renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
 	renderComponent->SetModelIndex(2);
-	physicsComponent = reinterpret_cast<PhysicsComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
-	physicsComponent->init(GetPhysicsWorld(), PhysicsComponent::PhysicsType::DYNAMIC, cubeTransform, entity->GetEntityId());
+	physicsComponent = reinterpret_cast<PhysicsComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
+	physicsComponent->init(physicsWorld, PhysicsComponent::PhysicsType::DYNAMIC, models[renderComponent->GetModelIndex()], entity->GetModelMatrix(), entity->GetEntityId());
 
-	// Player 1
-	types = { CAMERA, NETWORK, RENDER, PHYSICS };
-	entity = GetEntityManager().AddEntity(types);
-	glm::mat4 player1Transform(1.0f);
-	player1Transform = glm::translate(player1Transform, glm::vec3(-5.0f, 1.0f, -1.0f));
-	player1Transform = glm::rotate(player1Transform, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	player1Transform = glm::scale(player1Transform, glm::vec3(1.0f, 1.0f, 1.0f));
-	entity->SetModelMatrix(player1Transform);
-	cameraComponent = reinterpret_cast<CameraComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), CAMERA));
-	cameraComponent->SetCamera(new Engine::Camera(100.0f, 0.01f, 256.0f, glm::vec3(-3.0f, 2.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
-	//cameraComponent->SetCamera(Engine::Camera(100.0f, 0.01f, 256.0f, glm::vec3(-3.0f, 2.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
-	networkComponent = reinterpret_cast<NetworkComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), NETWORK));
-	networkComponent->SetClientId(0);
-	renderComponent = reinterpret_cast<RenderComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), RENDER));
-	renderComponent->SetModelIndex(3);
-	physicsComponent = reinterpret_cast<PhysicsComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
-	physicsComponent->init(GetPhysicsWorld(), PhysicsComponent::PhysicsType::CONTROLLER, player1Transform, entity->GetEntityId());
 
 	// Player 1
 	types = { CAMERA, NETWORK, RENDER, PHYSICS };
@@ -316,7 +328,7 @@ void FPSTest::loadOnlineEntities()
 	physicsComponent = reinterpret_cast<PhysicsComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
 	physicsComponent->init(physicsWorld, PhysicsComponent::PhysicsType::CONTROLLER, models[renderComponent->GetModelIndex()], entity->GetModelMatrix(), entity->GetEntityId());
 	cameraComponent = reinterpret_cast<CameraComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), CAMERA));
-	cameraComponent->SetCamera(Engine::Camera(100.0f, 0.01f, 256.0f, glm::vec3(-3.0f, 2.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
+	cameraComponent->SetCamera(new Engine::Camera(100.0f, 0.01f, 256.0f, glm::vec3(-3.0f, 2.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
 	networkComponent = reinterpret_cast<NetworkComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), NETWORK));
 	networkComponent->SetClientId(0);
 

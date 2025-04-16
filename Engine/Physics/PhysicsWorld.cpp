@@ -1,14 +1,14 @@
+#include "../ECS/Components/PhysicsComponent.hpp"
+#include "../ECS/EntityManager.hpp"
+#include "../gltf/Model.hpp"
+#include "../Input/Input.hpp"
+#include "../Input/InputCodes.hpp"
+#include "../Input/Keyboard.hpp"
 #include "PhysicsWorld.hpp"
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtx/string_cast.hpp>
 #include <glm/gtc/quaternion.hpp>
-#include "../gltf/Model.hpp"
-#include "../ECS/EntityManager.hpp"
-#include "../ECS/Components/PhysicsComponent.hpp"
-#include "../Input/Keyboard.hpp"
-#include "../Input/InputCodes.hpp"
-#include "../Input/Input.hpp"
+#include <glm/gtx/string_cast.hpp>
 
 namespace Engine
 {
@@ -89,7 +89,7 @@ namespace Engine
 		}
 	}
 
-	void PhysicsWorld::updateCharacter(PxReal deltatime)
+	void PhysicsWorld::updateCharacter(Entity* playerEntity, PxReal deltatime)
 	{
 		//if (this->controller)
 		//{
@@ -98,25 +98,39 @@ namespace Engine
 		//	this->controller->move(displacement, 0.01f, deltatime, filters);
 
 		//}
+		glm::vec3 entityFrontDir = playerEntity->frontDirection;
+		glm::vec3 entityRightDir = glm::normalize(glm::cross(entityFrontDir, glm::vec3(0.0f, 1.0f, 0.0f)));
+
 		if (this->controller)
 		{
-			PxVec3 displacement(0.0f, -9.81f * deltatime, 0.0f);
+			//PxVec3 displacement(0.0f, -9.81f * deltatime, 0.0f);
+			PxVec3 displacement(0.0f, 0.0f * deltatime, 0.0f);
 			float speed = 5.0f;
+			PxVec3 frontDir(entityFrontDir.x, entityFrontDir.y, entityFrontDir.z);
+			PxVec3 rightDir(entityRightDir.x, entityRightDir.y, entityRightDir.z);
 
-			//auto& keys = Engine::Keyboard::getKeyStates();
 			auto& keyboard = Engine::InputManager::getKeyboard();
 
 			if (keyboard.isPressed(HS_KEY_W)) {
-				displacement.z -= speed * deltatime;
+				//displacement.z += speed * deltatime;
+				displacement += frontDir * speed * deltatime;
+				//displacement.z += speed * deltatime;
 			}
 			if (keyboard.isPressed(HS_KEY_S)) {
-				displacement.z += speed * deltatime;
+				displacement -= frontDir * speed * deltatime;
+
+
+				//displacement.z -= speed * deltatime;
 			}
 			if (keyboard.isPressed(HS_KEY_A)) {
-				displacement.x -= speed * deltatime;
+				displacement -= rightDir * speed * deltatime;
+
+				//displacement.x += speed * deltatime;
 			}
 			if (keyboard.isPressed(HS_KEY_D)) {
-				displacement.x += speed * deltatime;
+				//displacement.x -= speed * deltatime;
+				displacement += rightDir * speed * deltatime;
+
 			}
 
 			PxControllerFilters filters;

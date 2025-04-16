@@ -1,11 +1,11 @@
 #pragma once
 
-#include <string>
 #include <functional>
+#include <string>
 
-#include <imgui.h>
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_vulkan.h>
+#include <imgui.h>
 //#include "../third_party/imgui/misc/fonts/IconFontCppHeaders/IconsFontAwesome5.h"
 
 //#define GLFW_INCLUDE_NONE
@@ -57,6 +57,7 @@ namespace Engine
 		void makeLoadingGUI(int*, int*);
 
 		bool debugInput{ false };
+		bool debugGame{ false };
 	private:
 		std::map<Engine::RenderMode, std::function<void(int*, int*)>> functions;
 		Engine::Game* game;

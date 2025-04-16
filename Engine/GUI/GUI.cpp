@@ -1,5 +1,5 @@
-#include "GUI.hpp"
 #include "../Network/Helpers/GameConfig.hpp"
+#include "GUI.hpp"
 
 struct GLFWwindow;
 
@@ -325,6 +325,7 @@ namespace Engine
 		ImGui::InputText("##FrontDir", (char*)fDirStr.c_str(), fDirStr.size() + 1, ImGuiInputTextFlags_ReadOnly);
 
 		ImGui::Checkbox("Input Debug", &debugInput);
+		ImGui::Checkbox("Game Debug", &debugGame);
 
 		// ImGui::ShowDemoWindow();
 		ImGui::Text("Shadow depth buffer settings:");
@@ -333,6 +334,9 @@ namespace Engine
 
 		if (debugInput || InputManager::hasJoysticksConnected())
 			ShowInputDebug();
+
+		if (debugGame)
+			game->DrawGUI();
 
 		ImGui::Text("Animations:");
 		// Iterate over all models and find ones with animations

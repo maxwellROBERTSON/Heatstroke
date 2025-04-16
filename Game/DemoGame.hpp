@@ -10,6 +10,7 @@
 #include "../Engine/ECS/Components/NetworkComponent.hpp"
 #include "../Engine/ECS/Components/PhysicsComponent.hpp"
 #include "../Engine/ECS/Components/RenderComponent.hpp"
+#include "../Engine/ECS/Entity.hpp"
 #include "../Engine/ECS/EntityManager.hpp"
 
 #include "../Engine/Physics/PhysicsWorld.hpp"
@@ -51,6 +52,7 @@ public:
 	virtual void Render() override;
 	virtual void Update() override;
 	virtual void OnEvent(Engine::Event& e) override;
+	virtual void DrawGUI() override;
 
 	void initialiseModels();
 
@@ -65,10 +67,26 @@ public:
 	std::chrono::steady_clock::time_point previous;
 	int clientId = 0;
 
+	// Cameras
 	Engine::Camera sceneCam;
 	FPSCamera playerCam;
-	CameraMode camMode;
-	//int currentCam = 0;
+	glm::vec3 cameraOffset = glm::vec3(0.0f, 0.25f, 0.2f);
+	//glm::vec3 cameraOffset = glm::vec3();
+	//glm::vec3 cameraOffset = glm::vec3(-0.1f, 0.25f, -0.15f);
+	//glm::vec3 cameraOffset = glm::vec3(0.0f, 1.0f, 0.0f);
+	//CameraMode camMode{ CameraMode::SCENE };
+	CameraMode camMode{ CameraMode::PLAYER };
+	bool camCanRotate{ true };
+
+	// Player 1
+	Engine::Entity* playerEntity;
+	glm::vec3 playerPos{ 0.0f, 1.0f, 0.0f };
+	//glm::vec3 playerPos{ 0.0f, 5.0f, 0.0f };
+	//glm::vec3 playerPos{ -5.0f, 0.0f, -1.0f };
+	float playerXRotation{ 0.0f };
+	float playerYRotation{ 0.0f };
+	// Map
+	Engine::Entity* mapEntity;
 };
 
 //void loadOfflineEntities(ComponentTypeRegistry& registry, EntityManager& entityManager, PhysicsWorld& pworld);
