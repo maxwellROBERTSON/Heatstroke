@@ -62,7 +62,8 @@ namespace Engine
 		void SetAllData(uint8_t*);
 
 		// Set all changed entity and component data
-		void SetAllChangedData(uint8_t*);
+		// If client entity is changed, don't update on client
+		void SetAllChangedData(uint8_t*, int);
 
 		// Reset changed entities and components
 		void ResetChanged();

@@ -57,6 +57,8 @@ namespace Engine
 
 		uint64_t clientId = 0;
 
+		int clientEntityId = -1;
+
 		yojimbo::Address serverAddress;
 
 		yojimbo::Client* client;

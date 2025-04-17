@@ -125,6 +125,8 @@ namespace Engine
 		if (bytes == 0)
 			return;
 		ClientUpdateEntityData* message = static_cast<ClientUpdateEntityData*>(client->CreateMessage(CLIENT_UPDATE_ENTITY_DATA));
+		if (message->GetId() > 20)
+			exit(0);
 		if (message)
 		{
 			uint8_t* block = client->AllocateBlock(1024);
@@ -140,7 +142,7 @@ namespace Engine
 					return;
 				}
 				client->SendClientMessage(yojimbo::CHANNEL_TYPE_UNRELIABLE_UNORDERED, message);
-				std::cout << GameMessageTypeStrings[CLIENT_UPDATE_ENTITY_DATA] << " TO SERVER WITH: ";
+				std::cout << GameMessageTypeStrings[CLIENT_UPDATE_ENTITY_DATA] << " TO SERVER WITH ";
 				std::cout << "MESSAGEID = " << message->GetId() << ", BLOCK SIZE = " << 1024 << std::endl;
 				game->GetEntityManager().ResetChanged();
 				return; 
@@ -177,6 +179,7 @@ namespace Engine
 						thisClientEntity = entitiesWithNetworkComponent[i];
 						CameraComponent* cameraComponent = reinterpret_cast<CameraComponent*>(manager->GetComponentOfEntity(entitiesWithNetworkComponent[i], CAMERA));
 						game->GetRenderer().attachCameraComponent(cameraComponent);
+						clientEntityId = entitiesWithNetworkComponent[i];
 						break;
 					}
 				}
@@ -197,16 +200,11 @@ namespace Engine
 					}
 					else
 					{
-						//if (networkComp != nullptr && vec[i] == thisClientEntity)
 						if (vec[i] == thisClientEntity)
 						{
 							physicsComp->Init(game->GetPhysicsWorld(), type, model, mat, vec[i], true, true);
 							manager->AddSimulatedPhysicsEntity(vec[i]);
 						}
-						/*else if (networkComp != nullptr)
-						{
-							physicsComp->Init(game->GetPhysicsWorld(), type, model, mat, vec[i], true, false);
-						}*/
 						else
 						{
 							physicsComp->Init(game->GetPhysicsWorld(), type, model, mat, vec[i], true, false);
@@ -226,7 +224,7 @@ namespace Engine
 						return;
 					}
 					client->SendClientMessage(yojimbo::CHANNEL_TYPE_RELIABLE_ORDERED, initMessage);
-					std::cout << GameMessageTypeStrings[CLIENT_INITIALIZED] << " TO SERVER WITH: ";
+					std::cout << GameMessageTypeStrings[CLIENT_INITIALIZED] << " TO SERVER WITH ";
 					std::cout << "MESSAGEID = " << message->GetId() << std::endl;
 					return;
 				}
@@ -243,7 +241,7 @@ namespace Engine
 		}
 	}
 
-	// Handle a server update message 
+	// Handle a server update message
 	void GameClient::HandleServerUpdateEntityData(ServerUpdateEntityData* message)
 	{
 		int blockSize = message->GetBlockSize();
@@ -254,7 +252,7 @@ namespace Engine
 		{
 			if (blockSize != 0)
 			{
-				game->GetEntityManager().SetAllChangedData(message->GetBlockData());
+				game->GetEntityManager().SetAllChangedData(message->GetBlockData(), clientEntityId);
 				game->GetEntityManager().ResetChanged();
 				std::cout << "Data updated from server" << std::endl;
 			}
@@ -306,7 +304,7 @@ namespace Engine
 				return;
 			}
 			client->SendClientMessage(yojimbo::CHANNEL_TYPE_RELIABLE_ORDERED, message);
-			std::cout << GameMessageTypeStrings[REQUEST_ENTITY_DATA] << " TO SERVER WITH: ";
+			std::cout << GameMessageTypeStrings[REQUEST_ENTITY_DATA] << " TO SERVER WITH ";
 			std::cout << "MESSAGEID = " << message->GetId() << std::endl;
 			game->GetEntityManager().ResetChanged();
 			game->GetNetwork().SetStatus(Status::CLIENT_LOADING_DATA);

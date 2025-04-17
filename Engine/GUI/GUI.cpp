@@ -194,7 +194,7 @@ namespace Engine
 
 			ImGui::Text("Join a server");
 
-			static char addressStr[16] = "192.168.68.58\0";
+			static char addressStr[16] = "192.168.68.60\0";
 			ImGui::Text("Address:");
 			ImGui::InputText("Address", addressStr, IM_ARRAYSIZE(addressStr));
 

@@ -62,7 +62,6 @@ namespace Engine
 		offset += sizeof(entityId);
 		if (std::memcmp(&modelMatrix, data + offset, sizeof(modelMatrix)) != 0)
 		{
-			std::cout << "Model matrix memcpy." << std::endl;
 			std::memcpy(&modelMatrix, data + offset, sizeof(modelMatrix));
 			SetEntityHasChanged();
 		}
@@ -73,14 +72,12 @@ namespace Engine
 	{
 		this->position = glm::vec3(x, y, z);
 		this->dirty = true;
-		std::cout << "Entity " << entityId << "'s position 1 has changed." << std::endl;
 		SetEntityHasChanged();
 	}
 	void Entity::SetPosition(glm::vec3 position)
 	{
 		this->position = position;
 		this->dirty = true;
-		std::cout << "Entity " << entityId << "'s position 2 has changed." << std::endl;
 		SetEntityHasChanged();
 	}
 
@@ -89,14 +86,12 @@ namespace Engine
 	{
 		this->rotation = glm::rotate(glm::mat4(1.0f), glm::radians(angInDeg), axis);
 		this->dirty = true;
-		std::cout << "Entity " << entityId << "'s rotation 1 has changed." << std::endl;
 		SetEntityHasChanged();
 	}
 	void Entity::SetRotation(glm::quat rotation)
 	{
 		this->rotation = glm::mat4(rotation);
 		this->dirty = true;
-		std::cout << "Entity " << entityId << "'s rotation 2 has changed." << std::endl;
 		SetEntityHasChanged();
 	}
 
@@ -105,14 +100,12 @@ namespace Engine
 	{
 		this->scale = glm::vec3(xScale, yScale, zScale);
 		this->dirty = true;
-		std::cout << "Entity " << entityId << "'s scale 1 has changed." << std::endl;
 		SetEntityHasChanged();
 	}
 	void Entity::SetScale(float overallScale)
 	{
 		this->scale = glm::vec3(overallScale);
 		this->dirty = true;
-		std::cout << "Entity " << entityId << "'s scale 2 has changed." << std::endl;
 		SetEntityHasChanged();
 	}
 

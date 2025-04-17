@@ -422,7 +422,8 @@ namespace Engine
 	// | entity_data | * # changed entites
 	// | components of type | * # of changed components of types
 	// Set all changed entity and component data
-	void EntityManager::SetAllChangedData(uint8_t* block)
+	// If client entity is changed, don't update on client
+	void EntityManager::SetAllChangedData(uint8_t* block, int clientEntityId)
 	{
 		size_t offset = 0;
 		uint8_t* f;
@@ -475,9 +476,10 @@ namespace Engine
 				{
 					if (byte & (1 << (7 - k))) // If the corresponding bit is set
 					{
+						if (clientEntityId == entityPtr->GetEntityId())
+							continue;
 						if ((j * 8 + k) == 0)
 						{
-							std::cout << "Changed entity " << i << std::endl;
 							entityPtr->SetDataArray(block + entityComponentOffsets[0]);
 							entityComponentOffsets[0] += entitySize;
 							continue;
@@ -558,7 +560,6 @@ namespace Engine
 	// Add changed entity
 	void EntityManager::AddChangedEntity(Entity* entity)
 	{
-		std::cout << "Entity " << entity->GetEntityId() << " has changed." << std::endl;
 		int id = entity->GetEntityId();
 		for (auto& pair : changedEntitiesAndComponents)
 		{
@@ -577,7 +578,6 @@ namespace Engine
 	// Add changed component
 	void EntityManager::AddChangedComponent(ComponentTypes type, Entity* entity)
 	{
-		std::cout << "Entity " << entity->GetEntityId() << "'s " << type << " component has changed." << std::endl;
 		int id = entity->GetEntityId();
 		for (auto& pair : changedEntitiesAndComponents)
 		{
