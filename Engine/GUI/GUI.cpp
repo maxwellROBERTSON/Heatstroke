@@ -271,7 +271,7 @@ namespace Engine
 				else
 				{
 					errorMsg = "";
-					game->loadOnlineEntities();
+					game->loadOnlineEntities(maxClientsNum);
 					game->GetRenderer().initialiseModelMatrices();
 					game->GetRenderer().initialiseJointMatrices();
 					game->ToggleRenderMode(GUIHOME);

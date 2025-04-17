@@ -47,7 +47,7 @@ public:
 	void initialiseModels();
 
 	void loadOfflineEntities();
-	void loadOnlineEntities();
+	void loadOnlineEntities(int);
 
 	~FPSTest() {
 		for (Engine::vk::Model& model : GetModels())

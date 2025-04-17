@@ -598,7 +598,6 @@ namespace Engine
 	// Set next network component unassigned to a client
 	void EntityManager::AssignNextClient(uint64_t clientId)
 	{
-		this;
 		NetworkComponent* comp = reinterpret_cast<NetworkComponent*>((*componentMap[NETWORK])[nextNetworkComponent].get());
 		comp->SetClientId(clientId);
 	}

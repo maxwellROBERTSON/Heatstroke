@@ -183,12 +183,14 @@ namespace Engine
 
 				std::vector<int> vec = manager->GetEntitiesWithComponent(PHYSICS);
 				PhysicsComponent* physicsComp;
+				RenderComponent* renderComp;
 				for (int i = 0; i < vec.size(); i++)
 				{
 					physicsComp = reinterpret_cast<PhysicsComponent*>(manager->GetComponentOfEntity(vec[i], PHYSICS));
+					renderComp = reinterpret_cast<RenderComponent*>(manager->GetComponentOfEntity(vec[i], RENDER));
 					glm::mat4 mat = manager->GetEntity(vec[i])->GetModelMatrix();
 					PhysicsComponent::PhysicsType type = physicsComp->GetPhysicsType();
-					Engine::vk::Model& model = game->GetModels()[vec[i]];
+					Engine::vk::Model& model = game->GetModels()[renderComp->GetModelIndex()];
 					if (type == PhysicsComponent::PhysicsType::STATIC)
 					{
 						physicsComp->InitComplexShape(game->GetPhysicsWorld(), type, model, mat, vec[i]);
