@@ -122,7 +122,6 @@ namespace Engine
 		if (aModelMatrix != modelMatrix)
 		{
 			modelMatrix = aModelMatrix;
-			std::cout << "Entity 1's model matrix: " << glm::to_string(this->GetModelMatrix()) << std::endl;
 			SetEntityHasChanged();
 		}
 	} 

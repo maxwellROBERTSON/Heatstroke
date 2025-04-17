@@ -313,7 +313,11 @@ namespace Engine
 		else if (client->IsDisconnected())
 		{
 			if (status != Status::CLIENT_DISCONNECTED)
+			{
 				game->GetNetwork().SetStatus(Status::CLIENT_DISCONNECTED);
+				if (game->GetRenderMode(GUILOADING) != 1)
+					game->ToggleRenderMode(GUILOADING);
+			}
 		}
 		else if (client->ConnectionFailed())
 		{

@@ -20,6 +20,7 @@ namespace Engine
 	{
 	public:
 		CameraComponent() : entityManager(nullptr), entity(nullptr) {}
+		CameraComponent(Engine::Camera c) : entityManager(nullptr), entity(nullptr), camera(c) {}
 		CameraComponent(Engine::EntityManager* entityManager, Engine::Entity* entity) : entityManager(entityManager), entity(entity) {}
 
 		void operator=(const CameraComponent& other) override

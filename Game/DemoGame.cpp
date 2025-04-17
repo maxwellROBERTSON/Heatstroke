@@ -18,7 +18,7 @@
 
 using namespace Engine;
 
-CameraComponent cameraComponent = CameraComponent();
+CameraComponent serverCameraComponent = CameraComponent(Engine::Camera(100.0f, 0.01f, 256.0f, glm::vec3(-3.0f, 2.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
 
 void FPSTest::Init()
 {
@@ -34,7 +34,7 @@ void FPSTest::Init()
 	GetPhysicsWorld().init();
 	GetRenderer().initialiseRenderer();
 	GetGUI().initGUI();
-	GetRenderer().attachCameraComponent(&cameraComponent);
+	GetRenderer().attachCameraComponent(&serverCameraComponent);
 	GetRenderer().initialiseModelDescriptors(GetModels());
 }
 
@@ -316,8 +316,6 @@ void FPSTest::loadOnlineEntities()
 	//entity->SetScale(0.5f);
 	//renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
 	//renderComponent->SetModelIndex(4);
-
-	GetRenderer().attachCameraComponent(cameraComponent);
 
 	EntityManager& e = GetEntityManager();
 	GetEntityManager().ResetChanged();

@@ -194,7 +194,7 @@ namespace Engine
 
 			ImGui::Text("Join a server");
 
-			static char addressStr[16] = "192.168.68.60\0";
+			static char addressStr[16] = "192.168.68.58\0";
 			ImGui::Text("Address:");
 			ImGui::InputText("Address", addressStr, IM_ARRAYSIZE(addressStr));
 
@@ -275,7 +275,7 @@ namespace Engine
 					game->GetRenderer().initialiseModelMatrices();
 					game->GetRenderer().initialiseJointMatrices();
 					game->ToggleRenderMode(GUIHOME);
-					game->ToggleRenderMode(FORWARD);
+					game->ToggleRenderMode(GUISERVER);
 					game->SetServer(portNum, maxClientsNum);
 				}
 			}
@@ -326,7 +326,6 @@ namespace Engine
 				game->ToggleRenderMode(SHADOWS);
 			}
 		}
-
 
 		ImGui::Text("Anti Aliasing:");
 		std::pair<const char**, int> msaaOptions = game->GetRenderer().getMSAAOptions();
@@ -487,7 +486,7 @@ namespace Engine
 			GLFWwindow* window = game->GetContext().getGLFWWindow();
 			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 		}
-		else if (s == Status::CLIENT_DISCONNECTED || s == Status::CLIENT_CONNECTION_FAILED)
+		else if (s == Status::CLIENT_CONNECTION_FAILED)
 		{
 			ImGui::Text("Loading Failed.");
 			ImGui::Text(game->GetNetwork().GetStatusString().c_str());
@@ -496,6 +495,20 @@ namespace Engine
 			if (ImGui::Button("Home", ImVec2(*w / 6, *h / 6)))
 			{
 				game->ResetRenderModes();
+				game->GetNetwork().Reset();
+			}
+		}
+		else if (s == Status::CLIENT_DISCONNECTED)
+		{
+			ImGui::Text("Client disconnected from server.");
+			ImGui::Text(game->GetNetwork().GetStatusString().c_str());
+			ImVec2 topRightPos = ImVec2(*w - *w / 6 - 10, 30);
+			ImGui::SetCursorPos(topRightPos);
+			if (ImGui::Button("Home", ImVec2(*w / 6, *h / 6)))
+			{
+				game->ResetRenderModes();
+				game->GetEntityManager().ClearManager();
+				game->GetRenderer().cleanModelMatrices();
 				game->GetNetwork().Reset();
 			}
 		}

@@ -64,14 +64,6 @@ namespace Engine
 		QueueStateMessages();
 
 		server->SendPackets();
-
-		/*std::cout << "Yojimbo Time: " << yojimbo_time() << std::endl;
-		std::cout << "Server Time: " << serverTime << std::endl;*/
-		//FreeCurrentBlock();
-
-		// ... process client inputs ...
-		// ... update game ...
-		// ... send game state to clients ...
 	}
 
 	// Loop through all client messages, process and release
@@ -195,10 +187,6 @@ namespace Engine
 			}
 			game->GetEntityManager().ResetChanged();
 		}
-		/*else
-		{
-			std::cout << "SERVER STATE UNCHANGED. NO " << GameMessageTypeStrings[RESPONSE_ENTITY_DATA] << " MESSAGE SENT TO CLIENTS" << std::endl;
-		}*/
 	}
 
 	// Handle a request for entity data
