@@ -598,7 +598,7 @@ namespace Engine
 	// Set next network component unassigned to a client
 	void EntityManager::AssignNextClient(uint64_t clientId)
 	{
-		NetworkComponent* comp = reinterpret_cast<NetworkComponent*>((*componentMap[NETWORK])[nextNetworkComponent].get());
+		NetworkComponent* comp = reinterpret_cast<NetworkComponent*>((*componentMap[NETWORK])[nextNetworkComponent++].get());
 		comp->SetClientId(clientId);
 	}
 
@@ -717,8 +717,6 @@ namespace Engine
 	// vector so mustn't be used except when making a new entity
 	int EntityManager::AddComponent(ComponentTypes type, Entity* entity)
 	{
-		if (type == NETWORK)
-			int ls = 0;
 		int index;
 		std::vector<std::unique_ptr<ComponentBase>>& vec = (*componentMap[type]);
 		index = (int)vec.size();
@@ -726,21 +724,17 @@ namespace Engine
 		{
 		case CAMERA:
 			(*componentMap[CAMERA]).emplace_back(std::make_unique<CameraComponent>(this, entity));
-			//std::cout << "Camera for " << entity << std::endl;
 			break;
 		case NETWORK:
 			if (nextNetworkComponent == -1)
 				nextNetworkComponent = 0;
 			(*componentMap[NETWORK]).emplace_back(std::make_unique<NetworkComponent>(this, entity));
-			//std::cout << "Network for " << entity << std::endl;
 			break;
 		case PHYSICS:
 			(*componentMap[PHYSICS]).emplace_back(std::make_unique<PhysicsComponent>(this, entity));
-			//std::cout << "Physics for " << entity << std::endl;
 			break;
 		case RENDER:
 			(*componentMap[RENDER]).emplace_back(std::make_unique<RenderComponent>(this, entity));
-			//std::cout << "Render for " << entity << std::endl;
 			break;
 		default:
 			throw std::runtime_error("Unknown component type");
