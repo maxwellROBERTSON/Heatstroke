@@ -39,7 +39,7 @@ namespace Engine
 
         // Getters
 
-        // Get type size of a type
+        // Get type of a type
         ComponentTypes GetType() const { return T::StaticType(); }
 
         // Type getter in child classes
