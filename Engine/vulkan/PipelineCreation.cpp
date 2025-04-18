@@ -1,6 +1,7 @@
 #include "PipelineCreation.hpp"
 
 #include <cassert>
+#include <bit>
 
 #include "Error.hpp"
 #include "toString.hpp"
@@ -1031,17 +1032,124 @@ namespace Engine {
 		return vk::Pipeline(aWindow.device->device, pipe);
 	}
 
+	vk::Pipeline createSkyboxPipeline(const VulkanWindow& aWindow, VkRenderPass aRenderPass, VkPipelineLayout aPipelineLayout, VkSampleCountFlagBits msaaSamples) {
+		vk::ShaderModule vert = loadShaderModule(aWindow, Shaders::skyboxVert);
+		vk::ShaderModule frag = loadShaderModule(aWindow, Shaders::skyboxFrag);
+
+		VkPipelineShaderStageCreateInfo stages[2]{};
+		stages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+		stages[0].module = vert.handle;
+		stages[0].pName = "main";
+
+		stages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+		stages[1].module = frag.handle;
+		stages[1].pName = "main";
+
+		VkPipelineVertexInputStateCreateInfo inputInfo{};
+		inputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+
+		VkPipelineInputAssemblyStateCreateInfo assemblyInfo{};
+		assemblyInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+		assemblyInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+		assemblyInfo.primitiveRestartEnable = VK_FALSE;
+
+		VkViewport viewport{};
+		viewport.x = 0.0f;
+		viewport.y = 0.0f;
+		viewport.width = float(aWindow.swapchainExtent.width);
+		viewport.height = float(aWindow.swapchainExtent.height);
+		viewport.minDepth = 0.0f;
+		viewport.maxDepth = 1.0f;
+
+		VkRect2D scissor{};
+		scissor.offset = VkOffset2D{ 0, 0 };
+		scissor.extent = aWindow.swapchainExtent;
+
+		VkPipelineViewportStateCreateInfo viewportInfo{};
+		viewportInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+		viewportInfo.viewportCount = 1;
+		viewportInfo.pViewports = &viewport;
+		viewportInfo.scissorCount = 1;
+		viewportInfo.pScissors = &scissor;
+
+		VkPipelineRasterizationStateCreateInfo rasterInfo{};
+		rasterInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+		rasterInfo.depthClampEnable = VK_FALSE;
+		rasterInfo.rasterizerDiscardEnable = VK_FALSE;
+		rasterInfo.polygonMode = VK_POLYGON_MODE_FILL;
+		rasterInfo.cullMode = VK_CULL_MODE_BACK_BIT;
+		rasterInfo.depthBiasEnable = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+		rasterInfo.lineWidth = 1.0f;
+
+		VkPipelineMultisampleStateCreateInfo samplingInfo{};
+		samplingInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+		samplingInfo.rasterizationSamples = msaaSamples;
+
+		VkPipelineColorBlendAttachmentState blendStates[1]{};
+		blendStates[0].blendEnable = VK_TRUE;
+		blendStates[0].colorBlendOp = VK_BLEND_OP_ADD;
+		blendStates[0].srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+		blendStates[0].dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+		blendStates[0].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+
+		VkPipelineColorBlendStateCreateInfo blendInfo{};
+		blendInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+		blendInfo.logicOpEnable = VK_FALSE;
+		blendInfo.attachmentCount = 1;
+		blendInfo.pAttachments = blendStates;
+
+		VkPipelineDepthStencilStateCreateInfo depthInfo{};
+		depthInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+		depthInfo.depthTestEnable = VK_FALSE;
+		depthInfo.depthWriteEnable = VK_FALSE;
+		depthInfo.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+		depthInfo.minDepthBounds = 0.0f;
+		depthInfo.maxDepthBounds = 1.0f;
+
+		VkGraphicsPipelineCreateInfo pipeInfo{};
+		pipeInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+		pipeInfo.stageCount = 2;
+		pipeInfo.pStages = stages;
+		pipeInfo.pVertexInputState = &inputInfo;
+		pipeInfo.pInputAssemblyState = &assemblyInfo;
+		pipeInfo.pTessellationState = nullptr;
+		pipeInfo.pViewportState = &viewportInfo;
+		pipeInfo.pRasterizationState = &rasterInfo;
+		pipeInfo.pMultisampleState = &samplingInfo;
+		pipeInfo.pDepthStencilState = &depthInfo;
+		pipeInfo.pColorBlendState = &blendInfo;
+		pipeInfo.pDynamicState = nullptr;
+		pipeInfo.layout = aPipelineLayout;
+		pipeInfo.renderPass = aRenderPass;
+		pipeInfo.subpass = 0;
+
+		VkPipeline pipe = VK_NULL_HANDLE;
+		if (const auto res = vkCreateGraphicsPipelines(aWindow.device->device, VK_NULL_HANDLE, 1, &pipeInfo, nullptr, &pipe); VK_SUCCESS != res) {
+			throw Utils::Error("Unable to create graphics pipeline\n vkCreateGraphicsPipeline() returned %s", Utils::toString(res).c_str());
+		}
+
+		return vk::Pipeline(aWindow.device->device, pipe);
+	}
+
 	// Should only be used for render pass attachments
 	std::pair<vk::Texture, vk::ImageView> createTextureBuffer(const VulkanContext& aContext, TextureBufferSetting aBufferSetting) {
+		std::uint32_t mipLevels = 1;
+
+		if (!aBufferSetting.ignoreMipLevels)
+			mipLevels = computeMipLevels(aBufferSetting.imageExtent.width, aBufferSetting.imageExtent.height);
+
 		VkImageCreateInfo imageInfo{};
 		imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+		imageInfo.flags = aBufferSetting.imageCreateFlags;
 		imageInfo.imageType = VK_IMAGE_TYPE_2D;
 		imageInfo.format = aBufferSetting.imageFormat;
-		imageInfo.extent.width = aBufferSetting.extent.width;
-		imageInfo.extent.height = aBufferSetting.extent.height;
+		imageInfo.extent.width = aBufferSetting.imageExtent.width;
+		imageInfo.extent.height = aBufferSetting.imageExtent.height;
 		imageInfo.extent.depth = 1;
-		imageInfo.mipLevels = 1;
-		imageInfo.arrayLayers = 1;
+		imageInfo.mipLevels = mipLevels;
+		imageInfo.arrayLayers = aBufferSetting.imageArrayLayers;
 		imageInfo.samples = aBufferSetting.samples;
 		imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
 		imageInfo.usage = aBufferSetting.imageUsage;
@@ -1061,21 +1169,27 @@ namespace Engine {
 			throw Utils::Error("Unable to allocate depth buffer image.\n vmaCreateImage() returned %s\n", Utils::toString(res).c_str());
 		}
 
-		vk::Texture Image(aContext.allocator->allocator, "depth", image, allocation);
+		vk::Texture Image(aContext.allocator->allocator, "textureBuffer", image, allocation);
 
 		VkImageViewCreateInfo viewInfo{};
 		viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 		viewInfo.image = Image.image;
-		viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		viewInfo.viewType = aBufferSetting.viewType;
 		viewInfo.format = aBufferSetting.imageFormat;
 		viewInfo.components = VkComponentMapping{};
-		viewInfo.subresourceRange = VkImageSubresourceRange{ aBufferSetting.imageAspectFlags, 0, 1, 0, 1 };
+		viewInfo.subresourceRange = VkImageSubresourceRange{ aBufferSetting.viewAspectFlags, 0, 1, 0, aBufferSetting.subresourceLayerCount };
 
 		VkImageView view = VK_NULL_HANDLE;
 		if (const auto res = vkCreateImageView(aContext.window->device->device, &viewInfo, nullptr, &view); VK_SUCCESS != res)
 			throw Utils::Error("Unable to create image view.\n vkCreateImageView() returned %s", Utils::toString(res).c_str());
 
 		return { std::move(Image), vk::ImageView(aContext.window->device->device, view) };
+	}
+
+	std::uint32_t computeMipLevels(std::uint32_t width, std::uint32_t height) {
+		const std::uint32_t bits = width | height;
+		const std::uint32_t leadingZeros = std::countl_zero(bits);
+		return 32 - leadingZeros;
 	}
 
 	void createFramebuffers(const VulkanWindow& aWindow, std::vector<vk::Framebuffer>& aFramebuffers, VkRenderPass aRenderPass, std::vector<VkImageView>& aImageViews, VkExtent2D aExtent, bool ignoreSwapchainImage) {

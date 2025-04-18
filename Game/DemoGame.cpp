@@ -10,6 +10,7 @@
 #include "../Engine/vulkan/PipelineCreation.hpp"
 #include "../Engine/vulkan/Renderer.hpp"
 #include "../Engine/vulkan/VulkanDevice.hpp"
+#include "../Engine/vulkan/Skybox.hpp"
 
 #include "Error.hpp"
 #include "toString.hpp"
@@ -36,6 +37,16 @@ void FPSTest::Init()
 	GetGUI().initGUI();
 	GetRenderer().attachCamera(&camera);
 	GetRenderer().initialiseModelDescriptors(GetModels());
+
+	std::vector<const char*> skyboxFilenames = {
+		"Game/assets/skybox/right.bmp",
+		"Game/assets/skybox/left.bmp",
+		"Game/assets/skybox/top.bmp",
+		"Game/assets/skybox/bottom.bmp",
+		"Game/assets/skybox/front.bmp",
+		"Game/assets/skybox/back.bmp",
+	};
+	GetRenderer().addSkybox(std::make_unique<Engine::Skybox>(&GetContext(), skyboxFilenames));
 }
 
 void FPSTest::Render()

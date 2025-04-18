@@ -12,6 +12,8 @@ namespace Shaders {
 	constexpr const char* deferredVert = "Engine/Shaders/spv/deferred.vert.spv";
 	constexpr const char* deferredFrag = "Engine/Shaders/spv/deferred.frag.spv";
 	constexpr const char* shadowVert = "Engine/Shaders/spv/shadowOffscreen.vert.spv";
+	constexpr const char* skyboxVert = "Engine/Shaders/spv/skybox.vert.spv";
+	constexpr const char* skyboxFrag = "Engine/Shaders/spv/skybox.frag.spv";
 
 }
 }

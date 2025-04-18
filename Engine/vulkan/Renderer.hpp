@@ -2,6 +2,7 @@
 
 #include "Uniforms.hpp"
 #include "Utils.hpp"
+#include "Skybox.hpp"
 #include "../gltf/Model.hpp"
 #include "../ECS/EntityManager.hpp"
 #include "../Core/RenderMode.hpp"
@@ -33,6 +34,7 @@ namespace Engine {
 		VkRenderPass& GetRenderPass(std::string s);
 		Camera* GetCameraPointer() { return camera; }
 		bool const GetIsSceneLoaded() { return isSceneLoaded; }
+		void addSkybox(std::unique_ptr<Skybox> skybox);
 
 		void initialiseRenderer();
 		void initialiseModelMatrices();
@@ -85,6 +87,8 @@ namespace Engine {
 		EntityManager* entityManager;
 		Game* game;
 		Camera* camera;
+
+		std::unique_ptr<Skybox> skybox;
 
 		std::map<std::string, vk::RenderPass> renderPasses;
 		std::map<std::string, vk::DescriptorSetLayout> descriptorLayouts;
