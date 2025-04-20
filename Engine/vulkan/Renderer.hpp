@@ -8,6 +8,7 @@
 #include "../Core/RenderMode.hpp"
 #include "../Core/Camera.hpp"
 #include "../Core/Game.hpp"
+#include "../ECS/Components/CameraComponent.hpp"
 
 namespace Engine
 {
@@ -31,16 +32,11 @@ namespace Engine {
 		Renderer(VulkanContext* aContext, EntityManager* entityManager, Game* game);
 		Renderer() = default;
 
-		VkRenderPass& GetRenderPass(std::string s);
-		Camera* GetCameraPointer() { return camera; }
-		bool const GetIsSceneLoaded() { return isSceneLoaded; }
-		void addSkybox(std::unique_ptr<Skybox> skybox);
-
 		void initialiseRenderer();
 		void initialiseModelMatrices();
 		void initialiseJointMatrices();
 		void cleanModelMatrices();
-		void attachCamera(Camera* camera);
+		void attachCameraComponent(Engine::CameraComponent* cameraComponent);
 		void initialiseModelDescriptors(std::vector<vk::Model>& models);
 		bool checkSwapchain();
 		bool acquireSwapchainImage();
@@ -57,8 +53,14 @@ namespace Engine {
 
 		// Setters
 		void setRecreateSwapchain(bool value);
+		void addSkybox(std::unique_ptr<Skybox> skybox);
 
 		// Getters
+		VkRenderPass& GetRenderPass(std::string s);
+		Engine::CameraComponent* GetCameraComponentPointer() { return cameraComponent; }
+		Engine::Camera* GetCameraPointer() { return camera; }
+		bool const GetIsSceneLoaded() { return isSceneLoaded; }
+
 		std::map<std::string, vk::PipelineLayout>& getPipelineLayouts();
 		vk::PipelineLayout& getPipelineLayout(const std::string& handle);
 
@@ -86,6 +88,7 @@ namespace Engine {
 		VulkanContext* context;
 		EntityManager* entityManager;
 		Game* game;
+		CameraComponent* cameraComponent;
 		Camera* camera;
 
 		std::unique_ptr<Skybox> skybox;

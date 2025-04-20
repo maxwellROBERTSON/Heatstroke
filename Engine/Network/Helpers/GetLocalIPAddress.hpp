@@ -13,6 +13,7 @@ namespace Engine
 	#include <winsock2.h>
 	#include <ws2tcpip.h>
 
+	// Windows getter of the current device's ip
 	static inline yojimbo::Address GetLocalIPAddress(uint16_t port) {
 		WSADATA wsaData;
 		char hostname[256];
@@ -61,6 +62,7 @@ namespace Engine
 	#include <netinet/in.h>
 	#include <cstring>
 
+	// Linux getter of the current device's ip
 	static inline yojimbo::Address GetLocalIPAddress(uint16_t port) {
 		struct ifaddrs* ifAddrStruct = NULL;
 		struct ifaddrs* ifa = NULL;

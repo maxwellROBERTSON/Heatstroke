@@ -158,36 +158,34 @@ namespace Engine
 			}
 
 		}
-
 	}
 
 	// update models matrices
 	void PhysicsWorld::updateObjects(Engine::EntityManager& entityManager, std::vector<Engine::vk::Model>& models)
 	{
-
-		// get all PhysicsComponent
-		std::vector<std::unique_ptr<ComponentBase>>* physicsComponents = entityManager.GetComponentsOfType(PHYSICS);
-		for (std::size_t i = 0; i < physicsComponents->size(); i++) {
-			PhysicsComponent* p = reinterpret_cast<PhysicsComponent*>((*physicsComponents)[i].get());
-			//glm::mat4 matrix(1.0f);
+		// get all PhysicsComponents which are simulated locally
+		std::vector<ComponentBase*> physicsComponents = entityManager.GetSimulatedPhysicsComponents();
+		for (std::size_t i = 0; i < physicsComponents.size(); i++) {
+			PhysicsComponent* p = reinterpret_cast<PhysicsComponent*>(physicsComponents[i]);
+			// glm::mat4 matrix(1.0f);
 			// dynamic update
-			if (p->type == PhysicsComponent::PhysicsType::DYNAMIC)
+			if (p->GetPhysicsType() == PhysicsComponent::PhysicsType::DYNAMIC)
 			{
-				Entity* entity = entityManager.GetEntity(p->GetEntityId());
-
-				PxTransform transform = p->dynamicBody->getGlobalPose();
-				entity->SetPosition(transform.p.x, transform.p.y, transform.p.z);
-				entity->SetRotation(glm::quat(transform.q.w, transform.q.x, transform.q.y, transform.q.z));
-				entity->SetScale(p->scale.x, p->scale.y, p->scale.z);
-
+				glm::mat4 matrix = ConvertPxTransformToGlmMat4(p->GetDynamicBody()->getGlobalPose());
+				matrix = glm::scale(matrix, p->GetScale());
+				entityManager.GetEntity(p->GetEntityId())->SetModelMatrix(matrix);
 				continue;
 			}
 
 			// controller update
-			if (p->type == PhysicsComponent::PhysicsType::CONTROLLER)
+			if (p->GetPhysicsType() == PhysicsComponent::PhysicsType::CONTROLLER)
 			{
-				PxExtendedVec3 pos = p->controller->getFootPosition();
-				entityManager.GetEntity(p->GetEntityId())->SetPosition(pos.x, pos.y, pos.z);
+				PxExtendedVec3 pos = p->GetController()->getFootPosition();
+				glm::vec3 glmPos = glm::vec3(pos.x, pos.y, pos.z);
+				glm::mat4 matrix = glm::translate(glm::mat4(1.0f), glmPos);
+				matrix = glm::scale(matrix, p->GetScale());
+
+				entityManager.GetEntity(p->GetEntityId())->SetModelMatrix(matrix);
 			}
 		}
 	}

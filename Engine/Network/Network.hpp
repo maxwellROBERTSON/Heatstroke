@@ -20,22 +20,43 @@ namespace Engine
 	class Network
 	{
     public:
+        // Constructor
         Network() {};
-        void InitializeNetwork();
-        void InitializeClient(Game*, yojimbo::Address);
-        void InitializeServer(Game*, uint16_t, int);
-        void Update();
-        void Reset();
 
         // Getters
+
+        // Get debugging info for the network
         std::map<std::string, std::string> GetNetworkInfo();
-        inline bool isInitialized() { return initialized; }
-        inline Status& GetStatus() { return networkType->GetStatus(); }
-        inline std::string GetStatusString() { return networkType->GetStatusString(); }
+
+        // Get status of the network
+        Status& GetStatus() { return status; }
+
+        // Get status string of the network
+        std::string GetStatusString();
+
+        // Setters
+
+        // Initialize yojimbo, debug and adapter
+        void InitializeNetwork();
+
+        // InitializeNetwork() and create client object
+        void InitializeClient(Game*, yojimbo::Address);
+
+        // InitializeNetwork() and create server object
+        void InitializeServer(Game*, uint16_t, int);
+
+        // Update network if some form of connection
+        void Update();
+
+        // Reset network if not uninitialized, clean up and reset pointer
+        void Reset();
+
+        // Set status of the network
+        void SetStatus(Status s) { status = s; }
 
     private:
+        Status status = Status::NETWORK_UNINITIALIZED;
         std::unique_ptr<GameNetworkType> networkType;  // Holds either GameClient or GameServer
-        bool initialized = false;
         yojimbo::ClientServerConfig config;
         GameAdapter* adapter;
 	};

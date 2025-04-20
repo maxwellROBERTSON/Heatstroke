@@ -315,6 +315,9 @@ namespace Engine {
 		std::vector<vk::Model>& models = this->game->GetModels();
 
 		std::vector<std::unique_ptr<ComponentBase>>* renderComponents = this->entityManager->GetComponentsOfType(RENDER);
+		if (renderComponents == nullptr)
+			return;
+
 		for (std::size_t i = 0; i < renderComponents->size(); i++) {
 			RenderComponent* renderComponent = reinterpret_cast<RenderComponent*>((*renderComponents)[i].get());
 			int modelIndex = renderComponent->GetModelIndex();
@@ -353,12 +356,16 @@ namespace Engine {
 		this->dynamicUBOAlignment = (sizeof(glm::mat4) + uboAlignment - 1) & ~(uboAlignment - 1);
 
 		std::vector<std::unique_ptr<ComponentBase>>* renderComponents = this->entityManager->GetComponentsOfType(RENDER);
-		for (std::size_t i = 0; i < renderComponents->size(); i++) {
-			RenderComponent* renderComponent = reinterpret_cast<RenderComponent*>((*renderComponents)[i].get());
-			int modelIndex = renderComponent->GetModelIndex();
-			vk::Model& model = models[modelIndex];
 
-			this->modelMatrices += model.linearNodes.size();
+		if (renderComponents != nullptr)
+		{
+			for (std::size_t i = 0; i < renderComponents->size(); i++) {
+				RenderComponent* renderComponent = reinterpret_cast<RenderComponent*>((*renderComponents)[i].get());
+				int modelIndex = renderComponent->GetModelIndex();
+				vk::Model& model = models[modelIndex];
+
+				this->modelMatrices += model.linearNodes.size();
+			}
 		}
 
 		VkDeviceSize bufferSize = this->modelMatrices * this->dynamicUBOAlignment;
@@ -367,8 +374,9 @@ namespace Engine {
 		return vk::createBuffer("dynamicUBO", *this->context->allocator, bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT);
 	}
 
-	void Renderer::attachCamera(Camera* camera) {
-		this->camera = camera;
+	void Renderer::attachCameraComponent(CameraComponent* cameraComponent) {
+		this->cameraComponent = cameraComponent;
+		this->camera = cameraComponent->GetCamera();
 	}
 
 	void Renderer::initialiseModelDescriptors(std::vector<vk::Model>& aModels) {
@@ -445,6 +453,9 @@ namespace Engine {
 		std::vector<vk::Model>& models = this->game->GetModels();
 
 		std::vector<std::unique_ptr<ComponentBase>>* renderComponents = this->entityManager->GetComponentsOfType(RENDER);
+		if (renderComponents == nullptr)
+			return;
+
 		for (std::size_t i = 0; i < renderComponents->size(); i++) {
 			RenderComponent* renderComponent = reinterpret_cast<RenderComponent*>((*renderComponents)[i].get());
 			int modelIndex = renderComponent->GetModelIndex();
@@ -585,7 +596,7 @@ namespace Engine {
 		passInfo.framebuffer = msaaFlag ? this->forwardMSAAFramebuffers[this->imageIndex].handle : this->forwardFramebuffers[this->imageIndex].handle;
 		passInfo.renderArea.offset = VkOffset2D{ 0, 0 };
 		passInfo.renderArea.extent = this->context->window->swapchainExtent;
-		passInfo.clearValueCount = clearValues.size();
+		passInfo.clearValueCount = (uint32_t)clearValues.size();
 		passInfo.pClearValues = clearValues.data();
 
 		vkCmdBeginRenderPass(cmdBuf, &passInfo, VK_SUBPASS_CONTENTS_INLINE);
@@ -628,8 +639,13 @@ namespace Engine {
 		);
 
 		std::vector<std::unique_ptr<ComponentBase>>* renderComponents = this->entityManager->GetComponentsOfType(RENDER);
+		if (renderComponents == nullptr)
+			return;
+
 		for (std::size_t i = 0; i < renderComponents->size(); i++) {
 			RenderComponent* renderComponent = reinterpret_cast<RenderComponent*>((*renderComponents)[i].get());
+			/*if (!renderComponent->GetIsActive())
+				continue;*/
 			int modelIndex = renderComponent->GetModelIndex();
 			vk::Model& model = models[modelIndex];
 
@@ -743,7 +759,7 @@ namespace Engine {
 		passInfo.framebuffer = msaaFlag ? this->forwardMSAAFramebuffers[this->imageIndex].handle : this->forwardFramebuffers[this->imageIndex].handle;
 		passInfo.renderArea.offset = VkOffset2D{ 0, 0 };
 		passInfo.renderArea.extent = this->context->window->swapchainExtent;
-		passInfo.clearValueCount = clearValues.size();
+		passInfo.clearValueCount = (uint32_t)clearValues.size();
 		passInfo.pClearValues = clearValues.data();
 
 		vkCmdBeginRenderPass(cmdBuf, &passInfo, VK_SUBPASS_CONTENTS_INLINE);
@@ -809,6 +825,9 @@ namespace Engine {
 		);
 
 		std::vector<std::unique_ptr<ComponentBase>>* renderComponents = this->entityManager->GetComponentsOfType(RENDER);
+		if (renderComponents == nullptr)
+			return;
+
 		for (std::size_t i = 0; i < renderComponents->size(); i++) {
 			RenderComponent* renderComponent = reinterpret_cast<RenderComponent*>((*renderComponents)[i].get());
 			int modelIndex = renderComponent->GetModelIndex();
@@ -1036,6 +1055,9 @@ namespace Engine {
 		std::uint32_t offset = 0;
 
 		std::vector<std::unique_ptr<ComponentBase>>* renderComponents = this->entityManager->GetComponentsOfType(RENDER);
+		if (renderComponents == nullptr)
+			return;
+
 		for (std::size_t i = 0; i < renderComponents->size(); i++) {
 			RenderComponent* renderComponent = reinterpret_cast<RenderComponent*>((*renderComponents)[i].get());
 			int modelIndex = renderComponent->GetModelIndex();

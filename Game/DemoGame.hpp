@@ -32,8 +32,6 @@
 
 #include "../ThreadPool//thread_pool_wait.h"
 
-
-
 class FPSTest : public Engine::Game
 {
 public:
@@ -49,7 +47,7 @@ public:
 	void initialiseModels();
 
 	void loadOfflineEntities();
-	void loadOnlineEntities();
+	void loadOnlineEntities(int);
 
 	~FPSTest() {
 		for (Engine::vk::Model& model : GetModels())
@@ -57,12 +55,8 @@ public:
 	};
 
 	std::chrono::steady_clock::time_point previous;
-	int clientId = 0;
-
-	bool online = false;
-	bool offline = true;
-	bool isChange = true;
-	thread_pool_wait *threadPool;
+	thread_pool_wait* threadPool;
+	int offlineClientId = 0;
 };
 
 //void loadOfflineEntities(ComponentTypeRegistry& registry, EntityManager& entityManager, PhysicsWorld& pworld);
