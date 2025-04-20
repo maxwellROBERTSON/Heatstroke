@@ -9,6 +9,7 @@
 #include "../Input/Keyboard.hpp"
 #include "../Input/InputCodes.hpp"
 #include "../Input/Input.hpp"
+#include "RaycastUtility.hpp"
 
 namespace Engine
 {
@@ -119,7 +120,12 @@ namespace Engine
 		}
 	}
 
-	void PhysicsWorld::updateCharacter(PxReal deltatime)
+	void PhysicsWorld::updateCharacter(PxReal deltatime) {
+		handleMovement(deltatime);
+		handleShooting();
+	}
+
+	void PhysicsWorld::handleMovement(PxReal deltatime)
 	{
 		//if (this->controller)
 		//{
@@ -133,6 +139,8 @@ namespace Engine
 			PxVec3 displacement(0.0f, -9.81f * deltatime, 0.0f);
 			PxVec3 old = displacement;
 			float speed = 5.0f;
+			const float jumpSpeed = 3.0f;
+			const float gravity = -9.81f;
 
 			//auto& keys = Engine::Keyboard::getKeyStates();
 			auto& keyboard = Engine::InputManager::getKeyboard();
@@ -150,6 +158,18 @@ namespace Engine
 				displacement.x += speed * deltatime;
 			}
 
+			// isGrounded check
+			PxControllerState cstate;
+			controller->getState(cstate);
+			bool isGrounded = (cstate.collisionFlags & PxControllerCollisionFlag::eCOLLISION_DOWN);
+
+
+			if (isGrounded && keyboard.isPressed(HS_KEY_SPACE)) {
+				verticalVelocity = jumpSpeed;
+			}
+			verticalVelocity += gravity * deltatime;
+			displacement.y = verticalVelocity * deltatime;
+
 			// Only run PxController::move() if we actually moved, since this
 			// method is quite expensive to run every frame if we are not moving
 			if (old != displacement) {
@@ -157,9 +177,61 @@ namespace Engine
 				this->controller->move(displacement, 0.01f, deltatime, filters);
 			}
 
+			// reset verticalVelocity
+			if (isGrounded && verticalVelocity < 0.0f) {
+				verticalVelocity = 0.0f;
+			}
+
 		}
 
 	}
+
+	void PhysicsWorld::handleShooting() {
+		auto& keyboard = Engine::InputManager::getKeyboard();
+		//auto& mouse = Engine::InputManager::getMouse();
+		if (keyboard.isPressed(HS_KEY_P)) {
+
+			PxExtendedVec3 extPos = controller->getFootPosition();
+			PxVec3 pos = PxVec3(static_cast<float>(extPos.x), static_cast<float>(extPos.y), static_cast<float>(extPos.z));
+			PxVec3 direction(0.f, 1.f, 1.f);
+			direction.normalize();
+
+			PxRaycastHit hit;
+			PxRigidActor* selfActor = controller->getActor();
+			bool hitflag = RaycastUtility::SingleHit(gScene, pos, direction, 100.0f, hit);
+			if (hitflag) {
+				if (hit.actor == selfActor) {
+					// self
+					// yellow ray
+					DebugDrawRayInPVD(gScene, pos, pos + direction * 100.0f, 0xFFFFFF00);
+					std::cout << "Hit self" << std::endl;
+				}
+				else if (hit.actor->is<PxRigidDynamic>()) {
+					// hit dynamic
+					// black ray
+					DebugDrawRayInPVD(gScene, pos, pos + direction * 100.0f, 0xFF000000);
+					std::cout << "Hit at (" << hit.position.x << ", " << hit.position.y << ", " << hit.position.z << ")" << std::endl;
+				}
+				else
+				{
+					// hit statit
+					// yellow ray
+					DebugDrawRayInPVD(gScene, pos, pos + direction * 100.0f, 0xFFFFFF00);
+					std::cout << "Hit self" << std::endl;
+
+				}
+			}
+			else
+			{
+				// hit nothing
+				// yellow ray
+				DebugDrawRayInPVD(gScene, pos, pos + direction * 100.0f, 0xFFFFFF00);
+				std::cout << "Hit nothing" << ")\n";
+
+			}
+		}
+	}
+
 
 	// update models matrices
 	void PhysicsWorld::updateObjects(Engine::EntityManager& entityManager, std::vector<Engine::vk::Model>& models)
@@ -246,4 +318,16 @@ namespace Engine
 
 		return rotationMatrix;
 	}
+
+	void PhysicsWorld::DebugDrawRayInPVD(PxScene* scene, const PxVec3& start, const PxVec3& end, PxU32 color = 0xffffffff) {
+		auto* client = scene->getScenePvdClient();
+		if (!client) return;
+
+		PxDebugLine line(start, end, color);
+
+		client->drawLines(&line, 1);
+		PxDebugPoint point(end, 0xff00ffff);
+		client->drawPoints(&point, 1);
+	}
+
 }
