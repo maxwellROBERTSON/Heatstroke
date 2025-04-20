@@ -17,13 +17,18 @@ namespace Engine {
 	};
 
 	struct TextureBufferSetting {
+		VkImageCreateFlags imageCreateFlags;
 		VkFormat imageFormat;
+		VkExtent2D imageExtent;
+		std::uint32_t imageArrayLayers = 1;
 		VkImageUsageFlags imageUsage;
-		VkImageAspectFlags imageAspectFlags;
-		VkExtent2D extent;
+		VkImageViewType viewType = VK_IMAGE_VIEW_TYPE_2D;
+		VkImageAspectFlags viewAspectFlags;
+		std::uint32_t subresourceLayerCount = 1;
 		VkSampleCountFlagBits samples = VK_SAMPLE_COUNT_1_BIT;
 		VkMemoryPropertyFlags allocationRequiredFlags = 0;
 		VkMemoryPropertyFlags allocationPreferredFlags = 0;
+		bool ignoreMipLevels = true;
 	};
 
 	vk::ShaderModule loadShaderModule(const VulkanWindow& aWindow, const char* aSpirvPath);
@@ -46,8 +51,10 @@ namespace Engine {
 	vk::Pipeline createForwardPipeline(const VulkanWindow& aWindow, VkRenderPass aRenderPass, VkPipelineLayout aPipelineLayout, bool shadows, VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT);
 	std::tuple<vk::Pipeline, vk::Pipeline> createDeferredPipelines(const VulkanWindow& aWindow, VkRenderPass aRenderPass, VkPipelineLayout aGBufWriteLayout, VkPipelineLayout aShadingLayout);
 	vk::Pipeline createShadowOffscreenPipeline(const VulkanWindow& aWindow, VkRenderPass aRenderPass, VkPipelineLayout aPipelineLayout);
+	vk::Pipeline createSkyboxPipeline(const VulkanWindow& aWindow, VkRenderPass aRenderPass, VkPipelineLayout aPipelineLayout, VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT);
 
 	std::pair<vk::Texture, vk::ImageView> createTextureBuffer(const VulkanContext& aContext, TextureBufferSetting aBufferSetting);
+	std::uint32_t computeMipLevels(std::uint32_t width, std::uint32_t height);
 
 	void createFramebuffers(const VulkanWindow& aWindow, std::vector<vk::Framebuffer>& aFramebuffers, VkRenderPass aRenderPass, std::vector<VkImageView>& aImageViews, VkExtent2D aExtent, bool ignoreSwapchainImage = false);
 

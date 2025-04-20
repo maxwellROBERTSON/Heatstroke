@@ -109,6 +109,8 @@ namespace Engine
 		std::vector<std::unique_ptr<ComponentBase>> networkComponents;
 		std::vector<std::unique_ptr<ComponentBase>> physicsComponents;
 		std::vector<std::unique_ptr<ComponentBase>> renderComponents;
+		std::vector<std::unique_ptr<ComponentBase>> audioComponents;
+
 
 		// Map of component type vectors
 		std::map<ComponentTypes, std::vector<std::unique_ptr<ComponentBase>>*> componentMap
@@ -116,7 +118,8 @@ namespace Engine
 			{ ComponentTypes::CAMERA, &cameraComponents },
 			{ ComponentTypes::NETWORK, &networkComponents },
 			{ ComponentTypes::PHYSICS, &physicsComponents },
-			{ ComponentTypes::RENDER, &renderComponents }
+			{ ComponentTypes::RENDER, &renderComponents },
+			{ ComponentTypes::AUDIO, &renderComponents }
 		};
 
 		// For each component type, there is an entry, each holding ids of entities with that component type

@@ -13,6 +13,7 @@ namespace Engine
 		NETWORK,
 		PHYSICS,
 		RENDER,
+        AUDIO,
         TYPE_COUNT
 	};
 

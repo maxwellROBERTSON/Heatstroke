@@ -2,6 +2,7 @@
 
 #include "Uniforms.hpp"
 #include "Utils.hpp"
+#include "Skybox.hpp"
 #include "../gltf/Model.hpp"
 #include "../ECS/EntityManager.hpp"
 #include "../Core/RenderMode.hpp"
@@ -52,6 +53,7 @@ namespace Engine {
 
 		// Setters
 		void setRecreateSwapchain(bool value);
+		void addSkybox(std::unique_ptr<Skybox> skybox);
 
 		// Getters
 		VkRenderPass& GetRenderPass(std::string s);
@@ -88,6 +90,8 @@ namespace Engine {
 		Game* game;
 		CameraComponent* cameraComponent;
 		Camera* camera;
+
+		std::unique_ptr<Skybox> skybox;
 
 		std::map<std::string, vk::RenderPass> renderPasses;
 		std::map<std::string, vk::DescriptorSetLayout> descriptorLayouts;
