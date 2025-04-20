@@ -40,6 +40,9 @@ namespace Engine
 		// Get client id
 		uint64_t GetClientId() { return clientId; };
 
+		// Get entity pointer
+		Entity* GetEntityPointer() { return entity; }
+
 		// Setters
 
 		// Set component data

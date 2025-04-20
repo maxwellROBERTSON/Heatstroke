@@ -45,6 +45,9 @@ namespace Engine
 		// Handle a request for entity data
 		void HandleRequestEntityData(int);
 
+		// Reset an entity and its component used by a disconnected client
+		void ResetNetworkEntity(uint64_t);
+
 		// Clean up server memory using yojimbo
 		void CleanUp();
 
@@ -62,8 +65,8 @@ namespace Engine
 		// Once server, sends the response for entity data, it is removed from the connection queue
 		// It is only added to the loadedClients once a ClientInitialized message is recevied,
 		// And then it is ready for frequent server update messages
-		std::vector<int> connectionQueue;
-		std::vector<int> loadedClients;
+		std::vector<std::pair<int, uint64_t>> connectionQueue;
+		std::vector<std::pair<int, uint64_t>> loadedClients;
 
 		yojimbo::Server* server;
 		yojimbo::ClientServerConfig* config;

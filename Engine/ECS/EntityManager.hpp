@@ -87,6 +87,9 @@ namespace Engine
 		// Add physics entity to be simulated locally
 		void AddSimulatedPhysicsEntity(int entityId) { simulatedPhysicsEntities.emplace_back(entityId); }
 
+		// Add a network component to the queue
+		void AddToNetworkComponentQueue(int index) { availableNetworkComponentQueue.push_back(index); }
+
 		// Clears the manager on disconnect
 		void ClearManager();
 
@@ -119,14 +122,14 @@ namespace Engine
 			{ ComponentTypes::NETWORK, &networkComponents },
 			{ ComponentTypes::PHYSICS, &physicsComponents },
 			{ ComponentTypes::RENDER, &renderComponents },
-			{ ComponentTypes::AUDIO, &renderComponents }
+			//{ ComponentTypes::AUDIO, &renderComponents }
 		};
 
 		// For each component type, there is an entry, each holding ids of entities with that component type
 		std::vector<std::vector<int>> entitiesWithType = std::vector<std::vector<int>>(TYPE_COUNT);
 
-		// Next available entity with a network component
-		int nextNetworkComponent = -1;
+		// Queue to store the entities with network components unassigned to clients
+		std::vector<int> availableNetworkComponentQueue;
 
 		// Vector of entities with physics components that need to be updated locally per frame
 		std::vector<int> simulatedPhysicsEntities;

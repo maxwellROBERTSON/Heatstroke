@@ -304,7 +304,8 @@ void FPSTest::loadOnlineEntities(int maxClientsNum)
 		entity->SetRotation(90.0f, glm::vec3(0.0f, 0.0f, 1.0f));
 		entity->SetScale(30.0f);
 		renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
-		renderComponent->SetModelIndex(3); // changed
+		renderComponent->SetModelIndex(3);
+		renderComponent->SetIsActive(0); // Players not renderable until client connection
 		physicsComponent = reinterpret_cast<PhysicsComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
 		physicsComponent->Init(physicsWorld, PhysicsComponent::PhysicsType::CONTROLLER, models[renderComponent->GetModelIndex()], entity->GetModelMatrix(), entity->GetEntityId(), false, false);
 		cameraComponent = reinterpret_cast<CameraComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), CAMERA));

@@ -40,6 +40,9 @@ namespace Engine
 		// Get model index
 		int GetModelIndex() { return modelIndex; }
 
+		// Get is the entity an active render component
+		bool GetIsActive() { return isActive; }
+
 		// Setters
 
 		// Set component data

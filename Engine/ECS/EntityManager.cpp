@@ -598,8 +598,12 @@ namespace Engine
 	// Set next network component unassigned to a client
 	void EntityManager::AssignNextClient(uint64_t clientId)
 	{
-		NetworkComponent* comp = reinterpret_cast<NetworkComponent*>((*componentMap[NETWORK])[nextNetworkComponent++].get());
-		comp->SetClientId(clientId);
+		NetworkComponent* netcomp = reinterpret_cast<NetworkComponent*>((*componentMap[NETWORK])[availableNetworkComponentQueue.back()].get());
+		availableNetworkComponentQueue.pop_back();
+		netcomp->SetClientId(clientId);
+		Entity* e = netcomp->GetEntityPointer();
+		RenderComponent* rencomp = reinterpret_cast<RenderComponent*>(GetComponentOfEntity(e->GetEntityId(), RENDER));
+		rencomp->SetIsActive(true);
 	}
 
 	// Add an existing entity to the manager
@@ -711,6 +715,9 @@ namespace Engine
 			(*componentMap[type]).clear();
 			entitiesWithType[i].clear();
 		}
+
+		availableNetworkComponentQueue.clear();
+		simulatedPhysicsEntities.clear();
 	}
 
 	// Private used in AddEntity - doesn't add to entity's
@@ -726,9 +733,8 @@ namespace Engine
 			(*componentMap[CAMERA]).emplace_back(std::make_unique<CameraComponent>(this, entity));
 			break;
 		case NETWORK:
-			if (nextNetworkComponent == -1)
-				nextNetworkComponent = 0;
 			(*componentMap[NETWORK]).emplace_back(std::make_unique<NetworkComponent>(this, entity));
+			AddToNetworkComponentQueue((int)(*componentMap[NETWORK]).size() - 1);
 			break;
 		case PHYSICS:
 			(*componentMap[PHYSICS]).emplace_back(std::make_unique<PhysicsComponent>(this, entity));
