@@ -1,4 +1,4 @@
-#include "SoundDevice.h"
+#include "SoundDevice.hpp"
 #include "../third_party/AL/al.h"
 #include "../third_party/AL/alc.h"
 

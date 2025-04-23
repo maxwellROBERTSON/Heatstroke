@@ -243,9 +243,14 @@ namespace Engine
 			// dynamic update
 			if (p->GetPhysicsType() == PhysicsComponent::PhysicsType::DYNAMIC)
 			{
-				glm::mat4 matrix = ConvertPxTransformToGlmMat4(p->GetDynamicBody()->getGlobalPose());
-				matrix = glm::scale(matrix, p->GetScale());
-				entityManager.GetEntity(p->GetEntityId())->SetModelMatrix(matrix);
+				Entity* entity = entityManager.GetEntity(p->GetEntityId());
+
+				PxTransform transform = p->GetDynamicBody()->getGlobalPose();
+				entity->SetPosition(transform.p.x, transform.p.y, transform.p.z);
+				entity->SetRotation(glm::quat(transform.q.w, transform.q.x, transform.q.y, transform.q.z));
+				glm::vec3 scale = p->GetScale();
+				entity->SetScale(scale.x, scale.y, scale.z);
+
 				continue;
 			}
 
@@ -253,11 +258,7 @@ namespace Engine
 			if (p->GetPhysicsType() == PhysicsComponent::PhysicsType::CONTROLLER)
 			{
 				PxExtendedVec3 pos = p->GetController()->getFootPosition();
-				glm::vec3 glmPos = glm::vec3(pos.x, pos.y, pos.z);
-				glm::mat4 matrix = glm::translate(glm::mat4(1.0f), glmPos);
-				matrix = glm::scale(matrix, p->GetScale());
-
-				entityManager.GetEntity(p->GetEntityId())->SetModelMatrix(matrix);
+				entityManager.GetEntity(p->GetEntityId())->SetPosition(pos.x, pos.y, pos.z);
 			}
 		}
 	}

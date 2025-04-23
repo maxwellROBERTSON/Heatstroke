@@ -1,4 +1,4 @@
-#include "SoundBuffer.h"
+#include "SoundBuffer.hpp"
 #include <inttypes.h>
 #include "../third_party/AL/alext.h"
 #include "../third_party/AL/alc.h"

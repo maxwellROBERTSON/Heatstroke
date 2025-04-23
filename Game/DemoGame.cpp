@@ -238,6 +238,7 @@ void FPSTest::loadOfflineEntities()
 	std::vector<int> entitiesWithNetworkComponent = entityManager.GetEntitiesWithComponent(NETWORK);
 	for (int i = 0; i < entitiesWithNetworkComponent.size(); i++)
 	{
+		entity = entityManager.GetEntity(entitiesWithNetworkComponent[i]);
 		networkComponent = reinterpret_cast<NetworkComponent*>(entityManager.GetComponentOfEntity(entitiesWithNetworkComponent[i], NETWORK));
 		if (networkComponent->GetClientId() == offlineClientId)
 		{

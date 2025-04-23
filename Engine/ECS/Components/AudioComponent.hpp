@@ -34,11 +34,10 @@ namespace Engine
 		// Get component data
 		void GetDataArray(uint8_t*) override;
 		
-		// Setters	
+		// Setters
 		
 		// Set component data
 		void SetDataArray(uint8_t*) override;
-
 
 		//creates a sound device
 		SoundDevice* soundDevice;

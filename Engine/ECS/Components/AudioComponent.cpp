@@ -1,8 +1,7 @@
 #include "AudioComponent.hpp"
-#include "../Audio/SoundDevice.h"
-#include "../Audio/SoundBuffer.h"
-#include "../Audio/SoundSource.h"
-
+#include "../Audio/SoundDevice.hpp"
+#include "../Audio/SoundBuffer.hpp"
+#include "../Audio/SoundSource.hpp"
 
 Engine::AudioComponent::AudioComponent()
 {
@@ -41,12 +40,10 @@ void Engine::AudioComponent::SetDataArray(uint8_t* data)
 	offset += sizeof(soundClip);
 }
 
-
 void Engine::AudioComponent::AddClip(std::string path)
 {
 	soundClip = soundBuffer->get()->addSoundEffect(path.c_str());
 }
-
 
 //perform this on a separate thread?
 void Engine::AudioComponent::playSound()
