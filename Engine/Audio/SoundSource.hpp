@@ -9,6 +9,9 @@ public:
 	~SoundSource();
 
 	void Play(const ALuint bufferToPlay);
+	void Stop();
+
+	ALuint GetBuffer();
 
 private:
 	//speaker variables

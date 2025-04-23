@@ -17,12 +17,25 @@
 
 #include <GLFW/glfw3.h>
 
+
 using namespace Engine;
 
 CameraComponent serverCameraComponent = CameraComponent(Engine::Camera(100.0f, 0.01f, 256.0f, glm::vec3(-3.0f, 2.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
 
+AudioComponent ac;
+
 void FPSTest::Init()
 {
+	
+	ac.addClip("Pain", "Game\\assets\\AudioClips\\Ugh.wav");
+	ac.addClip("Dialogue", "Game\\assets\\AudioClips\\Moron.wav");
+	//auto res = ac.soundClips["Tony"];
+	
+	if (ac.soundClips["Tony"] == NULL)
+	{
+		std::cout << "NULL" << std::endl;
+	}
+
 	this->threadPool = thread_pool_wait::get_instance();
  
 	//submit task to initialise Models to thread pool
@@ -76,7 +89,17 @@ void FPSTest::Update() {
 		}
 	}
 
-	EntityManager& e = GetEntityManager();
+	/*auto keyboard = Engine::InputManager::getKeyboard();
+	if (keyboard.isPressed(HS_KEY_W))
+	{
+		ac.playSound("Pain");
+	}
+
+	if (keyboard.isPressed(HS_KEY_S))
+	{
+		ac.playSound("Dialogue");
+	}*/
+
 	GetNetwork().Update();
 
 	// Need to process GUI stuff before checking swapchain, since
