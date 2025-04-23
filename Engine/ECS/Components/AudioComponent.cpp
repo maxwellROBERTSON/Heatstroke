@@ -10,7 +10,7 @@ Engine::AudioComponent::AudioComponent()
 	soundDevice = SoundDevice::get();
 	soundBuffer = SoundBuffer::get();
 	speaker = new SoundSource();
-	soundClipCurrentlyPlaying = AL_INITIAL;
+	soundClipCurrentlyPlaying = 0;
 	state = AL_INITIAL;
 }
 
@@ -42,50 +42,86 @@ void Engine::AudioComponent::SetDataArray(uint8_t* data)
 	offset += sizeof(soundClipCurrentlyPlaying);
 }
 
-void Engine::AudioComponent::AddClip(std::string key, std::string path)
+void Engine::AudioComponent::addClip(std::string key, std::string path)
 {
 	soundClips.insert({key, soundBuffer->get()->addSoundEffect(path.c_str())});
 }
 
 void Engine::AudioComponent::playSound(std::string key, bool interupt)
 {
-	getState();
-
-	//is a clip currently playing?
-	if (isPlaying() == false)
+	if (soundClips[key] == NULL)
 	{
-		//no - set new active clip
-		setActiveClip(key);
-
-		//play new clip
-		speaker->Play(soundClipCurrentlyPlaying);
-	}
-	else if (interupt == true)
-	{
-		//stop current clip
-		speaker->Stop();
-
-		std::cout << "Stopped file playing" << std::endl;
-
-		//set new active clip
-		setActiveClip(key);
-
-		//play new clip
-		speaker->Play(soundClipCurrentlyPlaying);
-	}
-	else
-	{
-		//yes - return
-		std::cout << "Audio alreading playing through this source" << std::endl;
+		std::cout << "No audio clip with that key value exists\n";
 		return;
 	}
+
+	getState();
+
+	setActiveClip(key);
+
+	speaker->Play(soundClipCurrentlyPlaying);
+
+	//is a clip currently playing?
+	//if (isPlaying() == false)
+	//{
+	//	//no - set new active clip
+	//	//setActiveClip(key);
+
+	//	//play new clip
+	//	speaker->Play(soundClipCurrentlyPlaying);
+
+	//	updateState();
+	//}
+	//else if (interupt == true)
+	//{
+	//	updateState();
+
+	//	//stop current clip
+	//	speaker->Stop();
+
+	//	std::cout << "Stopped file playing" << std::endl;
+
+	//	//set new active clip
+	//	//setActiveClip(key);
+
+	//	//play new clip
+	//	speaker->Play(soundClipCurrentlyPlaying);
+
+	//	updateState();
+	//}
+	//else
+	//{
+	//	//yes - return
+	//	std::cout << "Audio alreading playing through this source" << std::endl;
+	//	return;
+	//}
 }
 
 bool Engine::AudioComponent::isPlaying()
 {
 	//update the state
-	alGetSourcei(soundClipCurrentlyPlaying, AL_SOURCE_STATE, &state);
+	/*if (soundClipCurrentlyPlaying != 0)
+	{
+		alGetSourcei(soundClipCurrentlyPlaying, AL_SOURCE_STATE, &state);
+		ALenum error = alGetError();
+		if (error != AL_NO_ERROR) {
+			std::cerr << "OpenAL error: " << error << std::endl;
+		}
+	}*/
+
 	getState();
+
+	if (ALenum res = alGetError(); res != AL_NO_ERROR)
+	{
+		std::cout << "ERROR from alGetError() " << res << std::endl;
+
+		if (res == ALC_NO_ERROR) std::cout << "ALC_NO_ERROR\n";
+		if (res == ALC_INVALID_DEVICE) std::cout << "ALC_INVALID_DEVICE\n";
+		if (res == ALC_INVALID_CONTEXT) std::cout << "ALC_INVALID_CONTEXT\n";
+		if (res == ALC_INVALID_ENUM) std::cout << "ALC_INVALID_ENUM\n";
+		if (res == ALC_INVALID_VALUE) std::cout << "ALC_INVALID_VALUE\n";
+		if (res == ALC_OUT_OF_MEMORY) std::cout << "ALC_OUT_OF_MEMORY\n";	
+	}
 
 	//if no clip has been played yet default value is AL_INITIAL thus nothing is playing so return false
 	if (state == AL_INITIAL) return false;
@@ -107,10 +143,47 @@ void Engine::AudioComponent::setActiveClip(std::string key)
 }
 
 
-void Engine::AudioComponent::getState()
+ALuint Engine::AudioComponent::getState()
 {
-	if (state == AL_INITIAL) std::cout << "initial state\n";
-	if (state == AL_PLAYING) std::cout << "Playing state\n";
-	if (state == AL_PAUSED) std::cout << "Paused state\n";
-	if (state == AL_STOPPED) std::cout << "Stopped state\n";
+	//see speaker buffers value
+	ALuint buffer = speaker->GetBuffer();
+
+	//if its uninitialised return initial state
+	if (buffer == 0) return AL_INITIAL;
+
+	//get the state
+	alGetSourcei(buffer, AL_SOURCE_STATE, &state);
+
+
+	if (state == AL_INITIAL)
+	{
+		std::cout << "initial state\n";
+		return AL_INITIAL;
+	}
+		
+	if (state == AL_PLAYING)
+	{
+		std::cout << "Playing state\n";
+		return AL_PLAYING;
+	}
+		
+	if (state == AL_PAUSED)
+	{
+		std::cout << "Paused state\n";
+		return AL_PAUSED;
+	}
+		
+	if (state == AL_STOPPED)
+	{
+		std::cout << "Stopped state\n";
+		return AL_STOPPED;
+	}	
+}
+
+void Engine::AudioComponent::updateState()
+{
+	ALuint buffer = speaker->GetBuffer();
+	alGetSourcei(buffer, AL_SOURCE_STATE, &state);
+
+	getState();
 }

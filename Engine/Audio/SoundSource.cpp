@@ -42,3 +42,8 @@ void SoundSource::Stop()
 {
 	alSourceStop(p_Source);
 }
+
+ALuint SoundSource::GetBuffer()
+{
+	return p_Buffer;
+}

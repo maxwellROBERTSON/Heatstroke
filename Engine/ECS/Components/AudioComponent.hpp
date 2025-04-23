@@ -50,10 +50,12 @@ namespace Engine
 		
 		uint32_t soundClipCurrentlyPlaying;
 
+		//list of audio clips
+
 		//name of clip (key) and buffer (value)
 		std::map <std::string, uint32_t> soundClips;
 
-		void AddClip(std::string key, std::string path);
+		void addClip(std::string key, std::string path);
 
 		void playSound(std::string key, bool interupt = false);
 
@@ -61,7 +63,9 @@ namespace Engine
 
 		void setActiveClip(std::string key);
 
-		void getState();
+		ALuint getState();
+
+		void updateState();
 	};
 }
 
