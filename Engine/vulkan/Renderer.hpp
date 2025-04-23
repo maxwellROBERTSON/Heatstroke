@@ -2,11 +2,13 @@
 
 #include "Uniforms.hpp"
 #include "Utils.hpp"
+#include "Skybox.hpp"
 #include "../gltf/Model.hpp"
 #include "../ECS/EntityManager.hpp"
 #include "../Core/RenderMode.hpp"
 #include "../Core/Camera.hpp"
 #include "../Core/Game.hpp"
+#include "../ECS/Components/CameraComponent.hpp"
 
 namespace Engine
 {
@@ -27,18 +29,14 @@ namespace Engine {
 
 	class Renderer {
 	public:
-		Renderer(VulkanContext* aContext, EntityManager* entityManager, Engine::Game* game);
+		Renderer(VulkanContext* aContext, EntityManager* entityManager, Game* game);
 		Renderer() = default;
-
-		VkRenderPass& GetRenderPass(std::string s);
-		Engine::Camera* GetCameraPointer() { return camera; }
-		bool const GetIsSceneLoaded() { return isSceneLoaded; }
 
 		void initialiseRenderer();
 		void initialiseModelMatrices();
 		void initialiseJointMatrices();
 		void cleanModelMatrices();
-		void attachCamera(Engine::Camera* camera);
+		void attachCameraComponent(Engine::CameraComponent* cameraComponent);
 		void initialiseModelDescriptors(std::vector<vk::Model>& models);
 		bool checkSwapchain();
 		bool acquireSwapchainImage();
@@ -48,10 +46,21 @@ namespace Engine {
 		void render(std::vector<vk::Model>& models);
 		void submitRender();
 		void finishRendering();
+		void destroyImGui();
 
 		vk::Buffer createDynamicUniformBuffer();
+		void calculateFPS();
+
+		// Setters
+		void setRecreateSwapchain(bool value);
+		void addSkybox(std::unique_ptr<Skybox> skybox);
 
 		// Getters
+		VkRenderPass& GetRenderPass(std::string s);
+		Engine::CameraComponent* GetCameraComponentPointer() { return cameraComponent; }
+		Engine::Camera* GetCameraPointer() { return camera; }
+		bool const GetIsSceneLoaded() { return isSceneLoaded; }
+
 		std::map<std::string, vk::PipelineLayout>& getPipelineLayouts();
 		vk::PipelineLayout& getPipelineLayout(const std::string& handle);
 
@@ -63,19 +72,26 @@ namespace Engine {
 
 		std::size_t getDynamicUBOAlignment();
 
+		float getAvgFrameTime();
+		int getAvgFPS();
+
+		// Returns const char pointer to msaa option strings and number of msaa options
+		std::pair<const char**, int> getMSAAOptions();
+
+		bool vsync = true;
+		int msaaIndex = 0;
+
 		// Debug things
 		float depthBiasConstant = 7.0f;
 		float depthBiasSlopeFactor = 10.0f;
-
-		float animationTimer = 0.0f;
-		int animationIndex = 0;
-		bool animating = false;
-
 	private:
 		VulkanContext* context;
 		EntityManager* entityManager;
-		Engine::Game* game;
-		Engine::Camera* camera;
+		Game* game;
+		CameraComponent* cameraComponent;
+		Camera* camera;
+
+		std::unique_ptr<Skybox> skybox;
 
 		std::map<std::string, vk::RenderPass> renderPasses;
 		std::map<std::string, vk::DescriptorSetLayout> descriptorLayouts;
@@ -88,6 +104,7 @@ namespace Engine {
 		vk::Sampler depthSampler;
 
 		std::vector<vk::Framebuffer> forwardFramebuffers;
+		std::vector<vk::Framebuffer> forwardMSAAFramebuffers;
 		std::vector<vk::Framebuffer> deferredFramebuffers;
 		std::vector<vk::Framebuffer> shadowFramebuffer;
 
@@ -100,13 +117,20 @@ namespace Engine {
 
 		std::size_t dynamicUBOAlignment;
 		// Number of model matrices when creating dynamic uniform buffer object
-		int modelMatrices;
+		std::size_t modelMatrices;
+		bool modelMatricesMapped = false; // Flag to keep track of if model matrices are mapped, this should maybe be done in a better way
 
 		Uniforms uniforms;
 
 		bool isSceneLoaded = false;
-
 		bool recreateSwapchain = false;
+
+		// Frame times / fps variables
+		float frameTime = 0.0f, avgFrameTime = 0.0f, prevTime = 0.1f, lastSecondTime = 0.0f;
+		int avgFps = 0, frames = 0;
+		std::vector<float> frameTimes;
+
+		std::vector<const char*> msaaOptions;
 
 		void renderGUI();
 		void renderForward(std::vector<vk::Model>& models, bool debug);

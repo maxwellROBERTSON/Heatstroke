@@ -1,25 +1,19 @@
 #include "../Network/Helpers/GameConfig.hpp"
 #include "GUI.hpp"
 
-struct GLFWwindow;
+#define GLFW_INCLUDE_VULKAN
+#include <GLFW/glfw3.h>
 
 namespace Engine
 {
 	void GUI::initGUI()
 	{
-		//ImGui_ImplVulkan_LoadFunctions(vkGetInstanceProcAddr, vkGetDeviceProcAddr);
 		IMGUI_CHECKVERSION();
 		ImGuiContext* ImGuiContext = ImGui::CreateContext();
 		ImGui::SetCurrentContext(ImGuiContext);
 		ImGuiIO& io = ImGui::GetIO();
 		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-		//io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
-		//ImFontConfig config;
-		//config.MergeMode = true;
-		//config.GlyphMinAdvanceX = 13.0f; // Use if you want to make the icon monospaced
-		//static const ImWchar icon_ranges[] = { ICON_MIN_FA, ICON_MAX_FA, 0 };
-		//std::string s = "../Engine/third_party/imgui/misc/fonts/FontAwesome.ttf";
-		//io.Fonts->AddFontFromFileTTF(s.c_str(), 13.0f, &config, icon_ranges);
+		io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 
 		// Setup Dear ImGui style
 		ImGui::StyleColorsDark();
@@ -30,6 +24,13 @@ namespace Engine
 		ImGui_ImplVulkan_InitInfo init_info = {};
 		Engine::VulkanWindow* window = &(*game->GetContext().window);
 
+		std::string renderPass = "forward";
+		if (this->game->GetRenderer().msaaIndex != 0) {
+			renderPass += "MSAA";
+		}
+
+		VkSampleCountFlagBits sampleCount = this->game->GetContext().window->device->getSampleCount(this->game->GetRenderer().msaaIndex);
+
 		//init_info.ApiVersion = VK_API_VERSION_1_3;              // Pass in your value of VkApplicationInfo::apiVersion, otherwise will default to header version.
 		init_info.Instance = window->instance;
 		init_info.PhysicalDevice = window->physicalDevice;
@@ -37,7 +38,7 @@ namespace Engine
 		init_info.QueueFamily = window->graphicsFamilyIndex;
 		init_info.Queue = window->graphicsQueue;
 		init_info.DescriptorPool = window->device->dPool;
-		init_info.RenderPass = game->GetRenderer().GetRenderPass("forward");
+		init_info.RenderPass = game->GetRenderer().GetRenderPass(renderPass);
 		init_info.Subpass = 0;
 
 		VkSurfaceCapabilitiesKHR caps;
@@ -54,7 +55,7 @@ namespace Engine
 
 		init_info.MinImageCount = caps.minImageCount < 2 ? 2 : caps.minImageCount;
 		init_info.ImageCount = imageCount;
-		init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+		init_info.MSAASamples = this->game->GetRenderer().msaaIndex != 0 ? sampleCount : VK_SAMPLE_COUNT_1_BIT;
 
 		ImGui_ImplVulkan_Init(&init_info);
 	}
@@ -114,6 +115,40 @@ namespace Engine
 		if (ImGui::Button("Single Player", ImVec2(*w / 4, *h / 4)))
 		{
 			game->loadOfflineEntities();
+			/*uint8_t b[1000];
+			game->GetEntityManager().GetAllData(b);
+			game->GetEntityManager().ClearManager();
+			game->GetEntityManager().SetAllData(b);
+			EntityManager* manager = &(game->GetEntityManager());
+			std::vector<int> vec = manager->GetEntitiesWithComponent(PHYSICS);
+			PhysicsComponent* comp;
+			for (int i = 0; i < vec.size(); i++)
+			{
+				comp = reinterpret_cast<PhysicsComponent*>(manager->GetComponentOfEntity(vec[i], PHYSICS));
+				glm::mat4 mat = manager->GetEntity(vec[i])->GetModelMatrix();
+				PhysicsComponent::PhysicsType type = comp->GetPhysicsType();
+				Engine::vk::Model& model = game->GetModels()[vec[i]];
+				if (type == PhysicsComponent::PhysicsType::STATIC)
+				{
+					comp->InitComplexShape(game->GetPhysicsWorld(), type, model, mat, vec[i]);
+				}
+				else
+				{
+					comp->Init(game->GetPhysicsWorld(), type, model, mat, vec[i]);
+				}
+			}
+			std::vector<int> entitiesWithNetworkComponent = manager->GetEntitiesWithComponent(NETWORK);
+			NetworkComponent* networkComponent;
+			for (int i = 0; i < entitiesWithNetworkComponent.size(); i++)
+			{
+				networkComponent = reinterpret_cast<NetworkComponent*>(manager->GetComponentOfEntity(entitiesWithNetworkComponent[i], NETWORK));
+				if (networkComponent->GetClientId() == 0)
+				{
+					CameraComponent* cameraComponent = reinterpret_cast<CameraComponent*>(manager->GetComponentOfEntity(entitiesWithNetworkComponent[i], CAMERA));
+					game->GetRenderer().attachCameraComponent(cameraComponent);
+					break;
+				}
+			}*/
 			game->GetRenderer().initialiseModelMatrices();
 			game->GetRenderer().initialiseJointMatrices();
 			game->ToggleRenderMode(GUIHOME);
@@ -123,13 +158,29 @@ namespace Engine
 		}
 		if (ImGui::Button("Multi-Player", ImVec2(*w / 4, *h / 4)))
 		{
-			multiplayerSelected = true;
-			serverSelected = false;
+			if (multiplayerSelected)
+			{
+				multiplayerSelected = false;
+				serverSelected = false;
+			}
+			else
+			{
+				multiplayerSelected = true;
+				serverSelected = false;
+			}
 		}
 		if (ImGui::Button("Create a Server", ImVec2(*w / 4, *h / 4)))
 		{
-			multiplayerSelected = false;
-			serverSelected = true;
+			if (serverSelected)
+			{
+				multiplayerSelected = false;
+				serverSelected = false;
+			}
+			else
+			{
+				multiplayerSelected = false;
+				serverSelected = true;
+			}
 		}
 
 		ImVec2 middlePos = ImVec2(*w / 4, *h / 4);
@@ -143,7 +194,7 @@ namespace Engine
 
 			ImGui::Text("Join a server");
 
-			static char addressStr[15] = "192.168.68.56\0";
+			static char addressStr[16] = "192.168.68.60\0";
 			ImGui::Text("Address:");
 			ImGui::InputText("Address", addressStr, IM_ARRAYSIZE(addressStr));
 
@@ -173,8 +224,6 @@ namespace Engine
 				else
 				{
 					errorMsg = "";
-					//game->loadOnlineEntities();
-					//game->GetRenderer().initialiseModelMatrices();
 					game->ToggleRenderMode(GUIHOME);
 					game->ToggleRenderMode(GUILOADING);
 					yojimbo::Address address = yojimbo::Address(addressStr, portNum);
@@ -222,8 +271,9 @@ namespace Engine
 				else
 				{
 					errorMsg = "";
-					game->loadOnlineEntities();
+					game->loadOnlineEntities(maxClientsNum);
 					game->GetRenderer().initialiseModelMatrices();
+					game->GetRenderer().initialiseJointMatrices();
 					game->ToggleRenderMode(GUIHOME);
 					game->ToggleRenderMode(GUISERVER);
 					game->SetServer(portNum, maxClientsNum);
@@ -277,6 +327,15 @@ namespace Engine
 			}
 		}
 
+		ImGui::Text("Anti Aliasing:");
+		std::pair<const char**, int> msaaOptions = game->GetRenderer().getMSAAOptions();
+		if (ImGui::Combo("MSAA:", &game->GetRenderer().msaaIndex, msaaOptions.first, msaaOptions.second, msaaOptions.second)) {
+			// If MSAA was changed, flag swapchain to be recreated so 
+			// ImGui can be remade with corresponding sample count
+			game->GetRenderer().setRecreateSwapchain(true);
+			this->changedMSAA = true;
+		}
+
 		ImVec2 topRightPos = ImVec2(*w - *w / 6 - 10, 30);
 		ImGui::SetCursorPos(topRightPos);
 		if (ImGui::Button("Disconnect", ImVec2(*w / 6, *h / 6)))
@@ -305,6 +364,10 @@ namespace Engine
 		ImGui::NewFrame();
 
 		ImGui::Begin("Debug Menu");
+
+		if (ImGui::Checkbox("VSync", &game->GetRenderer().vsync)) {
+			game->GetRenderer().setRecreateSwapchain(true);
+		}
 
 		ImGui::Text("List of info would go here", ImVec2(*w / 4, *h / 4));
 
@@ -352,14 +415,13 @@ namespace Engine
 			for (std::size_t i = 0; i < size; i++)
 				list.push_back(model.animations[i].name.c_str());
 
-			ImGui::Combo("Animation", &model.animationIndex, list.data(), size, size);
+			ImGui::Combo("Animation", &model.animationIndex, list.data(), (int)size, (int)size);
 			if (ImGui::Button("Play Animation")) {
-				model.animationQueue.push(model.animations[model.animationIndex]);
-				model.blending = true;
+				model.playAnimation();
 			}
 		}
 
-		if (game->GetNetwork().isInitialized())
+		if (game->GetNetwork().GetStatus() != Status::NETWORK_UNINITIALIZED)
 		{
 			std::map<std::string, std::string> networkInfo = game->GetNetwork().GetNetworkInfo();
 			for (const auto& [key, value] : networkInfo)
@@ -446,14 +508,16 @@ namespace Engine
 		ImGui::Begin("Loading Menu", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 
 		Status s = game->GetNetwork().GetStatus();
-		if (s == Status::CLIENT_LOADED)
+		if (s == Status::CLIENT_INITIALIZING_DATA)
 		{
-			//game->loadOnlineEntities();
 			game->GetRenderer().initialiseModelMatrices();
+			game->GetRenderer().initialiseJointMatrices();
 			game->ToggleRenderMode(GUILOADING);
 			game->ToggleRenderMode(FORWARD);
+			GLFWwindow* window = game->GetContext().getGLFWWindow();
+			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 		}
-		else if (s == Status::CLIENT_DISCONNECTED || s == Status::CLIENT_CONNECTION_FAILED)
+		else if (s == Status::CLIENT_CONNECTION_FAILED)
 		{
 			ImGui::Text("Loading Failed.");
 			ImGui::Text(game->GetNetwork().GetStatusString().c_str());
@@ -462,6 +526,20 @@ namespace Engine
 			if (ImGui::Button("Home", ImVec2(*w / 6, *h / 6)))
 			{
 				game->ResetRenderModes();
+				game->GetNetwork().Reset();
+			}
+		}
+		else if (s == Status::CLIENT_DISCONNECTED)
+		{
+			ImGui::Text("Client disconnected from server.");
+			ImGui::Text(game->GetNetwork().GetStatusString().c_str());
+			ImVec2 topRightPos = ImVec2(*w - *w / 6 - 10, 30);
+			ImGui::SetCursorPos(topRightPos);
+			if (ImGui::Button("Home", ImVec2(*w / 6, *h / 6)))
+			{
+				game->ResetRenderModes();
+				game->GetEntityManager().ClearManager();
+				game->GetRenderer().cleanModelMatrices();
 				game->GetNetwork().Reset();
 			}
 		}

@@ -2,6 +2,8 @@
 
 #include <GLFW/glfw3.h>
 
+#include <iostream>
+#include "../Input/InputCodes.hpp"
 #include "../Events/Event.hpp"
 #include "../Events/KeyEvent.hpp"
 #include "../Events/MouseEvent.hpp"
@@ -10,6 +12,8 @@
 #include "../Input/Keyboard.hpp"
 #include "../Input/Mouse.hpp"
 #include <iostream>
+
+#include <GLFW/glfw3.h>
 
 /*
 * This entire class will probably need reworking, its not the best implementation of a first person camera

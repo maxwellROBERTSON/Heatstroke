@@ -40,7 +40,7 @@ namespace Engine
 		virtual void OnEvent(Event& e);
 
 		virtual void loadOfflineEntities() {}
-		virtual void loadOnlineEntities() {}
+		virtual void loadOnlineEntities(int) {}
 
 		void ResetRenderModes();
 

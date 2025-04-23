@@ -8,10 +8,6 @@
 #include <imgui.h>
 //#include "../third_party/imgui/misc/fonts/IconFontCppHeaders/IconsFontAwesome5.h"
 
-//#define GLFW_INCLUDE_NONE
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
-
 #include "../vulkan/VulkanContext.hpp"
 #include "../vulkan/VulkanDevice.hpp"
 #include "../Input/Keyboard.hpp"
@@ -32,6 +28,7 @@ namespace Engine
 	class GUI
 	{
 	public:
+		// Constructors
 		GUI() {}
 		GUI(Engine::Game* game) : game(game)
 		{
@@ -56,8 +53,14 @@ namespace Engine
 		void makeServerGUI(int*, int*);
 		void makeLoadingGUI(int*, int*);
 
+		// from input actions
 		bool debugInput{ false };
 		bool debugGame{ false };
+		// from input actions
+
+		ImGui_ImplVulkanH_Window imGuiWindow;
+		bool changedMSAA = false;
+
 	private:
 		std::map<Engine::RenderMode, std::function<void(int*, int*)>> functions;
 		Engine::Game* game;

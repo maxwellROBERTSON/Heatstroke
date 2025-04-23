@@ -60,6 +60,10 @@ namespace Engine {
 			throw Utils::Error("Unable to create descriptor pool\n vkCreateDescriptorPool() returned %s", Utils::toString(res).c_str());
 	}
 
+	VkSampleCountFlagBits VulkanDevice::getSampleCount(std::size_t index) {
+		return this->possibleSampleCounts[index];
+	}
+
 	VkCommandBuffer createCommandBuffer(const VulkanWindow& aWindow) {
 		VkCommandBufferAllocateInfo cbufInfo{};
 		cbufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;

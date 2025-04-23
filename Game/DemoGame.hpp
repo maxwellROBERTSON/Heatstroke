@@ -31,6 +31,9 @@
 #include "../Input/InputCodes.hpp"
 #include "../Input/Joystick.hpp"
 
+
+#include "../ThreadPool//thread_pool_wait.h"
+
 #include "UserComponents/FPSCamera.hpp"
 #include "UserComponents/FPSCameraComponent.hpp"
 
@@ -57,7 +60,7 @@ public:
 	void initialiseModels();
 
 	void loadOfflineEntities();
-	void loadOnlineEntities();
+	void loadOnlineEntities(int);
 
 	~FPSTest() {
 		for (Engine::vk::Model& model : GetModels())
@@ -65,8 +68,8 @@ public:
 	};
 
 	std::chrono::steady_clock::time_point previous;
-	int clientId = 0;
 
+	// -- input actions
 	// Cameras
 	Engine::Camera sceneCam;
 	FPSCamera playerCam;
@@ -87,6 +90,11 @@ public:
 	float playerYRotation{ 0.0f };
 	// Map
 	Engine::Entity* mapEntity;
+
+	// -- input actions
+
+	thread_pool_wait* threadPool;
+	int offlineClientId = 0;
 };
 
 //void loadOfflineEntities(ComponentTypeRegistry& registry, EntityManager& entityManager, PhysicsWorld& pworld);

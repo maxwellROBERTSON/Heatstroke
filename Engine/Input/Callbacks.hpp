@@ -1,10 +1,10 @@
 #pragma once
 
-#include <GLFW/glfw3.h>
-
 #include "Keyboard.hpp"
 #include "Mouse.hpp"
 #include "../Core/Game.hpp"
+
+struct GLFWwindow;
 
 namespace Engine {
 	class Game;

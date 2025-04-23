@@ -171,6 +171,12 @@ void main() {
 
     albedo *= v2fVertexColour;
 
+    if (matInfo.alphaMode == 1) {
+        if (albedo.a < matInfo.alphaCutoff) {
+            discard;
+        }
+    }
+
     float metallicFactor = matInfo.metallicFactor;
     float roughnessFactor = matInfo.roughnessFactor;
 

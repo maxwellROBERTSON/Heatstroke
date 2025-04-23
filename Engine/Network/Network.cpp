@@ -2,70 +2,9 @@
 
 namespace Engine
 {
-    void Network::InitializeNetwork()
-    {
-        if (!InitializeYojimbo())
-        {
-            std::cerr << "Failed to initialize Yojimbo.\n";
-        }
-        else
-        {
-            std::cout << "Yojimbo initialized.\n";
-            adapter = YOJIMBO_NEW(yojimbo::GetDefaultAllocator(), GameAdapter);
-            std::cout << "Adapter created.\n";
-        }
-#ifdef _DEBUG
-        yojimbo_log_level(YOJIMBO_LOG_LEVEL_INFO);
-#else
-        yojimbo_log_level(YOJIMBO_LOG_LEVEL_INFO);
-#endif
-    }
+    // Getters
 
-    void Network::InitializeClient(Game* game, yojimbo::Address serverAddress)
-    {
-        if (!initialized)
-        {
-            InitializeNetwork();
-            networkType = std::make_unique<GameClient>(&config, adapter, serverAddress, game);
-            initialized = true;
-        }
-        else
-        {
-            std::cout << "Network already initialised as " << typeid(*networkType).name() << std::endl;
-        }
-    }
-
-    void Network::InitializeServer(Game* game, uint16_t port, int maxClients)
-    {
-        if (!initialized)
-        {
-            InitializeNetwork();
-            networkType = std::make_unique<GameServer>(&config, adapter, GetLocalIPAddress(port), maxClients, game);
-            initialized = true;
-        }
-        else
-        {
-            std::cout << "Network already initialised as " << typeid(*networkType).name() << std::endl;
-        }
-    }
-
-    void Network::Update()
-    {
-        if (initialized)
-            networkType->Update();
-    }
-
-    void Network::Reset()
-    {
-        if (initialized)
-        {
-            networkType->CleanUp();
-            networkType.reset();
-            initialized = false;
-            std::cout << "Network reset." << std::endl;
-        }
-    }
-
+    // Get debugging info for the network
     std::map<std::string, std::string> Network::GetNetworkInfo()
     {
         std::map<std::string, std::string> info = networkType->GetInfo();
@@ -87,5 +26,121 @@ namespace Engine
         info["RttSmoothingFactor"] = std::to_string(config.rttSmoothingFactor);
 
         return info;
+    }
+
+    // Get status string of the network
+    std::string Network::GetStatusString()
+    {
+        switch (status)
+        {
+        case Status::NETWORK_UNINITIALIZED:
+            return "Network Uninitialised.";
+        case Status::CLIENT_CONNECTING:
+            return "Connecting.";
+        case Status::CLIENT_CONNECTED:
+            return "Connected.";
+        case Status::CLIENT_DISCONNECTED:
+            return "Disconnected.";
+        case Status::CLIENT_CONNECTION_FAILED:
+            return "Connection Failed.";
+        case Status::CLIENT_LOADING_DATA:
+            return "Loading Scene.";
+        case Status::CLIENT_INITIALIZING_DATA:
+            return "Initializing Scene.";
+        case Status::CLIENT_ACTIVE:
+            return "Client ready to communicate with server.";
+        default:
+            return "Unknown";
+        }
+    }
+
+    // Initialize yojimbo, debug and adapter
+    void Network::InitializeNetwork()
+    {
+        if (!InitializeYojimbo())
+        {
+            std::cerr << "Failed to initialize Yojimbo.\n";
+        }
+        else
+        {
+            std::cout << "Yojimbo initialized.\n";
+            adapter = YOJIMBO_NEW(yojimbo::GetDefaultAllocator(), GameAdapter);
+            std::cout << "Adapter created.\n";
+        }
+#ifdef _DEBUG
+        yojimbo_log_level(YOJIMBO_LOG_LEVEL_INFO);
+#else
+        yojimbo_log_level(YOJIMBO_LOG_LEVEL_INFO);
+#endif
+        status = Status::NETWORK_INITIALIZED;
+    }
+
+    // InitializeNetwork() and create client object
+    void Network::InitializeClient(Game* game, yojimbo::Address serverAddress)
+    {
+        if (status == Status::NETWORK_UNINITIALIZED)
+        {
+            InitializeNetwork();
+            networkType = std::make_unique<GameClient>(&config, adapter, serverAddress, game);
+            if (true)
+            {
+                config;
+                int i = 0;
+            }
+        }
+        else
+        {
+            std::cout << "Network already initialised as " << typeid(*networkType).name() << std::endl;
+        }
+    }
+
+    // InitializeNetwork() and create server object
+    void Network::InitializeServer(Game* game, uint16_t port, int maxClients)
+    {
+        if (status == Status::NETWORK_UNINITIALIZED)
+        {
+            InitializeNetwork();
+            networkType = std::make_unique<GameServer>(&config, adapter, GetLocalIPAddress(port), maxClients, game);
+        }
+        else
+        {
+            std::cout << "Network already initialised as " << typeid(*networkType).name() << std::endl;
+        }
+    }
+
+    // Update network if some form of connection
+    void Network::Update()
+    {
+        if (status != Status::NETWORK_UNINITIALIZED &&
+            status != Status::NETWORK_INITIALIZED &&
+            status != Status::CLIENT_DISCONNECTED &&
+            status != Status::CLIENT_CONNECTION_FAILED
+            )
+        {
+            networkType->Update();
+        }
+    }
+
+    // Reset network if not uninitialized, clean up and reset pointer
+    void Network::Reset()
+    {
+        if (status == Status::NETWORK_UNINITIALIZED)
+        {
+            std::cout << "Network uninitialized." << std::endl;
+            return;
+        }
+        else if (status == Status::NETWORK_INITIALIZED)
+        {
+            networkType.reset();
+            std::cout << "Network cleaned and reset." << std::endl;
+        }
+        else
+        {
+            networkType->CleanUp();
+            networkType.reset();
+            std::cout << "Network reset." << std::endl;
+        }
+        ShutdownYojimbo();
+        status = Status::NETWORK_UNINITIALIZED;
     }
 }

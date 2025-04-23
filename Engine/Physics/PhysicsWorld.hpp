@@ -9,7 +9,7 @@
 #include <unistd.h>
 #endif
 #include <vector>
-//#include "../ECS/EntityManager.hpp"
+
 #include "../gltf/Model.hpp"
 
 
@@ -37,6 +37,7 @@ namespace Engine
 
 		// CapsuleController
 		PxCapsuleController* gCapsuleController = nullptr;
+		float verticalVelocity = 0.0f;
 
 		// PVD
 #if defined(_WIN32)
@@ -44,18 +45,29 @@ namespace Engine
 		PxPvdTransport* gTransport = nullptr;
 #endif
 
-
+		PxReal gSimulationTimer = 0.0f;
 		PxReal gTimestep = 1.0f / 60.0f; // 60 FPS
 
 		void init();
 
-		void updateCharacter(Entity* playerEntity, PxReal deltatime);
+
+		void handleMovement(PxReal deltatime);
+
+		void handleShooting();
+
+		void updatePhysics(PxReal timeDelta);
+
+		void updateCharacter(PxReal deltatime);
+		void updateCharacter(Entity* playerEntity, PxReal deltatime); // from input actions
 
 		void updateObjects(Engine::EntityManager& entityManager, std::vector<Engine::vk::Model>& models);
 
 		void cleanupPhysX();
 
 		glm::mat4 ConvertPxTransformToGlmMat4(const PxTransform& transform);
+
+		void DebugDrawRayInPVD(PxScene* scene, const PxVec3& start, const PxVec3& end, PxU32 color);
+
 
 	private:
 
