@@ -52,6 +52,7 @@ namespace Engine
 
 
 		void handleMovement(PxReal deltatime);
+		void handleMovement(Entity* playerEntity, PxReal deltatime);
 
 		void handleShooting();
 

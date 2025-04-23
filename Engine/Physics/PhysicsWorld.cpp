@@ -1,21 +1,21 @@
 #include "../ECS/Components/PhysicsComponent.hpp"
+#include "../ECS/Components/PhysicsComponent.hpp"
+#include "../ECS/EntityManager.hpp"
 #include "../ECS/EntityManager.hpp"
 #include "../gltf/Model.hpp"
+#include "../gltf/Model.hpp"
+#include "../Input/Input.hpp"
 #include "../Input/Input.hpp"
 #include "../Input/InputCodes.hpp"
+#include "../Input/InputCodes.hpp"
+#include "../Input/Keyboard.hpp"
 #include "../Input/Keyboard.hpp"
 #include "PhysicsWorld.hpp"
+#include "RaycastUtility.hpp"
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/string_cast.hpp>
-#include "../gltf/Model.hpp"
-#include "../ECS/EntityManager.hpp"
-#include "../ECS/Components/PhysicsComponent.hpp"
-#include "../Input/Keyboard.hpp"
-#include "../Input/InputCodes.hpp"
-#include "../Input/Input.hpp"
-#include "RaycastUtility.hpp"
 
 namespace Engine
 {
@@ -119,7 +119,8 @@ namespace Engine
 		this->gSimulationTimer += timeDelta;
 
 		if (this->gSimulationTimer > gTimestep) {
-			this->updateCharacter(gTimestep);
+			//this->updateCharacter(gTimestep);
+			//this->updateCharacter(gTimestep);
 			this->gScene->simulate(gTimestep);
 			this->gScene->fetchResults(true);
 			this->gSimulationTimer -= gTimestep;
@@ -127,45 +128,50 @@ namespace Engine
 	}
 
 	void PhysicsWorld::updateCharacter(PxReal deltatime) {
+		//handleMovement(playerEntity, deltatime);
 		handleMovement(deltatime);
 		handleShooting();
 	}
 
 	void PhysicsWorld::updateCharacter(Entity* playerEntity, PxReal deltatime)
 	{
-		glm::vec3 entityFrontDir = playerEntity->frontDirection;
-		glm::vec3 entityRightDir = glm::normalize(glm::cross(entityFrontDir, glm::vec3(0.0f, 1.0f, 0.0f)));
-		if (this->controller)
-		{
-			PxVec3 displacement(0.0f, 0.0f * deltatime, 0.0f);
-			float speed = 5.0f;
-			PxVec3 frontDir(entityFrontDir.x, entityFrontDir.y, entityFrontDir.z);
-			PxVec3 rightDir(entityRightDir.x, entityRightDir.y, entityRightDir.z);
-
-			auto& keyboard = Engine::InputManager::getKeyboard();
-
-			if (keyboard.isPressed(HS_KEY_W)) {
-				displacement += frontDir * speed * deltatime;
-			}
-
-			if (keyboard.isPressed(HS_KEY_S)) {
-				displacement -= frontDir * speed * deltatime;
-			}
-
-			if (keyboard.isPressed(HS_KEY_A)) {
-				displacement -= rightDir * speed * deltatime;
-			}
-
-			if (keyboard.isPressed(HS_KEY_D)) {
-				displacement += rightDir * speed * deltatime;
-			}
-		}
+		handleMovement(playerEntity, deltatime);
+		handleShooting();
 	}
+
+	//void PhysicsWorld::updateCharacter(Entity* playerEntity, PxReal deltatime)
+	//{
+	//	glm::vec3 entityFrontDir = playerEntity->frontDirection;
+	//	glm::vec3 entityRightDir = glm::normalize(glm::cross(entityFrontDir, glm::vec3(0.0f, 1.0f, 0.0f)));
+	//	if (this->controller)
+	//	{
+	//		PxVec3 displacement(0.0f, 0.0f * deltatime, 0.0f);
+	//		float speed = 5.0f;
+	//		PxVec3 frontDir(entityFrontDir.x, entityFrontDir.y, entityFrontDir.z);
+	//		PxVec3 rightDir(entityRightDir.x, entityRightDir.y, entityRightDir.z);
+
+	//		auto& keyboard = Engine::InputManager::getKeyboard();
+
+	//		if (keyboard.isPressed(HS_KEY_W)) {
+	//			displacement += frontDir * speed * deltatime;
+	//		}
+
+	//		if (keyboard.isPressed(HS_KEY_S)) {
+	//			displacement -= frontDir * speed * deltatime;
+	//		}
+
+	//		if (keyboard.isPressed(HS_KEY_A)) {
+	//			displacement -= rightDir * speed * deltatime;
+	//		}
+
+	//		if (keyboard.isPressed(HS_KEY_D)) {
+	//			displacement += rightDir * speed * deltatime;
+	//		}
+	//	}
+	//}
 
 	void PhysicsWorld::handleMovement(PxReal deltatime)
 	{
-		
-
 		if (this->controller)
 		{
 
@@ -187,8 +193,74 @@ namespace Engine
 				displacement.x -= speed * deltatime;
 			}
 			if (keyboard.isPressed(HS_KEY_D)) {
-				//displacement.x += speed * deltatime;
+				displacement.x += speed * deltatime;
 			}
+
+			// isGrounded check
+			PxControllerState cstate;
+			controller->getState(cstate);
+			bool isGrounded = (cstate.collisionFlags & PxControllerCollisionFlag::eCOLLISION_DOWN);
+
+
+			if (isGrounded && keyboard.isPressed(HS_KEY_SPACE)) {
+				verticalVelocity = jumpSpeed;
+			}
+			verticalVelocity += gravity * deltatime;
+			displacement.y = verticalVelocity * deltatime;
+
+			// Only run PxController::move() if we actually moved, since this
+			// method is quite expensive to run every frame if we are not moving
+			if (old != displacement) {
+				PxControllerFilters filters;
+				this->controller->move(displacement, 0.01f, deltatime, filters);
+			}
+
+			// reset verticalVelocity
+			if (isGrounded && verticalVelocity < 0.0f) {
+				verticalVelocity = 0.0f;
+			}
+
+		}
+	}
+
+	void PhysicsWorld::handleMovement(Entity* playerEntity, PxReal deltatime)
+	{
+
+		glm::vec3 entityFrontDir = playerEntity->frontDirection;
+		glm::vec3 entityRightDir = glm::normalize(glm::cross(entityFrontDir, glm::vec3(0.0f, 1.0f, 0.0f)));
+		if (this->controller)
+		{
+
+			PxVec3 displacement(0.0f, -9.81f * deltatime, 0.0f);
+			PxVec3 old = displacement;
+			float speed = 5.0f;
+			const float jumpSpeed = 3.0f;
+			const float gravity = -9.81f;
+
+
+			//PxVec3 displacement(0.0f, 0.0f * deltatime, 0.0f);
+			//float speed = 5.0f;
+			PxVec3 frontDir(entityFrontDir.x, entityFrontDir.y, entityFrontDir.z);
+			PxVec3 rightDir(entityRightDir.x, entityRightDir.y, entityRightDir.z);
+
+			auto& keyboard = Engine::InputManager::getKeyboard();
+
+			if (keyboard.isPressed(HS_KEY_W)) {
+				displacement += frontDir * speed * deltatime;
+			}
+
+			if (keyboard.isPressed(HS_KEY_S)) {
+				displacement -= frontDir * speed * deltatime;
+			}
+
+			if (keyboard.isPressed(HS_KEY_A)) {
+				displacement -= rightDir * speed * deltatime;
+			}
+
+			if (keyboard.isPressed(HS_KEY_D)) {
+				displacement += rightDir * speed * deltatime;
+			}
+
 
 			// isGrounded check
 			PxControllerState cstate;
@@ -275,21 +347,34 @@ namespace Engine
 			// dynamic update
 			if (p->GetPhysicsType() == PhysicsComponent::PhysicsType::DYNAMIC)
 			{
-				glm::mat4 matrix = ConvertPxTransformToGlmMat4(p->GetDynamicBody()->getGlobalPose());
-				matrix = glm::scale(matrix, p->GetScale());
-				entityManager.GetEntity(p->GetEntityId())->SetModelMatrix(matrix);
-				continue;
+				//glm::mat4 matrix = ConvertPxTransformToGlmMat4(p->GetDynamicBody()->getGlobalPose());
+				//matrix = glm::scale(matrix, p->GetScale());
+				//entityManager.GetEntity(p->GetEntityId())->SetModelMatrix(matrix);
+				//continue;
+
+				Entity* entity = entityManager.GetEntity(p->GetEntityId());
+				PxTransform transform = p->GetDynamicBody()->getGlobalPose();
+				entity->SetPosition(transform.p.x, transform.p.y, transform.p.z);
+				entity->SetRotation(glm::quat(transform.q.w, transform.q.x, transform.q.y, transform.q.z));
+				entity->SetScale(p->GetScale().x, p->GetScale().y, p->GetScale().z);
 			}
 
 			// controller update
 			if (p->GetPhysicsType() == PhysicsComponent::PhysicsType::CONTROLLER)
 			{
-				PxExtendedVec3 pos = p->GetController()->getFootPosition();
-				glm::vec3 glmPos = glm::vec3(pos.x, pos.y, pos.z);
-				glm::mat4 matrix = glm::translate(glm::mat4(1.0f), glmPos);
-				matrix = glm::scale(matrix, p->GetScale());
+				//PxExtendedVec3 pos = p->GetController()->getFootPosition();
+				//glm::vec3 glmPos = glm::vec3(pos.x, pos.y, pos.z);
+				//glm::mat4 matrix = glm::translate(glm::mat4(1.0f), glmPos);
+				//matrix = glm::scale(matrix, p->GetScale());
 
-				entityManager.GetEntity(p->GetEntityId())->SetModelMatrix(matrix);
+				//entityManager.GetEntity(p->GetEntityId())->SetModelMatrix(matrix);
+				//Entity* entity = entityManager.GetEntity(p->GetEntityId());
+				//PxTransform transform = p->GetDynamicBody()->getGlobalPose();
+				//entity->SetPosition(transform.p.x, transform.p.y, transform.p.z);
+				//entity->SetRotation(glm::quat(transform.q.w, transform.q.x, transform.q.y, transform.q.z));
+				//entity->SetScale(p->GetScale().x, p->GetScale().y, p->GetScale().z);
+				PxExtendedVec3 pos = p->GetController()->getFootPosition();
+				entityManager.GetEntity(p->GetEntityId())->SetPosition(pos.x, pos.y, pos.z);
 			}
 		}
 	}

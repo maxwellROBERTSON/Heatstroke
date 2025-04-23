@@ -39,13 +39,6 @@
 
 class FPSTest : public Engine::Game
 {
-
-	enum CameraMode
-	{
-		SCENE,
-		PLAYER
-	};
-
 public:
 	FPSTest() : Engine::Game("FPS Test Game")
 	{
@@ -72,13 +65,13 @@ public:
 	// -- input actions
 	// Cameras
 	Engine::Camera sceneCam;
-	FPSCamera playerCam;
-	glm::vec3 cameraOffset = glm::vec3(0.0f, 0.25f, 0.2f);
+	Engine::CameraComponent serverCameraComponent;
+	glm::vec3 cameraOffset = glm::vec3(0.0f, 1.6f, -0.1f);
 	//glm::vec3 cameraOffset = glm::vec3();
 	//glm::vec3 cameraOffset = glm::vec3(-0.1f, 0.25f, -0.15f);
 	//glm::vec3 cameraOffset = glm::vec3(0.0f, 1.0f, 0.0f);
 	//CameraMode camMode{ CameraMode::SCENE };
-	CameraMode camMode{ CameraMode::PLAYER };
+	//CameraMode camMode{ CameraMode::PLAYER };
 	bool camCanRotate{ true };
 
 	// Player 1
