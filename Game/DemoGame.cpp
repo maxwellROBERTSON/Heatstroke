@@ -29,12 +29,8 @@ void FPSTest::Init()
 	
 	ac.addClip("Pain", "Game\\assets\\AudioClips\\Ugh.wav");
 	ac.addClip("Dialogue", "Game\\assets\\AudioClips\\Moron.wav");
-	//auto res = ac.soundClips["Tony"];
+	ac.addClip("gunShot", "Game\\assets\\AudioClips\\singlegunshot.wav");
 	
-	if (ac.soundClips["Tony"] == NULL)
-	{
-		std::cout << "NULL" << std::endl;
-	}
 
 	this->threadPool = thread_pool_wait::get_instance();
  
@@ -79,7 +75,7 @@ void FPSTest::Update() {
 		}
 	}
 
-	auto keyboard = Engine::InputManager::getKeyboard();
+	/*auto keyboard = Engine::InputManager::getKeyboard();
 	if (keyboard.isPressed(HS_KEY_W))
 	{
 		ac.playSound("Pain");
@@ -88,7 +84,7 @@ void FPSTest::Update() {
 	if (keyboard.isPressed(HS_KEY_S))
 	{
 		ac.playSound("Dialogue");
-	}
+	}*/
 
 
 	GetNetwork().Update();
