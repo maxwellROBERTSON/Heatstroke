@@ -42,6 +42,16 @@ void Engine::AudioComponent::SetDataArray(uint8_t* data)
 	offset += sizeof(soundClipCurrentlyPlaying);
 }
 
+void Engine::AudioComponent::SetComponentHasChanged()
+{
+}
+
+
+void Engine::AudioComponent::ToggleHasChanged()
+{
+}
+
+
 void Engine::AudioComponent::addClip(std::string key, std::string path)
 {
 	soundClips.insert({key, soundBuffer->get()->addSoundEffect(path.c_str())});

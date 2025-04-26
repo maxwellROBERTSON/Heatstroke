@@ -23,14 +23,12 @@ using namespace Engine;
 
 CameraComponent serverCameraComponent = CameraComponent(Engine::Camera(100.0f, 0.01f, 256.0f, glm::vec3(-3.0f, 2.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
 
-AudioComponent ac;
-
 void FPSTest::Init()
 {
 	
-	ac.addClip("Pain", "Game\\assets\\AudioClips\\Ugh.wav");
+	/*ac.addClip("Pain", "Game\\assets\\AudioClips\\Ugh.wav");
 	ac.addClip("Dialogue", "Game\\assets\\AudioClips\\Moron.wav");
-	ac.addClip("gunShot", "Game\\assets\\AudioClips\\singlegunshot.wav");
+	ac.addClip("gunShot", "Game\\assets\\AudioClips\\singlegunshot.wav");*/
 	
 
 	this->threadPool = thread_pool_wait::get_instance();
@@ -172,6 +170,7 @@ void FPSTest::loadOfflineEntities()
 	NetworkComponent* networkComponent;
 	RenderComponent* renderComponent;
 	PhysicsComponent* physicsComponent;
+	AudioComponent* audioComponent;
 
 	EntityManager& entityManager = GetEntityManager();
 	PhysicsWorld& physicsWorld = GetPhysicsWorld();
@@ -211,7 +210,7 @@ void FPSTest::loadOfflineEntities()
 	//entityManager.AddSimulatedPhysicsEntity(entity->GetEntityId());
 
 	// Player 1
-	types = { CAMERA, NETWORK, RENDER, PHYSICS };
+	types = { CAMERA, NETWORK, RENDER, PHYSICS, AUDIO };
 	entity = entityManager.MakeNewEntity(types);
 	entity->SetPosition(-5.0f, 0.0f, -1.0f);
 	entity->SetRotation(90.0f, glm::vec3(0.0f, 0.0f, 1.0f));
@@ -225,6 +224,7 @@ void FPSTest::loadOfflineEntities()
 	cameraComponent->SetCamera(Engine::Camera(100.0f, 0.01f, 256.0f, glm::vec3(-3.0f, 2.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
 	networkComponent = reinterpret_cast<NetworkComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), NETWORK));
 	networkComponent->SetClientId(0);
+	
 
 	//// Player 2
 	//types = { RENDER };

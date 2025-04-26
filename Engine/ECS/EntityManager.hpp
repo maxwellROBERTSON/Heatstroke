@@ -122,7 +122,7 @@ namespace Engine
 			{ ComponentTypes::NETWORK, &networkComponents },
 			{ ComponentTypes::PHYSICS, &physicsComponents },
 			{ ComponentTypes::RENDER, &renderComponents },
-			//{ ComponentTypes::AUDIO, &renderComponents }
+			{ ComponentTypes::AUDIO, &renderComponents }
 		};
 
 		// For each component type, there is an entry, each holding ids of entities with that component type

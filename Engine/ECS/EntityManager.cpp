@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <iostream>
 
 #include "EntityManager.hpp"
 #include "Components/Component.hpp"
@@ -15,6 +16,7 @@ namespace Engine
 		// Check map size
 		if (componentMap.size() != ComponentTypes::TYPE_COUNT)
 		{
+			std::cout << "componentMap.size(): " << componentMap.size() << "ComponentTypes::TYPE_COUNT: " << ComponentTypes::TYPE_COUNT << std::endl;
 			throw std::runtime_error("Size mismatch between componentMap and ComponentTypes");
 		}
 		// Check if ComponentSizes is correct
@@ -633,6 +635,9 @@ namespace Engine
 				break;
 			case RENDER:
 				index = AddComponent(RENDER, entity);
+				break;
+			case AUDIO:
+				index = AddComponent(AUDIO, entity);
 				break;
 			default:
 				throw std::runtime_error("Unknown component type");

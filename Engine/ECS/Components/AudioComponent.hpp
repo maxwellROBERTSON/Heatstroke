@@ -30,7 +30,7 @@ namespace Engine
 		ComponentTypes static StaticType() { return ComponentTypes::TYPE_COUNT; }//ComponentTypes::AUDIO; }
 
 		// Static size getter from Component parent
-		size_t static StaticSize() { return sizeof(soundClip); }
+		size_t static StaticSize() { return sizeof(soundClips); }
 		
 		// Get component data
 		void GetDataArray(uint8_t*) override;
@@ -39,6 +39,11 @@ namespace Engine
 		
 		// Set component data
 		void SetDataArray(uint8_t*) override;
+
+		void SetComponentHasChanged() override;
+
+		// Toggle has changed boolean
+		void ToggleHasChanged() override;
 
 		//current state
 		ALint state;
