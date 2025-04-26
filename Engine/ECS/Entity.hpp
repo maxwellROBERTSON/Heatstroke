@@ -16,6 +16,7 @@ namespace Engine
 	class Entity
 	{
 	public:
+		Entity(EntityManager*);
 		Entity(EntityManager*, int, std::vector<int>);
 		~Entity() {};
 
@@ -25,7 +26,7 @@ namespace Engine
 		size_t GetEntitySize() { return sizeof(entityId) + sizeof(modelMatrix); }
 
 		// Get the data for a given entity
-		void GetData(uint8_t*);
+		void GetDataArray(uint8_t*);
 
 		// Get entity id
 		int GetEntityId() { return entityId; }
@@ -36,29 +37,49 @@ namespace Engine
 		// Get a component index of a given type
 		int GetComponent(ComponentTypes t) { return componentTypeIndexList[t]; }
 
-		// Get all components of this entity
+		// Get component index vector of this entity
 		std::vector<int> GetComponentIndexArray() { return componentTypeIndexList; }
 
 		// Setters
 
 		// Set the data for a given entity
-		void SetData(uint8_t*);
-		
+		void SetDataArray(uint8_t*);
+
+		// Position Setters
 		void SetPosition(float x, float y, float z);
 		void SetPosition(glm::vec3 position);
 
+		// Rotation setters
 		void SetRotation(float angInDeg, glm::vec3 axis);
 		void SetRotation(glm::quat rotation);
 
+		// Scale setters
 		void SetScale(float xScale, float yScale, float zScale);
 		void SetScale(float overallScale);
 
+		// Set model matrix
+		void SetModelMatrix(glm::mat4 aModelMatrix);
+
+		// Set entity has changed in entity manager
+		void SetEntityHasChanged();
+
+		// Toggle has changed boolean
+		void ToggleHasChanged() { hasChanged = !hasChanged; }
+
+		// Set entity id
+		void SetEntityId(int id) { entityId = id; }
+
+		// Set component index vector of this entity
+		// Only use if null constructor is used
+		void SetComponentIndexArray(std::vector<int> l) { componentTypeIndexList = l; }
+
 	private:
+		bool hasChanged = false;
 		EntityManager* entityManager;
 		int entityId;
 
 		// Flag to set whether model matrix needs to be updated
-		bool dirty = true;
+		bool dirty = false;
 		glm::vec3 position{};
 		glm::mat4 rotation{ 1.0f };
 		glm::vec3 scale{ 1.0f };

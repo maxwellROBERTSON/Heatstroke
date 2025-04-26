@@ -34,6 +34,20 @@ namespace Engine
 			this->lastY = other.lastY;
 		}
 
+		bool operator==(const Camera& other) const
+		{
+			return fov == other.fov &&
+				nearPlane == other.nearPlane &&
+				farPlane == other.farPlane &&
+				position == other.position &&
+				frontDirection == other.frontDirection &&
+				firstClick == other.firstClick &&
+				yaw == other.yaw &&
+				pitch == other.pitch &&
+				lastX == other.lastX &&
+				lastY == other.lastY;
+		}
+
 		void updateCamera(GLFWwindow* aWindow, float timeDelta);
 		void OnEvent(GLFWwindow* aWindow, Engine::Event& e);
 

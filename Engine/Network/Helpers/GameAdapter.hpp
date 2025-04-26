@@ -9,6 +9,7 @@
 
 namespace Engine
 {
+    // Retrieves the number of bits required for a message based on a sequence number
     inline int GetNumBitsForMessage(uint16_t sequence)
     {
         static int messageBitsArray[] = { 1, 320, 120, 4, 256, 45, 11, 13, 101, 100, 84, 95, 203, 2, 3, 8, 512, 5, 3, 7, 50 };
@@ -17,116 +18,37 @@ namespace Engine
         return messageBitsArray[index];
     }
 
-    class GameMessage : public yojimbo::Message
+    /*MESSAGE_RECEIVED,
+    REQUEST_ENTITY_DATA,
+    RESPONSE_ENTITY_DATA,
+    REQUEST_PLAYER_STATS,
+    RESPONSE_PLAYER_STATS,
+    REQUEST_GAME_STATE,
+    RESPONSE_GAME_STATE,
+    REQUEST_CHAT_MESSAGES,
+    RESPONSE_CHAT_MESSAGES,
+    COUNT*/
+
+    class RequestEntityData : public yojimbo::Message
     {
     public:
-        GameMessage(uint16_t sequence = 0) : sequence(sequence) {}
-        uint16_t sequence;
+        RequestEntityData() {}
 
         template <typename Stream> bool Serialize(Stream& stream)
         {
-            serialize_bits(stream, sequence, 16);
-
-            int numBits = GetNumBitsForMessage(sequence);
-            int numWords = numBits / 32;
-            uint32_t dummy = 0;
-            for (int i = 0; i < numWords; ++i)
-                serialize_bits(stream, dummy, 32);
-            int numRemainderBits = numBits - numWords * 32;
-            if (numRemainderBits > 0)
-                serialize_bits(stream, dummy, numRemainderBits);
-
             return true;
         }
 
-        YOJIMBO_VIRTUAL_SERIALIZE_FUNCTIONS()
+        YOJIMBO_VIRTUAL_SERIALIZE_FUNCTIONS();
     };
 
-    enum class RequestType : uint8_t
-    {
-        ENTITY_DATA,
-        PLAYER_STATS,
-        GAME_STATE,
-        CHAT_MESSAGES,
-        COUNT
-        // Add more request types as needed
-    };
-
-    enum class ResponseType : uint8_t
-    {
-        ENTITY_DATA_RESPONSE,
-        PLAYER_STATS_RESPONSE,
-        GAME_STATE_RESPONSE,
-        CHAT_MESSAGES_RESPONSE,
-        COUNT
-        // Add more response types as needed
-    };
-
-    class RequestMessage : public yojimbo::Message
+    class ResponseEntityData : public yojimbo::BlockMessage
     {
     public:
-        RequestMessage() : requestType(RequestType::COUNT) {}
+        ResponseEntityData() {}
 
         template <typename Stream> bool Serialize(Stream& stream)
         {
-            uint8_t requestTypeValue = static_cast<uint8_t>(requestType);
-
-            serialize_bits(stream, requestTypeValue, 8);
-
-            if (Stream::IsReading)
-            {
-                requestType = static_cast<RequestType>(requestTypeValue);
-            }
-
-            return true;
-        }
-
-        YOJIMBO_VIRTUAL_SERIALIZE_FUNCTIONS()
-
-            RequestType requestType;
-    };
-
-    class GameBlockMessage : public yojimbo::BlockMessage
-    {
-    public:
-        GameBlockMessage(uint16_t sequence = 0) : sequence(sequence) {}
-        uint16_t sequence;
-
-        template <typename Stream> bool Serialize(Stream& stream)
-        {
-            serialize_bits(stream, sequence, 16);
-            return true;
-        }
-
-        YOJIMBO_VIRTUAL_SERIALIZE_FUNCTIONS()
-    };
-
-    // For each entity:
-    // Component vector of int = registry.GetNumComponents * sizeof(int)
-    // Matrix = 16 * sizeof(float)
-    // If rendercomp:
-    //  Model index = sizeof(int0
-    // If camera:
-    // fov + near + far + vec3(pos) + vec3(front_dir) = 9 * float
-    // If network:
-    // clientid = int
-
-    class RequestResponseMessage : public yojimbo::BlockMessage
-    {
-    public:
-        RequestResponseMessage() : responseType(ResponseType::COUNT){}
-        
-        template <typename Stream> bool Serialize(Stream& stream)
-        {
-            uint8_t responseTypeValue = static_cast<uint8_t>(responseType);
-
-            serialize_bits(stream, responseTypeValue, 8);
-
-            if (Stream::IsReading)
-            {
-                responseType = static_cast<ResponseType>(responseTypeValue);
-            }
-
             int size = GetBlockSize();
             uint8_t* block = GetBlockData();
             for (int i = 0; i < size; i++)
@@ -137,18 +59,83 @@ namespace Engine
             return true;
         }
 
-        ResponseType responseType;
+        YOJIMBO_VIRTUAL_SERIALIZE_FUNCTIONS();
+    };
+
+    class ClientInitialized : public yojimbo::Message
+    {
+    public:
+        ClientInitialized() {}
+
+        template <typename Stream> bool Serialize(Stream& stream)
+        {
+            return true;
+        }
+
+        YOJIMBO_VIRTUAL_SERIALIZE_FUNCTIONS();
+    };
+
+    class ClientUpdateEntityData : public yojimbo::BlockMessage
+    {
+    public:
+        ClientUpdateEntityData() {}
+
+        template <typename Stream> bool Serialize(Stream& stream)
+        {
+            int size = GetBlockSize();
+            uint8_t* block = GetBlockData();
+            for (int i = 0; i < size; i++)
+            {
+                serialize_bits(stream, block[i], 8);
+            }
+
+            return true;
+        }
+
+        YOJIMBO_VIRTUAL_SERIALIZE_FUNCTIONS();
+    };
+
+    class ServerUpdateEntityData : public yojimbo::BlockMessage
+    {
+    public:
+        ServerUpdateEntityData() {}
+
+        template <typename Stream> bool Serialize(Stream& stream)
+        {
+            int size = GetBlockSize();
+            uint8_t* block = GetBlockData();
+            for (int i = 0; i < size; i++)
+            {
+                serialize_bits(stream, block[i], 8);
+            }
+
+            return true;
+        }
+
+        YOJIMBO_VIRTUAL_SERIALIZE_FUNCTIONS();
     };
 
     enum GameMessageType
     {
-        GAME_MESSAGE,
-        REQUEST_MESSAGE,
-        GAME_BLOCK_MESSAGE,
-        REQUEST_RESPONSE_MESSAGE,
+        REQUEST_ENTITY_DATA,
+        RESPONSE_ENTITY_DATA,
+        CLIENT_INITIALIZED,
+        CLIENT_UPDATE_ENTITY_DATA,
+        SERVER_UPDATE_ENTITY_DATA,
         NUM_GAME_MESSAGE_TYPES
     };
 
+    const std::string GameMessageTypeStrings[] =
+    {
+        "REQUEST_ENTITY_DATA",
+        "RESPONSE_ENTITY_DATA",
+        "CLIENT_INITIALIZED",
+        "CLIENT_UPDATE_ENTITY_DATA",
+        "SERVER_UPDATE_ENTITY_DATA",
+        "NUM_GAME_MESSAGE_TYPES"
+    };
+
+    // Factory class responsible for creating game messages
     class GameMessageFactory : public yojimbo::MessageFactory
     {
     public:
@@ -160,26 +147,32 @@ namespace Engine
             (void)allocator;
             switch (type)
             {
-            case GAME_MESSAGE:
-                message = YOJIMBO_NEW(allocator, GameMessage);
+            case REQUEST_ENTITY_DATA:
+                message = YOJIMBO_NEW(allocator, RequestEntityData);
                 if (!message)
                     return nullptr;
                 SetMessageType(message, type);
                 return message;
-            case REQUEST_MESSAGE:
-                message = YOJIMBO_NEW(allocator, RequestMessage);
+            case RESPONSE_ENTITY_DATA:
+                message = YOJIMBO_NEW(allocator, ResponseEntityData);
                 if (!message)
                     return nullptr;
                 SetMessageType(message, type);
                 return message;
-            case GAME_BLOCK_MESSAGE:
-                message = YOJIMBO_NEW(allocator, GameBlockMessage);
+            case CLIENT_INITIALIZED:
+                message = YOJIMBO_NEW(allocator, ClientInitialized);
                 if (!message)
                     return nullptr;
                 SetMessageType(message, type);
                 return message;
-            case REQUEST_RESPONSE_MESSAGE:
-                message = YOJIMBO_NEW(allocator, RequestResponseMessage);
+            case CLIENT_UPDATE_ENTITY_DATA:
+                message = YOJIMBO_NEW(allocator, ClientUpdateEntityData);
+                if (!message)
+                    return nullptr;
+                SetMessageType(message, type);
+                return message;
+            case SERVER_UPDATE_ENTITY_DATA:
+                message = YOJIMBO_NEW(allocator, ServerUpdateEntityData);
                 if (!message)
                     return nullptr;
                 SetMessageType(message, type);
@@ -190,6 +183,7 @@ namespace Engine
         }
     };
 
+    // Adapter class handling server-client interactions and message factories
     class GameAdapter : public yojimbo::Adapter
     {
     public:
