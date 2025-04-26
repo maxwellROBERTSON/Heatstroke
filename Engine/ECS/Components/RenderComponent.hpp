@@ -10,10 +10,7 @@ namespace Engine
 {
 	class EntityManager;
 	class Entity;
-}
 
-namespace Engine
-{
 	class RenderComponent : public Component<RenderComponent>
 	{
 	public:

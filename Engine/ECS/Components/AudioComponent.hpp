@@ -6,14 +6,16 @@
 
 #include "Component.hpp"
 
-//forward declaration
-class SoundDevice;
-class SoundSource;
-class SoundBuffer;
-
+#include "../EntityManager.hpp"
 
 namespace Engine
 {
+	class EntityManager;
+	class Entity;
+	class SoundDevice;
+	class SoundSource;
+	class SoundBuffer;
+
 	class AudioComponent : public Component<AudioComponent>
 	{
 	public:
@@ -27,10 +29,10 @@ namespace Engine
 		// Getters
 		
 		// Static type getter from Component parent
-		ComponentTypes static StaticType() { return ComponentTypes::TYPE_COUNT; }//ComponentTypes::AUDIO; }
+		ComponentTypes static StaticType() { return ComponentTypes::AUDIO; }
 
 		// Static size getter from Component parent
-		size_t static StaticSize() { return sizeof(soundClip); }
+		size_t static StaticSize() { return sizeof(soundClipCurrentlyPlaying); }
 		
 		// Get component data
 		void GetDataArray(uint8_t*) override;
@@ -39,6 +41,12 @@ namespace Engine
 		
 		// Set component data
 		void SetDataArray(uint8_t*) override;
+
+		// Set component has changed in entity manager
+		void SetComponentHasChanged();
+
+		// Toggle has changed boolean
+		void ToggleHasChanged() { hasChanged = !hasChanged; }
 
 		//current state
 		ALint state;
@@ -68,6 +76,14 @@ namespace Engine
 		ALuint getState();
 
 		void updateState();
+
+	private:
+		// EntityManager pointer
+		Engine::EntityManager* entityManager;
+		// Entity pointer
+		Engine::Entity* entity;
+
+		// If component has changed since last network update
+		bool hasChanged = false;
 	};
 }
-

@@ -2,6 +2,7 @@
 
 #include "EntityManager.hpp"
 #include "Components/Component.hpp"
+#include "Components/AudioComponent.hpp"
 #include "Components/CameraComponent.hpp"
 #include "Components/NetworkComponent.hpp"
 #include "Components/PhysicsComponent.hpp"
@@ -18,6 +19,9 @@ namespace Engine
 			throw std::runtime_error("Size mismatch between componentMap and ComponentTypes");
 		}
 		// Check if ComponentSizes is correct
+		AudioComponent a;
+		if (ComponentSizes[AUDIO] != a.StaticSize())
+			throw std::runtime_error("Size mismatch between: ComponentSizes[AUDIO] and Audio size");
 		CameraComponent c;
 		if (ComponentSizes[CAMERA] != c.StaticSize())
 			throw std::runtime_error("Size mismatch between: ComponentSizes[CAMERA] and Camera size");

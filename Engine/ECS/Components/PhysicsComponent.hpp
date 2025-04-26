@@ -6,7 +6,6 @@
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
 
-#include "Component.hpp"
 #include "../Physics/PhysicsWorld.hpp"
 #include "../../gltf/Model.hpp"
 
@@ -14,16 +13,15 @@
 #include <cassert>
 #endif
 
+#include "Component.hpp"
+
 #include "../EntityManager.hpp"
 
 namespace Engine
 {
 	class EntityManager;
 	class Entity;
-}
 
-namespace Engine
-{
 	using namespace physx;
 
 	class PhysicsWorld;

@@ -1,20 +1,22 @@
 #pragma once
 
 //dependencies
-#include "../third_party/AL/alc.h"
+#include "alc.h"
 
-//Initialise audio
-//Uses singleton pattern
-class SoundDevice
+namespace Engine
 {
-public:
-	static SoundDevice* get();
+	//Initialise audio
+	//Uses singleton pattern
+	class SoundDevice
+	{
+	public:
+		static SoundDevice* get();
 
-private:
-	SoundDevice();
-	~SoundDevice();
+	private:
+		SoundDevice();
+		~SoundDevice();
 
-	ALCdevice* p_ALCDevice;
-	ALCcontext* p_ALCcontext;
-};
-
+		ALCdevice* p_ALCDevice;
+		ALCcontext* p_ALCcontext;
+	};
+}

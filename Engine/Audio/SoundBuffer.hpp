@@ -1,24 +1,26 @@
 #pragma once
 
 //dependencies
-#include "../AL/al.h"
+#include "al.h"
 #include <vector>
 
-//storage of sound file
-//Uses singleton pattern. Reads file 
-class SoundBuffer
+namespace Engine
 {
-public:
-	static SoundBuffer* get();
+	//storage of sound file
+	//Uses singleton pattern. Reads file 
+	class SoundBuffer
+	{
+	public:
+		static SoundBuffer* get();
 
-	ALuint addSoundEffect(const char* filename);
-	bool removeSoundEffect(const ALuint& buffer);
+		ALuint addSoundEffect(const char* filename);
+		bool removeSoundEffect(const ALuint& buffer);
 
-private:
-	SoundBuffer();
-	~SoundBuffer();
+	private:
+		SoundBuffer();
+		~SoundBuffer();
 
 
-	std::vector<ALuint> p_SoundEffectBuffers;
-};
-
+		std::vector<ALuint> p_SoundEffectBuffers;
+	};
+}
