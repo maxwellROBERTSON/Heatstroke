@@ -70,43 +70,66 @@ namespace Engine
 	// Position Setters
 	void Entity::SetPosition(float x, float y, float z)
 	{
-		this->position = glm::vec3(x, y, z);
-		this->dirty = true;
-		SetEntityHasChanged();
+		glm::vec3 vec = glm::vec3(x, y, z);
+		if (this->position != vec)
+		{
+			this->position = vec;
+			this->dirty = true;
+			SetEntityHasChanged();
+		}
 	}
 	void Entity::SetPosition(glm::vec3 position)
 	{
-		this->position = position;
-		this->dirty = true;
-		SetEntityHasChanged();
+		if (this->position != position)
+		{
+			this->position = position;
+			this->dirty = true;
+			SetEntityHasChanged();
+		}
 	}
 
 	// Rotation setters
 	void Entity::SetRotation(float angInDeg, glm::vec3 axis)
 	{
-		this->rotation = glm::rotate(glm::mat4(1.0f), glm::radians(angInDeg), axis);
-		this->dirty = true;
-		SetEntityHasChanged();
+		glm::mat4 rotate = glm::rotate(glm::mat4(1.0f), glm::radians(angInDeg), axis);
+		if (this->rotation != rotate)
+		{
+			this->rotation = rotate;
+			this->dirty = true;
+			SetEntityHasChanged();
+		}
 	}
 	void Entity::SetRotation(glm::quat rotation)
 	{
-		this->rotation = glm::mat4(rotation);
-		this->dirty = true;
-		SetEntityHasChanged();
+		glm::mat4 rotate = glm::mat4(rotation);
+		if (this->rotation != rotate)
+		{
+			this->rotation = rotate;
+			this->dirty = true;
+			SetEntityHasChanged();
+		}
 	}
 
 	// Scale setters
 	void Entity::SetScale(float xScale, float yScale, float zScale)
 	{
-		this->scale = glm::vec3(xScale, yScale, zScale);
-		this->dirty = true;
-		SetEntityHasChanged();
+		glm::vec3 scale = glm::vec3(xScale, yScale, zScale);
+		if (this->scale != scale)
+		{
+			this->scale = scale;
+			this->dirty = true;
+			SetEntityHasChanged();
+		}
 	}
 	void Entity::SetScale(float overallScale)
 	{
-		this->scale = glm::vec3(overallScale);
-		this->dirty = true;
-		SetEntityHasChanged();
+		glm::vec3 scale = glm::vec3(overallScale);
+		if (this->scale != scale)
+		{
+			this->scale = scale;
+			this->dirty = true;
+			SetEntityHasChanged();
+		}
 	}
 
 	// Set model matrix with check for if changed

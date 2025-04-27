@@ -3,7 +3,6 @@
 #include <cstdint>
 
 namespace Engine
-
 {
 	enum class EventType
 	{

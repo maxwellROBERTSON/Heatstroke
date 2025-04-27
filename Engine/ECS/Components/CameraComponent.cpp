@@ -69,7 +69,6 @@ namespace Engine
         }
     }
 
-
     // Update camera using Camera class
     void CameraComponent::UpdateCamera(GLFWwindow* aWindow, float timeDelta)
     {

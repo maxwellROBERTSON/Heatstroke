@@ -9,11 +9,11 @@ namespace Engine
 {
     enum ComponentTypes
 	{
+        AUDIO,
 		CAMERA,
 		NETWORK,
 		PHYSICS,
 		RENDER,
-        // AUDIO,
         TYPE_COUNT
 	};
 
