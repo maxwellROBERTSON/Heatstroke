@@ -71,6 +71,7 @@ void FPSTest::Render()
 	}
 
 	GetRenderer().finishRendering();
+	// GetPhysicsWorld().cleanupPhysX();
 }
 
 void FPSTest::Update() {
@@ -163,12 +164,13 @@ void FPSTest::initialiseModels()
 {
 	// Here we would load all relevant glTF models and put them in the models vector
 	tinygltf::Model sponza = Engine::loadFromFile("Game/assets/Sponza/glTF/Sponza.gltf");
-	tinygltf::Model map = Engine::loadFromFile("Game/assets/Sponza/glTF/Sponza.gltf");
+	//tinygltf::Model map = Engine::loadFromFile("Game/assets/Assets/maps/uncharted/scene.gltf");
 	tinygltf::Model helmet = Engine::loadFromFile("Game/assets/DamagedHelmet.gltf");
 	tinygltf::Model cube = Engine::loadFromFile("Game/assets/Cube.gltf");
 	tinygltf::Model character = Engine::loadFromFile("Game/assets/Character/scene.gltf");
 	tinygltf::Model pistol = Engine::loadFromFile("Game/assets/Assets/guns/pistol1/scene.gltf");
 	GetModels().emplace_back(Engine::makeVulkanModel(this->GetContext(), sponza));
+	//GetModels().emplace_back(Engine::makeVulkanModel(this->GetContext(), map));
 	GetModels().emplace_back(Engine::makeVulkanModel(this->GetContext(), helmet));
 	GetModels().emplace_back(Engine::makeVulkanModel(this->GetContext(), cube));
 	GetModels().emplace_back(Engine::makeVulkanModel(this->GetContext(), character));

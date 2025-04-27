@@ -119,6 +119,7 @@ namespace Engine
 					*staticBody, PxBoxGeometry(halfExtent), *material
 				);
 
+				staticBody->setActorFlag(PxActorFlag::eVISUALIZATION, true);
 				pworld.gScene->addActor(*staticBody);
 
 			}
@@ -128,6 +129,7 @@ namespace Engine
 		case PhysicsType::DYNAMIC:
 		{
 			dynamicBody = pworld.gPhysics->createRigidDynamic(pxTransform);
+			dynamicBody->setActorFlag(PxActorFlag::eVISUALIZATION, true);
 
 			if (!dynamicBody) break;
 

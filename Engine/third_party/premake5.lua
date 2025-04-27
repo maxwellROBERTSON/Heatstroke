@@ -26,8 +26,6 @@ filter "system:not windows"
     libdirs( "libsodium-1.0.20/libsodium-build/lib")
     links { "sodium" }
 
-
-
 project "yojimbo"
     kind "StaticLib"
     location "."
