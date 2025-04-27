@@ -341,7 +341,7 @@ namespace Engine
 
 		ImGui::Text("Crosshair Color:");
 		Crosshair& crosshair = ((FPSTest*)game)->getCrosshair();
-		if (ImGui::Combo("Color", &crosshair.selectedColor, crosshair.colorNames.data(), crosshair.colorNames.size())) {
+		if (ImGui::Combo("Color", &crosshair.selectedColor, crosshair.colorNames.data(), (int)crosshair.colorNames.size())) {
 			crosshair.shouldUpdateCrosshair = true;
 		}
 

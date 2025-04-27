@@ -24,6 +24,7 @@ workspace "Heatstroke"
     filter "toolset:msc-*"
         defines { "_CRT_SECURE_NO_WARNINGS=1" }
         defines { "_SCL_SECURE_NO_WARNINGS=1" }
+        linkoptions { "/ignore:4099" }
         buildoptions { "/utf-8" }
 
     filter "*"
@@ -171,16 +172,9 @@ project "Engine"
             "Engine\\third_party\\snd\\lib"
         }
         links {
-            "PhysXCharacterKinematic_static_64.lib",
-            "PhysXExtensions_static_64.lib",
-            "PhysX_64.lib",
-            "PhysXPvdSDK_static_64.lib",
-            "PhysXVehicle_static_64.lib",
-            "PhysXCooking_64.lib",
-            "PhysXCommon_64.lib",
-            "PhysXFoundation_64.lib",
-            "OpenAL32.lib",
-            "sndfile.lib"
+            "PhysX_64",
+            "OpenAL32",
+            "sndfile"
         }
         postbuildcommands {
             "if not exist \"%{wks.location}bin\\PhysXFoundation_64.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\debug\\bin\\PhysXFoundation_64.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\debug\\bin\\PhysXFoundation_64.dll\" \"%{wks.location}bin\"",
@@ -196,8 +190,8 @@ project "Engine"
         }
         links {
             "PhysX_64",
-            "OpenAL32.lib",
-            "sndfile.lib"
+            "OpenAL32",
+            "sndfile"
         }
         postbuildcommands {
             "if not exist \"%{wks.location}bin\\PhysXFoundation_64.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\bin\\PhysXFoundation_64.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\debug\\bin\\PhysXFoundation_64.dll\" \"%{wks.location}bin\"",
@@ -301,16 +295,16 @@ project "Game"
             "Engine\\third_party\\snd\\lib"
         }
         links {
-            "PhysXCharacterKinematic_static_64.lib",
-            "PhysXExtensions_static_64.lib",
-            "PhysX_64.lib",
-            "PhysXPvdSDK_static_64.lib",
-            "PhysXVehicle_static_64.lib",
-            "PhysXCooking_64.lib",
-            "PhysXCommon_64.lib",
-            "PhysXFoundation_64.lib",
-            "OpenAL32.lib",
-            "sndfile.lib"
+            "PhysXCharacterKinematic_static_64",
+            "PhysXExtensions_static_64",
+            "PhysX_64",
+            "PhysXPvdSDK_static_64",
+            "PhysXVehicle_static_64",
+            "PhysXCooking_64",
+            "PhysXCommon_64",
+            "PhysXFoundation_64",
+            "OpenAL32",
+            "sndfile"
         }
     filter { "system:windows", "configurations:Release" }
         libdirs {
@@ -319,9 +313,16 @@ project "Game"
             "Engine\\third_party\\snd\\lib"
         }
         links {
+            "PhysXCharacterKinematic_static_64",
+            "PhysXExtensions_static_64",
             "PhysX_64",
-            "OpenAL32.lib",
-            "sndfile.lib"
+            "PhysXPvdSDK_static_64",
+            "PhysXVehicle_static_64",
+            "PhysXCooking_64",
+            "PhysXCommon_64",
+            "PhysXFoundation_64",
+            "OpenAL32",
+            "sndfile"
         }
 
     filter "*"

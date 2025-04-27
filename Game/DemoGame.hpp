@@ -65,5 +65,3 @@ public:
 
 	Crosshair crosshair;
 };
-
-//void loadOfflineEntities(ComponentTypeRegistry& registry, EntityManager& entityManager, PhysicsWorld& pworld);
