@@ -48,6 +48,7 @@ namespace Engine
 		// Position Setters
 		void SetPosition(float x, float y, float z);
 		void SetPosition(glm::vec3 position);
+		glm::vec3 GetPosition() { return position; }
 
 		// Rotation setters
 		void SetRotation(float angInDeg, glm::vec3 axis);

@@ -5,9 +5,18 @@
 
 namespace Engine
 {
-	AudioComponent::AudioComponent()
+	// Constructors
+
+	AudioComponent::AudioComponent() : entityManager(nullptr), entity(nullptr)
 	{
-		std::cout << "AudioComponent created" << std::endl;
+		soundDevice = SoundDevice::get();
+		soundBuffer = SoundBuffer::get();
+		speaker = new SoundSource();
+		soundClipCurrentlyPlaying = 0;
+		state = AL_INITIAL;
+	}
+	AudioComponent::AudioComponent(Engine::EntityManager* entityManager, Engine::Entity* entity) : entityManager(entityManager), entity(entity)
+	{
 		soundDevice = SoundDevice::get();
 		soundBuffer = SoundBuffer::get();
 		speaker = new SoundSource();

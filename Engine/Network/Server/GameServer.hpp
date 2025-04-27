@@ -45,8 +45,8 @@ namespace Engine
 		// Handle a request for entity data
 		void HandleRequestEntityData(int);
 
-		// Reset an entity and its component used by a disconnected client
-		void ResetNetworkEntity(uint64_t);
+		// Reset an entity and its component used by a disconnected client index
+		void ResetNetworkEntity(int);
 
 		// Clean up server memory using yojimbo
 		void CleanUp();

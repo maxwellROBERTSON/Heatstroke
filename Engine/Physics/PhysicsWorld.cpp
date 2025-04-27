@@ -146,23 +146,22 @@ namespace Engine
 			auto& keyboard = Engine::InputManager::getKeyboard();
 
 			if (keyboard.isPressed(HS_KEY_W)) {
-				displacement.z -= speed * deltatime;
-			}
-			if (keyboard.isPressed(HS_KEY_S)) {
-				displacement.z += speed * deltatime;
-			}
-			if (keyboard.isPressed(HS_KEY_A)) {
 				displacement.x -= speed * deltatime;
 			}
-			if (keyboard.isPressed(HS_KEY_D)) {
+			if (keyboard.isPressed(HS_KEY_S)) {
 				displacement.x += speed * deltatime;
+			}
+			if (keyboard.isPressed(HS_KEY_D)) {
+				displacement.z -= speed * deltatime;
+			}
+			if (keyboard.isPressed(HS_KEY_A)) {
+				displacement.z += speed * deltatime;
 			}
 
 			// isGrounded check
 			PxControllerState cstate;
 			controller->getState(cstate);
 			bool isGrounded = (cstate.collisionFlags & PxControllerCollisionFlag::eCOLLISION_DOWN);
-
 
 			if (isGrounded && keyboard.isPressed(HS_KEY_SPACE)) {
 				verticalVelocity = jumpSpeed;
@@ -239,7 +238,7 @@ namespace Engine
 		std::vector<ComponentBase*> physicsComponents = entityManager.GetSimulatedPhysicsComponents();
 		for (std::size_t i = 0; i < physicsComponents.size(); i++) {
 			PhysicsComponent* p = reinterpret_cast<PhysicsComponent*>(physicsComponents[i]);
-			// glm::mat4 matrix(1.0f);
+
 			// dynamic update
 			if (p->GetPhysicsType() == PhysicsComponent::PhysicsType::DYNAMIC)
 			{
@@ -257,8 +256,10 @@ namespace Engine
 			// controller update
 			if (p->GetPhysicsType() == PhysicsComponent::PhysicsType::CONTROLLER)
 			{
+				Entity* entity = entityManager.GetEntity(p->GetEntityId());
+
 				PxExtendedVec3 pos = p->GetController()->getFootPosition();
-				entityManager.GetEntity(p->GetEntityId())->SetPosition(pos.x, pos.y, pos.z);
+				entity->SetPosition(pos.x, pos.y, pos.z);
 			}
 		}
 	}

@@ -26,7 +26,6 @@ AudioComponent ac;
 
 void FPSTest::Init()
 {
-	
 	ac.addClip("Pain", "Game\\assets\\AudioClips\\Ugh.wav");
 	ac.addClip("Dialogue", "Game\\assets\\AudioClips\\Moron.wav");
 	//auto res = ac.soundClips["Tony"];
@@ -224,7 +223,7 @@ void FPSTest::loadOfflineEntities()
 	//entityManager.AddSimulatedPhysicsEntity(entity->GetEntityId());
 
 	// Player 1
-	types = { CAMERA, NETWORK, RENDER, PHYSICS };
+	types = { AUDIO, CAMERA, NETWORK, RENDER, PHYSICS };
 	entity = entityManager.MakeNewEntity(types);
 	entity->SetPosition(-5.0f, 0.0f, -1.0f);
 	entity->SetRotation(90.0f, glm::vec3(0.0f, 0.0f, 1.0f));
@@ -297,16 +296,16 @@ void FPSTest::loadOnlineEntities(int maxClientsNum)
 	entityManager.AddSimulatedPhysicsEntity(entity->GetEntityId());
 
 	// Helmet
-	entity = entityManager.MakeNewEntity(types);
-	entity->SetPosition(0.0f, 2.0f, 0.0f);
-	entity->SetRotation(90.0f, glm::vec3(0.0f, 1.0f, 0.0f));
-	entity->SetScale(0.2f);
-	// configure physics component
-	renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
-	renderComponent->SetModelIndex(1);
-	physicsComponent = reinterpret_cast<PhysicsComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
-	physicsComponent->Init(physicsWorld, PhysicsComponent::PhysicsType::DYNAMIC, models[renderComponent->GetModelIndex()], entity->GetModelMatrix(), entity->GetEntityId(), false, false);
-	entityManager.AddSimulatedPhysicsEntity(entity->GetEntityId());
+	//entity = entityManager.MakeNewEntity(types);
+	//entity->SetPosition(0.0f, 2.0f, 0.0f);
+	//entity->SetRotation(90.0f, glm::vec3(0.0f, 1.0f, 0.0f));
+	//entity->SetScale(0.2f);
+	//// configure physics component
+	//renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
+	//renderComponent->SetModelIndex(1);
+	//physicsComponent = reinterpret_cast<PhysicsComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
+	//physicsComponent->Init(physicsWorld, PhysicsComponent::PhysicsType::DYNAMIC, models[renderComponent->GetModelIndex()], entity->GetModelMatrix(), entity->GetEntityId(), false, false);
+	//entityManager.AddSimulatedPhysicsEntity(entity->GetEntityId());
 
 	// Cube
 	//entity = entityManager.MakeNewEntity(types);
@@ -319,16 +318,16 @@ void FPSTest::loadOnlineEntities(int maxClientsNum)
 	//entityManager.AddSimulatedPhysicsEntity(entity->GetEntityId());
 
 	// Load maxClientsNum of players
-	types = { CAMERA, NETWORK, RENDER, PHYSICS };
+	types = { AUDIO, CAMERA, NETWORK, RENDER, PHYSICS };
 	for (int i = 0; i < maxClientsNum; i++)
 	{
 		entity = entityManager.MakeNewEntity(types);
 		entity->SetPosition(-5.0f, 0.0f, -1.0f);
-		entity->SetRotation(90.0f, glm::vec3(0.0f, 0.0f, 1.0f));
+		entity->SetRotation(90.0f, glm::vec3(0.0f, 0.0f, -1.0f));
 		entity->SetScale(30.0f);
 		renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
 		renderComponent->SetModelIndex(3);
-		renderComponent->SetIsActive(0); // Players not renderable until client connection
+		renderComponent->SetIsActive(false); // Players not renderable until client connection
 		physicsComponent = reinterpret_cast<PhysicsComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
 		physicsComponent->Init(physicsWorld, PhysicsComponent::PhysicsType::CONTROLLER, models[renderComponent->GetModelIndex()], entity->GetModelMatrix(), entity->GetEntityId(), false, false);
 		cameraComponent = reinterpret_cast<CameraComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), CAMERA));

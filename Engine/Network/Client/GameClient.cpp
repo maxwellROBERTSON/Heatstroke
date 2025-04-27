@@ -169,7 +169,7 @@ namespace Engine
 				EntityManager* manager = &(game->GetEntityManager());
 
 				std::vector<int> entitiesWithNetworkComponent = manager->GetEntitiesWithComponent(NETWORK);
-				int thisClientEntity = 0;
+				int thisClientEntity = -1;
 				NetworkComponent* networkComponent;
 				for (int i = 0; i < entitiesWithNetworkComponent.size(); i++)
 				{
@@ -187,6 +187,7 @@ namespace Engine
 				std::vector<int> vec = manager->GetEntitiesWithComponent(PHYSICS);
 				PhysicsComponent* physicsComp;
 				RenderComponent* renderComp;
+
 				for (int i = 0; i < vec.size(); i++)
 				{
 					physicsComp = reinterpret_cast<PhysicsComponent*>(manager->GetComponentOfEntity(vec[i], PHYSICS));
@@ -204,12 +205,28 @@ namespace Engine
 						{
 							physicsComp->Init(game->GetPhysicsWorld(), type, model, mat, vec[i], true, true);
 							manager->AddSimulatedPhysicsEntity(vec[i]);
+							glm::vec3 translation;
+							glm::quat rotation;
+							glm::vec3 scale;
+							Entity* entity;
+							if (physicsComp->DecomposeTransform(mat, translation, rotation, scale))
+							{
+								entity = manager->GetEntity(vec[i]);
+								entity->SetPosition(translation);
+								entity->SetRotation(rotation);
+								entity->SetScale(scale.x, scale.y, scale.z);
+							}
+							else
+							{
+								throw ("Failed to decompose matrix for client's entity");
+							}
 						}
 						else
 						{
 							physicsComp->Init(game->GetPhysicsWorld(), type, model, mat, vec[i], true, false);
 						}
 					}
+
 				}
 				game->GetNetwork().SetStatus(Status::CLIENT_INITIALIZING_DATA);
 				game->GetEntityManager().ResetChanged();
@@ -366,6 +383,7 @@ namespace Engine
 		{
 			info["Is Loopback"] = "false";
 		}
+
 		return info;
 	}
 }

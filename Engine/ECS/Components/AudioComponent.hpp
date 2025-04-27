@@ -20,6 +20,7 @@ namespace Engine
 	{
 	public:
 		AudioComponent();
+		AudioComponent(Engine::EntityManager* entityManager, Engine::Entity* entity);
 		
 		void operator=(const AudioComponent& other) override
 		{
