@@ -169,18 +169,6 @@ namespace Engine
 			verticalVelocity += gravity * deltatime;
 			displacement.y = verticalVelocity * deltatime;
 
-			// isGrounded check
-			PxControllerState cstate;
-			controller->getState(cstate);
-			bool isGrounded = (cstate.collisionFlags & PxControllerCollisionFlag::eCOLLISION_DOWN);
-
-
-			if (isGrounded && keyboard.isPressed(HS_KEY_SPACE)) {
-				verticalVelocity = jumpSpeed;
-			}
-			verticalVelocity += gravity * deltatime;
-			displacement.y = verticalVelocity * deltatime;
-
 			// Only run PxController::move() if we actually moved, since this
 			// method is quite expensive to run every frame if we are not moving
 			if (old != displacement) {
@@ -241,7 +229,6 @@ namespace Engine
 			}
 		}
 	}
-
 
 	// update models matrices
 	void PhysicsWorld::updateObjects(Engine::EntityManager& entityManager, std::vector<Engine::vk::Model>& models)
