@@ -30,7 +30,9 @@
 #include "../Input/InputCodes.hpp"
 #include "../Input/Joystick.hpp"
 
-#include "../ThreadPool//thread_pool_wait.h"
+#include "../ThreadPool/thread_pool_wait.h"
+
+#include "rendering/Crosshair.hpp"
 
 class FPSTest : public Engine::Game
 {
@@ -54,9 +56,13 @@ public:
 			model.destroy();
 	};
 
+	Crosshair& getCrosshair();
+
 	std::chrono::steady_clock::time_point previous;
 	thread_pool_wait* threadPool;
 	int offlineClientId = 0;
+
+	Crosshair crosshair;
 };
 
 //void loadOfflineEntities(ComponentTypeRegistry& registry, EntityManager& entityManager, PhysicsWorld& pworld);
