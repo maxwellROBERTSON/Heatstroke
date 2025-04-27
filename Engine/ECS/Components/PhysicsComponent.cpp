@@ -258,6 +258,7 @@ namespace Engine
 					case PhysicsType::STATIC:
 					{
 						staticBody = pWorld.gPhysics->createRigidStatic(PxTransform(pxTransform));
+						staticBody->setActorFlag(PxActorFlag::eVISUALIZATION, true);
 						if (staticBody) {
 							PxShape* shape = PxRigidActorExt::createExclusiveShape(
 								*staticBody, triMeshGeometry, *material

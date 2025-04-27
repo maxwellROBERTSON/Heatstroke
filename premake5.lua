@@ -117,8 +117,8 @@ project "Engine"
 
     filter "system:windows"
         includedirs {
-            "Engine/third_party/vcpkg/packages/physx_x64-windows/include/physx",
-            "Engine/third_party/vcpkg/packages/openal-soft_x64-windows/include/AL",
+            "Engine/third_party/vcpkg/installed/x64-windows/include/physx",
+            "Engine/third_party/vcpkg/installed/x64-windows/include/AL",
             "Engine/third_party/snd/include"
         }
 
@@ -166,44 +166,52 @@ project "Engine"
 
     filter { "system:windows", "configurations:Debug" }
         libdirs {
-            "Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\debug\\lib",
-            "Engine\\third_party\\vcpkg\\packages\\openal-soft_x64-windows\\debug\\lib",
-            "Engine\\third_party\\snd\\lib"
+            "Engine/third_party/vcpkg/installed/x64-windows/debug/lib",
+            "Engine/third_party/vcpkg/installed/x64-windows/tools/PhysXGpu_64",
+            "Engine/third_party/snd/lib"
         }
         links {
-            "PhysXCharacterKinematic_static_64.lib",
-            "PhysXExtensions_static_64.lib",
-            "PhysX_64.lib",
-            "PhysXPvdSDK_static_64.lib",
-            "PhysXVehicle_static_64.lib",
-            "PhysXCooking_64.lib",
-            "PhysXCommon_64.lib",
-            "PhysXFoundation_64.lib",
-            "OpenAL32.lib",
-            "sndfile.lib"
+            "PhysXCharacterKinematic_static_64",
+            "PhysXExtensions_static_64",
+            "PhysX_64",
+            "PhysXPvdSDK_static_64",
+            "PhysXVehicle_static_64",
+            "PhysXCooking_64",
+            "PhysXCommon_64",
+            "PhysXFoundation_64",
+            "OpenAL32",
+            "sndfile"
         }
         postbuildcommands {
-            "if not exist \"%{wks.location}bin\\PhysXFoundation_64.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\debug\\bin\\PhysXFoundation_64.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\debug\\bin\\PhysXFoundation_64.dll\" \"%{wks.location}bin\"",
-            "if not exist \"%{wks.location}bin\\PhysXCommon_64.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\debug\\bin\\PhysXCommon_64.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\debug\\bin\\PhysXCommon_64.dll\" \"%{wks.location}bin\"",
-            "if not exist \"%{wks.location}bin\\PhysX_64.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\debug\\bin\\PhysX_64.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\debug\\bin\\PhysX_64.dll\" \"%{wks.location}bin\"",
-            "if not exist \"%{wks.location}bin\\PhysXCooking_64.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\debug\\bin\\PhysXCooking_64.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\debug\\bin\\PhysXCooking_64.dll\" \"%{wks.location}bin\""
+            "if not exist \"%{wks.location}bin\\PhysXFoundation_64.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\debug\\bin\\PhysXFoundation_64.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\debug\\bin\\PhysXFoundation_64.dll\" \"%{wks.location}bin\"",
+            "if not exist \"%{wks.location}bin\\PhysXCommon_64.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\debug\\bin\\PhysXCommon_64.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\debug\\bin\\PhysXCommon_64.dll\" \"%{wks.location}bin\"",
+            "if not exist \"%{wks.location}bin\\PhysX_64.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\debug\\bin\\PhysX_64.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\debug\\bin\\PhysX_64.dll\" \"%{wks.location}bin\"",
+            "if not exist \"%{wks.location}bin\\PhysXCooking_64.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\debug\\bin\\PhysXCooking_64.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\debug\\bin\\PhysXCooking_64.dll\" \"%{wks.location}bin\"",
+            "if not exist \"%{wks.location}bin\\OpenAL32.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\debug\\bin\\OpenAL32.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\debug\\bin\\OpenAL32.dll\" \"%{wks.location}bin\""
         }
     filter { "system:windows", "configurations:Release" }
         libdirs {
-            "Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\lib",
-            "Engine\\third_party\\vcpkg\\packages\\openal-soft_x64-windows\\lib",
-            "Engine\\third_party\\snd\\lib"
+            "Engine/third_party/vcpkg/installed/x64-windows/lib",
+            "Engine/third_party/snd/lib"
         }
         links {
+            "PhysXCharacterKinematic_static_64",
+            "PhysXExtensions_static_64",
             "PhysX_64",
-            "OpenAL32.lib",
-            "sndfile.lib"
+            "PhysXPvdSDK_static_64",
+            "PhysXVehicle_static_64",
+            "PhysXCooking_64",
+            "PhysXCommon_64",
+            "PhysXFoundation_64",
+            "OpenAL32",
+            "sndfile"
         }
         postbuildcommands {
-            "if not exist \"%{wks.location}bin\\PhysXFoundation_64.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\bin\\PhysXFoundation_64.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\debug\\bin\\PhysXFoundation_64.dll\" \"%{wks.location}bin\"",
-            "if not exist \"%{wks.location}bin\\PhysXCommon_64.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\bin\\PhysXCommon_64.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\bin\\PhysXCommon_64.dll\" \"%{wks.location}bin\"",
-            "if not exist \"%{wks.location}bin\\PhysX_64.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\bin\\PhysX_64.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\bin\\PhysX_64.dll\" \"%{wks.location}bin\"",
-            "if not exist \"%{wks.location}bin\\PhysXCooking_64.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\bin\\PhysXCooking_64.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\bin\\PhysXCooking_64.dll\" \"%{wks.location}bin\""
+            "if not exist \"%{wks.location}bin\\PhysXFoundation_64.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\bin\\PhysXFoundation_64.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\debug\\bin\\PhysXFoundation_64.dll\" \"%{wks.location}bin\"",
+            "if not exist \"%{wks.location}bin\\PhysXCommon_64.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\bin\\PhysXCommon_64.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\bin\\PhysXCommon_64.dll\" \"%{wks.location}bin\"",
+            "if not exist \"%{wks.location}bin\\PhysX_64.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\bin\\PhysX_64.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\bin\\PhysX_64.dll\" \"%{wks.location}bin\"",
+            "if not exist \"%{wks.location}bin\\PhysXCooking_64.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\bin\\PhysXCooking_64.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\bin\\PhysXCooking_64.dll\" \"%{wks.location}bin\"",
+            "if not exist \"%{wks.location}bin\\OpenAL32.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\bin\\OpenAL32.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\bin\\OpenAL32.dll\" \"%{wks.location}bin\""
         }
 
     filter "*"
@@ -249,8 +257,8 @@ project "Game"
 
     filter "system:windows"
         includedirs {
-            "Engine/third_party/vcpkg/packages/physx_x64-windows/include/physx",
-            "Engine/third_party/vcpkg/packages/openal-soft_x64-windows/include/AL",
+            "Engine/third_party/vcpkg/installed/x64-windows/include/physx",
+            "Engine/third_party/vcpkg/installed/x64-windows/include/AL",
             "Engine/third_party/snd/include"
         }
 
@@ -260,7 +268,7 @@ project "Game"
     removefiles("**.vcxproj*")
 
     filter "*"
-
+        
     filter { "system:linux", "configurations:Debug" }
         libdirs {
             "Engine/third_party/vcpkg/packages/physx_x64-linux/debug/lib",
@@ -294,34 +302,41 @@ project "Game"
             "OpenAL32"
         }
 
+    filter "*"
+
     filter { "system:windows", "configurations:Debug" }
         libdirs {
-            "Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\debug\\lib",
-            "Engine\\third_party\\vcpkg\\packages\\openal-soft_x64-windows\\debug\\lib",
-            "Engine\\third_party\\snd\\lib"
+            "Engine/third_party/vcpkg/installed/x64-windows/debug/lib",
+            "Engine/third_party/snd/lib"
         }
         links {
-            "PhysXCharacterKinematic_static_64.lib",
-            "PhysXExtensions_static_64.lib",
-            "PhysX_64.lib",
-            "PhysXPvdSDK_static_64.lib",
-            "PhysXVehicle_static_64.lib",
-            "PhysXCooking_64.lib",
-            "PhysXCommon_64.lib",
-            "PhysXFoundation_64.lib",
-            "OpenAL32.lib",
-            "sndfile.lib"
+            "PhysXCharacterKinematic_static_64",
+            "PhysXExtensions_static_64",
+            "PhysX_64",
+            "PhysXPvdSDK_static_64",
+            "PhysXVehicle_static_64",
+            "PhysXCooking_64",
+            "PhysXCommon_64",
+            "PhysXFoundation_64",
+            "OpenAL32",
+            "sndfile"
         }
     filter { "system:windows", "configurations:Release" }
         libdirs {
-            "Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\lib",
-            "Engine\\third_party\\vcpkg\\packages\\openal-soft_x64-windows\\lib",
-            "Engine\\third_party\\snd\\lib"
+            "Engine/third_party/vcpkg/installed/x64-windows/lib",
+            "Engine/third_party/snd/lib"
         }
         links {
+            "PhysXCharacterKinematic_static_64",
+            "PhysXExtensions_static_64",
             "PhysX_64",
-            "OpenAL32.lib",
-            "sndfile.lib"
+            "PhysXPvdSDK_static_64",
+            "PhysXVehicle_static_64",
+            "PhysXCooking_64",
+            "PhysXCommon_64",
+            "PhysXFoundation_64",
+            "OpenAL32",
+            "sndfile"
         }
 
     filter "*"

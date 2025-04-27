@@ -83,10 +83,10 @@ namespace Engine
 		// set parameters for the scene
 		gScene->setVisualizationParameter(PxVisualizationParameter::eSCALE, 1.0f);
 		gScene->setVisualizationParameter(PxVisualizationParameter::eCOLLISION_SHAPES, 1.0f);
-		gScene->setVisualizationParameter(PxVisualizationParameter::eWORLD_AXES, 1.0f);
+		/*gScene->setVisualizationParameter(PxVisualizationParameter::eWORLD_AXES, 1.0f);
 		gScene->setVisualizationParameter(PxVisualizationParameter::eACTOR_AXES, 1.0f);
 		gScene->setVisualizationParameter(PxVisualizationParameter::eCONTACT_POINT, 1.0f);
-		gScene->setVisualizationParameter(PxVisualizationParameter::eCONTACT_NORMAL, 1.0f);
+		gScene->setVisualizationParameter(PxVisualizationParameter::eCONTACT_NORMAL, 1.0f);*/
 
 		// material
 		gMaterial = gPhysics->createMaterial(0.5f, 0.5f, 0.5f);
