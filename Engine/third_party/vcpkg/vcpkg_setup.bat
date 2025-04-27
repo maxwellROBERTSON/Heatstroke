@@ -12,15 +12,15 @@ set "VCPKG_ROOT=%CD%"
 set PATH=%VCPKG_ROOT%;%PATH%
 
 REM Run vcpkg list and find PhysX
-for /f "delims=" %%i in ('vcpkg list ^| findstr "physx"') do set INSTALLED=%%i
+for /f "delims=" %%i in ('vcpkg list ^| findstr "physx"') do set INSTALLED_PHYSX=%%i
 
 REM Check if PhysX is installed
-if not defined INSTALLED (
+if not defined INSTALLED_PHYSX (
     echo PhysX is not installed. Installing...
     .\vcpkg install physx
 ) else (
     echo PhysX is already installed:
-    echo %INSTALLED%
+    echo %INSTALLED_PHYSX%
 )
 
 REM Check if Vulkan SDK is installed via system environment variables
@@ -44,6 +44,18 @@ if not defined VULKAN_SDK (
     )
 ) else (
     echo Vulkan SDK is already set in environment variable: %VULKAN_SDK%
+)
+
+REM Run vcpkg list and find OpenAL
+for /f "delims=" %%i in ('vcpkg list ^| findstr "openal-soft"') do set INSTALLED_OPENAL=%%i
+
+REM Check if OpenAL is installed
+if not defined INSTALLED_OPENAL (
+    echo OpenAL is not installed. Installing...
+    .\vcpkg install openal-soft
+) else (
+    echo OpenAL is already installed:
+    echo %INSTALLED_OPENAL%
 )
 
 echo Setting up VCPKG_TOOLCHAIN for use with Premake and CMake...

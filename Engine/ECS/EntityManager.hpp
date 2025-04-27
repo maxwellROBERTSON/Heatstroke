@@ -5,7 +5,6 @@
 #include <memory>
 
 #include "Entity.hpp"
-#include "Components/PhysicsComponent.hpp"
 
 namespace Engine
 {
@@ -108,21 +107,20 @@ namespace Engine
 		std::vector<std::unique_ptr<Entity>> entities;
 
 		// Vector for each component type
+		std::vector<std::unique_ptr<ComponentBase>> audioComponents;
 		std::vector<std::unique_ptr<ComponentBase>> cameraComponents;
 		std::vector<std::unique_ptr<ComponentBase>> networkComponents;
 		std::vector<std::unique_ptr<ComponentBase>> physicsComponents;
 		std::vector<std::unique_ptr<ComponentBase>> renderComponents;
-		std::vector<std::unique_ptr<ComponentBase>> audioComponents;
-
 
 		// Map of component type vectors
 		std::map<ComponentTypes, std::vector<std::unique_ptr<ComponentBase>>*> componentMap
 		{
+			{ ComponentTypes::AUDIO, &audioComponents },
 			{ ComponentTypes::CAMERA, &cameraComponents },
 			{ ComponentTypes::NETWORK, &networkComponents },
 			{ ComponentTypes::PHYSICS, &physicsComponents },
-			{ ComponentTypes::RENDER, &renderComponents },
-			//{ ComponentTypes::AUDIO, &renderComponents }
+			{ ComponentTypes::RENDER, &renderComponents }
 		};
 
 		// For each component type, there is an entry, each holding ids of entities with that component type

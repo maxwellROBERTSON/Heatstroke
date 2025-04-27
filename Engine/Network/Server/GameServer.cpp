@@ -86,15 +86,7 @@ namespace Engine
 			}
 			else
 			{
-				for (int j = 0; j < loadedClients.size(); j++)
-				{
-					if (loadedClients[j].first == i)
-					{
-						ResetNetworkEntity(loadedClients[j].second);
-						loadedClients.erase(loadedClients.begin() + j);
-						break;
-					}
-				}
+				ResetNetworkEntity(i);
 				server->DisconnectClient(i);
 			}
 		}
@@ -214,9 +206,6 @@ namespace Engine
 				std::cout << GameMessageTypeStrings[RESPONSE_ENTITY_DATA] << " TO CLIENT " << clientIndex << " WITH ";
 				std::cout << "MESSAGEID = " << message->GetId() << ", BLOCK SIZE = " << bytes << std::endl;
 				return;
-				//server->SendPackets();
-				//message->DetachBlock();
-				//server->FreeBlock(clientIndex, block);
 			}
 			else
 			{
@@ -224,13 +213,35 @@ namespace Engine
 			}
 		}
 		std::cout << "FAILED TO SEND " << GameMessageTypeStrings[RESPONSE_ENTITY_DATA] << " TO CLIENT " << clientIndex << std::endl;
-		//adapter->factory->ReleaseMessage(message);
-		//server->ReleaseMessage(clientIndex, message);
 	}
 
 	// Reset an entity and its component used by a disconnected client
-	void GameServer::ResetNetworkEntity(uint64_t clientId)
+	void GameServer::ResetNetworkEntity(int clientIndex)
 	{
+		uint64_t clientId = -1;
+		for (int j = 0; j < connectionQueue.size(); j++)
+		{
+			if (connectionQueue[j].first == clientIndex)
+			{
+				clientId = connectionQueue[j].second;
+				connectionQueue.erase(connectionQueue.begin() + j);
+				break;
+			}
+		}
+		if (clientId == -1)
+		{
+			for (int j = 0; j < loadedClients.size(); j++)
+			{
+				if (loadedClients[j].first == clientIndex)
+				{
+					clientId = loadedClients[j].second;
+					loadedClients.erase(loadedClients.begin() + j);
+					break;
+				}
+			}
+		}
+		if (clientId == -1) return;
+
 		std::vector<int> entityWithNetwork = game->GetEntityManager().GetEntitiesWithComponent(NETWORK);
 		NetworkComponent* networkComp;
 		for (int entity : entityWithNetwork)
@@ -245,7 +256,6 @@ namespace Engine
 				entityPtr->SetPosition(-5.0f, 0.0f, -1.0f);
 				entityPtr->SetRotation(90.0f, glm::vec3(0.0f, 0.0f, 1.0f));
 				entityPtr->SetScale(30.0f);
-				std::cout << "Adding to queue." << std::endl;
 				game->GetEntityManager().AddToNetworkComponentQueue(entityPtr->GetComponent(NETWORK));
 			}
 		}

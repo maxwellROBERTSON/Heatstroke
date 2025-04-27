@@ -10,10 +10,7 @@ namespace Engine
 {
 	class EntityManager;
 	class Entity;
-}
 
-namespace Engine
-{
 	class RenderComponent : public Component<RenderComponent>
 	{
 	public:
@@ -52,7 +49,7 @@ namespace Engine
 		void SetModelIndex(int index) { modelIndex = index; SetComponentHasChanged(); }
 
 		// Set is the entity an active render component
-		void SetIsActive(int status) { if (status == 0 || status == 1) isActive = status; SetComponentHasChanged(); }
+		void SetIsActive(bool status) { isActive = status; SetComponentHasChanged(); }
 
 		// Set component has changed in entity manager
 		void SetComponentHasChanged();

@@ -7,6 +7,7 @@
 #include "../Engine/Core/Game.hpp"
 
 #include "../Engine/ECS/EntityManager.hpp"
+#include "../Engine/ECS/Components/AudioComponent.hpp"
 #include "../Engine/ECS/Components/CameraComponent.hpp"
 #include "../Engine/ECS/Components/NetworkComponent.hpp"
 #include "../Engine/ECS/Components/PhysicsComponent.hpp"

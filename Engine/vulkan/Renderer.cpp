@@ -676,8 +676,7 @@ namespace Engine {
 
 		for (std::size_t i = 0; i < renderComponents->size(); i++) {
 			RenderComponent* renderComponent = reinterpret_cast<RenderComponent*>((*renderComponents)[i].get());
-			/*if (!renderComponent->GetIsActive())
-				continue;*/
+
 			int modelIndex = renderComponent->GetModelIndex();
 			vk::Model& model = models[modelIndex];
 
@@ -1143,6 +1142,8 @@ namespace Engine {
 
 		for (std::size_t i = 0; i < renderComponents->size(); i++) {
 			RenderComponent* renderComponent = reinterpret_cast<RenderComponent*>((*renderComponents)[i].get());
+			if (!renderComponent->GetIsActive())
+				continue;
 			int modelIndex = renderComponent->GetModelIndex();
 			models[modelIndex].drawModel(cmdBuf, this, handle, offset, justGeometry);
 		}
