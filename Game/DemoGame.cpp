@@ -59,6 +59,8 @@ void FPSTest::Init()
 		"Game/assets/skybox/back.bmp",
 	};
 	GetRenderer().addSkybox(std::make_unique<Engine::Skybox>(&GetContext(), skyboxFilenames));
+
+	this->crosshair = Crosshair(&GetContext());
 }
 
 void FPSTest::Render()
@@ -346,4 +348,8 @@ void FPSTest::loadOnlineEntities(int maxClientsNum)
 
 	EntityManager& e = GetEntityManager();
 	GetEntityManager().ResetChanged();
+}
+
+Crosshair& FPSTest::getCrosshair() {
+	return this->crosshair;
 }

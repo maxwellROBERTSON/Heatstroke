@@ -1,6 +1,9 @@
 #include "GUI.hpp"
 #include "../Network/Helpers/GameConfig.hpp"
 
+#include "../../Game/DemoGame.hpp"
+#include "../../Game/rendering/Crosshair.hpp"
+
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
@@ -334,6 +337,12 @@ namespace Engine
 			// ImGui can be remade with corresponding sample count
 			game->GetRenderer().setRecreateSwapchain(true);
 			this->changedMSAA = true;
+		}
+
+		ImGui::Text("Crosshair Color:");
+		Crosshair& crosshair = ((FPSTest*)game)->getCrosshair();
+		if (ImGui::Combo("Color", &crosshair.selectedColor, crosshair.colorNames.data(), (int)crosshair.colorNames.size())) {
+			crosshair.shouldUpdateCrosshair = true;
 		}
 
 		ImVec2 topRightPos = ImVec2(*w - *w / 6 - 10, 30);

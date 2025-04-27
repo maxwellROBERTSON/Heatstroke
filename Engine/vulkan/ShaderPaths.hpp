@@ -14,6 +14,8 @@ namespace Shaders {
 	constexpr const char* shadowVert = "Engine/Shaders/spv/shadowOffscreen.vert.spv";
 	constexpr const char* skyboxVert = "Engine/Shaders/spv/skybox.vert.spv";
 	constexpr const char* skyboxFrag = "Engine/Shaders/spv/skybox.frag.spv";
+	constexpr const char* crosshairVert = "Engine/Shaders/spv/crosshair.vert.spv";
+	constexpr const char* crosshairFrag = "Engine/Shaders/spv/crosshair.frag.spv";
 
 }
 }
