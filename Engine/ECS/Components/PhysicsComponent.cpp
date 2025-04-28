@@ -119,7 +119,7 @@ namespace Engine
 					*staticBody, PxBoxGeometry(halfExtent), *material
 				);
 
-				staticBody->setActorFlag(PxActorFlag::eVISUALIZATION, true);
+				//staticBody->setActorFlag(PxActorFlag::eVISUALIZATION, true);
 				pworld.gScene->addActor(*staticBody);
 
 			}
@@ -129,9 +129,10 @@ namespace Engine
 		case PhysicsType::DYNAMIC:
 		{
 			dynamicBody = pworld.gPhysics->createRigidDynamic(pxTransform);
-			dynamicBody->setActorFlag(PxActorFlag::eVISUALIZATION, true);
 
 			if (!dynamicBody) break;
+
+			dynamicBody->setActorFlag(PxActorFlag::eVISUALIZATION, true);
 
 			PxShape* shape = PxRigidActorExt::createExclusiveShape(
 				*dynamicBody, PxBoxGeometry(halfExtent), *material
@@ -161,12 +162,22 @@ namespace Engine
 
 			// set ControllerDescription
 			PxCapsuleControllerDesc desc;
-			desc.height = 1.f;
-			desc.radius = 0.3f;
+			/*glm::vec3 worldMin = glm::vec3(transform * glm::vec4(model.bbMin, 1.0f));
+			glm::vec3 worldMax = glm::vec3(transform * glm::vec4(model.bbMax, 1.0f));*/
+			glm::vec3 worldMin = model.bbMin;
+			glm::vec3 worldMax = model.bbMax;
+
+			glmHalfExtent = (worldMax - worldMin) / 2.0f;
+			halfExtent = PxVec3(std::max(0.001f, glmHalfExtent.x), std::max(0.001f, glmHalfExtent.y), std::max(0.001f, glmHalfExtent.z));
+			desc.radius = halfExtent.x > halfExtent.z ? halfExtent.x: halfExtent.z;
+			desc.height = halfExtent.y * 2 - (2.0f * desc.radius);
+			if (desc.height < 0.0f)
+				desc.height = 0.0f;
 			desc.stepOffset = 0.1f;
 			//desc.contactOffset
 			desc.material = pworld.gPhysics->createMaterial(0.5f, 0.5f, 0.6f);
-			desc.position = PxExtendedVec3(translation.x, translation.y + desc.height / 2 + desc.radius, translation.z);
+			//desc.position = PxExtendedVec3(translation.x, translation.y + desc.height / 2 + desc.radius, translation.z);
+			desc.position = PxExtendedVec3(translation.x, translation.y, translation.z);
 			desc.slopeLimit = 0.8f;
 			desc.upDirection = PxVec3(0, 1, 0);
 
@@ -190,21 +201,60 @@ namespace Engine
 			return;
 		}
 
-		PxTransform pxTransform(
+		/*PxTransform pxTransform(
 			PxVec3(translation.x, translation.y, translation.z),
 			PxQuat(rotation.x, rotation.y, rotation.z, rotation.w)
-		);
+		);*/
 
-		PxVec3 pxScale(scale.x, scale.y, scale.z);
+		//PxVec3 pxScale(scale.x, scale.y, scale.z);
 
 		// Iterate over model nodes and primitives to add static rigid bodies
 		// based on the model's triangle meshes.
 		// Currently adds a static body per primitive mesh, not sure if thats
 		// a bad or good thing.
-		for (Engine::vk::Node* node : model.nodes) {
+		int count = 0;
+		for (Engine::vk::Node* node : model.linearNodes) {
 			if (node->mesh) {
-				glm::mat4 modelMatrix = node->getModelMatrix();
-				PxVec3 nodeScale(modelMatrix[0][0], modelMatrix[1][1], modelMatrix[2][2]);
+				glm::mat4 nodeMatrix = transform * node->getModelMatrix();
+
+				glm::mat3 rotationMatrix = glm::mat3(nodeMatrix);
+				glm::vec3 nodeTranslation = glm::vec3(nodeMatrix[3][0], nodeMatrix[3][1], nodeMatrix[3][2]);
+
+				glm::vec3 nodeScale;
+				nodeScale.x = glm::length(rotationMatrix[0]);
+				nodeScale.y = glm::length(rotationMatrix[1]);
+				nodeScale.z = glm::length(rotationMatrix[2]);
+
+				rotationMatrix[0] = rotationMatrix[0] / nodeScale.x;
+				rotationMatrix[1] = rotationMatrix[1] / nodeScale.y;
+				rotationMatrix[2] = rotationMatrix[2] / nodeScale.z;
+
+				glm::quat nodeRotation = glm::quat_cast(rotationMatrix);
+
+				PxTransform nodePxTransform(
+					PxVec3(nodeTranslation.x, nodeTranslation.y, nodeTranslation.z),
+					PxQuat(nodeRotation.x, nodeRotation.y, nodeRotation.z, nodeRotation.w)
+				);
+
+				PxVec3 nodePxScale(nodeScale.x, nodeScale.y, nodeScale.z);
+
+				//glm::vec3 nodeTranslation, nodeScale;
+				//glm::quat nodeRotation;
+				//if (!DecomposeTransform(nodeMatrix, nodeTranslation, nodeRotation, nodeScale)) {
+				//	std::cerr << "DecomposeTransform failed on node!" << std::endl;
+				//	continue;
+				//}
+
+				///*nodeTranslation = translation + rotation * nodeTranslation;
+				//nodeRotation = rotation * nodeRotation;
+				//nodeScale = scale * nodeScale;*/
+
+				//PxTransform nodePxTransform(
+				//	PxVec3(nodeTranslation.x, nodeTranslation.y, nodeTranslation.z),
+				//	PxQuat(nodeRotation.x, nodeRotation.y, nodeRotation.z, nodeRotation.w)
+				//);
+
+				//PxVec3 nodePxScale(nodeScale.x, nodeScale.y, nodeScale.z);
 
 				for (Engine::vk::Primitive* primitive : node->mesh->primitives) {
 					PxMaterial* material = pWorld.gPhysics->createMaterial(0.5f, 0.5f, 0.5f);
@@ -242,7 +292,7 @@ namespace Engine
 
 					PxDefaultMemoryInputData readBuffer(writeBuffer.getData(), writeBuffer.getSize());
 					PxTriangleMesh* triMesh = pWorld.gPhysics->createTriangleMesh(readBuffer);
-					PxTriangleMeshGeometry triMeshGeometry(triMesh, PxMeshScale(nodeScale));
+					PxTriangleMeshGeometry triMeshGeometry(triMesh, PxMeshScale(nodePxScale));
 
 					// Only static triangle meshes are supported for now.
 					// Dynamic triangle mesh geometries are possible but are more complicated
@@ -257,14 +307,16 @@ namespace Engine
 					switch (physicsType) {
 					case PhysicsType::STATIC:
 					{
-						staticBody = pWorld.gPhysics->createRigidStatic(PxTransform(pxTransform));
-						staticBody->setActorFlag(PxActorFlag::eVISUALIZATION, true);
+						staticBody = pWorld.gPhysics->createRigidStatic(PxTransform(nodePxTransform));
 						if (staticBody) {
 							PxShape* shape = PxRigidActorExt::createExclusiveShape(
 								*staticBody, triMeshGeometry, *material
 							);
 
+							staticBody->setActorFlag(PxActorFlag::eVISUALIZATION, true);
+
 							pWorld.gScene->addActor(*staticBody);
+							count++;
 						}
 						break;
 					}
@@ -272,7 +324,7 @@ namespace Engine
 				}
 			}
 		}
-		//SetComponentHasChanged();
+		std::cout << "Scene actor count: " << count << std::endl;
 	}
 
 	// Set component has changed in entity manager

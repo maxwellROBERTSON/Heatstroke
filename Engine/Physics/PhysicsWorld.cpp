@@ -145,7 +145,7 @@ namespace Engine
 		{
 			PxVec3 displacement(0.0f, -9.81f * deltatime, 0.0f);
 			PxVec3 old = displacement;
-			float speed = 5.0f;
+			float speed = 1.0f;
 			const float jumpSpeed = 3.0f;
 			const float gravity = -9.81f;
 

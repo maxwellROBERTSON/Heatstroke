@@ -32,7 +32,25 @@ namespace Engine
 		if (keyboard.isPressed(HS_KEY_LEFT_SHIFT)) speedModifier = 3.0f;
 		float distance = 1.0f * speedModifier * timeDelta;
 
-		if (keyboard.isPressed(HS_KEY_W))
+		glm::vec3 displacement(0.0f, 0.f, 0.0f);
+		float speed = 1.0f;
+
+		if (keyboard.isPressed(HS_KEY_W)) {
+			displacement.x -= speed * timeDelta;
+		}
+		if (keyboard.isPressed(HS_KEY_S)) {
+			displacement.x += speed * timeDelta;
+		}
+		if (keyboard.isPressed(HS_KEY_D)) {
+			displacement.z -= speed * timeDelta;
+		}
+		if (keyboard.isPressed(HS_KEY_A)) {
+			displacement.z += speed * timeDelta;
+		}
+
+		this->position += displacement;
+
+		/*if (keyboard.isPressed(HS_KEY_W))
 		{
 			this->position += distance * this->frontDirection;
 		}
@@ -55,8 +73,7 @@ namespace Engine
 		if (keyboard.isPressed(HS_KEY_Q))
 		{
 			this->position -= distance * glm::vec3(0.0f, 1.0f, 0.0f);
-		}
-		//std::fprintf(stdout, "Pos: %f %f %f\n", this->position.x, this->position.y, this->position.z);
+		}*/
 
 		if (this->firstClick) {
 			int winX, winY;
