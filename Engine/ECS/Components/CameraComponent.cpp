@@ -18,7 +18,8 @@ namespace Engine
 		{
 		case CameraMode::SCENE:
 			this->GetCamera()->camMode = CameraMode::PLAYER;
-			this->GetCamera()->position = playerEntity->GetPosition() + glm::vec3(0.0f, 1.0f, 0.0f);
+			this->GetCamera()->position = playerEntity->GetPosition();
+			//this->GetCamera()->position = playerEntity->GetPosition() + glm::vec3(0.0f, 1.0f, 0.0f);
 			break;
 		case CameraMode::PLAYER:
 			this->GetCamera()->camMode = CameraMode::SCENE;

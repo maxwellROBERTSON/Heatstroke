@@ -96,6 +96,20 @@ namespace Engine
 		}
 	}
 
+	void PhysicsWorld::updatePhysics(Entity* playerEntity, PxReal timeDelta)
+	{
+		this->gTimestep = std::clamp(timeDelta, 1.0f / 240.0f, 1.0f / 60.0f);
+
+		this->gSimulationTimer += timeDelta;
+
+		if (this->gSimulationTimer > gTimestep) {
+			this->updateCharacter(playerEntity, gTimestep);
+			this->gScene->simulate(gTimestep);
+			this->gScene->fetchResults(true);
+			this->gSimulationTimer -= gTimestep;
+		}
+	}
+
 	void PhysicsWorld::updatePhysics(PxReal timeDelta) {
 		// Previously, when we didn't have the option of turning VSync off,
 		// the timeDelta was 1/x where x was the refresh rate of the users
@@ -119,8 +133,7 @@ namespace Engine
 		this->gSimulationTimer += timeDelta;
 
 		if (this->gSimulationTimer > gTimestep) {
-			//this->updateCharacter(gTimestep);
-			//this->updateCharacter(gTimestep);
+			this->updateCharacter(gTimestep);
 			this->gScene->simulate(gTimestep);
 			this->gScene->fetchResults(true);
 			this->gSimulationTimer -= gTimestep;
@@ -230,16 +243,12 @@ namespace Engine
 		glm::vec3 entityRightDir = glm::normalize(glm::cross(entityFrontDir, glm::vec3(0.0f, 1.0f, 0.0f)));
 		if (this->controller)
 		{
-
+			//PxVec3 displacement(0.0f, 0.0f, 0.0f);
 			PxVec3 displacement(0.0f, -9.81f * deltatime, 0.0f);
 			PxVec3 old = displacement;
 			float speed = 5.0f;
 			const float jumpSpeed = 3.0f;
 			const float gravity = -9.81f;
-
-
-			//PxVec3 displacement(0.0f, 0.0f * deltatime, 0.0f);
-			//float speed = 5.0f;
 			PxVec3 frontDir(entityFrontDir.x, entityFrontDir.y, entityFrontDir.z);
 			PxVec3 rightDir(entityRightDir.x, entityRightDir.y, entityRightDir.z);
 
@@ -260,7 +269,6 @@ namespace Engine
 			if (keyboard.isPressed(HS_KEY_D)) {
 				displacement += rightDir * speed * deltatime;
 			}
-
 
 			// isGrounded check
 			PxControllerState cstate;

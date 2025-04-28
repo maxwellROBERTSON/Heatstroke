@@ -56,6 +56,7 @@ namespace Engine
 
 		void handleShooting();
 
+		void updatePhysics(Entity* playerEntity, PxReal timeDelta);
 		void updatePhysics(PxReal timeDelta);
 
 		void updateCharacter(PxReal deltatime);

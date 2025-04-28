@@ -77,6 +77,7 @@ public:
 	// Player 1
 	Engine::Entity* playerEntity;
 	glm::vec3 playerPos{ 0.0f, 1.0f, 0.0f };
+	//glm::vec3 playerPos{ 5.0f, 2.0f, 0.0f };
 	//glm::vec3 playerPos{ 0.0f, 5.0f, 0.0f };
 	//glm::vec3 playerPos{ -5.0f, 0.0f, -1.0f };
 	float playerXRotation{ 0.0f };
