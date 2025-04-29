@@ -2,7 +2,7 @@
 
 #include <string>
 #include <iostream>
-#include "../third_party/AL/al.h"
+#include "al.h"
 
 #include "Component.hpp"
 
