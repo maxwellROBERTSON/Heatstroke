@@ -120,7 +120,11 @@ project "Engine"
         includedirs {
             "Engine/third_party/vcpkg/installed/x64-windows/include/physx",
             "Engine/third_party/vcpkg/installed/x64-windows/include/AL",
-            "Engine/third_party/snd/include"
+            "Engine/third_party/vcpkg/installed/x64-windows/include/vorbis",
+            "Engine/third_party/vcpkg/installed/x64-windows/include/ogg",
+            "Engine/third_party/vcpkg/installed/x64-windows/include/flac",
+            "Engine/third_party/vcpkg/installed/x64-windows/include/opus",
+            "Engine/third_party/vcpkg/installed/x64-windows/include"
         }
 
     filter "*"
@@ -180,7 +184,8 @@ project "Engine"
             "PhysXCommon_64",
             "PhysXFoundation_64",
             "OpenAL32",
-            "sndfile"
+            "sndfile",
+            "vorbis"
         }
         postbuildcommands {
             "if not exist \"%{wks.location}bin\\PhysXFoundation_64.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\debug\\bin\\PhysXFoundation_64.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\debug\\bin\\PhysXFoundation_64.dll\" \"%{wks.location}bin\"",
@@ -188,7 +193,8 @@ project "Engine"
             "if not exist \"%{wks.location}bin\\PhysX_64.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\debug\\bin\\PhysX_64.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\debug\\bin\\PhysX_64.dll\" \"%{wks.location}bin\"",
             "if not exist \"%{wks.location}bin\\PhysXCooking_64.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\debug\\bin\\PhysXCooking_64.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\debug\\bin\\PhysXCooking_64.dll\" \"%{wks.location}bin\"",
             "if not exist \"%{wks.location}bin\\OpenAL32.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\debug\\bin\\OpenAL32.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\debug\\bin\\OpenAL32.dll\" \"%{wks.location}bin\"",
-            "if not exist \"%{wks.location}bin\\sndfile.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\debug\\bin\\sndfile.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\debug\\bin\\sndfile.dll\" \"%{wks.location}bin\""
+            "if not exist \"%{wks.location}bin\\sndfile.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\debug\\bin\\sndfile.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\debug\\bin\\sndfile.dll\" \"%{wks.location}bin\"",
+            "if not exist \"%{wks.location}bin\\vorbis.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\debug\\bin\\vorbis.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\debug\\bin\\vorbis.dll\" \"%{wks.location}bin\""
         }
     filter { "system:windows", "configurations:Release" }
         libdirs {
@@ -261,6 +267,7 @@ project "Game"
         includedirs {
             "Engine/third_party/vcpkg/installed/x64-windows/include/physx",
             "Engine/third_party/vcpkg/installed/x64-windows/include/AL",
+            "Engine/third_party/vcpkg/installed/x64-windows/include/vorbis",
             "Engine/third_party/vcpkg/installed/x64-windows/include"
         }
 
@@ -313,7 +320,8 @@ project "Game"
         links {
             "PhysX_64",
             "OpenAL32",
-            "sndfile"
+            "sndfile",
+            "vorbis"
         }
     filter { "system:windows", "configurations:Release" }
         libdirs {
