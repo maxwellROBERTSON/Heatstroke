@@ -199,7 +199,7 @@ namespace Engine
 		// based on the model's triangle meshes.
 		// Currently adds a static body per primitive mesh, not sure if thats
 		// a bad or good thing.
-		for (Engine::vk::Node* node : model.nodes) {
+		for (Engine::vk::Node* node : model.linearNodes) {
 			if (node->mesh) {
 				glm::mat4 modelMatrix = node->getModelMatrix();
 				PxVec3 nodeScale(modelMatrix[0][0], modelMatrix[1][1], modelMatrix[2][2]);

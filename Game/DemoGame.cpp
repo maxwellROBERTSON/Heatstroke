@@ -24,9 +24,6 @@ using namespace Engine;
 
 float fireDelay = 1.0f;
 bool canFire = true;
-//bool canFire = false;
-
-//serverCameraComponent = CameraComponent(Engine::Camera(100.0f, 0.01f, 256.0f, glm::vec3(-3.0f, 2.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
 
 void FPSTest::Init()
 {
@@ -39,26 +36,15 @@ void FPSTest::Init()
 	//blocks execution of the rest of the program until the initialiseModels Thread has finished
 	modelsFut.get();
 
-	// // Cameras
+	// Camera
 	sceneCam = Camera(60.0f, 0.01f, 1000.0f, glm::vec3(0.0f, 0.0f, -5.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-	//playerCam = FPSCamera("Player Cam", 100.0f, 0.01f, 256.0f, playerPos, glm::vec3(0.0f, 0.0f, 1.0f));
-	//fpsCameraComponent.SetCamera(playerCam);
-	//serverCameraComponent = CameraComponent(sceneCam);
-	//FPSCameraComponent = 
-	// playerEntity = 0;
-	// mapEntity = 0;
 
 	GetPhysicsWorld().init();
 	GetRenderer().initialiseRenderer();
 	GetGUI().initGUI();
 	GetRenderer().attachCameraComponent(new CameraComponent(Engine::Camera(100.0f, 0.01f, 256.0f, glm::vec3(-3.0f, 2.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f))));
-	//GetRenderer().attachCameraComponent(&serverCameraComponent);
-	//GetRenderer().attachCameraComponent(&fpsCameraComponent);
 	GetRenderer().initialiseModelDescriptors(GetModels());
 
-
-	// GetRenderer().attachCamera(&playerCam);
-	//GetRenderer().attachCamera(&sceneCam);
 
 	std::vector<const char*> skyboxFilenames = {
 		"Game/assets/skybox/right.bmp",
@@ -147,7 +133,6 @@ void FPSTest::Update() {
 			//glm::mat4 finalRotation = camYRotation * camXRotation;
 			//playerEntity->SetRotation(finalRotation);
 
-
 			cameraComponent->UpdateCameraPosition(playerEntity->GetPosition());
 		}
 		else
@@ -159,10 +144,13 @@ void FPSTest::Update() {
 		if (Engine::InputManager::getKeyboard().isPressed(HS_KEY_P))
 		{
 			RenderComponent* renderComponent = reinterpret_cast<RenderComponent*>(GetEntityManager().GetComponentOfEntity(playerEntity->GetEntityId(), RENDER));
-			renderComponent->SetModelIndex(3);
+			//renderComponent->SetModelIndex(3);
+			renderComponent->SetIsActive(0);
+			//renderComponent->SetIsActive(false);
 		}
 
-		if (Engine::InputManager::getMouse().isPressed(HS_MOUSE_BUTTON_LEFT) && canFire)
+		if (Engine::InputManager::getMouse().isPressed(HS_MOUSE_BUTTON_LEFT))
+			//if (Engine::InputManager::getMouse().isPressed(HS_MOUSE_BUTTON_LEFT) && canFire)
 		{
 			RenderComponent* playerRenderComponent = reinterpret_cast<RenderComponent*>(GetEntityManager().GetComponentOfEntity(playerEntity->GetEntityId(), RENDER));
 			int playerModelIndex = playerRenderComponent->GetModelIndex();
@@ -203,8 +191,6 @@ void FPSTest::OnEvent(Engine::Event& e)
 
 void FPSTest::DrawGUI()
 {
-	//FPSCameraComponent* cameraComponent = reinterpret_cast<FPSCameraComponent*>(GetEntityManager().GetComponentOfEntity(playerEntity->GetEntityId(), CAMERA));
-
 	CameraComponent* cameraComponent = reinterpret_cast<CameraComponent*>(GetEntityManager().GetComponentOfEntity(playerEntity->GetEntityId(), CAMERA));
 	ImGui::Begin("Game:");
 	ImGui::Text("GAME DEBUG");
@@ -241,12 +227,10 @@ void FPSTest::loadOfflineEntities()
 	CameraComponent* cameraComponent;
 	RenderComponent* renderComponent;
 	PhysicsComponent* physicsComponent;
-
 	EntityManager& entityManager = GetEntityManager();
 	PhysicsWorld& physicsWorld = GetPhysicsWorld();
 
 	std::vector<Engine::vk::Model>& models = GetModels();
-
 
 	// map
 	std::vector<ComponentTypes> types = { RENDER, PHYSICS };
@@ -276,6 +260,9 @@ void FPSTest::loadOfflineEntities()
 	entityManager.AddSimulatedPhysicsEntity(playerEntity->GetEntityId());
 	GetRenderer().attachCameraComponent(cameraComponent);
 
+	// pistol
+
+
 	// targets
 	types = { RENDER, PHYSICS };
 	targetEntity1 = entityManager.MakeNewEntity(types);
@@ -283,7 +270,7 @@ void FPSTest::loadOfflineEntities()
 	renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(targetEntity1->GetEntityId(), RENDER));
 	renderComponent->SetModelIndex(6);
 	physicsComponent = reinterpret_cast<PhysicsComponent*>(entityManager.GetComponentOfEntity(targetEntity1->GetEntityId(), PHYSICS));
-	physicsComponent->InitComplexShape(physicsWorld, PhysicsComponent::PhysicsType::DYNAMIC, models[renderComponent->GetModelIndex()], targetEntity1->GetModelMatrix(), targetEntity1->GetEntityId());
+	physicsComponent->InitComplexShape(physicsWorld, PhysicsComponent::PhysicsType::STATIC, models[renderComponent->GetModelIndex()], targetEntity1->GetModelMatrix(), targetEntity1->GetEntityId());
 	entityManager.AddSimulatedPhysicsEntity(targetEntity1->GetEntityId());
 
 	targetEntity2 = entityManager.MakeNewEntity(types);
@@ -291,7 +278,7 @@ void FPSTest::loadOfflineEntities()
 	renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(targetEntity2->GetEntityId(), RENDER));
 	renderComponent->SetModelIndex(6);
 	physicsComponent = reinterpret_cast<PhysicsComponent*>(entityManager.GetComponentOfEntity(targetEntity2->GetEntityId(), PHYSICS));
-	physicsComponent->InitComplexShape(physicsWorld, PhysicsComponent::PhysicsType::DYNAMIC, models[renderComponent->GetModelIndex()], targetEntity2->GetModelMatrix(), targetEntity2->GetEntityId());
+	physicsComponent->InitComplexShape(physicsWorld, PhysicsComponent::PhysicsType::STATIC, models[renderComponent->GetModelIndex()], targetEntity2->GetModelMatrix(), targetEntity2->GetEntityId());
 	entityManager.AddSimulatedPhysicsEntity(targetEntity2->GetEntityId());
 
 	GetEntityManager().ResetChanged();

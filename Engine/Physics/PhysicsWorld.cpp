@@ -10,6 +10,7 @@
 #include "../Input/InputCodes.hpp"
 #include "../Input/Keyboard.hpp"
 #include "../Input/Keyboard.hpp"
+#include "IgnoreSelfFilterCallback.hpp"
 #include "PhysicsWorld.hpp"
 #include "RaycastUtility.hpp"
 #include <glm/glm.hpp>
@@ -273,43 +274,31 @@ namespace Engine
 		//if (keyboard.isPressed(HS_KEY_P)) {
 
 		PxExtendedVec3 extPos = controller->getFootPosition();
-		PxVec3 pos = PxVec3(static_cast<float>(extPos.x), static_cast<float>(extPos.y) + 1.0f, static_cast<float>(extPos.z) + 2.0f);
-		//PxVec3 pos = PxVec3(static_cast<float>(extPos.x), static_cast<float>(extPos.y), static_cast<float>(extPos.z));
+		PxVec3 pos = PxVec3(static_cast<float>(extPos.x), static_cast<float>(extPos.y), static_cast<float>(extPos.z));
 		PxVec3 direction(0.f, 1.f, 1.f);
 		direction.normalize();
 
 		PxRaycastHit hit;
 		PxRigidActor* selfActor = controller->getActor();
-		bool hitflag = RaycastUtility::SingleHit(gScene, pos, direction, 100.0f, hit);
+		IgnoreSelfFilterCallback filter(controller->getActor());
+		bool hitflag = RaycastUtility::SingleHit(gScene, pos, direction, 100.0f, hit, &filter);
 		if (hitflag) {
-			if (hit.actor == selfActor) {
-				// self
-				// yellow ray
-				DebugDrawRayInPVD(gScene, pos, pos + direction * 100.0f, 0xFFFFFF00);
-				std::cout << "Hit self" << std::endl;
-			}
-			else if (hit.actor->is<PxRigidDynamic>()) {
+			if (hit.actor->is<PxRigidDynamic>()) {
 				// hit dynamic
-				// black ray
-				DebugDrawRayInPVD(gScene, pos, pos + direction * 100.0f, 0xFF000000);
-				std::cout << "Hit at (" << hit.position.x << ", " << hit.position.y << ", " << hit.position.z << ")" << std::endl;
+				DebugDrawRayInPVD(gScene, pos, pos + direction * hit.distance, 0xFF000000);
+				std::cout << "Hit dynamic actor at (" << hit.position.x << ", " << hit.position.y << ", " << hit.position.z << ")\n";
 			}
-			else
-			{
-				// hit statit
-				// yellow ray
-				DebugDrawRayInPVD(gScene, pos, pos + direction * 100.0f, 0xFFFFFF00);
-				std::cout << "Hit self" << std::endl;
-
+			else {
+				// hit static
+				std::cout << "HERE" << std::endl;
+				DebugDrawRayInPVD(gScene, pos, pos + direction * hit.distance, 0xFFFFFF00);
+				std::cout << "Hit static object\n";
 			}
 		}
-		else
-		{
+		else {
 			// hit nothing
-			// yellow ray
 			DebugDrawRayInPVD(gScene, pos, pos + direction * 100.0f, 0xFFFFFF00);
-			std::cout << "Hit nothing" << ")\n";
-
+			std::cout << "Hit nothing\n";
 		}
 		//}
 	}

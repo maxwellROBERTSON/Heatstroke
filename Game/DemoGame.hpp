@@ -66,31 +66,32 @@ public:
 	// Cameras
 	Engine::Camera sceneCam;
 	Engine::CameraComponent serverCameraComponent;
-	//glm::vec3 cameraOffset = glm::vec3(-0.1f, 0.5f, 0.5f); // rifle
-	glm::vec3 cameraOffset = glm::vec3(0.1f, 1.3f, 0.2f); // pistol
+
 	//glm::vec3 cameraOffset = glm::vec3(0.0f, 1.6f, -0.1f); // for character
-	//glm::vec3 cameraOffset = glm::vec3();
-	//glm::vec3 cameraOffset = glm::vec3(-0.1f, 0.25f, -0.15f);
-	//glm::vec3 cameraOffset = glm::vec3(0.0f, 1.0f, 0.0f);
-	//CameraMode camMode{ CameraMode::SCENE };
-	//CameraMode camMode{ CameraMode::PLAYER }; 
+
 
 	// Player 1
+	// (so doesnt break) (TBD)
 	Engine::Entity* playerEntity;
-	//glm::vec3 playerPos{ 0.0f, 1.0f, 0.0f }; // rifle
-	glm::vec3 playerPos{ 0.0f, 0.0f, 0.0f }; // pistol
-	float playerXRotation{ 0.0f };
-	float playerYRotation{ 0.0f };
+	glm::vec3 cameraOffset = glm::vec3(0.1f, 1.3f, 0.2f);
+	glm::vec3 playerPos{ 0.0f, 0.0f, 0.0f };
+
+	Engine::Entity* pistolEntity;
+	glm::vec3 pistolCamOffset = glm::vec3(0.1f, 1.3f, 0.2f);
+	glm::vec3 pistolPos{ 0.0f, 0.0f, 0.0f };
+
+	Engine::Entity* rifleEntity;
+	glm::vec3 rifleCamOffset = glm::vec3(-0.1f, 0.5f, 0.5f);
+	glm::vec3 riflePos{ 0.0f, 1.0f, 0.0f };
+
 	// Map
 	Engine::Entity* mapEntity;
-
 
 	// Targets (make a vector (fingers crossed) at some point)
 	Engine::Entity* targetEntity1;
 	Engine::Entity* targetEntity2;
 	glm::vec3 target1Pos{ 2.0f, 1.0f, 0.0f }; // generate randomly
 	glm::vec3 target2Pos{ -2.0f, 1.0f, 0.0f }; // ^
-
 
 	// -- input actions
 
