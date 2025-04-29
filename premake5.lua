@@ -50,7 +50,6 @@ workspace "Heatstroke"
         os.mkdir("bin")
     end
 
-
     filter "system:linux"
         links "dl"
         defines {"OS_LINUX"}
@@ -113,7 +112,8 @@ project "Engine"
     filter "system:linux"
         includedirs {
             "Engine/third_party/vcpkg/packages/physx_x64-linux/include/physx",
-            "Engine/third_party/vcpkg/packages/openal-soft_x64-linux/include/AL"
+            "Engine/third_party/vcpkg/packages/openal-soft_x64-linux/include/AL",
+            "Engine/third_party/snd/include"
         }
 
     filter "system:windows"
@@ -252,8 +252,9 @@ project "Game"
 
     filter "system:linux"
         includedirs {
-            "Engine/third_party/vcpkg/packages/physx_x64-linux/include/physx",
-            "Engine/third_party/vcpkg/packages/openal-soft_x64-linux/include/AL"
+            "Engine/third_party/vcpkg/installed/x64-linux/include/physx",
+            "Engine/third_party/vcpkg/installed/x64-linux/include/AL",
+            "Engine/third_party/vcpkg/installed/x64-linux/include"
         }
 
     filter "system:windows"
@@ -271,9 +272,8 @@ project "Game"
     filter "*"
         
     filter { "system:linux", "configurations:Debug" }
-        libdirs {
-            "Engine/third_party/vcpkg/packages/physx_x64-linux/debug/lib",
-            "Engine/third_party/vcpkg/packages/openal-soft_x64-linux/debug/lib"
+        includedirs {
+            "Engine/third_party/vcpkg/installed/x64-linux/debug/lib"
         }
         links {
             "PhysXCharacterKinematic_static_64",
@@ -284,12 +284,12 @@ project "Game"
             "PhysXCooking_static_64",
             "PhysXCommon_static_64",
             "PhysXFoundation_static_64",
-            "OpenAL32"
+            "openal",
+            "sndfile"
         }
     filter { "system:linux", "configurations:Release" }
         libdirs {
-            "Engine/third_party/vcpkg/packages/physx_x64-linux/lib",
-            "Engine/third_party/vcpkg/packages/openal-soft_x64-linux/lib"
+            "Engine/third_party/vcpkg/installed/x64-linux/lib"
         }
         links {
             "PhysXCharacterKinematic_static_64",
@@ -300,7 +300,8 @@ project "Game"
             "PhysXCooking_static_64",
             "PhysXCommon_static_64",
             "PhysXFoundation_static_64",
-            "OpenAL32"
+            "openal",
+            "sndfile"
         }
 
     filter "*"

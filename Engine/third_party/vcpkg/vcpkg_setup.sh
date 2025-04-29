@@ -13,24 +13,35 @@ export PATH="$VCPKG_ROOT:$PATH"
 
 INSTALLED_PHYSX=$(./vcpkg list | grep "physx")
 
-# Check if PhysX is installed
-if [ -z "$INSTALLED_PHYSX" ]; then
-    echo "PhysX is not installed. Installing..."
+# Check if physx is installed
+if [ -z "$INSTALLED_physx" ]; then
+    echo "physx is not installed. Installing..."
     ./vcpkg install physx
 else
-    echo "PhysX is already installed:"
+    echo "physx is already installed:"
     echo "$INSTALLED_PHYSX"
 fi
 
-INSTALLED_OPENAL=$(./vcpkg list | grep "openal-soft")
+INSTALLED_OPENAL_SOFT=$(./vcpkg list | grep "openal-soft")
 
-# Check if PhysX is installed
-if [ -z "$INSTALLED_OPENAL" ]; then
-    echo "OpenAL is not installed. Installing..."
+# Check if openal-soft is installed
+if [ -z "$INSTALLED_OPENAL_SOFT" ]; then
+    echo "openal-soft is not installed. Installing..."
     ./vcpkg install openal-soft
 else
-    echo "OpenAL is already installed:"
-    echo "$INSTALLED_OPENAL"
+    echo "openal-soft is already installed:"
+    echo "$INSTALLED_OPENAL_SOFT"
+fi
+
+INSTALLED_LIBSNDFILE=$(./vcpkg list | grep "libsndfile")
+
+# Check if libsndfile is installed
+if [ -z "$INSTALLED_LIBSNDFILE" ]; then
+    echo "libsndfile is not installed. Installing..."
+    ./vcpkg install libsndfile
+else
+    echo "libsndfile is already installed:"
+    echo "$INSTALLED_LIBSNDFILE"
 fi
 
 # Check if vulkan is installed
