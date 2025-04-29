@@ -322,19 +322,19 @@ namespace Engine
 			if (hit.actor->is<PxRigidDynamic>()) {
 				// hit dynamic
 				DebugDrawRayInPVD(gScene, pos, pos + direction * hit.distance, 0xFF000000);
-				std::cout << "Hit dynamic actor at (" << hit.position.x << ", " << hit.position.y << ", " << hit.position.z << ")\n";
+				//std::cout << "Hit dynamic actor at (" << hit.position.x << ", " << hit.position.y << ", " << hit.position.z << ")\n";
 			}
 			else {
 				// hit static
 				DebugDrawRayInPVD(gScene, pos, pos + direction * hit.distance, 0xFFFFFF00);
 				//hit.actor
-				std::cout << hit.actor->getName() << std::endl;
+				//std::cout << hit.actor->getName() << std::endl;
 			}
 		}
 		else {
 			// hit nothing
 			DebugDrawRayInPVD(gScene, pos, pos + direction * 100.0f, 0xFFFFFF00);
-			std::cout << "Hit nothing\n";
+			//std::cout << "Hit nothing\n";
 		}
 		AudioComponent* audioComponent = reinterpret_cast<AudioComponent*>(entityManager->GetComponentOfEntity(playerEntity->GetEntityId(), AUDIO));
 		audioComponent->playSound("GunShot");

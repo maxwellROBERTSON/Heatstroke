@@ -62,7 +62,7 @@ public:
 	};
 
 	Crosshair& getCrosshair();
-
+	int score = 0;
 	std::chrono::steady_clock::time_point previous;
 
 	// -- input actions

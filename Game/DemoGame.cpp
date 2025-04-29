@@ -182,6 +182,7 @@ void FPSTest::Update() {
 				{
 					RenderComponent* hitRenderComponent = reinterpret_cast<RenderComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), RENDER));
 					hitRenderComponent->SetIsActive(0);
+					score++;
 				}
 				//playerEntity = entityManager.GetEntity(entitiesWithNetworkComponent[i]);
 				//networkComponent = reinterpret_cast<NetworkComponent*>(entityManager.GetComponentOfEntity(entitiesWithNetworkComponent[i], NETWORK));
@@ -229,12 +230,14 @@ void FPSTest::OnEvent(Engine::Event& e)
 void FPSTest::DrawGUI()
 {
 	CameraComponent* cameraComponent = reinterpret_cast<CameraComponent*>(GetEntityManager().GetComponentOfEntity(playerEntity->GetEntityId(), CAMERA));
-	ImGui::Begin("Game:");
-	ImGui::Text("GAME DEBUG");
-	int cameraMode = cameraComponent->GetCamera()->camMode;
-	ImGui::SliderInt("Camera Mode", &cameraMode, 0, 1);
-	ImGui::InputFloat3("Cam Offset: ", &cameraOffset.x);
-	ImGui::Text("Game Settings:");
+	ImGuiWindowFlags window_flags = 0;
+	window_flags |= ImGuiWindowFlags_NoBackground;
+	window_flags |= ImGuiWindowFlags_NoTitleBar;
+	//ImGui::ShowStyleEditor();
+	//ImGui::GetIO().Fonts->AddFontFromFileTTF("C:/dev/Heatstroke/Engine/third_party/imgui/misc/fonts/Roboto-Medium.ttf", 36.0f);
+	bool test = true;
+	ImGui::Begin("Game:", &test, window_flags);
+	ImGui::Text("SCORE: %u", score);
 	ImGui::End();
 }
 
