@@ -11,6 +11,7 @@
 #include "../Engine/vulkan/Renderer.hpp"
 #include "../Engine/vulkan/VulkanDevice.hpp"
 #include "../Engine/vulkan/Skybox.hpp"
+#include "../ECS/Components/AudioComponent.hpp"
 
 #include "Error.hpp"
 #include "toString.hpp"
@@ -22,18 +23,8 @@ using namespace Engine;
 
 CameraComponent serverCameraComponent = CameraComponent(Engine::Camera(100.0f, 0.01f, 256.0f, glm::vec3(-3.0f, 2.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
 
-AudioComponent ac;
-
 void FPSTest::Init()
 {
-	ac.addClip("Pain", "Game\\assets\\AudioClips\\Ugh.wav");
-	ac.addClip("Dialogue", "Game\\assets\\AudioClips\\Moron.wav");
-	//auto res = ac.soundClips["Tony"];
-	
-	if (ac.soundClips["Tony"] == NULL)
-	{
-		std::cout << "NULL" << std::endl;
-	}
 
 	this->threadPool = thread_pool_wait::get_instance();
  
@@ -44,7 +35,7 @@ void FPSTest::Init()
 	//blocks execution of the rest of the program until the initialiseModels Thread has finished
 	modelsFut.get();
 
-	GetPhysicsWorld().init();
+	GetPhysicsWorld().init(&GetEntityManager());
 	GetRenderer().initialiseRenderer();
 	GetGUI().initGUI();
 	GetRenderer().attachCameraComponent(&serverCameraComponent);
@@ -89,17 +80,6 @@ void FPSTest::Update() {
 			std::cout << "A BUTTON PRESSED" << std::endl;
 		}
 	}
-
-	/*auto keyboard = Engine::InputManager::getKeyboard();
-	if (keyboard.isPressed(HS_KEY_W))
-	{
-		ac.playSound("Pain");
-	}
-
-	if (keyboard.isPressed(HS_KEY_S))
-	{
-		ac.playSound("Dialogue");
-	}*/
 
 	GetNetwork().Update();
 
@@ -187,6 +167,7 @@ void FPSTest::loadOfflineEntities()
 	NetworkComponent* networkComponent;
 	RenderComponent* renderComponent;
 	PhysicsComponent* physicsComponent;
+	AudioComponent* audioComponent;
 
 	EntityManager& entityManager = GetEntityManager();
 	PhysicsWorld& physicsWorld = GetPhysicsWorld();
@@ -223,10 +204,10 @@ void FPSTest::loadOfflineEntities()
 	//renderComponent->SetModelIndex(2);
 	//physicsComponent = reinterpret_cast<PhysicsComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
 	//physicsComponent->Init(physicsWorld, PhysicsComponent::PhysicsType::DYNAMIC, models[renderComponent->GetModelIndex()], entity->GetModelMatrix(), entity->GetEntityId(), false, false);
-	//entityManager.AddSimulatedPhysicsEntity(entity->GetEntityId());
+	types = { AUDIO, CAMERA, NETWORK, RENDER, PHYSICS };
 
 	// Player 1
-	types = { AUDIO, CAMERA, NETWORK, RENDER, PHYSICS };
+	types = { CAMERA, NETWORK, RENDER, PHYSICS, AUDIO };
 	entity = entityManager.MakeNewEntity(types);
 	entity->SetPosition(-5.0f, 0.0f, -1.0f);
 	entity->SetRotation(90.0f, glm::vec3(0.0f, 0.0f, 1.0f));
@@ -240,6 +221,12 @@ void FPSTest::loadOfflineEntities()
 	cameraComponent->SetCamera(Engine::Camera(100.0f, 0.01f, 256.0f, glm::vec3(-3.0f, 2.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
 	networkComponent = reinterpret_cast<NetworkComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), NETWORK));
 	networkComponent->SetClientId(0);
+	//add audio component to player
+	audioComponent = reinterpret_cast<AudioComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), AUDIO));
+	//add gunshot sound clip to the player for the gun 
+	audioComponent->addClip("GunShot", "Game\\assets\\AudioClips\\singlegunshot.wav");
+
+
 
 	//// Player 2
 	//types = { RENDER };

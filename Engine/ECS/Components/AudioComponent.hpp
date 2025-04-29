@@ -2,8 +2,9 @@
 
 #include <string>
 #include <iostream>
-#include "../third_party/AL/al.h"
 
+#include "../third_party/AL/al.h"
+#include "../EntityManager.hpp"
 #include "Component.hpp"
 
 #include "../EntityManager.hpp"
@@ -16,11 +17,14 @@ namespace Engine
 	class SoundSource;
 	class SoundBuffer;
 
+}
+namespace Engine
+{
 	class AudioComponent : public Component<AudioComponent>
 	{
 	public:
 		AudioComponent();
-		AudioComponent(Engine::EntityManager* entityManager, Engine::Entity* entity);
+		AudioComponent(EntityManager* entityManager, Entity* entity);
 		
 		void operator=(const AudioComponent& other) override
 		{
@@ -80,9 +84,9 @@ namespace Engine
 
 	private:
 		// EntityManager pointer
-		Engine::EntityManager* entityManager;
+		EntityManager* entityManager;
 		// Entity pointer
-		Engine::Entity* entity;
+		Entity* entity;
 
 		// If component has changed since last network update
 		bool hasChanged = false;

@@ -67,7 +67,7 @@ namespace Engine
 			return;
 		}
 
-		getState();
+	ALuint currentState = getState();
 
 		setActiveClip(key);
 
@@ -123,17 +123,17 @@ namespace Engine
 
 		getState();
 
-		if (ALenum res = alGetError(); res != AL_NO_ERROR)
-		{
-			std::cout << "ERROR from alGetError() " << res << std::endl;
+	if (ALenum res = alGetError(); res != AL_NO_ERROR)
+	{
+		std::cout << "ERROR from alGetError() " << res << std::endl;
 
-			if (res == ALC_NO_ERROR) std::cout << "ALC_NO_ERROR\n";
-			if (res == ALC_INVALID_DEVICE) std::cout << "ALC_INVALID_DEVICE\n";
-			if (res == ALC_INVALID_CONTEXT) std::cout << "ALC_INVALID_CONTEXT\n";
-			if (res == ALC_INVALID_ENUM) std::cout << "ALC_INVALID_ENUM\n";
-			if (res == ALC_INVALID_VALUE) std::cout << "ALC_INVALID_VALUE\n";
-			if (res == ALC_OUT_OF_MEMORY) std::cout << "ALC_OUT_OF_MEMORY\n";
-		}
+		if (res == ALC_NO_ERROR) std::cout << "ALC_NO_ERROR\n";
+		if (res == ALC_INVALID_DEVICE) std::cout << "ALC_INVALID_DEVICE\n";
+		if (res == ALC_INVALID_CONTEXT) std::cout << "ALC_INVALID_CONTEXT\n";
+		if (res == ALC_INVALID_ENUM) std::cout << "ALC_INVALID_ENUM\n";
+		if (res == ALC_INVALID_VALUE) std::cout << "ALC_INVALID_VALUE\n";
+		if (res == ALC_OUT_OF_MEMORY) std::cout << "ALC_OUT_OF_MEMORY\n";	
+	}
 
 		//if no clip has been played yet default value is AL_INITIAL thus nothing is playing so return false
 		if (state == AL_INITIAL) return false;

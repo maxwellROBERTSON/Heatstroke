@@ -15,6 +15,11 @@ namespace Engine
 		~EntityManager() {}
 
 		// Getters
+		static EntityManager& GetEntityManager() 
+		{ 
+			static EntityManager instance;
+			return instance; 
+		}
 
 		// Get total data size
 		int GetTotalDataSize();
@@ -141,7 +146,6 @@ namespace Engine
 		// fov + near + far + vec3(pos) + vec3(front_dir) = 9 * float
 		// If network:
 		// clientid = int
-
 	};
 }
 

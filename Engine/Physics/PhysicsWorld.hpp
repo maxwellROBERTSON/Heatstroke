@@ -44,7 +44,7 @@ namespace Engine
 		PxReal gSimulationTimer = 0.0f;
 		PxReal gTimestep = 1.0f / 60.0f; // 60 FPS
 
-		void init();
+		void init(EntityManager*);
 
 		void handleMovement(PxReal deltatime);
 
@@ -64,6 +64,6 @@ namespace Engine
 
 
 	private:
-
+		EntityManager* entityManager;
 	};
 }

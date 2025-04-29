@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <iostream>
 
 #include "EntityManager.hpp"
 #include "Components/Component.hpp"
@@ -7,6 +8,7 @@
 #include "Components/NetworkComponent.hpp"
 #include "Components/PhysicsComponent.hpp"
 #include "Components/RenderComponent.hpp"
+#include "Components/AudioComponent.hpp"
 
 namespace Engine
 {
@@ -16,6 +18,7 @@ namespace Engine
 		// Check map size
 		if (componentMap.size() != ComponentTypes::TYPE_COUNT)
 		{
+			std::cout << "componentMap.size(): " << componentMap.size() << "ComponentTypes::TYPE_COUNT: " << ComponentTypes::TYPE_COUNT << std::endl;
 			throw std::runtime_error("Size mismatch between componentMap and ComponentTypes");
 		}
 		// Check if ComponentSizes is correct
@@ -105,7 +108,9 @@ namespace Engine
 	// Get a pointer to the component of an entity
 	ComponentBase* EntityManager::GetComponentOfEntity(int entityId, ComponentTypes type)
 	{
-		int index = entities[entityId].get()->GetComponent(type);
+		Entity *e = entities[entityId].get();
+		int index = e->GetComponent(type);
+
 		if (index == -1)
 		{
 			return nullptr;

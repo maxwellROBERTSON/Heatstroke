@@ -57,6 +57,7 @@ namespace Engine
 		Engine::RenderMode GetGUIRenderMode();
 		inline Engine::Network& GetNetwork() { return *network; }
 
+
 		// Setters
 		inline void ToggleRenderMode(Engine::RenderMode r) {
 			renderModes ^= (1 << r);
@@ -68,9 +69,10 @@ namespace Engine
 		void SetServer(uint16_t, int);
 
 		bool OnWindowClose(WindowCloseEvent& e);
+		static int instanceCount;
 	private:
 		VulkanContext mContext;
-		static Game* game;
+		inline static Game* game;
 		std::vector<Engine::vk::Model> models;
 		bool recreateSwapchain;
 		EntityManager entityManager = EntityManager();
