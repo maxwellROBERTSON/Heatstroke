@@ -29,13 +29,6 @@ namespace Engine
 		EventDispatcher dispatcher(e);
 		dispatcher.Dispatch<WindowCloseEvent>(std::bind(&Game::OnWindowClose, this, std::placeholders::_1));
 		dispatcher.Dispatch<ESCEvent>([this](Event& event) { gui->toggle(); return true; });
-		/*dispatcher.Dispatch<RenderModeToggleEvent>([this](RenderModeToggleEvent& event)
-			{
-				if (event.IsOn())
-					renderer->modeOn(event.GetRenderMode());
-				else renderer->modeOff(event.GetRenderMode());
-				return true;
-			});*/
 	}
 
 	bool Game::OnWindowClose(WindowCloseEvent& e)

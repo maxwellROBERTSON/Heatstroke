@@ -1,13 +1,13 @@
 #pragma once
 
-#include <string>
-#include <vector>
-#include <unordered_map>
-#include <glm/gtc/matrix_transform.hpp>
 #include <cstdint>
+#include <glm/gtc/matrix_transform.hpp>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
-#include "Components/Component.hpp"
 #include "../gltf/glTF.hpp"
+#include "Components/Component.hpp"
 
 namespace Engine
 {
@@ -43,6 +43,8 @@ namespace Engine
 		// Setters
 
 		// Set the data for a given entity
+		// void SetData(uint8_t*);
+
 		void SetDataArray(uint8_t*);
 
 		// Position Setters
@@ -52,11 +54,20 @@ namespace Engine
 
 		// Rotation setters
 		void SetRotation(float angInDeg, glm::vec3 axis);
+		void SetRotation(glm::mat4 aRotation); // added in input actions
 		void SetRotation(glm::quat rotation);
 
 		// Scale setters
 		void SetScale(float xScale, float yScale, float zScale);
 		void SetScale(float overallScale);
+
+		// from input actions
+		glm::vec3 GetPosition() const { return position; }
+		glm::mat4 GetRotation() const { return rotation; }
+		void SetFrontDirection(float cameraYaw);
+		glm::vec3 GetFrontDirection() const { return frontDirection; }
+		glm::vec3 frontDirection;
+		// from input actions
 
 		// Set model matrix
 		void SetModelMatrix(glm::mat4 aModelMatrix);

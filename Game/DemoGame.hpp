@@ -1,8 +1,8 @@
 #pragma once
 
+#include <chrono>
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <chrono>
 
 #include "../Engine/Core/Game.hpp"
 
@@ -12,12 +12,14 @@
 #include "../Engine/ECS/Components/NetworkComponent.hpp"
 #include "../Engine/ECS/Components/PhysicsComponent.hpp"
 #include "../Engine/ECS/Components/RenderComponent.hpp"
+#include "../Engine/ECS/Entity.hpp"
+#include "../Engine/ECS/EntityManager.hpp"
 
 #include "../Engine/Physics/PhysicsWorld.hpp"
 
+#include "../Engine/vulkan/Renderer.hpp"
 #include "../Engine/vulkan/VulkanContext.hpp"
 #include "../Engine/vulkan/VulkanDevice.hpp"
-#include "../Engine/vulkan/Renderer.hpp"
 
 #include "../Engine/Core/Camera.hpp"
 #include "Uniforms.hpp"
@@ -46,6 +48,7 @@ public:
 	virtual void Render() override;
 	virtual void Update() override;
 	virtual void OnEvent(Engine::Event& e) override;
+	virtual void DrawGUI() override;
 
 	void initialiseModels();
 
@@ -60,6 +63,40 @@ public:
 	Crosshair& getCrosshair();
 
 	std::chrono::steady_clock::time_point previous;
+
+	// -- input actions
+	// Cameras
+	Engine::Camera sceneCam;
+	Engine::CameraComponent serverCameraComponent;
+
+	//glm::vec3 cameraOffset = glm::vec3(0.0f, 1.6f, -0.1f); // for character
+
+
+	// Player 1
+	// (so doesnt break) (TBD)
+	Engine::Entity* playerEntity;
+	glm::vec3 cameraOffset = glm::vec3(0.1f, 1.3f, 0.2f);
+	glm::vec3 playerPos{ 0.0f, 0.0f, 0.0f };
+
+	Engine::Entity* pistolEntity;
+	glm::vec3 pistolCamOffset = glm::vec3(0.1f, 1.3f, 0.2f);
+	glm::vec3 pistolPos{ 0.0f, 0.0f, 0.0f };
+
+	Engine::Entity* rifleEntity;
+	glm::vec3 rifleCamOffset = glm::vec3(-0.1f, 0.5f, 0.5f);
+	glm::vec3 riflePos{ 0.0f, 1.0f, 0.0f };
+
+	// Map
+	Engine::Entity* mapEntity;
+
+	// Targets (make a vector (fingers crossed) at some point)
+	Engine::Entity* targetEntity1;
+	Engine::Entity* targetEntity2;
+	glm::vec3 target1Pos{ 2.0f, 1.0f, 0.0f }; // generate randomly
+	glm::vec3 target2Pos{ -2.0f, 1.0f, 0.0f }; // ^
+
+	// -- input actions
+
 	thread_pool_wait* threadPool;
 	int offlineClientId = 0;
 

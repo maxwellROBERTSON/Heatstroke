@@ -7,8 +7,8 @@ namespace Engine {
 	class Joystick : public Device
 	{
 	public:
+		Joystick();
 		Joystick(int index);
-		//Joystick(DeviceType aDeviceType, const std::string& name, int index);
 		~Joystick() {}
 		float getAxisValue(int aAxis) const;
 		ButtonState getButtonState(int aButton) const;

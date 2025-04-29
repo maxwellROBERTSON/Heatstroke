@@ -78,6 +78,7 @@ namespace Engine
 			SetEntityHasChanged();
 		}
 	}
+	
 	void Entity::SetPosition(glm::vec3 position)
 	{
 		if (this->position != position)
@@ -88,8 +89,7 @@ namespace Engine
 		}
 	}
 
-	// Rotation setters
-	void Entity::SetRotation(float angInDeg, glm::vec3 axis)
+	void Entity::SetRotation(float angInDeg, glm::vec3 axis) 
 	{
 		glm::mat4 rotate = glm::rotate(glm::mat4(1.0f), glm::radians(angInDeg), axis);
 		if (this->rotation != rotate)
@@ -99,6 +99,15 @@ namespace Engine
 			SetEntityHasChanged();
 		}
 	}
+
+	// from input actions
+	void Entity::SetRotation(glm::mat4 aRotation)
+	{
+		this->rotation = aRotation;
+		this->dirty = true;
+		SetEntityHasChanged();
+	}
+
 	void Entity::SetRotation(glm::quat rotation)
 	{
 		glm::mat4 rotate = glm::mat4(rotation);
@@ -121,6 +130,7 @@ namespace Engine
 			SetEntityHasChanged();
 		}
 	}
+
 	void Entity::SetScale(float overallScale)
 	{
 		glm::vec3 scale = glm::vec3(overallScale);
@@ -130,6 +140,18 @@ namespace Engine
 			this->dirty = true;
 			SetEntityHasChanged();
 		}
+	}
+
+	// from input actions
+	void Entity::SetFrontDirection(float cameraYaw)
+	{
+		glm::vec3 newDir;
+		newDir.x = std::cos(glm::radians(cameraYaw));
+		newDir.y = 0.0f;
+		newDir.z = std::sin(glm::radians(cameraYaw));
+		this->frontDirection = glm::normalize(newDir);
+		SetEntityHasChanged();
+
 	}
 
 	// Set model matrix with check for if changed

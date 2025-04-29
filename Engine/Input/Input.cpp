@@ -9,6 +9,8 @@ namespace Engine
 	std::map<int, Joystick> InputManager::mJoysticks;
 	Keyboard InputManager::mKeyboard;
 	Mouse InputManager::mMouse;
+	std::map<std::string, std::pair<int, int>> InputManager::mActionMap;
+	//std::map<ActionType, std::pair<int, int>> InputManager::mActionMap;
 
 
 	Joystick& InputManager::getJoystick(int index)
@@ -25,9 +27,26 @@ namespace Engine
 		return mKeyboard;
 	}
 
+	void InputManager::addJoysitck(int index)
+	{
+		mJoysticks[index] = Joystick(index);
+
+	}
+
+	void InputManager::removeJoystick(int index)
+	{
+		mJoysticks.erase(index);
+	}
+
 	Mouse& InputManager::getMouse()
 	{
 		return mMouse;
+	}
+
+	bool InputManager::hasJoysticksConnected()
+	{
+		//return !mJoysticks.empty();
+		return (mJoysticks.size() != 0);
 	}
 
 	void InputManager::Update()
@@ -49,5 +68,27 @@ namespace Engine
 		glfwSetCursorPosCallback(window->window, &onMouseMove);
 		glfwSetMouseButtonCallback(window->window, &onMouseButton);
 		glfwSetScrollCallback(window->window, &onMouseScroll);
+	}
+	void InputManager::addAction(const std::string& actionName, int aKey, int aButton)
+	{
+		mActionMap[actionName] = std::make_pair(aKey, aButton);
+	}
+	//void InputManager::bindAction(const ActionType& action, int aKey, int aButton)
+	//{
+	//	mActionMap[action] = std::make_pair(aKey, aButton);
+	//}
+	bool InputManager::IsPressed(int aKey)
+	{
+		return mKeyboard.isPressed(aKey);
+	}
+	//bool InputManager::Action(const ActionType& action)
+	//{
+	//	std::pair<int, int> inputs = mActionMap[action];
+	//	return mKeyboard.isPressed(inputs.first) || mJoysticks[0].isPressed(inputs.second);
+	//}
+	bool InputManager::Action(const std::string& actionName)
+	{
+		std::pair<int, int> inputs = mActionMap[actionName];
+		return mKeyboard.isPressed(inputs.first) || mJoysticks[0].isPressed(inputs.second);
 	}
 }

@@ -12,6 +12,13 @@ struct GLFWwindow;
 
 namespace Engine
 {
+
+	enum CameraMode
+	{
+		SCENE = 0,
+		PLAYER
+	};
+
 	class Camera {
 	public:
 		Camera() = default;
@@ -32,6 +39,7 @@ namespace Engine
 			this->pitch = other.pitch;
 			this->lastX = other.lastX;
 			this->lastY = other.lastY;
+			this->camMode = other.camMode;
 		}
 
 		bool operator==(const Camera& other) const
@@ -48,8 +56,9 @@ namespace Engine
 				lastY == other.lastY;
 		}
 
-		void updateCamera(GLFWwindow* aWindow, float timeDelta);
+		virtual void updateCamera(GLFWwindow* aWindow, float timeDelta);
 		void OnEvent(GLFWwindow* aWindow, Engine::Event& e);
+
 
 		float fov;
 		float nearPlane;
@@ -59,10 +68,16 @@ namespace Engine
 
 		bool firstClick = true;
 
+		CameraMode camMode{ CameraMode::SCENE };
 		float yaw = 0.0f;
 		float pitch = 0.0f;
 		float lastX = 0.0f;
 		float lastY = 0.0f;
 
+		bool enableRotation{ true };
+
+	private:
+		void updateSceneCamera(float timeDelta);
+		void updatePlayerCamera(float timeDelta);
 	};
 }

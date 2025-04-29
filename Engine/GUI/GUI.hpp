@@ -1,11 +1,11 @@
 #pragma once
 
-#include <string>
 #include <functional>
+#include <string>
 
-#include <imgui.h>
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_vulkan.h>
+#include <imgui.h>
 //#include "../third_party/imgui/misc/fonts/IconFontCppHeaders/IconsFontAwesome5.h"
 
 #include "../vulkan/VulkanContext.hpp"
@@ -49,11 +49,18 @@ namespace Engine
 		void makeHomeGUI(int*, int*);
 		void makeSettingsGUI(int*, int*);
 		void makeDebugGUI(int*, int*);
+		void ShowInputDebug();
 		void makeServerGUI(int*, int*);
 		void makeLoadingGUI(int*, int*);
 
+		// from input actions
+		bool debugInput{ false };
+		bool debugGame{ false };
+		// from input actions
+
 		ImGui_ImplVulkanH_Window imGuiWindow;
 		bool changedMSAA = false;
+
 	private:
 		std::map<Engine::RenderMode, std::function<void(int*, int*)>> functions;
 		Engine::Game* game;
