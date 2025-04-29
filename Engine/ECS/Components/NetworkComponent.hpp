@@ -24,11 +24,11 @@ namespace Engine
 
 		// Getters
 
-		// Static type getter from Component parent
-		ComponentTypes static StaticType() { return ComponentTypes::NETWORK; }
+		// Type getter from Component parent
+		ComponentTypes StaticType() const override { return ComponentTypes::NETWORK; }
 
-		// Static size getter from Component parent
-		size_t static StaticSize() { return sizeof(clientId); }
+		// Size getter from Component parent
+		size_t StaticSize() const override { return sizeof(clientId); }
 
 		// Get component data
 		void GetDataArray(uint8_t*) override;

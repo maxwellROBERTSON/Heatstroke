@@ -55,11 +55,11 @@ namespace Engine
 
 		// Getters
 
-		// Static type getter from Component parent
-		ComponentTypes static StaticType() { return ComponentTypes::PHYSICS; }
+		// Type getter from Component parent
+		ComponentTypes StaticType() const override { return ComponentTypes::PHYSICS; }
 
-		// Static size getter from Component parent
-		size_t static StaticSize() { return sizeof(type) + sizeof(translation) + sizeof(scale) + sizeof(rotation) + sizeof(isPerson) + sizeof(entityId); }
+		// Size getter from Component parent
+		size_t StaticSize() const override { return sizeof(type) + sizeof(translation) + sizeof(scale) + sizeof(rotation) + sizeof(isPerson) + sizeof(entityId); }
 
 		// Get component data
 		void GetDataArray(uint8_t*) override;

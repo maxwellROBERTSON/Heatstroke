@@ -28,11 +28,11 @@ namespace Engine
 
 		// Getters
 
-		// Static type getter from Component parent
-		ComponentTypes static StaticType() { return ComponentTypes::CAMERA; }
+		// Type getter from Component parent
+		ComponentTypes StaticType() const override { return ComponentTypes::CAMERA; }
 
-		// Static size getter from Component parent
-		size_t static StaticSize() { return sizeof(camera.fov) + sizeof(camera.nearPlane) + sizeof(camera.farPlane) + sizeof(camera.position) + sizeof(camera.frontDirection); }
+		// Size getter from Component parent
+		size_t StaticSize() const override { return sizeof(camera.fov) + sizeof(camera.nearPlane) + sizeof(camera.farPlane) + sizeof(camera.position) + sizeof(camera.frontDirection); }
 
 		// Get component data
 		void GetDataArray(uint8_t*) override;

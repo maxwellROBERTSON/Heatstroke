@@ -29,11 +29,11 @@ namespace Engine
 
 		// Getters
 		
-		// Static type getter from Component parent
-		ComponentTypes static StaticType() { return ComponentTypes::AUDIO; }
+		// Type getter from Component parent
+		ComponentTypes StaticType() const override { return ComponentTypes::AUDIO; }
 
-		// Static size getter from Component parent
-		size_t static StaticSize() { return sizeof(soundClipCurrentlyPlaying); }
+		// Size getter from Component parent
+		size_t StaticSize() const override { return sizeof(soundClipCurrentlyPlaying); }
 		
 		// Get component data
 		void GetDataArray(uint8_t*) override;

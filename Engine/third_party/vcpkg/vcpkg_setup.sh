@@ -11,15 +11,26 @@ export VCPKG_ROOT="${PWD}"
 # Add vcpkg to PATH
 export PATH="$VCPKG_ROOT:$PATH"
 
-INSTALLED=$(./vcpkg list | grep "physx")
+INSTALLED_PHYSX=$(./vcpkg list | grep "physx")
 
 # Check if PhysX is installed
-if [ -z "$INSTALLED" ]; then
+if [ -z "$INSTALLED_PHYSX" ]; then
     echo "PhysX is not installed. Installing..."
     ./vcpkg install physx
 else
     echo "PhysX is already installed:"
-    echo "$INSTALLED"
+    echo "$INSTALLED_PHYSX"
+fi
+
+INSTALLED_OPENAL=$(./vcpkg list | grep "openal-soft")
+
+# Check if PhysX is installed
+if [ -z "$INSTALLED_OPENAL" ]; then
+    echo "OpenAL is not installed. Installing..."
+    ./vcpkg install openal-soft
+else
+    echo "OpenAL is already installed:"
+    echo "$INSTALLED_OPENAL"
 fi
 
 # Check if vulkan is installed

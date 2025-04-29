@@ -23,6 +23,18 @@ if not defined INSTALLED_PHYSX (
     echo %INSTALLED_PHYSX%
 )
 
+REM Run vcpkg list and find OpenAL
+for /f "delims=" %%i in ('vcpkg list ^| findstr "openal-soft"') do set INSTALLED_OPENAL=%%i
+
+REM Check if OpenAL is installed
+if not defined INSTALLED_OPENAL (
+    echo OpenAL is not installed. Installing...
+    .\vcpkg install openal-soft
+) else (
+    echo OpenAL is already installed:
+    echo %INSTALLED_OPENAL%
+)
+
 REM Check if Vulkan SDK is installed via system environment variables
 set VULKAN_SDK=%VULKAN_SDK%
 if not defined VULKAN_SDK (
@@ -44,18 +56,6 @@ if not defined VULKAN_SDK (
     )
 ) else (
     echo Vulkan SDK is already set in environment variable: %VULKAN_SDK%
-)
-
-REM Run vcpkg list and find OpenAL
-for /f "delims=" %%i in ('vcpkg list ^| findstr "openal-soft"') do set INSTALLED_OPENAL=%%i
-
-REM Check if OpenAL is installed
-if not defined INSTALLED_OPENAL (
-    echo OpenAL is not installed. Installing...
-    .\vcpkg install openal-soft
-) else (
-    echo OpenAL is already installed:
-    echo %INSTALLED_OPENAL%
 )
 
 echo Setting up VCPKG_TOOLCHAIN for use with Premake and CMake...
