@@ -25,10 +25,6 @@ CameraComponent serverCameraComponent = CameraComponent(Engine::Camera(100.0f, 0
 
 void FPSTest::Init()
 {
-	ac.addClip("Pain", "Game\\assets\\AudioClips\\Ugh.wav");
-	ac.addClip("Dialogue", "Game\\assets\\AudioClips\\Moron.wav");
-	ac.addClip("gunShot", "Game\\assets\\AudioClips\\singlegunshot.wav");*/
-	
 
 	this->threadPool = thread_pool_wait::get_instance();
  
@@ -83,20 +79,6 @@ void FPSTest::Update() {
 		{
 			std::cout << "A BUTTON PRESSED" << std::endl;
 		}
-	}
-
-<<<<<<<<< Temporary merge branch 1
-	EntityManager& e = GetEntityManager();
-=========
-	auto keyboard = Engine::InputManager::getKeyboard();
-	if (keyboard.isPressed(HS_KEY_W))
-	{
-		ac.playSound("Pain");
-	}
-
-	if (keyboard.isPressed(HS_KEY_S))
-	{
-		ac.playSound("Dialogue");
 	}
 
 	GetNetwork().Update();
@@ -225,7 +207,7 @@ void FPSTest::loadOfflineEntities()
 	types = { AUDIO, CAMERA, NETWORK, RENDER, PHYSICS };
 
 	// Player 1
-	types = { CAMERA, NETWORK, RENDER, PHYSICS };
+	types = { CAMERA, NETWORK, RENDER, PHYSICS, AUDIO };
 	entity = entityManager.MakeNewEntity(types);
 	entity->SetPosition(-5.0f, 0.0f, -1.0f);
 	entity->SetRotation(90.0f, glm::vec3(0.0f, 0.0f, 1.0f));

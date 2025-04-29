@@ -420,13 +420,6 @@ namespace Engine
 					f = block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[RENDER];
 					reinterpret_cast<RenderComponent*>(base)->SetDataArray(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[RENDER]);
 					break;
-				case AUDIO:
-					std::cout << "Setting the " << componentIndexArray[types[j]] << " of component of type " << types[j] << " at ";
-					std::cout << reinterpret_cast<uintptr_t>(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[AUDIO]) << std::endl;
-					f = block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[AUDIO];
-					reinterpret_cast<AudioComponent*>(base)->SetDataArray(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[AUDIO]);
-					break;
-
 				default:
 					throw std::runtime_error("Unknown component type");
 				}
@@ -533,10 +526,6 @@ namespace Engine
 							reinterpret_cast<RenderComponent*>(base)->SetDataArray(block + entityComponentOffsets[(j * 8 + k)]);
 							entityComponentOffsets[(j * 8 + k)] += ComponentSizes[RENDER];
 							break;
-						case AUDIO:
-							reinterpret_cast<AudioComponent*>(base)->SetDataArray(block + entityComponentOffsets[(j * 8 + k)]);
-							entityComponentOffsets[(j * 8 + k)] += ComponentSizes[AUDIO];
-							break;
 						default:
 							throw std::runtime_error("Unknown component type");
 						}
@@ -582,9 +571,6 @@ namespace Engine
 					break;
 				case RENDER:
 					reinterpret_cast<RenderComponent*>(base)->ToggleHasChanged();
-					break;
-				case AUDIO:
-					reinterpret_cast<AudioComponent*>(base)->ToggleHasChanged();
 					break;
 				default:
 					throw std::runtime_error("Unknown component type");
@@ -674,9 +660,6 @@ namespace Engine
 			case RENDER:
 				index = AddComponent(RENDER, entity);
 				break;
-			case AUDIO:
-				index = AddComponent(AUDIO, entity);
-				break;
 			default:
 				throw std::runtime_error("Unknown component type");
 			}
@@ -726,9 +709,6 @@ namespace Engine
 				break;
 			case RENDER:
 				index = AddComponent(RENDER, entity);
-				break;
-			case AUDIO:
-				index = AddComponent(AUDIO, entity);
 				break;
 			default:
 				throw std::runtime_error("Unknown component type");
@@ -793,9 +773,6 @@ namespace Engine
 			break;
 		case RENDER:
 			(*componentMap[RENDER]).emplace_back(std::make_unique<RenderComponent>(this, entity));
-			break;
-		case AUDIO:
-			(*componentMap[AUDIO]).emplace_back(std::make_unique<AudioComponent>(this, entity));
 			break;
 		default:
 			throw std::runtime_error("Unknown component type");
