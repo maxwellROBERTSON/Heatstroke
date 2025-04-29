@@ -149,7 +149,14 @@ project "Engine"
             "PhysXCommon_static_64",
             "PhysXFoundation_static_64",
             "openal",
-            "sndfile"
+            "sndfile",
+            "vorbis",
+            "vorbisenc",
+            "ogg",
+            "FLAC",
+            "opus",
+            "mpg123",
+            "mp3lame"
         }
     filter { "system:linux", "configurations:Release" }
         libdirs {
@@ -258,6 +265,11 @@ project "Game"
         includedirs {
             "Engine/third_party/vcpkg/installed/x64-linux/include/physx",
             "Engine/third_party/vcpkg/installed/x64-linux/include/AL",
+            "Engine/third_party/vcpkg/installed/x64-linux/include/ogg",
+            "Engine/third_party/vcpkg/installed/x64-linux/include/vorbis",
+            "Engine/third_party/vcpkg/installed/x64-linux/include/flac",
+            "Engine/third_party/vcpkg/installed/x64-linux/include/opus",
+            "Engine/third_party/vcpkg/installed/x64-linux/include/lame",
             "Engine/third_party/vcpkg/installed/x64-linux/include"
         }
 
@@ -282,7 +294,8 @@ project "Game"
         
     filter { "system:linux", "configurations:Debug" }
         libdirs {
-            "Engine/third_party/vcpkg/installed/x64-linux/debug/lib"
+            "Engine/third_party/vcpkg/installed/x64-linux/debug/lib",
+            "Engine/third_party/vcpkg/installed/x64-linux/tools",
         }
         links {
             "PhysXCharacterKinematic_static_64",
@@ -294,7 +307,14 @@ project "Game"
             "PhysXCommon_static_64",
             "PhysXFoundation_static_64",
             "openal",
-            "sndfile"
+            "sndfile",
+            "vorbis",
+            "vorbisenc",
+            "ogg",
+            "FLAC",
+            "opus",
+            "mpg123",
+            "mp3lame"
         }
     filter { "system:linux", "configurations:Release" }
         libdirs {
