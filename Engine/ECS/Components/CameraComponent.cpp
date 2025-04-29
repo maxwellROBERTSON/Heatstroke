@@ -84,15 +84,14 @@ namespace Engine
 		}
 	}
 
-
-	// Update camera using Camera class
-	void CameraComponent::UpdateCamera(GLFWwindow* aWindow, float timeDelta)
-	{
-		Camera tempCamera = camera;
-		camera.updateCamera(aWindow, timeDelta);
-		if (!(camera == tempCamera))
-			SetComponentHasChanged();
-	}
+    // Update camera using Camera class
+    void CameraComponent::UpdateCamera(GLFWwindow* aWindow, float timeDelta)
+    {
+        Camera tempCamera = camera;
+        camera.updateCamera(aWindow, timeDelta);
+        if (!(camera == tempCamera))
+            SetComponentHasChanged();
+    }
 
 	void CameraComponent::UpdateCameraPosition(glm::vec3 pos)
 	{

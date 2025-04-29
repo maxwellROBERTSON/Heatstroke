@@ -3,6 +3,9 @@
 #include <string>
 
 #include "../Core/Camera.hpp"
+
+#include "Component.hpp"
+
 #include "../EntityManager.hpp"
 
 namespace Engine
@@ -11,8 +14,6 @@ namespace Engine
 	class EntityManager;
 	class Entity;
 }
-
-#include "Component.hpp"
 
 namespace Engine
 {
@@ -45,7 +46,7 @@ namespace Engine
 		// Get camera pointer
 		Engine::Camera* GetCamera() { return &camera; }
 
-		// Setters	
+		// Setters
 
 		// Set component data
 		void SetDataArray(uint8_t*) override;

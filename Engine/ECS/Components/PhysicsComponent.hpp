@@ -6,7 +6,6 @@
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
 
-#include "Component.hpp"
 #include "../Physics/PhysicsWorld.hpp"
 #include "../../gltf/Model.hpp"
 
@@ -14,16 +13,15 @@
 #include <cassert>
 #endif
 
+#include "Component.hpp"
+
 #include "../EntityManager.hpp"
 
 namespace Engine
 {
 	class EntityManager;
 	class Entity;
-}
 
-namespace Engine
-{
 	using namespace physx;
 
 	class PhysicsWorld;
@@ -122,6 +120,8 @@ namespace Engine
 		// Toggle has changed boolean
 		void ToggleHasChanged() { hasChanged = !hasChanged; }
 
+		bool DecomposeTransform(const glm::mat4&, glm::vec3&, glm::quat&, glm::vec3&);
+
 	private:
 		// EntityManager pointer
 		Engine::EntityManager* entityManager;
@@ -144,7 +144,5 @@ namespace Engine
 		bool isPerson = false;
 
 		int entityId = -1;
-
-		bool DecomposeTransform(const glm::mat4&, glm::vec3&, glm::quat&, glm::vec3&);
 	};
 }

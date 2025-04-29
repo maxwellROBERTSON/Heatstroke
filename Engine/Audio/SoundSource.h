@@ -9,6 +9,9 @@ public:
 	~SoundSource();
 
 	void Play(const ALuint bufferToPlay);
+	void Stop();
+
+	ALuint GetBuffer();
 
 private:
 	//speaker variables
@@ -18,6 +21,6 @@ private:
 	float p_Position[3] = { 0,0,0 };
 	float p_Velocity[3] = { 0,0,0 };
 	bool p_LoopSound = false;
-	ALuint p_Buffer = 0; 
+	ALuint p_Buffer = 0; //buffer which will be played
 };
 

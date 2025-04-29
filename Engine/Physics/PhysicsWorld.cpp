@@ -1,14 +1,8 @@
 #include "../ECS/Components/PhysicsComponent.hpp"
-#include "../ECS/Components/PhysicsComponent.hpp"
-#include "../ECS/EntityManager.hpp"
 #include "../ECS/EntityManager.hpp"
 #include "../gltf/Model.hpp"
-#include "../gltf/Model.hpp"
-#include "../Input/Input.hpp"
 #include "../Input/Input.hpp"
 #include "../Input/InputCodes.hpp"
-#include "../Input/InputCodes.hpp"
-#include "../Input/Keyboard.hpp"
 #include "../Input/Keyboard.hpp"
 #include "IgnoreSelfFilterCallback.hpp"
 #include "PhysicsWorld.hpp"
@@ -17,12 +11,16 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/string_cast.hpp>
+#include "RaycastUtility.hpp"
+#include "../ECS/Components/AudioComponent.hpp"
+#include "../Core/Game.hpp"
+#include "../../Game/DemoGame.hpp"
 
 namespace Engine
 {
 	physx::PxDefaultErrorCallback PhysicsWorld::gErrorCallback;
 
-	void PhysicsWorld::init() {
+	void PhysicsWorld::init(EntityManager* entityManager) {
 
 		// gFoundation
 		gFoundation = PxCreateFoundation(PX_PHYSICS_VERSION, gAllocator, gErrorCallback);
@@ -95,6 +93,8 @@ namespace Engine
 			std::cerr << "createMaterial failed!" << std::endl;
 			std::exit(-1);
 		}
+
+		this->entityManager = entityManager;
 	}
 
 	void PhysicsWorld::updatePhysics(Entity* playerEntity, PxReal timeDelta)
@@ -168,23 +168,22 @@ namespace Engine
 			auto& keyboard = Engine::InputManager::getKeyboard();
 
 			if (keyboard.isPressed(HS_KEY_W)) {
-				displacement.z -= speed * deltatime;
-			}
-			if (keyboard.isPressed(HS_KEY_S)) {
-				displacement.z += speed * deltatime;
-			}
-			if (keyboard.isPressed(HS_KEY_A)) {
 				displacement.x -= speed * deltatime;
 			}
-			if (keyboard.isPressed(HS_KEY_D)) {
+			if (keyboard.isPressed(HS_KEY_S)) {
 				displacement.x += speed * deltatime;
+			}
+			if (keyboard.isPressed(HS_KEY_D)) {
+				displacement.z -= speed * deltatime;
+			}
+			if (keyboard.isPressed(HS_KEY_A)) {
+				displacement.z += speed * deltatime;
 			}
 
 			// isGrounded check
 			PxControllerState cstate;
 			controller->getState(cstate);
 			bool isGrounded = (cstate.collisionFlags & PxControllerCollisionFlag::eCOLLISION_DOWN);
-
 
 			if (isGrounded && keyboard.isPressed(HS_KEY_SPACE)) {
 				verticalVelocity = jumpSpeed;
@@ -209,7 +208,6 @@ namespace Engine
 
 	void PhysicsWorld::handleMovement(Entity* playerEntity, PxReal deltatime)
 	{
-
 		glm::vec3 entityFrontDir = playerEntity->frontDirection;
 		glm::vec3 entityRightDir = glm::normalize(glm::cross(entityFrontDir, glm::vec3(0.0f, 1.0f, 0.0f)));
 		if (this->controller)
@@ -273,6 +271,9 @@ namespace Engine
 		////auto& mouse = Engine::InputManager::getMouse();
 		//if (keyboard.isPressed(HS_KEY_P)) {
 
+			//get the audio component from the player entity which has an ID of 1 
+			AudioComponent* audioComponent = reinterpret_cast<AudioComponent*>(this->entityManager->GetComponentOfEntity(1, AUDIO));
+			audioComponent->playSound("GunShot");
 		PxExtendedVec3 extPos = controller->getFootPosition();
 		PxVec3 pos = PxVec3(static_cast<float>(extPos.x), static_cast<float>(extPos.y), static_cast<float>(extPos.z));
 		PxVec3 direction(0.f, 1.f, 1.f);
@@ -303,7 +304,6 @@ namespace Engine
 		//}
 	}
 
-
 	// update models matrices
 	void PhysicsWorld::updateObjects(Engine::EntityManager& entityManager, std::vector<Engine::vk::Model>& models)
 	{
@@ -311,7 +311,7 @@ namespace Engine
 		std::vector<ComponentBase*> physicsComponents = entityManager.GetSimulatedPhysicsComponents();
 		for (std::size_t i = 0; i < physicsComponents.size(); i++) {
 			PhysicsComponent* p = reinterpret_cast<PhysicsComponent*>(physicsComponents[i]);
-			// glm::mat4 matrix(1.0f);
+
 			// dynamic update
 			if (p->GetPhysicsType() == PhysicsComponent::PhysicsType::DYNAMIC)
 			{
@@ -319,12 +319,13 @@ namespace Engine
 				//matrix = glm::scale(matrix, p->GetScale());
 				//entityManager.GetEntity(p->GetEntityId())->SetModelMatrix(matrix);
 				//continue;
-
-				Entity* entity = entityManager.GetEntity(p->GetEntityId());
 				PxTransform transform = p->GetDynamicBody()->getGlobalPose();
 				entity->SetPosition(transform.p.x, transform.p.y, transform.p.z);
 				entity->SetRotation(glm::quat(transform.q.w, transform.q.x, transform.q.y, transform.q.z));
-				entity->SetScale(p->GetScale().x, p->GetScale().y, p->GetScale().z);
+				glm::vec3 scale = p->GetScale();
+				entity->SetScale(scale.x, scale.y, scale.z);
+
+				continue; //?
 			}
 
 			// controller update

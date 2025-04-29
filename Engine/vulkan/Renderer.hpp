@@ -25,6 +25,7 @@ namespace Engine {
 		glsl::MaterialInfoBuffer materialInfoBuffer;
 		glsl::LightsUniform lightsUniform;
 		glsl::DepthMVP depthMVP;
+		glsl::OrthoMatrices orthoMatrices;
 	};
 
 	class Renderer {
@@ -107,6 +108,7 @@ namespace Engine {
 		std::vector<vk::Framebuffer> forwardMSAAFramebuffers;
 		std::vector<vk::Framebuffer> deferredFramebuffers;
 		std::vector<vk::Framebuffer> shadowFramebuffer;
+		std::vector<vk::Framebuffer> crosshairFramebuffer;
 
 		std::size_t frameIndex = 0;
 		std::uint32_t imageIndex = 0;

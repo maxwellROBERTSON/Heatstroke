@@ -1,11 +1,14 @@
 #include <algorithm>
+#include <iostream>
 
 #include "EntityManager.hpp"
 #include "Components/Component.hpp"
+#include "Components/AudioComponent.hpp"
 #include "Components/CameraComponent.hpp"
 #include "Components/NetworkComponent.hpp"
 #include "Components/PhysicsComponent.hpp"
 #include "Components/RenderComponent.hpp"
+#include "Components/AudioComponent.hpp"
 
 namespace Engine
 {
@@ -15,9 +18,13 @@ namespace Engine
 		// Check map size
 		if (componentMap.size() != ComponentTypes::TYPE_COUNT)
 		{
+			std::cout << "componentMap.size(): " << componentMap.size() << "ComponentTypes::TYPE_COUNT: " << ComponentTypes::TYPE_COUNT << std::endl;
 			throw std::runtime_error("Size mismatch between componentMap and ComponentTypes");
 		}
 		// Check if ComponentSizes is correct
+		AudioComponent a;
+		if (ComponentSizes[AUDIO] != a.StaticSize())
+			throw std::runtime_error("Size mismatch between: ComponentSizes[AUDIO] and Audio size");
 		CameraComponent c;
 		if (ComponentSizes[CAMERA] != c.StaticSize())
 			throw std::runtime_error("Size mismatch between: ComponentSizes[CAMERA] and Camera size");
@@ -47,7 +54,6 @@ namespace Engine
 			return 0;
 
 		int numEntities = GetNumberOfEntities();
-		size_t entitySize = entities[0].get()->GetEntitySize();
 		size_t totalSize = 1 + entities[0].get()->GetEntitySize() * numEntities + TYPE_COUNT + TYPE_COUNT * numEntities;
 		ComponentTypes type;
 		for (int i = 0; i < TYPE_COUNT; i++)
@@ -102,7 +108,9 @@ namespace Engine
 	// Get a pointer to the component of an entity
 	ComponentBase* EntityManager::GetComponentOfEntity(int entityId, ComponentTypes type)
 	{
-		int index = entities[entityId].get()->GetComponent(type);
+		Entity *e = entities[entityId].get();
+		int index = e->GetComponent(type);
+
 		if (index == -1)
 		{
 			return nullptr;
@@ -116,13 +124,15 @@ namespace Engine
 	// Get a pointer to all the components of a type
 	std::vector<std::unique_ptr<ComponentBase>>* EntityManager::GetComponentsOfType(ComponentTypes type) {
 		auto it = componentMap.find(type);
-		if (it != componentMap.end() && !it->second->empty())
+		return it->second;
+		if (it != componentMap.end())
 		{
 			return it->second;
 		}
-
-		// Return nullptr if not found or vector is empty
-		return nullptr;
+		else
+		{
+			throw std::runtime_error("Unknown component type");
+		}
 	}
 
 	// Get component data of all entities
@@ -380,6 +390,12 @@ namespace Engine
 				base = GetComponentOfEntity(entity->GetEntityId(), types[j]);
 				switch (types[j])
 				{
+				case AUDIO:
+					std::cout << "Setting the " << componentIndexArray[types[j]] << " of component of type " << types[j] << " at ";
+					std::cout << reinterpret_cast<uintptr_t>(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[AUDIO]) << std::endl;
+					f = block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[AUDIO];
+					reinterpret_cast<AudioComponent*>(base)->SetDataArray(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[AUDIO]);
+					break;
 				case CAMERA:
 					std::cout << "Setting the " << componentIndexArray[types[j]] << " of component of type " << types[j] << " at ";
 					std::cout << reinterpret_cast<uintptr_t>(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[CAMERA]) << std::endl;
@@ -490,6 +506,10 @@ namespace Engine
 
 						switch (type)
 						{
+						case AUDIO:
+							reinterpret_cast<AudioComponent*>(base)->SetDataArray(block + entityComponentOffsets[(j * 8 + k)]);
+							entityComponentOffsets[(j * 8 + k)] += ComponentSizes[AUDIO];
+							break;
 						case CAMERA:
 							reinterpret_cast<CameraComponent*>(base)->SetDataArray(block + entityComponentOffsets[(j * 8 + k)]);
 							entityComponentOffsets[(j * 8 + k)] += ComponentSizes[CAMERA];
@@ -537,6 +557,9 @@ namespace Engine
 				base = GetComponentOfEntity(changedEntitiesAndComponents[i].first, type);
 				switch (type)
 				{
+				case AUDIO:
+					reinterpret_cast<AudioComponent*>(base)->ToggleHasChanged();
+					break;
 				case CAMERA:
 					reinterpret_cast<CameraComponent*>(base)->ToggleHasChanged();
 					break;
@@ -622,6 +645,9 @@ namespace Engine
 		{
 			switch (components[i])
 			{
+			case AUDIO:
+				index = AddComponent(AUDIO, entity);
+				break;
 			case CAMERA:
 				index = AddComponent(CAMERA, entity);
 				break;
@@ -669,6 +695,9 @@ namespace Engine
 		{
 			switch (components[i])
 			{
+			case AUDIO:
+				index = AddComponent(AUDIO, entity);
+				break;
 			case CAMERA:
 				index = AddComponent(CAMERA, entity);
 				break;
@@ -729,6 +758,9 @@ namespace Engine
 		index = (int)vec.size();
 		switch (type)
 		{
+		case AUDIO:
+			(*componentMap[AUDIO]).emplace_back(std::make_unique<AudioComponent>(this, entity));
+			break;
 		case CAMERA:
 			(*componentMap[CAMERA]).emplace_back(std::make_unique<CameraComponent>(this, entity));
 			break;
