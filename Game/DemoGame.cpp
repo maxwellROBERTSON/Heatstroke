@@ -14,6 +14,7 @@
 #include "../Engine/vulkan/VulkanDevice.hpp"
 
 #include "Error.hpp"
+//#include "glm/gtc/random.hpp"
 #include "glm/gtx/string_cast.hpp"
 #include "toString.hpp"
 
@@ -27,6 +28,8 @@ using namespace Engine;
 
 float fireDelay = 1.0f;
 bool canFire = true;
+
+
 
 void FPSTest::Init()
 {
@@ -169,7 +172,31 @@ void FPSTest::Update() {
 			models[playerModelIndex].blending = true;
 			canFire = false;
 			fireDelay = 1.0f;
-			physicsWorld.handleShooting(playerEntity);
+			PxRaycastHit entityHit = physicsWorld.handleShooting(playerEntity);
+			std::vector<int> entitiesWithPhysicsComponent = GetEntityManager().GetEntitiesWithComponent(PHYSICS);
+			for (int i = 0; i < entitiesWithPhysicsComponent.size(); i++)
+			{
+				Entity* entity = GetEntityManager().GetEntity(entitiesWithPhysicsComponent[i]);
+				PhysicsComponent* physicsComponent = reinterpret_cast<PhysicsComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
+				if (physicsComponent->GetStaticBody() == entityHit.actor)
+				{
+					RenderComponent* hitRenderComponent = reinterpret_cast<RenderComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), RENDER));
+					hitRenderComponent->SetIsActive(0);
+				}
+				//playerEntity = entityManager.GetEntity(entitiesWithNetworkComponent[i]);
+				//networkComponent = reinterpret_cast<NetworkComponent*>(entityManager.GetComponentOfEntity(entitiesWithNetworkComponent[i], NETWORK));
+				//if (networkComponent->GetClientId() == offlineClientId)
+				//{
+				//	cameraComponent = reinterpret_cast<CameraComponent*>(entityManager.GetComponentOfEntity(entitiesWithNetworkComponent[i], CAMERA));
+				//	GetRenderer().attachCameraComponent(cameraComponent);
+				//}
+			}
+			//if (entityHit.actor->getName() == "Target")
+			//{
+			//	RenderComponent* targetRenderComponent = reinterpret_cast<RenderComponent*>(GetEntityManager().GetComponentOfEntity(targetEntity1->GetEntityId(), RENDER));
+			//	//RenderComponent* targetRenderComponent = reinterpret_cast<RenderComponent*>(GetEntityManager().GetComponentOfEntity(reinterpret_cast<int>(entityHit.actor->getName()), RENDER));
+			//	targetRenderComponent->SetIsActive(0);
+			//}
 		}
 
 		physicsWorld.updateObjects(GetEntityManager(), GetModels());
@@ -238,6 +265,7 @@ void FPSTest::loadOfflineEntities()
 	CameraComponent* cameraComponent;
 	RenderComponent* renderComponent;
 	PhysicsComponent* physicsComponent;
+	NetworkComponent* networkComponent;
 
 	AudioComponent* audioComponent;
 
@@ -252,7 +280,7 @@ void FPSTest::loadOfflineEntities()
 	renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(mapEntity->GetEntityId(), RENDER));
 	renderComponent->SetModelIndex(0);
 	physicsComponent = reinterpret_cast<PhysicsComponent*>(entityManager.GetComponentOfEntity(mapEntity->GetEntityId(), PHYSICS));
-	physicsComponent->InitComplexShape(physicsWorld, PhysicsComponent::PhysicsType::STATIC, models[renderComponent->GetModelIndex()], mapEntity->GetModelMatrix(), mapEntity->GetEntityId());
+	physicsComponent->InitComplexShape("Map", physicsWorld, PhysicsComponent::PhysicsType::STATIC, models[renderComponent->GetModelIndex()], mapEntity->GetModelMatrix(), mapEntity->GetEntityId());
 	entityManager.AddSimulatedPhysicsEntity(mapEntity->GetEntityId());
 
 	// Character Model
@@ -278,7 +306,8 @@ void FPSTest::loadOfflineEntities()
 	//add audio component to player
 	audioComponent = reinterpret_cast<AudioComponent*>(GetEntityManager().GetComponentOfEntity(playerEntity->GetEntityId(), AUDIO));
 
-	// audioComponent = reinterpret_cast<AudioComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), AUDIO));
+	networkComponent = reinterpret_cast<NetworkComponent*>(GetEntityManager().GetComponentOfEntity(playerEntity->GetEntityId(), NETWORK));
+	networkComponent->SetClientId(0);
 	//add gunshot sound clip to the player for the gun 
 	audioComponent->addClip("GunShot", "Game\\assets\\AudioClips\\singlegunshot.wav");
 	GetRenderer().attachCameraComponent(cameraComponent);
@@ -304,35 +333,56 @@ void FPSTest::loadOfflineEntities()
 
 
 
-		// targets
+	// targets
+	int numberOfTargets = 5;
+	Entity* targetEntity;
 	types = { RENDER, PHYSICS };
-	targetEntity1 = entityManager.MakeNewEntity(types);
-	targetEntity1->SetPosition(target1Pos);
-	renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(targetEntity1->GetEntityId(), RENDER));
-	renderComponent->SetModelIndex(6);
-	physicsComponent = reinterpret_cast<PhysicsComponent*>(entityManager.GetComponentOfEntity(targetEntity1->GetEntityId(), PHYSICS));
-	physicsComponent->InitComplexShape(physicsWorld, PhysicsComponent::PhysicsType::STATIC, models[renderComponent->GetModelIndex()], targetEntity1->GetModelMatrix(), targetEntity1->GetEntityId());
-	entityManager.AddSimulatedPhysicsEntity(targetEntity1->GetEntityId());
+	for (int i = 0; i < numberOfTargets; i++)
+	{
+		targetEntity = entityManager.MakeNewEntity(types);
+		//glm::vec2 randomPos = glm::diskRand(5.0f);
+		targetEntity->SetPosition(glm::vec3(i, 1.0f, 0.0f));
+		renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(targetEntity->GetEntityId(), RENDER));
+		renderComponent->SetModelIndex(6);
+		physicsComponent = reinterpret_cast<PhysicsComponent*>(entityManager.GetComponentOfEntity(targetEntity->GetEntityId(), PHYSICS));
+		physicsComponent->InitComplexShape("Target", physicsWorld, PhysicsComponent::PhysicsType::STATIC, models[renderComponent->GetModelIndex()], targetEntity->GetModelMatrix(), targetEntity->GetEntityId());
+		entityManager.AddSimulatedPhysicsEntity(targetEntity->GetEntityId());
+	}
 
-	targetEntity2 = entityManager.MakeNewEntity(types);
-	targetEntity2->SetPosition(target2Pos);
-	renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(targetEntity2->GetEntityId(), RENDER));
-	renderComponent->SetModelIndex(6);
-	physicsComponent = reinterpret_cast<PhysicsComponent*>(entityManager.GetComponentOfEntity(targetEntity2->GetEntityId(), PHYSICS));
-	physicsComponent->InitComplexShape(physicsWorld, PhysicsComponent::PhysicsType::STATIC, models[renderComponent->GetModelIndex()], targetEntity2->GetModelMatrix(), targetEntity2->GetEntityId());
-	entityManager.AddSimulatedPhysicsEntity(targetEntity2->GetEntityId());
-	// 	std::vector<int> entitiesWithNetworkComponent = entityManager.GetEntitiesWithComponent(NETWORK);
-	// for (int i = 0; i < entitiesWithNetworkComponent.size(); i++)
-	// {
-	// 	entity = entityManager.GetEntity(entitiesWithNetworkComponent[i]);
-	// 	networkComponent = reinterpret_cast<NetworkComponent*>(entityManager.GetComponentOfEntity(entitiesWithNetworkComponent[i], NETWORK));
-	// 	if (networkComponent->GetClientId() == offlineClientId)
-	// 	{
-	// 		cameraComponent = reinterpret_cast<CameraComponent*>(entityManager.GetComponentOfEntity(entitiesWithNetworkComponent[i], CAMERA));
-	// 		GetRenderer().attachCameraComponent(cameraComponent);
-	// 	}
-	// }
+	//targetEntity1 = entityManager.MakeNewEntity(types);
+	//targetEntity1->SetPosition(target1Pos);
+	//renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(targetEntity1->GetEntityId(), RENDER));
+	//renderComponent->SetModelIndex(6);
+	//physicsComponent = reinterpret_cast<PhysicsComponent*>(entityManager.GetComponentOfEntity(targetEntity1->GetEntityId(), PHYSICS));
+	//physicsComponent->InitComplexShape("Target", physicsWorld, PhysicsComponent::PhysicsType::STATIC, models[renderComponent->GetModelIndex()], targetEntity1->GetModelMatrix(), targetEntity1->GetEntityId());
+	//entityManager.AddSimulatedPhysicsEntity(targetEntity1->GetEntityId());
 
+	//targetEntity2 = entityManager.MakeNewEntity(types);
+	//targetEntity2->SetPosition(target2Pos);
+	//renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(targetEntity2->GetEntityId(), RENDER));
+	//renderComponent->SetModelIndex(6);
+	//physicsComponent = reinterpret_cast<PhysicsComponent*>(entityManager.GetComponentOfEntity(targetEntity2->GetEntityId(), PHYSICS));
+	//physicsComponent->InitComplexShape("Target", physicsWorld, PhysicsComponent::PhysicsType::STATIC, models[renderComponent->GetModelIndex()], targetEntity2->GetModelMatrix(), targetEntity2->GetEntityId());
+	//entityManager.AddSimulatedPhysicsEntity(targetEntity2->GetEntityId());
+
+	//targetEntity3 = entityManager.MakeNewEntity(types);
+	//targetEntity3->SetPosition(target3Pos);
+	//renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(targetEntity3->GetEntityId(), RENDER));
+	//renderComponent->SetModelIndex(6);
+	//physicsComponent = reinterpret_cast<PhysicsComponent*>(entityManager.GetComponentOfEntity(targetEntity3->GetEntityId(), PHYSICS));
+	//physicsComponent->InitComplexShape("Target", physicsWorld, PhysicsComponent::PhysicsType::STATIC, models[renderComponent->GetModelIndex()], targetEntity3->GetModelMatrix(), targetEntity3->GetEntityId());
+	//entityManager.AddSimulatedPhysicsEntity(targetEntity3->GetEntityId());
+	std::vector<int> entitiesWithNetworkComponent = entityManager.GetEntitiesWithComponent(NETWORK);
+	for (int i = 0; i < entitiesWithNetworkComponent.size(); i++)
+	{
+		playerEntity = entityManager.GetEntity(entitiesWithNetworkComponent[i]);
+		networkComponent = reinterpret_cast<NetworkComponent*>(entityManager.GetComponentOfEntity(entitiesWithNetworkComponent[i], NETWORK));
+		if (networkComponent->GetClientId() == offlineClientId)
+		{
+			cameraComponent = reinterpret_cast<CameraComponent*>(entityManager.GetComponentOfEntity(entitiesWithNetworkComponent[i], CAMERA));
+			GetRenderer().attachCameraComponent(cameraComponent);
+		}
+	}
 	GetEntityManager().ResetChanged();
 }
 
@@ -452,6 +502,7 @@ void FPSTest::loadOnlineEntities(int maxClientsNum)
 	EntityManager& e = GetEntityManager();
 	GetEntityManager().ResetChanged();
 }
+
 
 
 Crosshair& FPSTest::getCrosshair() {

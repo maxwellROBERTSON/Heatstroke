@@ -55,15 +55,15 @@ namespace Engine
 		void handleMovement(Entity* playerEntity, PxReal deltatime);
 
 		void handleShooting();
-		void handleShooting(Entity* playerEntity);
+		PxRaycastHit handleShooting(Entity* playerEntity);
 
 		void updatePhysics(Entity* playerEntity, PxReal timeDelta);
 		void updatePhysics(PxReal timeDelta);
 
 		void updateCharacter(PxReal deltatime);
-		void updateCharacter(Entity* playerEntity, PxReal deltatime); // from input actions
+		void updateCharacter(Entity* playerEntity, PxReal deltatime);
 
-		void updateObjects(Engine::EntityManager& entityManager, std::vector<Engine::vk::Model>& models);
+		void updateObjects(Engine::EntityManager& entityManager, std::vector<Engine::vk::Model>& models); //TODO
 
 		void cleanupPhysX();
 

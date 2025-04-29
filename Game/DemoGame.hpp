@@ -6,13 +6,13 @@
 
 #include "../Engine/Core/Game.hpp"
 
-#include "../Engine/ECS/EntityManager.hpp"
 #include "../Engine/ECS/Components/AudioComponent.hpp"
 #include "../Engine/ECS/Components/CameraComponent.hpp"
 #include "../Engine/ECS/Components/NetworkComponent.hpp"
 #include "../Engine/ECS/Components/PhysicsComponent.hpp"
 #include "../Engine/ECS/Components/RenderComponent.hpp"
 #include "../Engine/ECS/Entity.hpp"
+#include "../Engine/ECS/EntityManager.hpp"
 #include "../Engine/ECS/EntityManager.hpp"
 
 #include "../Engine/Physics/PhysicsWorld.hpp"
@@ -55,6 +55,7 @@ public:
 	void loadOfflineEntities();
 	void loadOnlineEntities(int);
 
+
 	~FPSTest() {
 		for (Engine::vk::Model& model : GetModels())
 			model.destroy();
@@ -90,10 +91,15 @@ public:
 	Engine::Entity* mapEntity;
 
 	// Targets (make a vector (fingers crossed) at some point)
-	Engine::Entity* targetEntity1;
-	Engine::Entity* targetEntity2;
-	glm::vec3 target1Pos{ 2.0f, 1.0f, 0.0f }; // generate randomly
-	glm::vec3 target2Pos{ -2.0f, 1.0f, 0.0f }; // ^
+	//Engine::Entity* targetEntity1;
+	//Engine::Entity* targetEntity2;
+	//Engine::Entity* targetEntity3;
+	//glm::vec3 target1Pos{ 2.0f, 1.0f, 0.0f }; // generate randomly
+	//glm::vec3 target2Pos{ -2.0f, 1.0f, 0.0f }; // ^
+	//glm::vec3 target3Pos{ 2.0f, 5.0f, 0.0f }; // ^
+
+	//std::vector<Engine::Entity*> targetEntities;
+	//std::vector<glm::vec3> targetPositions;
 
 	// -- input actions
 

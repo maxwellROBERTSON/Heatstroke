@@ -68,7 +68,8 @@ namespace Engine
 
 		bool firstClick = true;
 
-		CameraMode camMode{ CameraMode::SCENE };
+		CameraMode camMode{ CameraMode::PLAYER };
+		//CameraMode camMode{ CameraMode::SCENE };
 		float yaw = 0.0f;
 		float pitch = 0.0f;
 		float lastX = 0.0f;
