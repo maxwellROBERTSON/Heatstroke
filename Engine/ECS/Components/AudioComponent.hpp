@@ -2,8 +2,9 @@
 
 #include <string>
 #include <iostream>
-#include "../third_party/AL/al.h"
 
+#include "../third_party/AL/al.h"
+#include "../EntityManager.hpp"
 #include "Component.hpp"
 
 //forward declaration
@@ -12,12 +13,20 @@ class SoundSource;
 class SoundBuffer;
 
 
+//namespace Engine
+//{
+//	class EntityManager;
+//	class Entity;
+//}
+
+
 namespace Engine
 {
 	class AudioComponent : public Component<AudioComponent>
 	{
 	public:
 		AudioComponent();
+		AudioComponent(Engine::EntityManager* entityManager, Engine::Entity* entity);
 		
 		void operator=(const AudioComponent& other) override
 		{
@@ -73,6 +82,12 @@ namespace Engine
 		ALuint getState();
 
 		void updateState();
+
+	private:
+		// EntityManager pointer
+		Engine::EntityManager* entityManager;
+		// Entity pointer
+		Engine::Entity* entity;
 	};
 }
 

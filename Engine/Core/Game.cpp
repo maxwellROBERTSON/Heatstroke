@@ -4,8 +4,11 @@
 
 namespace Engine
 {
+	int Game::instanceCount = 0;
+
 	Game::Game(const std::string& name, int width, int height)
 	{
+		instanceCount++;
 		mContext.window = initialiseVulkan(name, width, height);
 		mContext.allocator = createVulkanAllocator(*mContext.window.get());
 		InputManager::RegisterCallbacks(mContext.window.get());

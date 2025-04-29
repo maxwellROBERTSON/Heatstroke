@@ -12,6 +12,22 @@ Engine::AudioComponent::AudioComponent()
 	speaker = new SoundSource();
 	soundClipCurrentlyPlaying = 0;
 	state = AL_INITIAL;
+
+	entity = nullptr;
+	entityManager = nullptr;
+}
+
+Engine::AudioComponent::AudioComponent(Engine::EntityManager* entityManager, Engine::Entity* entity)
+{
+	std::cout << "AudioComponent created" << std::endl;
+	soundDevice = SoundDevice::get();
+	soundBuffer = SoundBuffer::get();
+	speaker = new SoundSource();
+	soundClipCurrentlyPlaying = 0;
+	state = AL_INITIAL;
+
+	entity = entity;
+	entityManager = entityManager;
 }
 
 void Engine::AudioComponent::GetDataArray(uint8_t* data)

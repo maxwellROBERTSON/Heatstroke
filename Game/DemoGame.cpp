@@ -40,7 +40,7 @@ void FPSTest::Init()
 	//blocks execution of the rest of the program until the initialiseModels Thread has finished
 	modelsFut.get();
 
-	GetPhysicsWorld().init();
+	GetPhysicsWorld().init(&GetEntityManager());
 	GetRenderer().initialiseRenderer();
 	GetGUI().initGUI();
 	GetRenderer().attachCameraComponent(&serverCameraComponent);
@@ -224,7 +224,12 @@ void FPSTest::loadOfflineEntities()
 	cameraComponent->SetCamera(Engine::Camera(100.0f, 0.01f, 256.0f, glm::vec3(-3.0f, 2.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
 	networkComponent = reinterpret_cast<NetworkComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), NETWORK));
 	networkComponent->SetClientId(0);
-	
+	//add audio component to player
+	audioComponent = reinterpret_cast<AudioComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), AUDIO));
+	//add gunshot sound clip to the player for the gun 
+	audioComponent->addClip("GunShot", "Game\\assets\\AudioClips\\singlegunshot.wav");
+
+
 
 	//// Player 2
 	//types = { RENDER };

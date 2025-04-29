@@ -10,12 +10,15 @@
 #include "../Input/InputCodes.hpp"
 #include "../Input/Input.hpp"
 #include "RaycastUtility.hpp"
+#include "../ECS/Components/AudioComponent.hpp"
+#include "../Core/Game.hpp"
+#include "../../Game/DemoGame.hpp"
 
 namespace Engine
 {
 	physx::PxDefaultErrorCallback PhysicsWorld::gErrorCallback;
 
-	void PhysicsWorld::init() {
+	void PhysicsWorld::init(EntityManager* entityManager) {
 
 		// gFoundation
 		gFoundation = PxCreateFoundation(PX_PHYSICS_VERSION, gAllocator, gErrorCallback);
@@ -88,6 +91,8 @@ namespace Engine
 			std::cerr << "createMaterial failed!" << std::endl;
 			std::exit(-1);
 		}
+
+		this->entityManager = entityManager;
 	}
 
 	void PhysicsWorld::updatePhysics(PxReal timeDelta) {
@@ -190,10 +195,16 @@ namespace Engine
 		//auto& mouse = Engine::InputManager::getMouse();
 		if (keyboard.isPressed(HS_KEY_P)) {
 
+			//get the audio component from the player entity which has an ID of 1 
+			AudioComponent* audioComponent = reinterpret_cast<AudioComponent*>(this->entityManager->GetComponentOfEntity(1, AUDIO));
+			audioComponent->playSound("GunShot");
+			
+
 			PxExtendedVec3 extPos = controller->getFootPosition();
 			PxVec3 pos = PxVec3(static_cast<float>(extPos.x), static_cast<float>(extPos.y), static_cast<float>(extPos.z));
 			PxVec3 direction(0.f, 1.f, 1.f);
 			direction.normalize();
+
 
 			PxRaycastHit hit;
 			PxRigidActor* selfActor = controller->getActor();

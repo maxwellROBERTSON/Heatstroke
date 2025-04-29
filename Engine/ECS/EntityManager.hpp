@@ -16,6 +16,11 @@ namespace Engine
 		~EntityManager() {}
 
 		// Getters
+		static EntityManager& GetEntityManager() 
+		{ 
+			static EntityManager instance;
+			return instance; 
+		}
 
 		// Get total data size
 		int GetTotalDataSize();
@@ -122,7 +127,7 @@ namespace Engine
 			{ ComponentTypes::NETWORK, &networkComponents },
 			{ ComponentTypes::PHYSICS, &physicsComponents },
 			{ ComponentTypes::RENDER, &renderComponents },
-			{ ComponentTypes::AUDIO, &renderComponents }
+			{ ComponentTypes::AUDIO, &audioComponents }
 		};
 
 		// For each component type, there is an entry, each holding ids of entities with that component type
@@ -143,7 +148,6 @@ namespace Engine
 		// fov + near + far + vec3(pos) + vec3(front_dir) = 9 * float
 		// If network:
 		// clientid = int
-
 	};
 }
 
