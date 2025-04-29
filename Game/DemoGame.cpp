@@ -113,8 +113,8 @@ void FPSTest::Update() {
 
 		float fixedTimeDelta = std::min<float>(0.016f, timeDelta);
 
-		physicsWorld.updatePhysics(timeDelta);
-		//physicsWorld.updatePhysics(playerEntity, timeDelta);
+		//physicsWorld.updatePhysics(timeDelta);
+		physicsWorld.updatePhysics(playerEntity, timeDelta);
 
 		CameraComponent* cameraComponent = reinterpret_cast<CameraComponent*>(GetEntityManager().GetComponentOfEntity(playerEntity->GetEntityId(), CAMERA));
 
@@ -263,6 +263,7 @@ void FPSTest::loadOfflineEntities()
 	renderComponent = reinterpret_cast<RenderComponent*>(GetEntityManager().GetComponentOfEntity(playerEntity->GetEntityId(), RENDER));
 	renderComponent->SetModelIndex(3);
 	physicsComponent = reinterpret_cast<PhysicsComponent*>(GetEntityManager().GetComponentOfEntity(playerEntity->GetEntityId(), PHYSICS));
+	entityManager.AddSimulatedPhysicsEntity(playerEntity->GetEntityId());
 	physicsComponent->Init(physicsWorld, PhysicsComponent::PhysicsType::CONTROLLER, models[renderComponent->GetModelIndex()], playerEntity->GetModelMatrix(), playerEntity->GetEntityId(), true, true);
 	GetRenderer().attachCameraComponent(cameraComponent);
 
