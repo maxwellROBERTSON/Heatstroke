@@ -6,12 +6,12 @@
 #include <thread>
 #include <type_traits>
 
+#include "../ECS/Components/AudioComponent.hpp"
 #include "../Engine/vulkan/objects/Buffer.hpp"
 #include "../Engine/vulkan/PipelineCreation.hpp"
 #include "../Engine/vulkan/Renderer.hpp"
 #include "../Engine/vulkan/Skybox.hpp"
 #include "../Engine/vulkan/VulkanDevice.hpp"
-#include "../ECS/Components/AudioComponent.hpp"
 
 #include "Error.hpp"
 #include "glm/gtx/string_cast.hpp"
@@ -23,7 +23,7 @@
 #include <imgui.h>
 
 
-	using namespace Engine;
+using namespace Engine;
 
 float fireDelay = 1.0f;
 bool canFire = true;
@@ -41,13 +41,13 @@ void FPSTest::Init()
 	modelsFut.get();
 
 
-		// Camera
-		sceneCam = Camera(60.0f, 0.01f, 1000.0f, glm::vec3(0.0f, 0.0f, -5.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	// Camera
+	sceneCam = Camera(60.0f, 0.01f, 1000.0f, glm::vec3(0.0f, 0.0f, -5.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 
 
-		GetPhysicsWorld().init(&GetEntityManager());
+	GetPhysicsWorld().init(&GetEntityManager());
 
-		GetRenderer().initialiseRenderer();
+	GetRenderer().initialiseRenderer();
 
 	GetGUI().initGUI();
 	GetRenderer().attachCameraComponent(new CameraComponent(Engine::Camera(100.0f, 0.01f, 256.0f, glm::vec3(-3.0f, 2.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f))));
@@ -85,8 +85,8 @@ void FPSTest::Update() {
 
 	Engine::InputManager::Update();
 
-	EntityManager & e = GetEntityManager();
-	
+	EntityManager& e = GetEntityManager();
+
 	GetNetwork().Update();
 
 	// Need to process GUI stuff before checking swapchain, since
@@ -156,24 +156,20 @@ void FPSTest::Update() {
 		if (Engine::InputManager::getKeyboard().isPressed(HS_KEY_P))
 		{
 			RenderComponent* renderComponent = reinterpret_cast<RenderComponent*>(GetEntityManager().GetComponentOfEntity(playerEntity->GetEntityId(), RENDER));
-			//renderComponent->SetModelIndex(3);
 			renderComponent->SetIsActive(0);
-			//renderComponent->SetIsActive(false);
 		}
 
-		if (Engine::InputManager::getMouse().isPressed(HS_MOUSE_BUTTON_LEFT))
-			//if (Engine::InputManager::getMouse().isPressed(HS_MOUSE_BUTTON_LEFT) && canFire)
+		if (Engine::InputManager::getMouse().isPressed(HS_MOUSE_BUTTON_LEFT) && canFire)
 		{
 			RenderComponent* playerRenderComponent = reinterpret_cast<RenderComponent*>(GetEntityManager().GetComponentOfEntity(playerEntity->GetEntityId(), RENDER));
+			AudioComponent* playerAudioComponent = reinterpret_cast<AudioComponent*>(GetEntityManager().GetComponentOfEntity(playerEntity->GetEntityId(), AUDIO));
 			int playerModelIndex = playerRenderComponent->GetModelIndex();
 			std::vector<vk::Model>& models = GetModels();
 			models[playerModelIndex].animationQueue.push(models[playerModelIndex].animations[3]);
 			models[playerModelIndex].blending = true;
 			canFire = false;
 			fireDelay = 1.0f;
-			physicsWorld.handleShooting();
-			//AudioComponent* audioComponent = reinterpret_cast<AudioComponent*>(GetEntityManager().GetComponentOfEntity(playerEntity->GetEntityId(), AUDIO));
-			//audioComponent->playSound("GunShot");
+			physicsWorld.handleShooting(playerEntity);
 		}
 
 		physicsWorld.updateObjects(GetEntityManager(), GetModels());
@@ -191,7 +187,7 @@ void FPSTest::OnEvent(Engine::Event& e)
 {
 	Game::OnEvent(e);
 	GetRenderer().GetCameraPointer()->OnEvent(this->GetContext().getGLFWWindow(), e);
-		EventDispatcher dispatcher(e);
+	EventDispatcher dispatcher(e);
 	dispatcher.Dispatch<KeyPressedEvent>([&](KeyPressedEvent& event)
 		{
 			if (event.GetKeyCode() == HS_KEY_C)
@@ -243,9 +239,9 @@ void FPSTest::loadOfflineEntities()
 	RenderComponent* renderComponent;
 	PhysicsComponent* physicsComponent;
 
-		AudioComponent * audioComponent;
+	AudioComponent* audioComponent;
 
-		EntityManager & entityManager = GetEntityManager();
+	EntityManager& entityManager = GetEntityManager();
 	PhysicsWorld& physicsWorld = GetPhysicsWorld();
 
 	std::vector<Engine::vk::Model>& models = GetModels();
@@ -279,12 +275,12 @@ void FPSTest::loadOfflineEntities()
 	physicsComponent = reinterpret_cast<PhysicsComponent*>(GetEntityManager().GetComponentOfEntity(playerEntity->GetEntityId(), PHYSICS));
 	physicsComponent->Init(physicsWorld, PhysicsComponent::PhysicsType::CONTROLLER, models[renderComponent->GetModelIndex()], playerEntity->GetModelMatrix(), playerEntity->GetEntityId(), true, true);
 	entityManager.AddSimulatedPhysicsEntity(playerEntity->GetEntityId());
-		//add audio component to player
-		audioComponent = reinterpret_cast<AudioComponent*>(GetEntityManager().GetComponentOfEntity(playerEntity->GetEntityId(), AUDIO));
+	//add audio component to player
+	audioComponent = reinterpret_cast<AudioComponent*>(GetEntityManager().GetComponentOfEntity(playerEntity->GetEntityId(), AUDIO));
 
-		// audioComponent = reinterpret_cast<AudioComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), AUDIO));
-		//add gunshot sound clip to the player for the gun 
-		audioComponent->addClip("GunShot", "Game\\assets\\AudioClips\\singlegunshot.wav");
+	// audioComponent = reinterpret_cast<AudioComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), AUDIO));
+	//add gunshot sound clip to the player for the gun 
+	audioComponent->addClip("GunShot", "Game\\assets\\AudioClips\\singlegunshot.wav");
 	GetRenderer().attachCameraComponent(cameraComponent);
 
 	// pistol
@@ -309,7 +305,7 @@ void FPSTest::loadOfflineEntities()
 
 
 		// targets
-		types = { RENDER, PHYSICS };
+	types = { RENDER, PHYSICS };
 	targetEntity1 = entityManager.MakeNewEntity(types);
 	targetEntity1->SetPosition(target1Pos);
 	renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(targetEntity1->GetEntityId(), RENDER));
@@ -318,7 +314,7 @@ void FPSTest::loadOfflineEntities()
 	physicsComponent->InitComplexShape(physicsWorld, PhysicsComponent::PhysicsType::STATIC, models[renderComponent->GetModelIndex()], targetEntity1->GetModelMatrix(), targetEntity1->GetEntityId());
 	entityManager.AddSimulatedPhysicsEntity(targetEntity1->GetEntityId());
 
-		targetEntity2 = entityManager.MakeNewEntity(types);
+	targetEntity2 = entityManager.MakeNewEntity(types);
 	targetEntity2->SetPosition(target2Pos);
 	renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(targetEntity2->GetEntityId(), RENDER));
 	renderComponent->SetModelIndex(6);
@@ -337,7 +333,7 @@ void FPSTest::loadOfflineEntities()
 	// 	}
 	// }
 
-		GetEntityManager().ResetChanged();
+	GetEntityManager().ResetChanged();
 }
 
 void FPSTest::loadOnlineEntities(int maxClientsNum)
@@ -458,174 +454,174 @@ void FPSTest::loadOnlineEntities(int maxClientsNum)
 }
 
 
-	Crosshair & FPSTest::getCrosshair() {
+Crosshair& FPSTest::getCrosshair() {
 	return this->crosshair;
 }
 
-	//void FPSTest::Update() {
-	//
-	//	Engine::Renderer& renderer = GetRenderer();
-	//	Engine::PhysicsWorld& physicsWorld = GetPhysicsWorld();
-	//	Engine::GUI& gui = GetGUI();
-	//
-	//	Engine::InputManager::Update();
-	//	EntityManager& e = GetEntityManager();
-	//	GetNetwork().Update();
-	//
-	//	// Need to process GUI stuff before checking swapchain, since
-	//	// some GUI settings may require instant swapchain recreation
-	//	gui.makeGUI();
-	//
-	//	if (renderer.checkSwapchain())
-	//		return;
-	//
-	//	if (renderer.acquireSwapchainImage())
-	//		return;
-	//
-	//	// Calculate time delta
-	//	const auto now = std::chrono::steady_clock::now();
-	//	const auto timeDelta = std::chrono::duration_cast<std::chrono::duration<float, std::ratio<1>>>(now - previous).count();
-	//	previous = now;
-	//
-	//	if (renderer.GetIsSceneLoaded())
-	//	{
-	//		renderer.calculateFPS();
-	//		renderer.GetCameraComponentPointer()->UpdateCamera(this->GetContext().getGLFWWindow(), timeDelta);
-	//
-	//		float fixedTimeDelta = std::min<float>(0.016f, timeDelta);
-	//
-	//		physicsWorld.updatePhysics(timeDelta);
-	//
-	//		CameraComponent* cameraComponent = reinterpret_cast<CameraComponent*>(GetEntityManager().GetComponentOfEntity(playerEntity->GetEntityId(), CAMERA));
-	//
-	//		if (playerEntity != nullptr && cameraComponent->GetCamera()->camMode == CameraMode::PLAYER)
-	//		{
-	//			cameraComponent->playerEntity = playerEntity;
-	//			cameraComponent->SetCameraOffset(cameraOffset);
-	//			playerEntity->frontDirection = cameraComponent->GetFrontDirection();
-	//			playerEntity->frontDirection.y = 0.0f;
-	//
-	//			glm::mat4 baseRotation = glm::rotate(glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-	//			glm::mat4 poseRotation = glm::rotate(glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	//			glm::mat4 camRotation = glm::rotate(glm::radians(-cameraComponent->GetCamera()->yaw + 90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	//			glm::mat4 finalRotation = camRotation * poseRotation * baseRotation;
-	//			physicsWorld.updateCharacter(playerEntity, timeDelta);
-	//			playerEntity->SetRotation(finalRotation);
-	//			cameraComponent->UpdateCameraPosition(playerEntity->GetPosition());
-	//
-	//
-	//			//playerPos = playerEntity->GetPosition();
-	//			//	////playerPos -= glm::vec3(0.0f, 0.0f, 0.5f);
-	//			//	//playerPos -= glm::vec3(0.0f, 1.0f, 0.0f);
-	//			//	//playerEntity->SetPosition(playerPos);
-	//			//glm::mat4 playerRotation = playerEntity->GetRotation();
-	//			//glm::mat4 standUp = glm::rotate(glm::radians(90.0f), glm::vec3(1, 0, 0));
-	//
-	//			//glm::mat4 playerRotation = glm::mat4(1.0f);
-	//			//playerRotation = glm::rotate(playerRotation, glm::radians(-cameraComponent->GetCamera()->yaw), glm::vec3(0.0f, 1.0f, 0.0f));
-	//			//playerRotation = glm::rotate(playerRotation, glm::radians(-cameraComponent->GetCamera()->pitch), glm::vec3(1.0f, 0.0f, 0.0f));
-	//			//	//playerPos = playerEntity->GetPosition();
-	//			//	//playerPos += glm::vec3(0.0f, 0.0f, 0.5f);
-	//			//	//playerPos += glm::vec3(0.0f, 1.0f, 0.0f);
-	//			//	//playerEntity->SetPosition(playerPos);
-	//			//	//glm::vec3 cameraPos = playerEntity->GetPosition();
-	//		}
-	//		//	if (camMode == CameraMode::PLAYER && playerEntity != nullptr)
-	////	{
-	////		physicsWorld.updateCharacter(playerEntity, fixedTimeDelta);
-	//
-	////		PhysicsComponent* physicsComponent = reinterpret_cast<PhysicsComponent*>(GetEntityManager().GetComponentOfEntity(playerEntity->GetEntityId(), PHYSICS));
-	////		FPSCameraComponent* cameraComponent = reinterpret_cast<FPSCameraComponent*>(GetEntityManager().GetComponentOfEntity(playerEntity->GetEntityId(), CAMERA));
-	////		cameraComponent->SetCameraOffset(cameraOffset);
-	////		//std::cout << glm::to_string(cameraPos) << std::endl;
-	//
-	////		playerEntity->frontDirection = cameraComponent->GetFrontDirection();
-	////		playerEntity->frontDirection.y = 0.0f;
-	////		//playerPos = playerEntity->GetPosition();
-	////		////playerPos -= glm::vec3(0.0f, 0.0f, 0.5f);
-	////		//playerPos -= glm::vec3(0.0f, 1.0f, 0.0f);
-	////		//playerEntity->SetPosition(playerPos);
-	////		glm::mat4 playerRotation = glm::mat4(1.0f);
-	////		playerRotation = glm::rotate(playerRotation, glm::radians(-cameraComponent->GetCamera()->yaw + 90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	////		playerRotation = glm::rotate(playerRotation, glm::radians(-cameraComponent->GetCamera()->pitch), glm::vec3(1.0f, 0.0f, 0.0f));
-	////		playerEntity->SetRotation(playerRotation);
-	////		//playerPos = playerEntity->GetPosition();
-	////		//playerPos += glm::vec3(0.0f, 0.0f, 0.5f);
-	////		//playerPos += glm::vec3(0.0f, 1.0f, 0.0f);
-	////		//playerEntity->SetPosition(playerPos);
-	////		glm::vec3 cameraPos = playerEntity->GetPosition();
-	////		cameraComponent->UpdateCameraPosition(cameraPos);
-	//
-	//		physicsWorld.updateObjects(GetEntityManager(), GetModels());
-	//
-	//		renderer.updateAnimations(timeDelta);
-	//		//switch (camMode)
-	//		//{
-	//		//	case(CameraMode::SCENE):
-	//		//		GetRenderer().attachCamera(&sceneCam);
-	//		//		break;
-	//		//	case(CameraMode::PLAYER):
-	//		//		GetRenderer().attachCamera(&playerCam);
-	//		//		break;
-	//		//	default:
-	//		//		GetRenderer().attachCamera(&sceneCam);
-	//		//		break;
-	//		//}
-	//
-	//
-	//	//fireDelay -= fixedTimeDelta;
-	//	//if (fireDelay <= 0.0f)
-	//	//	canFire = true;
-	//
-	//	// update PVD
-	//	// physicsWorld.gScene->simulate(fixedTimeDelta);
-	//	// physicsWorld.gScene->fetchResults(true);
-	//	// // update physics
-	//	// physicsWorld.updateObjects(GetEntityManager(), GetModels());
-	//
-	//	//	if (camMode == CameraMode::PLAYER && playerEntity != nullptr)
-	//	//	{
-	//	//		physicsWorld.updateCharacter(playerEntity, fixedTimeDelta);
-	//
-	//	//		PhysicsComponent* physicsComponent = reinterpret_cast<PhysicsComponent*>(GetEntityManager().GetComponentOfEntity(playerEntity->GetEntityId(), PHYSICS));
-	//	//		FPSCameraComponent* cameraComponent = reinterpret_cast<FPSCameraComponent*>(GetEntityManager().GetComponentOfEntity(playerEntity->GetEntityId(), CAMERA));
-	//	//		cameraComponent->SetCameraOffset(cameraOffset);
-	//	//		//std::cout << glm::to_string(cameraPos) << std::endl;
-	//
-	//	//		playerEntity->frontDirection = cameraComponent->GetFrontDirection();
-	//	//		playerEntity->frontDirection.y = 0.0f;
-	//	//		//playerPos = playerEntity->GetPosition();
-	//	//		////playerPos -= glm::vec3(0.0f, 0.0f, 0.5f);
-	//	//		//playerPos -= glm::vec3(0.0f, 1.0f, 0.0f);
-	//	//		//playerEntity->SetPosition(playerPos);
-	//	//		glm::mat4 playerRotation = glm::mat4(1.0f);
-	//	//		playerRotation = glm::rotate(playerRotation, glm::radians(-cameraComponent->GetCamera()->yaw + 90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	//	//		playerRotation = glm::rotate(playerRotation, glm::radians(-cameraComponent->GetCamera()->pitch), glm::vec3(1.0f, 0.0f, 0.0f));
-	//	//		playerEntity->SetRotation(playerRotation);
-	//	//		//playerPos = playerEntity->GetPosition();
-	//	//		//playerPos += glm::vec3(0.0f, 0.0f, 0.5f);
-	//	//		//playerPos += glm::vec3(0.0f, 1.0f, 0.0f);
-	//	//		//playerEntity->SetPosition(playerPos);
-	//	//		glm::vec3 cameraPos = playerEntity->GetPosition();
-	//	//		cameraComponent->UpdateCameraPosition(cameraPos);
-	//
-	//
-	//		if (Engine::InputManager::getMouse().isPressed(HS_MOUSE_BUTTON_LEFT))
-	//		{
-	//			//if (canFire)
-	//			//{
-	//			//	RenderComponent* playerRenderComponent = reinterpret_cast<RenderComponent*>(GetEntityManager().GetComponentOfEntity(playerEntity->GetEntityId(), RENDER));
-	//			//	int playerModelIndex = playerRenderComponent->GetModelIndex();
-	//			//	std::vector<vk::Model>& models = GetModels();
-	//			//	models[playerModelIndex].animationQueue.push(models[playerModelIndex].animations[3]);
-	//			//	models[playerModelIndex].blending = true;
-	//			//	canFire = false;
-	//			//	fireDelay = 1.0f;
-	//			//}
-	//		}
-	//	}
-	//
-	//	renderer.updateUniforms();
-	//	renderer.render(GetModels());
-	//	renderer.submitRender();
-	//}
+//void FPSTest::Update() {
+//
+//	Engine::Renderer& renderer = GetRenderer();
+//	Engine::PhysicsWorld& physicsWorld = GetPhysicsWorld();
+//	Engine::GUI& gui = GetGUI();
+//
+//	Engine::InputManager::Update();
+//	EntityManager& e = GetEntityManager();
+//	GetNetwork().Update();
+//
+//	// Need to process GUI stuff before checking swapchain, since
+//	// some GUI settings may require instant swapchain recreation
+//	gui.makeGUI();
+//
+//	if (renderer.checkSwapchain())
+//		return;
+//
+//	if (renderer.acquireSwapchainImage())
+//		return;
+//
+//	// Calculate time delta
+//	const auto now = std::chrono::steady_clock::now();
+//	const auto timeDelta = std::chrono::duration_cast<std::chrono::duration<float, std::ratio<1>>>(now - previous).count();
+//	previous = now;
+//
+//	if (renderer.GetIsSceneLoaded())
+//	{
+//		renderer.calculateFPS();
+//		renderer.GetCameraComponentPointer()->UpdateCamera(this->GetContext().getGLFWWindow(), timeDelta);
+//
+//		float fixedTimeDelta = std::min<float>(0.016f, timeDelta);
+//
+//		physicsWorld.updatePhysics(timeDelta);
+//
+//		CameraComponent* cameraComponent = reinterpret_cast<CameraComponent*>(GetEntityManager().GetComponentOfEntity(playerEntity->GetEntityId(), CAMERA));
+//
+//		if (playerEntity != nullptr && cameraComponent->GetCamera()->camMode == CameraMode::PLAYER)
+//		{
+//			cameraComponent->playerEntity = playerEntity;
+//			cameraComponent->SetCameraOffset(cameraOffset);
+//			playerEntity->frontDirection = cameraComponent->GetFrontDirection();
+//			playerEntity->frontDirection.y = 0.0f;
+//
+//			glm::mat4 baseRotation = glm::rotate(glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+//			glm::mat4 poseRotation = glm::rotate(glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+//			glm::mat4 camRotation = glm::rotate(glm::radians(-cameraComponent->GetCamera()->yaw + 90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+//			glm::mat4 finalRotation = camRotation * poseRotation * baseRotation;
+//			physicsWorld.updateCharacter(playerEntity, timeDelta);
+//			playerEntity->SetRotation(finalRotation);
+//			cameraComponent->UpdateCameraPosition(playerEntity->GetPosition());
+//
+//
+//			//playerPos = playerEntity->GetPosition();
+//			//	////playerPos -= glm::vec3(0.0f, 0.0f, 0.5f);
+//			//	//playerPos -= glm::vec3(0.0f, 1.0f, 0.0f);
+//			//	//playerEntity->SetPosition(playerPos);
+//			//glm::mat4 playerRotation = playerEntity->GetRotation();
+//			//glm::mat4 standUp = glm::rotate(glm::radians(90.0f), glm::vec3(1, 0, 0));
+//
+//			//glm::mat4 playerRotation = glm::mat4(1.0f);
+//			//playerRotation = glm::rotate(playerRotation, glm::radians(-cameraComponent->GetCamera()->yaw), glm::vec3(0.0f, 1.0f, 0.0f));
+//			//playerRotation = glm::rotate(playerRotation, glm::radians(-cameraComponent->GetCamera()->pitch), glm::vec3(1.0f, 0.0f, 0.0f));
+//			//	//playerPos = playerEntity->GetPosition();
+//			//	//playerPos += glm::vec3(0.0f, 0.0f, 0.5f);
+//			//	//playerPos += glm::vec3(0.0f, 1.0f, 0.0f);
+//			//	//playerEntity->SetPosition(playerPos);
+//			//	//glm::vec3 cameraPos = playerEntity->GetPosition();
+//		}
+//		//	if (camMode == CameraMode::PLAYER && playerEntity != nullptr)
+////	{
+////		physicsWorld.updateCharacter(playerEntity, fixedTimeDelta);
+//
+////		PhysicsComponent* physicsComponent = reinterpret_cast<PhysicsComponent*>(GetEntityManager().GetComponentOfEntity(playerEntity->GetEntityId(), PHYSICS));
+////		FPSCameraComponent* cameraComponent = reinterpret_cast<FPSCameraComponent*>(GetEntityManager().GetComponentOfEntity(playerEntity->GetEntityId(), CAMERA));
+////		cameraComponent->SetCameraOffset(cameraOffset);
+////		//std::cout << glm::to_string(cameraPos) << std::endl;
+//
+////		playerEntity->frontDirection = cameraComponent->GetFrontDirection();
+////		playerEntity->frontDirection.y = 0.0f;
+////		//playerPos = playerEntity->GetPosition();
+////		////playerPos -= glm::vec3(0.0f, 0.0f, 0.5f);
+////		//playerPos -= glm::vec3(0.0f, 1.0f, 0.0f);
+////		//playerEntity->SetPosition(playerPos);
+////		glm::mat4 playerRotation = glm::mat4(1.0f);
+////		playerRotation = glm::rotate(playerRotation, glm::radians(-cameraComponent->GetCamera()->yaw + 90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+////		playerRotation = glm::rotate(playerRotation, glm::radians(-cameraComponent->GetCamera()->pitch), glm::vec3(1.0f, 0.0f, 0.0f));
+////		playerEntity->SetRotation(playerRotation);
+////		//playerPos = playerEntity->GetPosition();
+////		//playerPos += glm::vec3(0.0f, 0.0f, 0.5f);
+////		//playerPos += glm::vec3(0.0f, 1.0f, 0.0f);
+////		//playerEntity->SetPosition(playerPos);
+////		glm::vec3 cameraPos = playerEntity->GetPosition();
+////		cameraComponent->UpdateCameraPosition(cameraPos);
+//
+//		physicsWorld.updateObjects(GetEntityManager(), GetModels());
+//
+//		renderer.updateAnimations(timeDelta);
+//		//switch (camMode)
+//		//{
+//		//	case(CameraMode::SCENE):
+//		//		GetRenderer().attachCamera(&sceneCam);
+//		//		break;
+//		//	case(CameraMode::PLAYER):
+//		//		GetRenderer().attachCamera(&playerCam);
+//		//		break;
+//		//	default:
+//		//		GetRenderer().attachCamera(&sceneCam);
+//		//		break;
+//		//}
+//
+//
+//	//fireDelay -= fixedTimeDelta;
+//	//if (fireDelay <= 0.0f)
+//	//	canFire = true;
+//
+//	// update PVD
+//	// physicsWorld.gScene->simulate(fixedTimeDelta);
+//	// physicsWorld.gScene->fetchResults(true);
+//	// // update physics
+//	// physicsWorld.updateObjects(GetEntityManager(), GetModels());
+//
+//	//	if (camMode == CameraMode::PLAYER && playerEntity != nullptr)
+//	//	{
+//	//		physicsWorld.updateCharacter(playerEntity, fixedTimeDelta);
+//
+//	//		PhysicsComponent* physicsComponent = reinterpret_cast<PhysicsComponent*>(GetEntityManager().GetComponentOfEntity(playerEntity->GetEntityId(), PHYSICS));
+//	//		FPSCameraComponent* cameraComponent = reinterpret_cast<FPSCameraComponent*>(GetEntityManager().GetComponentOfEntity(playerEntity->GetEntityId(), CAMERA));
+//	//		cameraComponent->SetCameraOffset(cameraOffset);
+//	//		//std::cout << glm::to_string(cameraPos) << std::endl;
+//
+//	//		playerEntity->frontDirection = cameraComponent->GetFrontDirection();
+//	//		playerEntity->frontDirection.y = 0.0f;
+//	//		//playerPos = playerEntity->GetPosition();
+//	//		////playerPos -= glm::vec3(0.0f, 0.0f, 0.5f);
+//	//		//playerPos -= glm::vec3(0.0f, 1.0f, 0.0f);
+//	//		//playerEntity->SetPosition(playerPos);
+//	//		glm::mat4 playerRotation = glm::mat4(1.0f);
+//	//		playerRotation = glm::rotate(playerRotation, glm::radians(-cameraComponent->GetCamera()->yaw + 90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+//	//		playerRotation = glm::rotate(playerRotation, glm::radians(-cameraComponent->GetCamera()->pitch), glm::vec3(1.0f, 0.0f, 0.0f));
+//	//		playerEntity->SetRotation(playerRotation);
+//	//		//playerPos = playerEntity->GetPosition();
+//	//		//playerPos += glm::vec3(0.0f, 0.0f, 0.5f);
+//	//		//playerPos += glm::vec3(0.0f, 1.0f, 0.0f);
+//	//		//playerEntity->SetPosition(playerPos);
+//	//		glm::vec3 cameraPos = playerEntity->GetPosition();
+//	//		cameraComponent->UpdateCameraPosition(cameraPos);
+//
+//
+//		if (Engine::InputManager::getMouse().isPressed(HS_MOUSE_BUTTON_LEFT))
+//		{
+//			//if (canFire)
+//			//{
+//			//	RenderComponent* playerRenderComponent = reinterpret_cast<RenderComponent*>(GetEntityManager().GetComponentOfEntity(playerEntity->GetEntityId(), RENDER));
+//			//	int playerModelIndex = playerRenderComponent->GetModelIndex();
+//			//	std::vector<vk::Model>& models = GetModels();
+//			//	models[playerModelIndex].animationQueue.push(models[playerModelIndex].animations[3]);
+//			//	models[playerModelIndex].blending = true;
+//			//	canFire = false;
+//			//	fireDelay = 1.0f;
+//			//}
+//		}
+//	}
+//
+//	renderer.updateUniforms();
+//	renderer.render(GetModels());
+//	renderer.submitRender();
+//}

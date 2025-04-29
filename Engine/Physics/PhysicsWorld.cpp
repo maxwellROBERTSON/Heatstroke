@@ -1,3 +1,6 @@
+#include "../../Game/DemoGame.hpp"
+#include "../Core/Game.hpp"
+#include "../ECS/Components/AudioComponent.hpp"
 #include "../ECS/Components/PhysicsComponent.hpp"
 #include "../ECS/EntityManager.hpp"
 #include "../gltf/Model.hpp"
@@ -7,14 +10,11 @@
 #include "IgnoreSelfFilterCallback.hpp"
 #include "PhysicsWorld.hpp"
 #include "RaycastUtility.hpp"
+#include "RaycastUtility.hpp"
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/string_cast.hpp>
-#include "RaycastUtility.hpp"
-#include "../ECS/Components/AudioComponent.hpp"
-#include "../Core/Game.hpp"
-#include "../../Game/DemoGame.hpp"
 
 namespace Engine
 {
@@ -272,8 +272,8 @@ namespace Engine
 		//if (keyboard.isPressed(HS_KEY_P)) {
 
 			//get the audio component from the player entity which has an ID of 1 
-			AudioComponent* audioComponent = reinterpret_cast<AudioComponent*>(this->entityManager->GetComponentOfEntity(1, AUDIO));
-			audioComponent->playSound("GunShot");
+		//AudioComponent* audioComponent = reinterpret_cast<AudioComponent*>(this->entityManager->GetComponentOfEntity(1, AUDIO));
+		//audioComponent->playSound("GunShot");
 		PxExtendedVec3 extPos = controller->getFootPosition();
 		PxVec3 pos = PxVec3(static_cast<float>(extPos.x), static_cast<float>(extPos.y), static_cast<float>(extPos.z));
 		PxVec3 direction(0.f, 1.f, 1.f);
@@ -301,7 +301,38 @@ namespace Engine
 			DebugDrawRayInPVD(gScene, pos, pos + direction * 100.0f, 0xFFFFFF00);
 			std::cout << "Hit nothing\n";
 		}
-		//}
+	}
+
+	void PhysicsWorld::handleShooting(Entity* playerEntity)
+	{
+		PxExtendedVec3 extPos = controller->getFootPosition();
+		PxVec3 pos = PxVec3(static_cast<float>(extPos.x), static_cast<float>(extPos.y), static_cast<float>(extPos.z));
+		PxVec3 direction(0.f, 1.f, 1.f);
+		direction.normalize();
+
+		PxRaycastHit hit;
+		PxRigidActor* selfActor = controller->getActor();
+		IgnoreSelfFilterCallback filter(controller->getActor());
+		bool hitflag = RaycastUtility::SingleHit(gScene, pos, direction, 100.0f, hit, &filter);
+		if (hitflag) {
+			if (hit.actor->is<PxRigidDynamic>()) {
+				// hit dynamic
+				DebugDrawRayInPVD(gScene, pos, pos + direction * hit.distance, 0xFF000000);
+				std::cout << "Hit dynamic actor at (" << hit.position.x << ", " << hit.position.y << ", " << hit.position.z << ")\n";
+			}
+			else {
+				// hit static
+				DebugDrawRayInPVD(gScene, pos, pos + direction * hit.distance, 0xFFFFFF00);
+				std::cout << "Hit static object\n";
+			}
+		}
+		else {
+			// hit nothing
+			DebugDrawRayInPVD(gScene, pos, pos + direction * 100.0f, 0xFFFFFF00);
+			std::cout << "Hit nothing\n";
+		}
+		AudioComponent* audioComponent = reinterpret_cast<AudioComponent*>(entityManager->GetComponentOfEntity(playerEntity->GetEntityId(), AUDIO));
+		audioComponent->playSound("GunShot");
 	}
 
 	// update models matrices
@@ -319,11 +350,11 @@ namespace Engine
 				//matrix = glm::scale(matrix, p->GetScale());
 				//entityManager.GetEntity(p->GetEntityId())->SetModelMatrix(matrix);
 				//continue;
+				Entity* entity = entityManager.GetEntity(p->GetEntityId());
 				PxTransform transform = p->GetDynamicBody()->getGlobalPose();
 				entity->SetPosition(transform.p.x, transform.p.y, transform.p.z);
 				entity->SetRotation(glm::quat(transform.q.w, transform.q.x, transform.q.y, transform.q.z));
-				glm::vec3 scale = p->GetScale();
-				entity->SetScale(scale.x, scale.y, scale.z);
+				entity->SetScale(p->GetScale().x, p->GetScale().y, p->GetScale().z);
 
 				continue; //?
 			}
