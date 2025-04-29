@@ -103,7 +103,8 @@ namespace Engine
 		this->gSimulationTimer += timeDelta;
 
 		if (this->gSimulationTimer > gTimestep) {
-			this->updateCharacter(playerEntity, gTimestep);
+			if (playerEntity != nullptr)
+				this->updateCharacter(playerEntity, gTimestep);
 			this->gScene->simulate(gTimestep);
 			this->gScene->fetchResults(true);
 			this->gSimulationTimer -= gTimestep;
@@ -143,45 +144,14 @@ namespace Engine
 	void PhysicsWorld::updateCharacter(PxReal deltatime) {
 		//handleMovement(playerEntity, deltatime);
 		handleMovement(deltatime);
-		handleShooting();
+		//handleShooting();
 	}
 
 	void PhysicsWorld::updateCharacter(Entity* playerEntity, PxReal deltatime)
 	{
 		handleMovement(playerEntity, deltatime);
-		handleShooting();
+		//handleShooting();
 	}
-
-	//void PhysicsWorld::updateCharacter(Entity* playerEntity, PxReal deltatime)
-	//{
-	//	glm::vec3 entityFrontDir = playerEntity->frontDirection;
-	//	glm::vec3 entityRightDir = glm::normalize(glm::cross(entityFrontDir, glm::vec3(0.0f, 1.0f, 0.0f)));
-	//	if (this->controller)
-	//	{
-	//		PxVec3 displacement(0.0f, 0.0f * deltatime, 0.0f);
-	//		float speed = 5.0f;
-	//		PxVec3 frontDir(entityFrontDir.x, entityFrontDir.y, entityFrontDir.z);
-	//		PxVec3 rightDir(entityRightDir.x, entityRightDir.y, entityRightDir.z);
-
-	//		auto& keyboard = Engine::InputManager::getKeyboard();
-
-	//		if (keyboard.isPressed(HS_KEY_W)) {
-	//			displacement += frontDir * speed * deltatime;
-	//		}
-
-	//		if (keyboard.isPressed(HS_KEY_S)) {
-	//			displacement -= frontDir * speed * deltatime;
-	//		}
-
-	//		if (keyboard.isPressed(HS_KEY_A)) {
-	//			displacement -= rightDir * speed * deltatime;
-	//		}
-
-	//		if (keyboard.isPressed(HS_KEY_D)) {
-	//			displacement += rightDir * speed * deltatime;
-	//		}
-	//	}
-	//}
 
 	void PhysicsWorld::handleMovement(PxReal deltatime)
 	{
@@ -243,12 +213,12 @@ namespace Engine
 		glm::vec3 entityRightDir = glm::normalize(glm::cross(entityFrontDir, glm::vec3(0.0f, 1.0f, 0.0f)));
 		if (this->controller)
 		{
-			//PxVec3 displacement(0.0f, 0.0f, 0.0f);
-			PxVec3 displacement(0.0f, -9.81f * deltatime, 0.0f);
+			//const float gravity = -9.81f;
+			const float gravity = 0.0f;
+			PxVec3 displacement(0.0f, gravity * deltatime, 0.0f);
 			PxVec3 old = displacement;
 			float speed = 5.0f;
 			const float jumpSpeed = 3.0f;
-			const float gravity = -9.81f;
 			PxVec3 frontDir(entityFrontDir.x, entityFrontDir.y, entityFrontDir.z);
 			PxVec3 rightDir(entityRightDir.x, entityRightDir.y, entityRightDir.z);
 
@@ -298,49 +268,50 @@ namespace Engine
 	}
 
 	void PhysicsWorld::handleShooting() {
-		auto& keyboard = Engine::InputManager::getKeyboard();
-		//auto& mouse = Engine::InputManager::getMouse();
-		if (keyboard.isPressed(HS_KEY_P)) {
+		//auto& keyboard = Engine::InputManager::getKeyboard();
+		////auto& mouse = Engine::InputManager::getMouse();
+		//if (keyboard.isPressed(HS_KEY_P)) {
 
-			PxExtendedVec3 extPos = controller->getFootPosition();
-			PxVec3 pos = PxVec3(static_cast<float>(extPos.x), static_cast<float>(extPos.y), static_cast<float>(extPos.z));
-			PxVec3 direction(0.f, 1.f, 1.f);
-			direction.normalize();
+		PxExtendedVec3 extPos = controller->getFootPosition();
+		PxVec3 pos = PxVec3(static_cast<float>(extPos.x), static_cast<float>(extPos.y) + 1.0f, static_cast<float>(extPos.z) + 2.0f);
+		//PxVec3 pos = PxVec3(static_cast<float>(extPos.x), static_cast<float>(extPos.y), static_cast<float>(extPos.z));
+		PxVec3 direction(0.f, 1.f, 1.f);
+		direction.normalize();
 
-			PxRaycastHit hit;
-			PxRigidActor* selfActor = controller->getActor();
-			bool hitflag = RaycastUtility::SingleHit(gScene, pos, direction, 100.0f, hit);
-			if (hitflag) {
-				if (hit.actor == selfActor) {
-					// self
-					// yellow ray
-					DebugDrawRayInPVD(gScene, pos, pos + direction * 100.0f, 0xFFFFFF00);
-					std::cout << "Hit self" << std::endl;
-				}
-				else if (hit.actor->is<PxRigidDynamic>()) {
-					// hit dynamic
-					// black ray
-					DebugDrawRayInPVD(gScene, pos, pos + direction * 100.0f, 0xFF000000);
-					std::cout << "Hit at (" << hit.position.x << ", " << hit.position.y << ", " << hit.position.z << ")" << std::endl;
-				}
-				else
-				{
-					// hit statit
-					// yellow ray
-					DebugDrawRayInPVD(gScene, pos, pos + direction * 100.0f, 0xFFFFFF00);
-					std::cout << "Hit self" << std::endl;
-
-				}
+		PxRaycastHit hit;
+		PxRigidActor* selfActor = controller->getActor();
+		bool hitflag = RaycastUtility::SingleHit(gScene, pos, direction, 100.0f, hit);
+		if (hitflag) {
+			if (hit.actor == selfActor) {
+				// self
+				// yellow ray
+				DebugDrawRayInPVD(gScene, pos, pos + direction * 100.0f, 0xFFFFFF00);
+				std::cout << "Hit self" << std::endl;
+			}
+			else if (hit.actor->is<PxRigidDynamic>()) {
+				// hit dynamic
+				// black ray
+				DebugDrawRayInPVD(gScene, pos, pos + direction * 100.0f, 0xFF000000);
+				std::cout << "Hit at (" << hit.position.x << ", " << hit.position.y << ", " << hit.position.z << ")" << std::endl;
 			}
 			else
 			{
-				// hit nothing
+				// hit statit
 				// yellow ray
 				DebugDrawRayInPVD(gScene, pos, pos + direction * 100.0f, 0xFFFFFF00);
-				std::cout << "Hit nothing" << ")\n";
+				std::cout << "Hit self" << std::endl;
 
 			}
 		}
+		else
+		{
+			// hit nothing
+			// yellow ray
+			DebugDrawRayInPVD(gScene, pos, pos + direction * 100.0f, 0xFFFFFF00);
+			std::cout << "Hit nothing" << ")\n";
+
+		}
+		//}
 	}
 
 
