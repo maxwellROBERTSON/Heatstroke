@@ -10,10 +10,6 @@ namespace Engine
 {
 	class EntityManager;
 	class Entity;
-}
-
-namespace Engine
-{
 
 	class NetworkComponent : public Component<NetworkComponent>
 	{

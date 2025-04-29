@@ -25,8 +25,7 @@ CameraComponent serverCameraComponent = CameraComponent(Engine::Camera(100.0f, 0
 
 void FPSTest::Init()
 {
-	
-	/*ac.addClip("Pain", "Game\\assets\\AudioClips\\Ugh.wav");
+	ac.addClip("Pain", "Game\\assets\\AudioClips\\Ugh.wav");
 	ac.addClip("Dialogue", "Game\\assets\\AudioClips\\Moron.wav");
 	ac.addClip("gunShot", "Game\\assets\\AudioClips\\singlegunshot.wav");*/
 	
@@ -55,6 +54,8 @@ void FPSTest::Init()
 		"Game/assets/skybox/back.bmp",
 	};
 	GetRenderer().addSkybox(std::make_unique<Engine::Skybox>(&GetContext(), skyboxFilenames));
+
+	this->crosshair = Crosshair(&GetContext());
 }
 
 void FPSTest::Render()
@@ -82,6 +83,20 @@ void FPSTest::Update() {
 		{
 			std::cout << "A BUTTON PRESSED" << std::endl;
 		}
+	}
+
+<<<<<<<<< Temporary merge branch 1
+	EntityManager& e = GetEntityManager();
+=========
+	auto keyboard = Engine::InputManager::getKeyboard();
+	if (keyboard.isPressed(HS_KEY_W))
+	{
+		ac.playSound("Pain");
+	}
+
+	if (keyboard.isPressed(HS_KEY_S))
+	{
+		ac.playSound("Dialogue");
 	}
 
 	GetNetwork().Update();
@@ -142,13 +157,13 @@ void FPSTest::OnEvent(Engine::Event& e)
 	//		return true;
 	//	}
 	//);
-
 }
 
 void FPSTest::initialiseModels()
 {
 	// Here we would load all relevant glTF models and put them in the models vector
 	tinygltf::Model sponza = Engine::loadFromFile("Game/assets/Sponza/glTF/Sponza.gltf");
+	tinygltf::Model map = Engine::loadFromFile("Game/assets/Sponza/glTF/Sponza.gltf");
 	tinygltf::Model helmet = Engine::loadFromFile("Game/assets/DamagedHelmet.gltf");
 	tinygltf::Model cube = Engine::loadFromFile("Game/assets/Cube.gltf");
 	tinygltf::Model character = Engine::loadFromFile("Game/assets/Character/scene.gltf");
@@ -207,10 +222,10 @@ void FPSTest::loadOfflineEntities()
 	//renderComponent->SetModelIndex(2);
 	//physicsComponent = reinterpret_cast<PhysicsComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
 	//physicsComponent->Init(physicsWorld, PhysicsComponent::PhysicsType::DYNAMIC, models[renderComponent->GetModelIndex()], entity->GetModelMatrix(), entity->GetEntityId(), false, false);
-	//entityManager.AddSimulatedPhysicsEntity(entity->GetEntityId());
+	types = { AUDIO, CAMERA, NETWORK, RENDER, PHYSICS };
 
 	// Player 1
-	types = { CAMERA, NETWORK, RENDER, PHYSICS, AUDIO };
+	types = { CAMERA, NETWORK, RENDER, PHYSICS };
 	entity = entityManager.MakeNewEntity(types);
 	entity->SetPosition(-5.0f, 0.0f, -1.0f);
 	entity->SetRotation(90.0f, glm::vec3(0.0f, 0.0f, 1.0f));
@@ -252,6 +267,7 @@ void FPSTest::loadOfflineEntities()
 	std::vector<int> entitiesWithNetworkComponent = entityManager.GetEntitiesWithComponent(NETWORK);
 	for (int i = 0; i < entitiesWithNetworkComponent.size(); i++)
 	{
+		entity = entityManager.GetEntity(entitiesWithNetworkComponent[i]);
 		networkComponent = reinterpret_cast<NetworkComponent*>(entityManager.GetComponentOfEntity(entitiesWithNetworkComponent[i], NETWORK));
 		if (networkComponent->GetClientId() == offlineClientId)
 		{
@@ -288,16 +304,16 @@ void FPSTest::loadOnlineEntities(int maxClientsNum)
 	entityManager.AddSimulatedPhysicsEntity(entity->GetEntityId());
 
 	// Helmet
-	entity = entityManager.MakeNewEntity(types);
-	entity->SetPosition(0.0f, 2.0f, 0.0f);
-	entity->SetRotation(90.0f, glm::vec3(0.0f, 1.0f, 0.0f));
-	entity->SetScale(0.2f);
-	// configure physics component
-	renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
-	renderComponent->SetModelIndex(1);
-	physicsComponent = reinterpret_cast<PhysicsComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
-	physicsComponent->Init(physicsWorld, PhysicsComponent::PhysicsType::DYNAMIC, models[renderComponent->GetModelIndex()], entity->GetModelMatrix(), entity->GetEntityId(), false, false);
-	entityManager.AddSimulatedPhysicsEntity(entity->GetEntityId());
+	//entity = entityManager.MakeNewEntity(types);
+	//entity->SetPosition(0.0f, 2.0f, 0.0f);
+	//entity->SetRotation(90.0f, glm::vec3(0.0f, 1.0f, 0.0f));
+	//entity->SetScale(0.2f);
+	//// configure physics component
+	//renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
+	//renderComponent->SetModelIndex(1);
+	//physicsComponent = reinterpret_cast<PhysicsComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
+	//physicsComponent->Init(physicsWorld, PhysicsComponent::PhysicsType::DYNAMIC, models[renderComponent->GetModelIndex()], entity->GetModelMatrix(), entity->GetEntityId(), false, false);
+	//entityManager.AddSimulatedPhysicsEntity(entity->GetEntityId());
 
 	// Cube
 	//entity = entityManager.MakeNewEntity(types);
@@ -310,16 +326,16 @@ void FPSTest::loadOnlineEntities(int maxClientsNum)
 	//entityManager.AddSimulatedPhysicsEntity(entity->GetEntityId());
 
 	// Load maxClientsNum of players
-	types = { CAMERA, NETWORK, RENDER, PHYSICS };
+	types = { AUDIO, CAMERA, NETWORK, RENDER, PHYSICS };
 	for (int i = 0; i < maxClientsNum; i++)
 	{
 		entity = entityManager.MakeNewEntity(types);
 		entity->SetPosition(-5.0f, 0.0f, -1.0f);
-		entity->SetRotation(90.0f, glm::vec3(0.0f, 0.0f, 1.0f));
+		entity->SetRotation(90.0f, glm::vec3(0.0f, 0.0f, -1.0f));
 		entity->SetScale(30.0f);
 		renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
 		renderComponent->SetModelIndex(3);
-		renderComponent->SetIsActive(0); // Players not renderable until client connection
+		renderComponent->SetIsActive(false); // Players not renderable until client connection
 		physicsComponent = reinterpret_cast<PhysicsComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
 		physicsComponent->Init(physicsWorld, PhysicsComponent::PhysicsType::CONTROLLER, models[renderComponent->GetModelIndex()], entity->GetModelMatrix(), entity->GetEntityId(), false, false);
 		cameraComponent = reinterpret_cast<CameraComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), CAMERA));
@@ -337,4 +353,8 @@ void FPSTest::loadOnlineEntities(int maxClientsNum)
 
 	EntityManager& e = GetEntityManager();
 	GetEntityManager().ResetChanged();
+}
+
+Crosshair& FPSTest::getCrosshair() {
+	return this->crosshair;
 }
