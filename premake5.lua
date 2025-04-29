@@ -111,19 +111,20 @@ project "Engine"
 
     filter "system:linux"
         includedirs {
-            "Engine/third_party/vcpkg/packages/physx_x64-linux/include/physx",
-            "Engine/third_party/vcpkg/packages/openal-soft_x64-linux/include/AL",
-            "Engine/third_party/snd/include"
+            "Engine/third_party/vcpkg/installed/x64-linux/include/physx",
+            "Engine/third_party/vcpkg/installed/x64-linux/include/AL",
+            "Engine/third_party/vcpkg/installed/x64-linux/include/ogg",
+            "Engine/third_party/vcpkg/installed/x64-linux/include/vorbis",
+            "Engine/third_party/vcpkg/installed/x64-linux/include/flac",
+            "Engine/third_party/vcpkg/installed/x64-linux/include/opus",
+            "Engine/third_party/vcpkg/installed/x64-linux/include/lame",
+            "Engine/third_party/vcpkg/installed/x64-linux/include"
         }
 
     filter "system:windows"
         includedirs {
             "Engine/third_party/vcpkg/installed/x64-windows/include/physx",
             "Engine/third_party/vcpkg/installed/x64-windows/include/AL",
-            "Engine/third_party/vcpkg/installed/x64-windows/include/vorbis",
-            "Engine/third_party/vcpkg/installed/x64-windows/include/ogg",
-            "Engine/third_party/vcpkg/installed/x64-windows/include/flac",
-            "Engine/third_party/vcpkg/installed/x64-windows/include/opus",
             "Engine/third_party/vcpkg/installed/x64-windows/include"
         }
 
@@ -172,20 +173,11 @@ project "Engine"
     filter { "system:windows", "configurations:Debug" }
         libdirs {
             "Engine/third_party/vcpkg/installed/x64-windows/debug/lib"
-            -- "Engine/third_party/vcpkg/installed/x64-windows/tools/PhysXGpu_64",
         }
         links {
-            "PhysXCharacterKinematic_static_64",
-            "PhysXExtensions_static_64",
             "PhysX_64",
-            "PhysXPvdSDK_static_64",
-            "PhysXVehicle_static_64",
-            "PhysXCooking_64",
-            "PhysXCommon_64",
-            "PhysXFoundation_64",
             "OpenAL32",
-            "sndfile",
-            "vorbis"
+            "sndfile"
         }
         postbuildcommands {
             "if not exist \"%{wks.location}bin\\PhysXFoundation_64.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\debug\\bin\\PhysXFoundation_64.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\debug\\bin\\PhysXFoundation_64.dll\" \"%{wks.location}bin\"",
@@ -194,31 +186,37 @@ project "Engine"
             "if not exist \"%{wks.location}bin\\PhysXCooking_64.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\debug\\bin\\PhysXCooking_64.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\debug\\bin\\PhysXCooking_64.dll\" \"%{wks.location}bin\"",
             "if not exist \"%{wks.location}bin\\OpenAL32.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\debug\\bin\\OpenAL32.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\debug\\bin\\OpenAL32.dll\" \"%{wks.location}bin\"",
             "if not exist \"%{wks.location}bin\\sndfile.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\debug\\bin\\sndfile.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\debug\\bin\\sndfile.dll\" \"%{wks.location}bin\"",
-            "if not exist \"%{wks.location}bin\\vorbis.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\debug\\bin\\vorbis.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\debug\\bin\\vorbis.dll\" \"%{wks.location}bin\""
+            "if not exist \"%{wks.location}bin\\ogg.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\debug\\bin\\ogg.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\debug\\bin\\ogg.dll\" \"%{wks.location}bin\"",
+            "if not exist \"%{wks.location}bin\\vorbis.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\debug\\bin\\vorbis.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\debug\\bin\\vorbis.dll\" \"%{wks.location}bin\"",
+            "if not exist \"%{wks.location}bin\\vorbisenc.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\debug\\bin\\vorbisenc.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\debug\\bin\\vorbisenc.dll\" \"%{wks.location}bin\"",
+            "if not exist \"%{wks.location}bin\\FLAC.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\debug\\bin\\FLAC.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\debug\\bin\\FLAC.dll\" \"%{wks.location}bin\"",
+            "if not exist \"%{wks.location}bin\\opus.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\debug\\bin\\opus.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\debug\\bin\\opus.dll\" \"%{wks.location}bin\"",
+            "if not exist \"%{wks.location}bin\\mpg123.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\debug\\bin\\mpg123.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\debug\\bin\\mpg123.dll\" \"%{wks.location}bin\"",
+            "if not exist \"%{wks.location}bin\\libmp3lame.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\debug\\bin\\libmp3lame.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\debug\\bin\\libmp3lame.dll\" \"%{wks.location}bin\""
         }
     filter { "system:windows", "configurations:Release" }
         libdirs {
             "Engine/third_party/vcpkg/installed/x64-windows/lib"
         }
         links {
-            "PhysXCharacterKinematic_static_64",
-            "PhysXExtensions_static_64",
             "PhysX_64",
-            "PhysXPvdSDK_static_64",
-            "PhysXVehicle_static_64",
-            "PhysXCooking_64",
-            "PhysXCommon_64",
-            "PhysXFoundation_64",
             "OpenAL32",
             "sndfile"
         }
         postbuildcommands {
-            "if not exist \"%{wks.location}bin\\PhysXFoundation_64.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\bin\\PhysXFoundation_64.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\debug\\bin\\PhysXFoundation_64.dll\" \"%{wks.location}bin\"",
+            "if not exist \"%{wks.location}bin\\PhysXFoundation_64.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\bin\\PhysXFoundation_64.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\bin\\PhysXFoundation_64.dll\" \"%{wks.location}bin\"",
             "if not exist \"%{wks.location}bin\\PhysXCommon_64.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\bin\\PhysXCommon_64.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\bin\\PhysXCommon_64.dll\" \"%{wks.location}bin\"",
             "if not exist \"%{wks.location}bin\\PhysX_64.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\bin\\PhysX_64.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\bin\\PhysX_64.dll\" \"%{wks.location}bin\"",
             "if not exist \"%{wks.location}bin\\PhysXCooking_64.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\bin\\PhysXCooking_64.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\bin\\PhysXCooking_64.dll\" \"%{wks.location}bin\"",
             "if not exist \"%{wks.location}bin\\OpenAL32.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\bin\\OpenAL32.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\bin\\OpenAL32.dll\" \"%{wks.location}bin\"",
-            "if not exist \"%{wks.location}bin\\sndfile.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\bin\\sndfile.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\bin\\sndfile.dll\" \"%{wks.location}bin\""
+            "if not exist \"%{wks.location}bin\\sndfile.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\bin\\sndfile.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\bin\\sndfile.dll\" \"%{wks.location}bin\"",
+            "if not exist \"%{wks.location}bin\\ogg.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\bin\\ogg.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\bin\\ogg.dll\" \"%{wks.location}bin\"",
+            "if not exist \"%{wks.location}bin\\vorbis.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\bin\\vorbis.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\bin\\vorbis.dll\" \"%{wks.location}bin\"",
+            "if not exist \"%{wks.location}bin\\vorbisenc.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\bin\\vorbisenc.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\bin\\vorbisenc.dll\" \"%{wks.location}bin\"",
+            "if not exist \"%{wks.location}bin\\FLAC.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\bin\\FLAC.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\bin\\FLAC.dll\" \"%{wks.location}bin\"",
+            "if not exist \"%{wks.location}bin\\opus.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\bin\\opus.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\bin\\opus.dll\" \"%{wks.location}bin\"",
+            "if not exist \"%{wks.location}bin\\mpg123.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\bin\\mpg123.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\bin\\mpg123.dll\" \"%{wks.location}bin\"",
+            "if not exist \"%{wks.location}bin\\libmp3lame.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\bin\\libmp3lame.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows\\bin\\libmp3lame.dll\" \"%{wks.location}bin\""
         }
 
     filter "*"
@@ -267,7 +265,11 @@ project "Game"
         includedirs {
             "Engine/third_party/vcpkg/installed/x64-windows/include/physx",
             "Engine/third_party/vcpkg/installed/x64-windows/include/AL",
-            "Engine/third_party/vcpkg/installed/x64-windows/include/vorbis",
+            -- "Engine/third_party/vcpkg/installed/x64-windows/include/ogg",
+            -- "Engine/third_party/vcpkg/installed/x64-windows/include/vorbis",
+            -- "Engine/third_party/vcpkg/installed/x64-windows/include/flac",
+            -- "Engine/third_party/vcpkg/installed/x64-windows/include/opus",
+            -- "Engine/third_party/vcpkg/installed/x64-windows/include/lame",
             "Engine/third_party/vcpkg/installed/x64-windows/include"
         }
 
@@ -318,17 +320,36 @@ project "Game"
             "Engine/third_party/vcpkg/installed/x64-windows/debug/lib"
         }
         links {
+            "PhysXCharacterKinematic_static_64",
+            "PhysXExtensions_static_64",
             "PhysX_64",
+            "PhysXPvdSDK_static_64",
+            "PhysXVehicle_static_64",
+            "PhysXCooking_64",
+            "PhysXCommon_64",
+            "PhysXFoundation_64",
             "OpenAL32",
-            "sndfile",
-            "vorbis"
+            "sndfile"
+            -- "vorbisenc",
+            -- "ogg",
+            -- "FLAC",
+            -- "opus",
+            -- "mpg123",
+            -- "libmp3lame"
         }
     filter { "system:windows", "configurations:Release" }
         libdirs {
             "Engine/third_party/vcpkg/installed/x64-windows/lib"
         }
         links {
+            "PhysXCharacterKinematic_static_64",
+            "PhysXExtensions_static_64",
             "PhysX_64",
+            "PhysXPvdSDK_static_64",
+            "PhysXVehicle_static_64",
+            "PhysXCooking_64",
+            "PhysXCommon_64",
+            "PhysXFoundation_64",
             "OpenAL32",
             "sndfile"
         }
