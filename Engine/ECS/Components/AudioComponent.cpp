@@ -67,7 +67,7 @@ namespace Engine
 			return;
 		}
 
-		getState();
+		ALuint currentState = getState();
 
 		setActiveClip(key);
 
@@ -169,25 +169,25 @@ namespace Engine
 
 		if (state == AL_INITIAL)
 		{
-			std::cout << "initial state\n";
+			//std::cout << "initial state\n";
 			return AL_INITIAL;
 		}
 
 		if (state == AL_PLAYING)
 		{
-			std::cout << "Playing state\n";
+			//std::cout << "Playing state\n";
 			return AL_PLAYING;
 		}
 
 		if (state == AL_PAUSED)
 		{
-			std::cout << "Paused state\n";
+			//std::cout << "Paused state\n";
 			return AL_PAUSED;
 		}
 
 		if (state == AL_STOPPED)
 		{
-			std::cout << "Stopped state\n";
+			//std::cout << "Stopped state\n";
 			return AL_STOPPED;
 		}
 	}

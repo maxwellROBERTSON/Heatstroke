@@ -2,17 +2,18 @@
 
 #include <iostream>
 
+#include "../Events/Event.hpp"
+#include "../Events/KeyEvent.hpp"
+#include "../Events/MouseEvent.hpp"
+#include "../Events/WindowEvent.hpp"
 #include "Input.hpp"
 #include "InputCodes.hpp"
 #include "Joystick.hpp"
 #include "Keyboard.hpp"
 #include "Mouse.hpp"
-#include "../Events/Event.hpp"
-#include "../Events/KeyEvent.hpp"
-#include "../Events/MouseEvent.hpp"
-#include "../Events/WindowEvent.hpp"
 
 #include <GLFW/glfw3.h>
+#include <imgui.h>
 
 namespace Engine {
 	void onWindowClose(GLFWwindow* aWindow)
@@ -25,11 +26,13 @@ namespace Engine {
 	void joyStickCallback(int jid, int event)
 	{
 		Joystick& joystick = static_cast<Joystick&>(InputManager::getJoystick(jid));
-		if (event == GLFW_CONNECTED) {
+		if (event == GLFW_CONNECTED && glfwJoystickIsGamepad(jid)) {
 			std::cout << joystick.getDeviceName() << " conneceted" << std::endl;
+			InputManager::addJoysitck(jid);
 		}
 		else {
 			std::cout << joystick.getDeviceName() << " disconneceted" << std::endl;
+			InputManager::removeJoystick(jid);
 
 		}
 	}
@@ -46,27 +49,42 @@ namespace Engine {
 			return;
 		}
 
-		switch (aAction)
+		if (!ImGui::GetIO().WantCaptureKeyboard)
 		{
-		case GLFW_PRESS:
-		{
-			KeyPressedEvent event(aKey, 0);
-			engineWindow.EventCallback(event);
-			keyboard.setKey(aKey, ButtonState::PRESSED);
-			break;
-		}
-		case GLFW_RELEASE:
-		{
-			KeyReleasedEvent event(aKey);
-			engineWindow.EventCallback(event);
-			keyboard.setKey(aKey, ButtonState::RELEASED);
-			break;
-		}
+			switch (aAction)
+			{
+			case GLFW_PRESS:
+			{
+				KeyPressedEvent event(aKey, 0);
+				engineWindow.EventCallback(event);
+				keyboard.setKey(aKey, ButtonState::PRESSED);
+				break;
+			}
+			case GLFW_RELEASE:
+			{
+				KeyReleasedEvent event(aKey);
+				engineWindow.EventCallback(event);
+				keyboard.setKey(aKey, ButtonState::RELEASED);
+				//std::cout << "RELEASE" << std::endl;
+				break;
+			}
+			case GLFW_REPEAT:
+			{
+				// TODO - KeyHeld Event
+
+				//KeyReleasedEvent event(aKey);
+				//engineWindow.EventCallback(event);
+				//keyboard.setKey(aKey, ButtonState::RELEASED);
+				//std::cout << "REPEAT" << std::endl;
+				break;
+			}
+			}
 		}
 	}
 
 	void onMouseMove(GLFWwindow* aWindow, double x, double y)
 	{
+
 		if (glfwGetInputMode(aWindow, GLFW_CURSOR) != GLFW_CURSOR_DISABLED)
 			return;
 		auto& mouse = InputManager::getMouse();
@@ -78,27 +96,30 @@ namespace Engine {
 		VulkanWindow& engineWindow = *(VulkanWindow*)glfwGetWindowUserPointer(aWindow);
 		auto& mouse = InputManager::getMouse();
 
-		switch (aAction) {
-		case GLFW_PRESS:
+		if (!ImGui::GetIO().WantCaptureMouse)
 		{
-			mouse.mButtonStates[aButton] = ButtonState::PRESSED;
-			MouseButtonPressedEvent event(aButton);
-			engineWindow.EventCallback(event);
-			break;
-		}
-		case GLFW_RELEASE:
-		{
-			mouse.mButtonStates[aButton] = ButtonState::RELEASED;
-			MouseButtonReleasedEvent event(aButton);
-			engineWindow.EventCallback(event);
-			break;
-		}
+			switch (aAction) {
+			case GLFW_PRESS:
+			{
+				mouse.mButtonStates[aButton] = ButtonState::PRESSED;
+				MouseButtonPressedEvent event(aButton);
+				engineWindow.EventCallback(event);
+				break;
+			}
+			case GLFW_RELEASE:
+			{
+				mouse.mButtonStates[aButton] = ButtonState::RELEASED;
+				MouseButtonReleasedEvent event(aButton);
+				engineWindow.EventCallback(event);
+				break;
+			}
+			}
 		}
 	}
 	void onMouseScroll(GLFWwindow* aWindow, double xOffset, double yOffset)
 	{
 		auto& mouse = InputManager::getMouse();
-		// MouseScroll Event
+		// // TODO - MouseScroll Event
 		mouse.scrollPos = yOffset;
 	}
 }

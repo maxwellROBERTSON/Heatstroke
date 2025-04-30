@@ -54,4 +54,8 @@ namespace glsl {
         glm::mat4 jointMatrix[MAX_JOINTS]{};
         int isSkinned = 0;
     };
+
+    struct OrthoMatrices {
+        glm::mat4 projection;
+    };
 }

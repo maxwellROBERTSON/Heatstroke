@@ -24,6 +24,7 @@ workspace "Heatstroke"
     filter "toolset:msc-*"
         defines { "_CRT_SECURE_NO_WARNINGS=1" }
         defines { "_SCL_SECURE_NO_WARNINGS=1" }
+        linkoptions { "/ignore:4099" }
         buildoptions { "/utf-8" }
 
     filter "*"
@@ -171,14 +172,7 @@ project "Engine"
             "Engine/third_party/snd/lib"
         }
         links {
-            "PhysXCharacterKinematic_static_64",
-            "PhysXExtensions_static_64",
             "PhysX_64",
-            "PhysXPvdSDK_static_64",
-            "PhysXVehicle_static_64",
-            "PhysXCooking_64",
-            "PhysXCommon_64",
-            "PhysXFoundation_64",
             "OpenAL32",
             "sndfile"
         }
@@ -198,11 +192,6 @@ project "Engine"
             "PhysXCharacterKinematic_static_64",
             "PhysXExtensions_static_64",
             "PhysX_64",
-            "PhysXPvdSDK_static_64",
-            "PhysXVehicle_static_64",
-            "PhysXCooking_64",
-            "PhysXCommon_64",
-            "PhysXFoundation_64",
             "OpenAL32",
             "sndfile"
         }

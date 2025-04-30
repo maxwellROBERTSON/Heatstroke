@@ -13,6 +13,10 @@ namespace Engine
 	class Camera;
 	class EntityManager;
 	class Entity;
+}
+
+namespace Engine
+{
 
 	class CameraComponent : public Component<CameraComponent>
 	{
@@ -26,6 +30,8 @@ namespace Engine
 			this->camera = other.camera;
 		}
 
+
+		void swapCameraMode();
 		// Getters
 
 		// Static type getter from Component parent
@@ -47,8 +53,9 @@ namespace Engine
 
 		// Update camera using Camera class
 		void UpdateCamera(GLFWwindow*, float);
+		void UpdateCameraPosition(glm::vec3 pos);
 
-		// Set camera pointer
+
 		void SetCamera(Engine::Camera aCamera) { camera = aCamera; SetComponentHasChanged(); }
 
 		// Set component has changed in entity manager
@@ -56,6 +63,15 @@ namespace Engine
 
 		// Toggle has changed boolean
 		void ToggleHasChanged() { hasChanged = !hasChanged; }
+
+		// for player
+		Entity* playerEntity;
+		glm::vec3 cameraOffset;
+		glm::vec3 sceneCamPos;
+
+		void SetCameraOffset(float x, float y, float z);
+		void SetCameraOffset(glm::vec3 offset);
+		glm::vec3 GetFrontDirection();
 
 	private:
 		// EntityManager pointer
@@ -67,5 +83,13 @@ namespace Engine
 		bool hasChanged = false;
 
 		Engine::Camera camera;
+
+
 	};
 }
+
+// 	// Set camera pointer
+// 	void SetCamera(Engine::Camera* aCamera) { camera = aCamera; }
+
+// private:
+// 	Engine::Camera* camera;

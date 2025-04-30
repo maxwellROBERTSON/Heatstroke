@@ -1,5 +1,8 @@
-#include "GUI.hpp"
 #include "../Network/Helpers/GameConfig.hpp"
+#include "GUI.hpp"
+
+#include "../../Game/DemoGame.hpp"
+#include "../../Game/rendering/Crosshair.hpp"
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -14,10 +17,14 @@ namespace Engine
 		ImGuiIO& io = ImGui::GetIO();
 		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
 		io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
-
 		// Setup Dear ImGui style
 		ImGui::StyleColorsDark();
 		//ImGui::StyleColorsLight();
+
+		// fonts
+		gameFont = io.Fonts->AddFontFromFileTTF("Engine/third_party/imgui/misc/fonts/Roboto-Medium.ttf", 36.0f);
+		defaultFont = io.Fonts->AddFontFromFileTTF("Engine/third_party/imgui/misc/fonts/Roboto-Medium.ttf", 12.0f);
+
 
 		// Setup Platform/Renderer backends
 		ImGui_ImplGlfw_InitForVulkan(&(*game->GetContext().getGLFWWindow()), true);
@@ -336,6 +343,12 @@ namespace Engine
 			this->changedMSAA = true;
 		}
 
+		ImGui::Text("Crosshair Color:");
+		Crosshair& crosshair = ((FPSTest*)game)->getCrosshair();
+		if (ImGui::Combo("Color", &crosshair.selectedColor, crosshair.colorNames.data(), (int)crosshair.colorNames.size())) {
+			crosshair.shouldUpdateCrosshair = true;
+		}
+
 		ImVec2 topRightPos = ImVec2(*w - *w / 6 - 10, 30);
 		ImGui::SetCursorPos(topRightPos);
 		if (ImGui::Button("Disconnect", ImVec2(*w / 6, *h / 6)))
@@ -363,6 +376,7 @@ namespace Engine
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
 
+		ImGui::PushFont(defaultFont);
 		ImGui::Begin("Debug Menu");
 
 		if (ImGui::Checkbox("VSync", &game->GetRenderer().vsync)) {
@@ -387,9 +401,24 @@ namespace Engine
 		ImGui::Text("FrontDir:");
 		ImGui::InputText("##FrontDir", (char*)fDirStr.c_str(), fDirStr.size() + 1, ImGuiInputTextFlags_ReadOnly);
 
+		ImGui::Checkbox("Input Debug", &debugInput);
+		ImGui::Checkbox("Game Debug", &debugGame);
+
+		// ImGui::ShowDemoWindow();
 		ImGui::Text("Shadow depth buffer settings:");
 		ImGui::SliderFloat("Depth Bias Constant", &game->GetRenderer().depthBiasConstant, 0.0f, 10.0f);
 		ImGui::SliderFloat("Depth Bias Slope Factor", &game->GetRenderer().depthBiasSlopeFactor, 0.0f, 10.0f);
+
+		if (debugInput || InputManager::hasJoysticksConnected())
+			ShowInputDebug();
+
+		if (debugGame)
+		{
+			game->DrawDebugGUI();
+			//ImGui::PushFont(gameFont);
+			//game->DrawGUI();
+			//ImGui::PopFont();
+		}
 
 		ImGui::Text("Animations:");
 		// Iterate over all models and find ones with animations
@@ -419,8 +448,29 @@ namespace Engine
 				ImGui::Text("%s: %s", key.c_str(), value.c_str());
 			}
 		}
-
+		ImGui::PopFont();
 		ImGui::End();
+	}
+
+	void GUI::ShowInputDebug()
+	{
+		ImGui::Begin("Input:");
+		ImGui::Text("Controller Status: %s", InputManager::hasJoysticksConnected() ? "Connected" : "Disconnected");
+		if (InputManager::hasJoysticksConnected())
+		{
+			ImGui::Text("A: %s", InputManager::getJoystick(0).isPressed(HS_GAMEPAD_BUTTON_A) ? "Pressed" : "Released");
+			ImGui::Text("B: %s", InputManager::getJoystick(0).isPressed(HS_GAMEPAD_BUTTON_B) ? "Pressed" : "Released");
+			ImGui::Text("Y: %s", InputManager::getJoystick(0).isPressed(HS_GAMEPAD_BUTTON_Y) ? "Pressed" : "Released");
+			ImGui::Text("X: %s", InputManager::getJoystick(0).isPressed(HS_GAMEPAD_BUTTON_X) ? "Pressed" : "Released");
+			ImGui::Text("RB: %s", InputManager::getJoystick(0).isPressed(HS_GAMEPAD_BUTTON_RIGHT_BUMPER) ? "Pressed" : "Released");
+			ImGui::Text("LB: %s", InputManager::getJoystick(0).isPressed(HS_GAMEPAD_BUTTON_LEFT_BUMPER) ? "Pressed" : "Released");
+			ImGui::Text("RT: %f", InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_RIGHT_TRIGGER));
+			ImGui::Text("LT: %f", InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_LEFT_TRIGGER));
+			ImGui::Text("LS - Horizontal: %f", InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_LEFT_X));
+			ImGui::Text("LS - Vertical: %f", InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_LEFT_Y));
+			ImGui::Text("RS - Horizontal: %f", InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_RIGHT_X));
+			ImGui::Text("RS - Vertical: %f", InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_RIGHT_Y));
+		}
 	}
 
 	void GUI::makeServerGUI(int* w, int* h)
@@ -517,7 +567,6 @@ namespace Engine
 			ImGui::Text("Loading: ");
 			ImGui::Text(game->GetNetwork().GetStatusString().c_str());
 		}
-
 		ImGui::End();
 	}
 }

@@ -4,8 +4,11 @@
 
 namespace Engine
 {
+	int Game::instanceCount = 0;
+
 	Game::Game(const std::string& name, int width, int height)
 	{
+		instanceCount++;
 		mContext.window = initialiseVulkan(name, width, height);
 		mContext.allocator = createVulkanAllocator(*mContext.window.get());
 		InputManager::RegisterCallbacks(mContext.window.get());
@@ -26,13 +29,6 @@ namespace Engine
 		EventDispatcher dispatcher(e);
 		dispatcher.Dispatch<WindowCloseEvent>(std::bind(&Game::OnWindowClose, this, std::placeholders::_1));
 		dispatcher.Dispatch<ESCEvent>([this](Event& event) { gui->toggle(); return true; });
-		/*dispatcher.Dispatch<RenderModeToggleEvent>([this](RenderModeToggleEvent& event)
-			{
-				if (event.IsOn())
-					renderer->modeOn(event.GetRenderMode());
-				else renderer->modeOff(event.GetRenderMode());
-				return true;
-			});*/
 	}
 
 	bool Game::OnWindowClose(WindowCloseEvent& e)

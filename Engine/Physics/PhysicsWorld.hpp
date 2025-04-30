@@ -12,6 +12,10 @@
 
 #include "../gltf/Model.hpp"
 
+
+#include "../ECS/EntityManager.hpp"
+#include "../ECS/Entity.hpp"
+
 namespace Engine
 {
 	using namespace physx;
@@ -44,17 +48,22 @@ namespace Engine
 		PxReal gSimulationTimer = 0.0f;
 		PxReal gTimestep = 1.0f / 60.0f; // 60 FPS
 
-		void init();
+		void init(EntityManager*);
+
 
 		void handleMovement(PxReal deltatime);
+		void handleMovement(Entity* playerEntity, PxReal deltatime);
 
 		void handleShooting();
+		PxRaycastHit handleShooting(Entity* playerEntity);
 
+		void updatePhysics(Entity* playerEntity, PxReal timeDelta);
 		void updatePhysics(PxReal timeDelta);
 
 		void updateCharacter(PxReal deltatime);
+		void updateCharacter(Entity* playerEntity, PxReal deltatime);
 
-		void updateObjects(Engine::EntityManager& entityManager, std::vector<Engine::vk::Model>& models);
+		void updateObjects(Engine::EntityManager& entityManager, std::vector<Engine::vk::Model>& models); //TODO
 
 		void cleanupPhysX();
 
@@ -64,6 +73,6 @@ namespace Engine
 
 
 	private:
-
+		EntityManager* entityManager;
 	};
 }

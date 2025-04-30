@@ -1,24 +1,26 @@
 #include "Renderer.hpp"
 
-#include <numeric>
 #include <format>
+#include <numeric>
 
+#include "../ECS/Components/RenderComponent.hpp"
 #include "Error.hpp"
-#include "toString.hpp"
-#include "VulkanUtils.hpp"
-#include "VulkanDevice.hpp"
 #include "PipelineCreation.hpp"
 #include "Skybox.hpp"
-#include "../ECS/Components/RenderComponent.hpp"
+#include "toString.hpp"
+#include "VulkanDevice.hpp"
+#include "VulkanUtils.hpp"
+
+#include "../../Game/DemoGame.hpp"
 
 #include "Utils.hpp"
 #include "vulkan/vulkan_core.h"
 
-#include <imgui.h>
 #include <backends/imgui_impl_glfw.h>
-#include <backends/imgui_impl_vulkan.h>
 #include <backends/imgui_impl_vulkan.cpp>
+#include <backends/imgui_impl_vulkan.h>
 #include <GLFW\glfw3.h>
+#include <imgui.h>
 
 #define MAX_JOINTS 128u
 
@@ -52,6 +54,7 @@ namespace Engine {
 		this->renderPasses.emplace("deferred", createDeferredRenderPass(*this->context->window));
 		this->renderPasses.emplace("shadow", createShadowRenderPass(*this->context->window));
 		this->renderPasses.emplace("ui", createUIRenderPass(*this->context->window));
+		this->renderPasses.emplace("crosshair", createCrosshairRenderPass(*this->context->window));
 
 		// Descriptor Layouts
 		std::vector<DescriptorSetting> sceneSetting = { {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT} };
@@ -85,6 +88,9 @@ namespace Engine {
 		std::vector<DescriptorSetting> fragImageSetting = { {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT} };
 		this->descriptorLayouts.emplace("fragImageLayout", createDescriptorLayout(*this->context->window, fragImageSetting));
 
+		std::vector<DescriptorSetting> orthoMatrices = { {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT} };
+		this->descriptorLayouts.emplace("orthoMatrices", createDescriptorLayout(*this->context->window, orthoMatrices));
+
 		// Descriptor Layout groups (groups descriptor layouts for pipelines)
 
 		std::vector<VkDescriptorSetLayout> forwardLayouts;
@@ -117,12 +123,16 @@ namespace Engine {
 		skyboxLayout.emplace_back(this->descriptorLayouts["sceneLayout"].handle);
 		skyboxLayout.emplace_back(this->descriptorLayouts["fragImageLayout"].handle);
 
+		std::vector<VkDescriptorSetLayout> crosshairLayout;
+		crosshairLayout.emplace_back(this->descriptorLayouts["orthoMatrices"].handle);
+
 		// Pipeline layouts
 		this->pipelineLayouts.emplace("forward", createPipelineLayout(*this->context->window, forwardLayouts, true));
 		this->pipelineLayouts.emplace("forwardShadow", createPipelineLayout(*this->context->window, forwardShadowLayouts, true));
 		this->pipelineLayouts.emplace("deferred", createPipelineLayout(*this->context->window, deferredShadingLayouts, false));
 		this->pipelineLayouts.emplace("shadow", createPipelineLayout(*this->context->window, shadowLayout, false));
 		this->pipelineLayouts.emplace("skybox", createPipelineLayout(*this->context->window, skyboxLayout, false));
+		this->pipelineLayouts.emplace("crosshair", createPipelineLayout(*this->context->window, crosshairLayout, false));
 
 		// Pipelines
 		std::tuple<vk::Pipeline, vk::Pipeline> deferredPipelines = createDeferredPipelines(
@@ -140,6 +150,7 @@ namespace Engine {
 		this->pipelines.emplace("shadow", createShadowOffscreenPipeline(*this->context->window, this->renderPasses["shadow"].handle, this->pipelineLayouts["shadow"].handle));
 		this->pipelines.emplace("skybox", createSkyboxPipeline(*this->context->window, this->renderPasses["forward"].handle, this->pipelineLayouts["skybox"].handle));
 		this->pipelines.emplace("skyboxMSAA", createSkyboxPipeline(*this->context->window, this->renderPasses["forwardMSAA"].handle, this->pipelineLayouts["skybox"].handle, VK_SAMPLE_COUNT_4_BIT));
+		this->pipelines.emplace("crosshair", createCrosshairPipeline(*this->context->window, this->renderPasses["crosshair"].handle, this->pipelineLayouts["crosshair"].handle));
 
 		// Buffers
 		TextureBufferSetting depthTexture = {
@@ -162,7 +173,7 @@ namespace Engine {
 			.imageFormat = VK_FORMAT_D32_SFLOAT_S8_UINT,
 			.imageExtent = VkExtent2D {2048, 2048}, // Probably will want to make the shadow map resolution more easily editable, rather than hardcoding it everywhere
 			.imageUsage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-			.viewAspectFlags = VK_IMAGE_ASPECT_DEPTH_BIT }; 
+			.viewAspectFlags = VK_IMAGE_ASPECT_DEPTH_BIT };
 		this->buffers.emplace("shadowDepth", createTextureBuffer(*this->context, shadowDepthTexture));
 
 		TextureBufferSetting multisampleColorTexture = {
@@ -206,6 +217,9 @@ namespace Engine {
 		shadowViews.emplace_back(this->buffers["shadowDepth"].second.handle);
 		createFramebuffers(*this->context->window, this->shadowFramebuffer, this->renderPasses["shadow"].handle, shadowViews, shadowExtent, true);
 
+		std::vector<VkImageView> swapchainViews;
+		createFramebuffers(*this->context->window, this->crosshairFramebuffer, this->renderPasses["crosshair"].handle, swapchainViews, swapchainExtent);
+
 		// Setup synchronisation
 		for (std::size_t i = 0; i < context->window->swapViews.size(); i++) {
 			this->cmdBuffers.emplace_back(createCommandBuffer(*this->context->window));
@@ -215,13 +229,13 @@ namespace Engine {
 		}
 
 		// Create uniform buffers
-		this->uniformBuffers.emplace("scene", 
+		this->uniformBuffers.emplace("scene",
 			vk::createBuffer(
-				"sceneUBO", 
+				"sceneUBO",
 				*this->context->allocator,
-				sizeof(glsl::SceneUniform), 
-				VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, 
-				0, 
+				sizeof(glsl::SceneUniform),
+				VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+				0,
 				VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE));
 		this->uniformBuffers.emplace("lights",
 			vk::createBuffer(
@@ -239,6 +253,14 @@ namespace Engine {
 				VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 				0,
 				VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE));
+		this->uniformBuffers.emplace("orthoMatrices",
+			vk::createBuffer(
+				"orthoMatrices",
+				*this->context->allocator,
+				sizeof(glsl::OrthoMatrices),
+				VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+				0,
+				VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE));
 
 		// Samplers
 		vk::SamplerInfo samplerInfo = {
@@ -249,7 +271,7 @@ namespace Engine {
 		this->depthSampler = createTextureSampler(*this->context->window, samplerInfo);
 
 		// Descriptor sets
-		this->descriptorSets.emplace("scene", 
+		this->descriptorSets.emplace("scene",
 			createUBODescriptor(
 				*this->context->window,
 				this->descriptorLayouts["sceneLayout"].handle,
@@ -259,7 +281,7 @@ namespace Engine {
 				*this->context->window,
 				this->descriptorLayouts["fragUBOLayout"].handle,
 				this->uniformBuffers["lights"].buffer));
-		this->descriptorSets.emplace("deferredShading", 
+		this->descriptorSets.emplace("deferredShading",
 			createDeferredShadingDescriptor(
 				*this->context->window,
 				this->descriptorLayouts["deferredLayout"].handle,
@@ -278,6 +300,11 @@ namespace Engine {
 				this->descriptorLayouts["fragImageLayout"].handle,
 				this->buffers["shadowDepth"].second.handle,
 				this->depthSampler.handle));
+		this->descriptorSets.emplace("orthoMatrices",
+			createUBODescriptor(
+				*this->context->window,
+				this->descriptorLayouts["orthoMatrices"].handle,
+				this->uniformBuffers["orthoMatrices"].buffer));
 
 		// Initialise light properties
 		this->uniforms.lightsUniform.light[0].pos = glm::vec4(0.0f, 20.0f, 0.0f, 0.0f);
@@ -416,6 +443,9 @@ namespace Engine {
 
 			this->recreateOthers();
 
+			// Update crosshair positons
+			((FPSTest*)this->game)->getCrosshair().shouldUpdateCrosshair = true;
+
 			// Destroy and recreate all semaphores so none are in signaled state, which
 			// may be the case when vkAcquireNextImageKHR returns VK_SUBOPTIMAL_KHR.
 			this->imageAvailable.clear();
@@ -487,6 +517,8 @@ namespace Engine {
 
 		this->uniforms.depthMVP.depthMVP = depthProjection * depthView;
 
+		this->uniforms.orthoMatrices.projection = glm::ortho(0.0f, width, height, 0.0f);
+
 		if (isSceneLoaded)
 			updateModelMatrices();
 	}
@@ -500,6 +532,8 @@ namespace Engine {
 		std::vector<int> renderEntities = this->entityManager->GetEntitiesWithComponent(RENDER);
 		for (std::size_t i = 0; i < renderEntities.size(); i++) {
 			RenderComponent* renderComponent = reinterpret_cast<RenderComponent*>(this->entityManager->GetComponentOfEntity(renderEntities[i], RENDER));
+			if (!renderComponent->GetIsActive())
+				continue;
 			int modelIndex = renderComponent->GetModelIndex();
 			vk::Model& model = models[modelIndex];
 
@@ -773,7 +807,7 @@ namespace Engine {
 
 			vkCmdDraw(cmdBuf, 36, 1, 0, 0);
 		}
-		
+
 		vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelines[pipeline].handle);
 
 		if (shadow) {
@@ -790,6 +824,51 @@ namespace Engine {
 		if (debug) {
 			ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmdBuf);
 		}
+
+		vkCmdEndRenderPass(cmdBuf);
+
+		// Draw crosshair
+		((FPSTest*)this->game)->getCrosshair().updatePositions();
+
+		Utils::bufferBarrier(
+			cmdBuf,
+			this->uniformBuffers["orthoMatrices"].buffer,
+			VK_ACCESS_UNIFORM_READ_BIT,
+			VK_ACCESS_TRANSFER_WRITE_BIT,
+			VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
+			VK_PIPELINE_STAGE_TRANSFER_BIT
+		);
+
+		vkCmdUpdateBuffer(cmdBuf, this->uniformBuffers["orthoMatrices"].buffer, 0, sizeof(glsl::OrthoMatrices), &this->uniforms.orthoMatrices);
+
+		Utils::bufferBarrier(
+			cmdBuf,
+			this->uniformBuffers["orthoMatrices"].buffer,
+			VK_ACCESS_TRANSFER_WRITE_BIT,
+			VK_ACCESS_UNIFORM_READ_BIT,
+			VK_PIPELINE_STAGE_TRANSFER_BIT,
+			VK_PIPELINE_STAGE_VERTEX_SHADER_BIT
+		);
+
+		clearValues.clear();
+		clearValues.emplace_back(colourClearValue);
+
+		VkRenderPassBeginInfo passInfo2{};
+		passInfo2.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		passInfo2.renderPass = this->renderPasses["crosshair"].handle;
+		passInfo2.framebuffer = this->crosshairFramebuffer[this->imageIndex].handle;
+		passInfo2.renderArea.offset = VkOffset2D{ 0, 0 };
+		passInfo2.renderArea.extent = this->context->window->swapchainExtent;
+		passInfo2.clearValueCount = (uint32_t)clearValues.size();
+		passInfo2.pClearValues = clearValues.data();
+
+		vkCmdBeginRenderPass(cmdBuf, &passInfo2, VK_SUBPASS_CONTENTS_INLINE);
+
+		vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelines["crosshair"].handle);
+
+		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["crosshair"].handle, 0, 1, &this->descriptorSets["orthoMatrices"], 0, nullptr);
+
+		((FPSTest*)this->game)->getCrosshair().drawCrosshair(cmdBuf);
 
 		vkCmdEndRenderPass(cmdBuf);
 
@@ -945,6 +1024,7 @@ namespace Engine {
 		this->renderPasses["forwardMSAA"] = createRenderPassMSAA(*this->context->window, Utils::getMSAAMinimum(sampleCount));
 		this->renderPasses["deferred"] = createDeferredRenderPass(*this->context->window);
 		this->renderPasses["shadow"] = createShadowRenderPass(*this->context->window);
+		this->renderPasses["crosshair"] = createCrosshairRenderPass(*this->context->window);
 	}
 
 	void Renderer::recreateSizeDependents() {
@@ -988,7 +1068,7 @@ namespace Engine {
 			.viewAspectFlags = VK_IMAGE_ASPECT_DEPTH_BIT,
 			.samples = Utils::getMSAAMinimum(sampleCount) };
 		this->buffers["multisampleDepth"] = createTextureBuffer(*this->context, multisampleDepthTexture);
-	
+
 		std::tuple<vk::Pipeline, vk::Pipeline> deferredPipelines = createDeferredPipelines(
 			*this->context->window,
 			this->renderPasses["deferred"].handle,
@@ -1004,6 +1084,7 @@ namespace Engine {
 		this->pipelines["shadow"] = createShadowOffscreenPipeline(*this->context->window, this->renderPasses["shadow"].handle, this->pipelineLayouts["shadow"].handle);
 		this->pipelines["skybox"] = createSkyboxPipeline(*this->context->window, this->renderPasses["forward"].handle, this->pipelineLayouts["skybox"].handle);
 		this->pipelines["skyboxMSAA"] = createSkyboxPipeline(*this->context->window, this->renderPasses["forwardMSAA"].handle, this->pipelineLayouts["skybox"].handle, Utils::getMSAAMinimum(sampleCount));
+		this->pipelines["crosshair"] = createCrosshairPipeline(*this->context->window, this->renderPasses["crosshair"].handle, this->pipelineLayouts["crosshair"].handle);
 	}
 
 	void Renderer::recreateOthers() {
@@ -1014,6 +1095,7 @@ namespace Engine {
 		this->forwardMSAAFramebuffers.clear();
 		this->deferredFramebuffers.clear();
 		this->shadowFramebuffer.clear();
+		this->crosshairFramebuffer.clear();
 
 		std::vector<VkImageView> forwardViews;
 		forwardViews.emplace_back(this->buffers["depth"].second.handle);
@@ -1035,6 +1117,9 @@ namespace Engine {
 		std::vector<VkImageView> shadowViews;
 		shadowViews.emplace_back(this->buffers["shadowDepth"].second.handle);
 		createFramebuffers(*this->context->window, this->shadowFramebuffer, this->renderPasses["shadow"].handle, shadowViews, shadowExtent, true);
+
+		std::vector<VkImageView> swapchainViews;
+		createFramebuffers(*this->context->window, this->crosshairFramebuffer, this->renderPasses["crosshair"].handle, swapchainViews, swapchainExtent);
 
 		this->descriptorSets["deferredShading"] = createDeferredShadingDescriptor(
 			*this->context->window,
@@ -1121,7 +1206,7 @@ namespace Engine {
 	float Renderer::getAvgFrameTime() {
 		return this->avgFrameTime;
 	}
-	
+
 	int Renderer::getAvgFPS() {
 		return this->avgFps;
 	}
