@@ -64,6 +64,7 @@ public:
 	Crosshair& getCrosshair();
 	int score = 0;
 	int countdown = 30;
+	bool gameOver = false;
 	std::chrono::steady_clock::time_point previous;
 
 	// -- input actions

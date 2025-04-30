@@ -166,11 +166,11 @@ void FPSTest::Update() {
 
 		}
 
-		if (Engine::InputManager::getKeyboard().isPressed(HS_KEY_P))
-		{
-			RenderComponent* renderComponent = reinterpret_cast<RenderComponent*>(GetEntityManager().GetComponentOfEntity(playerEntity->GetEntityId(), RENDER));
-			renderComponent->SetIsActive(0);
-		}
+		//if (Engine::InputManager::getKeyboard().isPressed(HS_KEY_P))
+		//{
+		//	RenderComponent* renderComponent = reinterpret_cast<RenderComponent*>(GetEntityManager().GetComponentOfEntity(playerEntity->GetEntityId(), RENDER));
+		//	renderComponent->SetIsActive(0);
+		//}
 
 		if (Engine::InputManager::getMouse().isPressed(HS_MOUSE_BUTTON_LEFT) && canFire)
 		{
@@ -212,6 +212,12 @@ void FPSTest::Update() {
 			//	//RenderComponent* targetRenderComponent = reinterpret_cast<RenderComponent*>(GetEntityManager().GetComponentOfEntity(reinterpret_cast<int>(entityHit.actor->getName()), RENDER));
 			//	targetRenderComponent->SetIsActive(0);
 			//}
+
+			if (countdown <= 0)
+				gameOver = true;
+
+			//if (gameOver)
+				//do stuff
 		}
 
 		physicsWorld.updateObjects(GetEntityManager(), GetModels());

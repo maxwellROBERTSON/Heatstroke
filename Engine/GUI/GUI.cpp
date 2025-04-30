@@ -21,7 +21,8 @@ namespace Engine
 		ImGui::StyleColorsDark();
 		//ImGui::StyleColorsLight();
 
-		io.Fonts->AddFontFromFileTTF("C:/dev/Heatstroke/Engine/third_party/imgui/misc/fonts/Roboto-Medium.ttf", 36.0f);
+		io.Fonts->AddFontFromFileTTF("Engine/third_party/imgui/misc/fonts/Roboto-Medium.ttf", 36.0f);
+		//io.Fonts->AddFontFromFileTTF("C:/dev/Heatstroke/Engine/third_party/imgui/misc/fonts/Roboto-Medium.ttf", 36.0f);
 
 		// Setup Platform/Renderer backends
 		ImGui_ImplGlfw_InitForVulkan(&(*game->GetContext().getGLFWWindow()), true);
