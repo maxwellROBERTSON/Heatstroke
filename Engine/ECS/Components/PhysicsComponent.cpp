@@ -201,13 +201,6 @@ namespace Engine
 			return;
 		}
 
-		/*PxTransform pxTransform(
-			PxVec3(translation.x, translation.y, translation.z),
-			PxQuat(rotation.x, rotation.y, rotation.z, rotation.w)
-		);*/
-
-		//PxVec3 pxScale(scale.x, scale.y, scale.z);
-
 		// Iterate over model nodes and primitives to add static rigid bodies
 		// based on the model's triangle meshes.
 		// Currently adds a static body per primitive mesh, not sure if thats
@@ -316,21 +309,35 @@ namespace Engine
 			return;
 		}
 
-		PxTransform pxTransform(
-			PxVec3(translation.x, translation.y, translation.z),
-			PxQuat(rotation.x, rotation.y, rotation.z, rotation.w)
-		);
-
-		PxVec3 pxScale(scale.x, scale.y, scale.z);
-
 		// Iterate over model nodes and primitives to add static rigid bodies
 		// based on the model's triangle meshes.
 		// Currently adds a static body per primitive mesh, not sure if thats
 		// a bad or good thing.
+		int count = 0;
 		for (Engine::vk::Node* node : model.linearNodes) {
 			if (node->mesh) {
-				glm::mat4 modelMatrix = node->getModelMatrix();
-				PxVec3 nodeScale(modelMatrix[0][0], modelMatrix[1][1], modelMatrix[2][2]);
+				glm::mat4 nodeMatrix = transform * node->getModelMatrix();
+
+				glm::mat3 rotationMatrix = glm::mat3(nodeMatrix);
+				glm::vec3 nodeTranslation = glm::vec3(nodeMatrix[3][0], nodeMatrix[3][1], nodeMatrix[3][2]);
+
+				glm::vec3 nodeScale;
+				nodeScale.x = glm::length(rotationMatrix[0]);
+				nodeScale.y = glm::length(rotationMatrix[1]);
+				nodeScale.z = glm::length(rotationMatrix[2]);
+
+				rotationMatrix[0] = rotationMatrix[0] / nodeScale.x;
+				rotationMatrix[1] = rotationMatrix[1] / nodeScale.y;
+				rotationMatrix[2] = rotationMatrix[2] / nodeScale.z;
+
+				glm::quat nodeRotation = glm::quat_cast(rotationMatrix);
+
+				PxTransform nodePxTransform(
+					PxVec3(nodeTranslation.x, nodeTranslation.y, nodeTranslation.z),
+					PxQuat(nodeRotation.x, nodeRotation.y, nodeRotation.z, nodeRotation.w)
+				);
+
+				PxVec3 nodePxScale(nodeScale.x, nodeScale.y, nodeScale.z);
 
 				for (Engine::vk::Primitive* primitive : node->mesh->primitives) {
 					PxMaterial* material = pWorld.gPhysics->createMaterial(0.5f, 0.5f, 0.5f);
@@ -368,7 +375,7 @@ namespace Engine
 
 					PxDefaultMemoryInputData readBuffer(writeBuffer.getData(), writeBuffer.getSize());
 					PxTriangleMesh* triMesh = pWorld.gPhysics->createTriangleMesh(readBuffer);
-					PxTriangleMeshGeometry triMeshGeometry(triMesh, PxMeshScale(nodeScale));
+					PxTriangleMeshGeometry triMeshGeometry(triMesh, PxMeshScale(nodePxScale));
 
 					// Only static triangle meshes are supported for now.
 					// Dynamic triangle mesh geometries are possible but are more complicated
@@ -383,13 +390,12 @@ namespace Engine
 					switch (physicsType) {
 					case PhysicsType::STATIC:
 					{
-						staticBody = pWorld.gPhysics->createRigidStatic(PxTransform(pxTransform));
+						staticBody = pWorld.gPhysics->createRigidStatic(PxTransform(nodePxTransform));
 						if (staticBody) {
 							PxShape* shape = PxRigidActorExt::createExclusiveShape(
 								*staticBody, triMeshGeometry, *material
 							);
-							//std::string name = std::to_string(entityId);
-							//staticBody->setName(name.c_str());
+
 							staticBody->setName(name);
 							pWorld.gScene->addActor(*staticBody);
 						}
@@ -399,6 +405,7 @@ namespace Engine
 				}
 			}
 		}
+		//SetComponentHasChanged();
 	}
 
 	// Set component has changed in entity manager
