@@ -303,36 +303,43 @@ namespace Engine
 		}
 	}
 
-	void PhysicsWorld::handleShooting(Entity* playerEntity)
+	PxRaycastHit PhysicsWorld::handleShooting(Entity* playerEntity)
 	{
-		PxExtendedVec3 extPos = controller->getFootPosition();
+
+		CameraComponent* cameraComponent = reinterpret_cast<CameraComponent*>(entityManager->GetComponentOfEntity(playerEntity->GetEntityId(), CAMERA));
+		glm::vec3 cameraPos = cameraComponent->GetCamera()->position;
+		glm::vec3 cameraDir = cameraComponent->GetFrontDirection();
+		PxExtendedVec3 extPos = PxExtendedVec3(cameraPos.x, cameraPos.y, cameraPos.z);
+		PxVec3 direction(cameraDir.x, cameraDir.y, cameraDir.z);
 		PxVec3 pos = PxVec3(static_cast<float>(extPos.x), static_cast<float>(extPos.y), static_cast<float>(extPos.z));
-		PxVec3 direction(0.f, 1.f, 1.f);
 		direction.normalize();
 
 		PxRaycastHit hit;
 		PxRigidActor* selfActor = controller->getActor();
 		IgnoreSelfFilterCallback filter(controller->getActor());
-		bool hitflag = RaycastUtility::SingleHit(gScene, pos, direction, 100.0f, hit, &filter);
+		bool hitflag = RaycastUtility::SingleHit(gScene, pos, direction, 1000.0f, hit, &filter);
 		if (hitflag) {
 			if (hit.actor->is<PxRigidDynamic>()) {
 				// hit dynamic
 				DebugDrawRayInPVD(gScene, pos, pos + direction * hit.distance, 0xFF000000);
-				std::cout << "Hit dynamic actor at (" << hit.position.x << ", " << hit.position.y << ", " << hit.position.z << ")\n";
+				//std::cout << "Hit dynamic actor at (" << hit.position.x << ", " << hit.position.y << ", " << hit.position.z << ")\n";
 			}
 			else {
 				// hit static
 				DebugDrawRayInPVD(gScene, pos, pos + direction * hit.distance, 0xFFFFFF00);
-				std::cout << "Hit static object\n";
+				//hit.actor
+				//std::cout << hit.actor->getName() << std::endl;
 			}
 		}
 		else {
 			// hit nothing
 			DebugDrawRayInPVD(gScene, pos, pos + direction * 100.0f, 0xFFFFFF00);
-			std::cout << "Hit nothing\n";
+			//std::cout << "Hit nothing\n";
 		}
 		AudioComponent* audioComponent = reinterpret_cast<AudioComponent*>(entityManager->GetComponentOfEntity(playerEntity->GetEntityId(), AUDIO));
 		audioComponent->playSound("GunShot");
+
+		return hit;
 	}
 
 	// update models matrices
@@ -440,7 +447,7 @@ namespace Engine
 
 		PxDebugLine line(start, end, color);
 
-		client->drawLines(&line, 1);
+		client->drawLines(&line, 10);
 		PxDebugPoint point(end, 0xff00ffff);
 		client->drawPoints(&point, 1);
 	}

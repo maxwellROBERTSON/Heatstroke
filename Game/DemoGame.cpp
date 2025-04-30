@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <chrono>
 #include <future>
+#include <random>
 #include <thread>
 #include <type_traits>
 
@@ -22,15 +23,21 @@
 
 #include <imgui.h>
 
+//#include "glm/gtc/random.hpp" // breaks?
+std::uniform_int_distribution<> randomDistrib(1, 7);
+std::random_device rd;  // a seed source for the random number engine
+std::mt19937 gen(rd()); // mersenne_twister_engine seeded with rd()
 
 using namespace Engine;
 
 float fireDelay = 1.0f;
 bool canFire = true;
+float counter = 1.0f;
+
 
 void FPSTest::Init()
 {
-
+	srand(time(0));
 	this->threadPool = thread_pool_wait::get_instance();
 
 	//submit task to initialise Models to thread pool
@@ -111,10 +118,16 @@ void FPSTest::Update() {
 
 		float fixedTimeDelta = std::min<float>(0.016f, timeDelta);
 
-		fireDelay -= fixedTimeDelta;
+		fireDelay -= timeDelta;
+		counter -= timeDelta;
 		if (fireDelay <= 0.0f)
 			canFire = true;
 
+		if (counter <= 0.0f && countdown > 0)
+		{
+			countdown--;
+			counter = 1.0f;
+		}
 
 		CameraComponent* cameraComponent = reinterpret_cast<CameraComponent*>(GetEntityManager().GetComponentOfEntity(playerEntity->GetEntityId(), CAMERA));
 
@@ -153,11 +166,11 @@ void FPSTest::Update() {
 
 		}
 
-		if (Engine::InputManager::getKeyboard().isPressed(HS_KEY_P))
-		{
-			RenderComponent* renderComponent = reinterpret_cast<RenderComponent*>(GetEntityManager().GetComponentOfEntity(playerEntity->GetEntityId(), RENDER));
-			renderComponent->SetIsActive(0);
-		}
+		//if (Engine::InputManager::getKeyboard().isPressed(HS_KEY_P))
+		//{
+		//	RenderComponent* renderComponent = reinterpret_cast<RenderComponent*>(GetEntityManager().GetComponentOfEntity(playerEntity->GetEntityId(), RENDER));
+		//	renderComponent->SetIsActive(0);
+		//}
 
 		if (Engine::InputManager::getMouse().isPressed(HS_MOUSE_BUTTON_LEFT) && canFire)
 		{
@@ -169,7 +182,42 @@ void FPSTest::Update() {
 			models[playerModelIndex].blending = true;
 			canFire = false;
 			fireDelay = 1.0f;
-			physicsWorld.handleShooting(playerEntity);
+			PxRaycastHit entityHit = physicsWorld.handleShooting(playerEntity);
+			std::vector<int> entitiesWithPhysicsComponent = GetEntityManager().GetEntitiesWithComponent(PHYSICS);
+			for (int i = 0; i < entitiesWithPhysicsComponent.size(); i++)
+			{
+				Entity* entity = GetEntityManager().GetEntity(entitiesWithPhysicsComponent[i]);
+				PhysicsComponent* physicsComponent = reinterpret_cast<PhysicsComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
+				if (physicsComponent->GetStaticBody() == entityHit.actor)
+				{
+					score++;
+
+					RenderComponent* hitRenderComponent = reinterpret_cast<RenderComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), RENDER));
+					hitRenderComponent->SetIsActive(0);
+					int xPos = randomDistrib(gen);
+					int yPos = randomDistrib(gen);
+					glm::vec3 newPos{ xPos, yPos, 0.0f };
+					targetEntity->SetPosition(newPos);
+					PxTransform pxTransform(
+						PxVec3(newPos.x, newPos.y, newPos.z)
+					);
+					//physicsComponent->SetTranslation(newPos);
+					physicsComponent->GetStaticBody()->setGlobalPose(pxTransform);
+					hitRenderComponent->SetIsActive(1);
+				}
+			}
+			//if (entityHit.actor->getName() == "Target")
+			//{
+			//	RenderComponent* targetRenderComponent = reinterpret_cast<RenderComponent*>(GetEntityManager().GetComponentOfEntity(targetEntity1->GetEntityId(), RENDER));
+			//	//RenderComponent* targetRenderComponent = reinterpret_cast<RenderComponent*>(GetEntityManager().GetComponentOfEntity(reinterpret_cast<int>(entityHit.actor->getName()), RENDER));
+			//	targetRenderComponent->SetIsActive(0);
+			//}
+
+			if (countdown <= 0)
+				gameOver = true;
+
+			//if (gameOver)
+				//do stuff
 		}
 
 		physicsWorld.updateObjects(GetEntityManager(), GetModels());
@@ -202,12 +250,15 @@ void FPSTest::OnEvent(Engine::Event& e)
 void FPSTest::DrawGUI()
 {
 	CameraComponent* cameraComponent = reinterpret_cast<CameraComponent*>(GetEntityManager().GetComponentOfEntity(playerEntity->GetEntityId(), CAMERA));
-	ImGui::Begin("Game:");
-	ImGui::Text("GAME DEBUG");
-	int cameraMode = cameraComponent->GetCamera()->camMode;
-	ImGui::SliderInt("Camera Mode", &cameraMode, 0, 1);
-	ImGui::InputFloat3("Cam Offset: ", &cameraOffset.x);
-	ImGui::Text("Game Settings:");
+	ImGuiWindowFlags window_flags = 0;
+	window_flags |= ImGuiWindowFlags_NoBackground;
+	window_flags |= ImGuiWindowFlags_NoTitleBar;
+	//ImGui::ShowStyleEditor();
+	//ImGui::GetIO().Fonts->AddFontFromFileTTF("C:/dev/Heatstroke/Engine/third_party/imgui/misc/fonts/Roboto-Medium.ttf", 36.0f);
+	bool test = true;
+	ImGui::Begin("Game:", &test, window_flags);
+	ImGui::Text("SCORE: %u", score);
+	ImGui::Text("Time: %u", countdown);
 	ImGui::End();
 }
 
@@ -238,6 +289,7 @@ void FPSTest::loadOfflineEntities()
 	CameraComponent* cameraComponent;
 	RenderComponent* renderComponent;
 	PhysicsComponent* physicsComponent;
+	NetworkComponent* networkComponent;
 
 	AudioComponent* audioComponent;
 
@@ -252,7 +304,7 @@ void FPSTest::loadOfflineEntities()
 	renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(mapEntity->GetEntityId(), RENDER));
 	renderComponent->SetModelIndex(0);
 	physicsComponent = reinterpret_cast<PhysicsComponent*>(entityManager.GetComponentOfEntity(mapEntity->GetEntityId(), PHYSICS));
-	physicsComponent->InitComplexShape(physicsWorld, PhysicsComponent::PhysicsType::STATIC, models[renderComponent->GetModelIndex()], mapEntity->GetModelMatrix(), mapEntity->GetEntityId());
+	physicsComponent->InitComplexShape("Map", physicsWorld, PhysicsComponent::PhysicsType::STATIC, models[renderComponent->GetModelIndex()], mapEntity->GetModelMatrix(), mapEntity->GetEntityId());
 	entityManager.AddSimulatedPhysicsEntity(mapEntity->GetEntityId());
 
 	// Character Model
@@ -278,7 +330,8 @@ void FPSTest::loadOfflineEntities()
 	//add audio component to player
 	audioComponent = reinterpret_cast<AudioComponent*>(GetEntityManager().GetComponentOfEntity(playerEntity->GetEntityId(), AUDIO));
 
-	// audioComponent = reinterpret_cast<AudioComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), AUDIO));
+	networkComponent = reinterpret_cast<NetworkComponent*>(GetEntityManager().GetComponentOfEntity(playerEntity->GetEntityId(), NETWORK));
+	networkComponent->SetClientId(0);
 	//add gunshot sound clip to the player for the gun 
 	audioComponent->addClip("GunShot", "Game\\assets\\AudioClips\\singlegunshot.wav");
 	GetRenderer().attachCameraComponent(cameraComponent);
@@ -304,35 +357,53 @@ void FPSTest::loadOfflineEntities()
 
 
 
-		// targets
+	// targets
 	types = { RENDER, PHYSICS };
-	targetEntity1 = entityManager.MakeNewEntity(types);
-	targetEntity1->SetPosition(target1Pos);
-	renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(targetEntity1->GetEntityId(), RENDER));
-	renderComponent->SetModelIndex(6);
-	physicsComponent = reinterpret_cast<PhysicsComponent*>(entityManager.GetComponentOfEntity(targetEntity1->GetEntityId(), PHYSICS));
-	physicsComponent->InitComplexShape(physicsWorld, PhysicsComponent::PhysicsType::STATIC, models[renderComponent->GetModelIndex()], targetEntity1->GetModelMatrix(), targetEntity1->GetEntityId());
-	entityManager.AddSimulatedPhysicsEntity(targetEntity1->GetEntityId());
 
-	targetEntity2 = entityManager.MakeNewEntity(types);
-	targetEntity2->SetPosition(target2Pos);
-	renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(targetEntity2->GetEntityId(), RENDER));
+	targetEntity = entityManager.MakeNewEntity(types);
+	std::cout << "RANDOM: " << randomDistrib(gen) << std::endl;
+	targetEntity->SetPosition(glm::vec3(3.0f, 1.0f, 0.0f));
+	renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(targetEntity->GetEntityId(), RENDER));
 	renderComponent->SetModelIndex(6);
-	physicsComponent = reinterpret_cast<PhysicsComponent*>(entityManager.GetComponentOfEntity(targetEntity2->GetEntityId(), PHYSICS));
-	physicsComponent->InitComplexShape(physicsWorld, PhysicsComponent::PhysicsType::STATIC, models[renderComponent->GetModelIndex()], targetEntity2->GetModelMatrix(), targetEntity2->GetEntityId());
-	entityManager.AddSimulatedPhysicsEntity(targetEntity2->GetEntityId());
-	// 	std::vector<int> entitiesWithNetworkComponent = entityManager.GetEntitiesWithComponent(NETWORK);
-	// for (int i = 0; i < entitiesWithNetworkComponent.size(); i++)
-	// {
-	// 	entity = entityManager.GetEntity(entitiesWithNetworkComponent[i]);
-	// 	networkComponent = reinterpret_cast<NetworkComponent*>(entityManager.GetComponentOfEntity(entitiesWithNetworkComponent[i], NETWORK));
-	// 	if (networkComponent->GetClientId() == offlineClientId)
-	// 	{
-	// 		cameraComponent = reinterpret_cast<CameraComponent*>(entityManager.GetComponentOfEntity(entitiesWithNetworkComponent[i], CAMERA));
-	// 		GetRenderer().attachCameraComponent(cameraComponent);
-	// 	}
-	// }
+	physicsComponent = reinterpret_cast<PhysicsComponent*>(entityManager.GetComponentOfEntity(targetEntity->GetEntityId(), PHYSICS));
+	physicsComponent->InitComplexShape("Target", physicsWorld, PhysicsComponent::PhysicsType::STATIC, models[renderComponent->GetModelIndex()], targetEntity->GetModelMatrix(), targetEntity->GetEntityId());
+	entityManager.AddSimulatedPhysicsEntity(targetEntity->GetEntityId());
 
+	int numberOfTargets = 5;
+	//targetEntity1 = entityManager.MakeNewEntity(types);
+	//targetEntity1->SetPosition(target1Pos);
+	//renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(targetEntity1->GetEntityId(), RENDER));
+	//renderComponent->SetModelIndex(6);
+	//physicsComponent = reinterpret_cast<PhysicsComponent*>(entityManager.GetComponentOfEntity(targetEntity1->GetEntityId(), PHYSICS));
+	//physicsComponent->InitComplexShape("Target", physicsWorld, PhysicsComponent::PhysicsType::STATIC, models[renderComponent->GetModelIndex()], targetEntity1->GetModelMatrix(), targetEntity1->GetEntityId());
+	//entityManager.AddSimulatedPhysicsEntity(targetEntity1->GetEntityId());
+
+	//targetEntity2 = entityManager.MakeNewEntity(types);
+	//targetEntity2->SetPosition(target2Pos);
+	//renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(targetEntity2->GetEntityId(), RENDER));
+	//renderComponent->SetModelIndex(6);
+	//physicsComponent = reinterpret_cast<PhysicsComponent*>(entityManager.GetComponentOfEntity(targetEntity2->GetEntityId(), PHYSICS));
+	//physicsComponent->InitComplexShape("Target", physicsWorld, PhysicsComponent::PhysicsType::STATIC, models[renderComponent->GetModelIndex()], targetEntity2->GetModelMatrix(), targetEntity2->GetEntityId());
+	//entityManager.AddSimulatedPhysicsEntity(targetEntity2->GetEntityId());
+
+	//targetEntity3 = entityManager.MakeNewEntity(types);
+	//targetEntity3->SetPosition(target3Pos);
+	//renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(targetEntity3->GetEntityId(), RENDER));
+	//renderComponent->SetModelIndex(6);
+	//physicsComponent = reinterpret_cast<PhysicsComponent*>(entityManager.GetComponentOfEntity(targetEntity3->GetEntityId(), PHYSICS));
+	//physicsComponent->InitComplexShape("Target", physicsWorld, PhysicsComponent::PhysicsType::STATIC, models[renderComponent->GetModelIndex()], targetEntity3->GetModelMatrix(), targetEntity3->GetEntityId());
+	//entityManager.AddSimulatedPhysicsEntity(targetEntity3->GetEntityId());
+	std::vector<int> entitiesWithNetworkComponent = entityManager.GetEntitiesWithComponent(NETWORK);
+	for (int i = 0; i < entitiesWithNetworkComponent.size(); i++)
+	{
+		playerEntity = entityManager.GetEntity(entitiesWithNetworkComponent[i]);
+		networkComponent = reinterpret_cast<NetworkComponent*>(entityManager.GetComponentOfEntity(entitiesWithNetworkComponent[i], NETWORK));
+		if (networkComponent->GetClientId() == offlineClientId)
+		{
+			cameraComponent = reinterpret_cast<CameraComponent*>(entityManager.GetComponentOfEntity(entitiesWithNetworkComponent[i], CAMERA));
+			GetRenderer().attachCameraComponent(cameraComponent);
+		}
+	}
 	GetEntityManager().ResetChanged();
 }
 
@@ -452,6 +523,7 @@ void FPSTest::loadOnlineEntities(int maxClientsNum)
 	EntityManager& e = GetEntityManager();
 	GetEntityManager().ResetChanged();
 }
+
 
 
 Crosshair& FPSTest::getCrosshair() {

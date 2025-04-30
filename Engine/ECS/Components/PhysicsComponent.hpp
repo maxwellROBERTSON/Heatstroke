@@ -6,8 +6,8 @@
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
 
-#include "../Physics/PhysicsWorld.hpp"
 #include "../../gltf/Model.hpp"
+#include "../Physics/PhysicsWorld.hpp"
 
 #ifdef OS_LINUX
 #include <cassert>
@@ -101,6 +101,8 @@ namespace Engine
 
 		// Init complex shape
 		void InitComplexShape(PhysicsWorld&, PhysicsType, vk::Model&, glm::mat4, int);
+		void InitComplexShape(const char* name, PhysicsWorld&, PhysicsType, vk::Model&, glm::mat4, int);
+		//void InitComplexShape(const std::string& name, PhysicsWorld&, PhysicsType, vk::Model&, glm::mat4, int);
 
 		// Set physics object type STATIC/DYNAMIC/CONTROLLER
 		void SetPhysicsType(PhysicsType t) { type = t; SetComponentHasChanged(); }
@@ -138,7 +140,7 @@ namespace Engine
 		PhysicsType type = PhysicsType::STATIC;
 
 		glm::vec3 translation = glm::vec3(0, 0, 0);
-		glm::vec3 scale = glm::vec3(0, 0, 0);
+		glm::vec3 scale = glm::vec3(1, 1, 1);
 		glm::quat rotation = glm::angleAxis(0.f, glm::vec3(0, 0, 0));
 
 		bool isPerson = false;

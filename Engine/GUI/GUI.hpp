@@ -55,7 +55,7 @@ namespace Engine
 
 		// from input actions
 		bool debugInput{ false };
-		bool debugGame{ false };
+		bool debugGame{ true };
 		// from input actions
 
 		ImGui_ImplVulkanH_Window imGuiWindow;
