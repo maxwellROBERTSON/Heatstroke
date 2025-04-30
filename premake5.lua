@@ -19,7 +19,7 @@ workspace "Heatstroke"
 
     filter "toolset:gcc or toolset:clang"
         linkoptions { "-pthread" }
-        buildoptions { "-march=native", "-Wall", "-pthread" }
+        buildoptions { "-march=native", "-Wall", "-pthread"}--, "-DPX_SUPPORT_GPU_PHYSX=0" }
         -- buildoptions { "-march=native", "-Wall", "-Wextra", "-Werror", "-std=c++20", "-pthread" }
 
     filter "toolset:msc-*"
@@ -52,7 +52,7 @@ workspace "Heatstroke"
 
     filter "system:linux"
         links "dl"
-        defines {"OS_LINUX"}
+        defines {"OS_LINUX", "DISABLE_CUDA_PHYSX"}--, "PX_SUPPORT_GPU_PHYSX=0", "DISABLE_CUDA_PHYSX"}
 
     filter "system:windows"
         defines {"OS_WINDOWS"}
@@ -294,8 +294,7 @@ project "Game"
         
     filter { "system:linux", "configurations:Debug" }
         libdirs {
-            "Engine/third_party/vcpkg/installed/x64-linux/debug/lib",
-            "Engine/third_party/vcpkg/installed/x64-linux/tools",
+            "Engine/third_party/vcpkg/installed/x64-linux/debug/lib"
         }
         links {
             "PhysXCharacterKinematic_static_64",
