@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <chrono>
 #include <future>
+#include <random>
 #include <thread>
 #include <type_traits>
 
@@ -14,7 +15,6 @@
 #include "../Engine/vulkan/VulkanDevice.hpp"
 
 #include "Error.hpp"
-//#include "glm/gtc/random.hpp"
 #include "glm/gtx/string_cast.hpp"
 #include "toString.hpp"
 
@@ -23,17 +23,21 @@
 
 #include <imgui.h>
 
+//#include "glm/gtc/random.hpp" // breaks?
+std::uniform_int_distribution<> randomDistrib(1, 7);
+std::random_device rd;  // a seed source for the random number engine
+std::mt19937 gen(rd()); // mersenne_twister_engine seeded with rd()
 
 using namespace Engine;
 
 float fireDelay = 1.0f;
 bool canFire = true;
-
+float counter = 1.0f;
 
 
 void FPSTest::Init()
 {
-
+	srand(time(0));
 	this->threadPool = thread_pool_wait::get_instance();
 
 	//submit task to initialise Models to thread pool
@@ -114,10 +118,16 @@ void FPSTest::Update() {
 
 		float fixedTimeDelta = std::min<float>(0.016f, timeDelta);
 
-		fireDelay -= fixedTimeDelta;
+		fireDelay -= timeDelta;
+		counter -= timeDelta;
 		if (fireDelay <= 0.0f)
 			canFire = true;
 
+		if (counter <= 0.0f && countdown > 0)
+		{
+			countdown--;
+			counter = 1.0f;
+		}
 
 		CameraComponent* cameraComponent = reinterpret_cast<CameraComponent*>(GetEntityManager().GetComponentOfEntity(playerEntity->GetEntityId(), CAMERA));
 
@@ -180,17 +190,21 @@ void FPSTest::Update() {
 				PhysicsComponent* physicsComponent = reinterpret_cast<PhysicsComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
 				if (physicsComponent->GetStaticBody() == entityHit.actor)
 				{
+					score++;
+
 					RenderComponent* hitRenderComponent = reinterpret_cast<RenderComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), RENDER));
 					hitRenderComponent->SetIsActive(0);
-					score++;
+					int xPos = randomDistrib(gen);
+					int yPos = randomDistrib(gen);
+					glm::vec3 newPos{ xPos, yPos, 0.0f };
+					targetEntity->SetPosition(newPos);
+					PxTransform pxTransform(
+						PxVec3(newPos.x, newPos.y, newPos.z)
+					);
+					//physicsComponent->SetTranslation(newPos);
+					physicsComponent->GetStaticBody()->setGlobalPose(pxTransform);
+					hitRenderComponent->SetIsActive(1);
 				}
-				//playerEntity = entityManager.GetEntity(entitiesWithNetworkComponent[i]);
-				//networkComponent = reinterpret_cast<NetworkComponent*>(entityManager.GetComponentOfEntity(entitiesWithNetworkComponent[i], NETWORK));
-				//if (networkComponent->GetClientId() == offlineClientId)
-				//{
-				//	cameraComponent = reinterpret_cast<CameraComponent*>(entityManager.GetComponentOfEntity(entitiesWithNetworkComponent[i], CAMERA));
-				//	GetRenderer().attachCameraComponent(cameraComponent);
-				//}
 			}
 			//if (entityHit.actor->getName() == "Target")
 			//{
@@ -238,6 +252,7 @@ void FPSTest::DrawGUI()
 	bool test = true;
 	ImGui::Begin("Game:", &test, window_flags);
 	ImGui::Text("SCORE: %u", score);
+	ImGui::Text("Time: %u", countdown);
 	ImGui::End();
 }
 
@@ -337,21 +352,18 @@ void FPSTest::loadOfflineEntities()
 
 
 	// targets
-	int numberOfTargets = 5;
-	Entity* targetEntity;
 	types = { RENDER, PHYSICS };
-	for (int i = 0; i < numberOfTargets; i++)
-	{
-		targetEntity = entityManager.MakeNewEntity(types);
-		//glm::vec2 randomPos = glm::diskRand(5.0f);
-		targetEntity->SetPosition(glm::vec3(i, 1.0f, 0.0f));
-		renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(targetEntity->GetEntityId(), RENDER));
-		renderComponent->SetModelIndex(6);
-		physicsComponent = reinterpret_cast<PhysicsComponent*>(entityManager.GetComponentOfEntity(targetEntity->GetEntityId(), PHYSICS));
-		physicsComponent->InitComplexShape("Target", physicsWorld, PhysicsComponent::PhysicsType::STATIC, models[renderComponent->GetModelIndex()], targetEntity->GetModelMatrix(), targetEntity->GetEntityId());
-		entityManager.AddSimulatedPhysicsEntity(targetEntity->GetEntityId());
-	}
 
+	targetEntity = entityManager.MakeNewEntity(types);
+	std::cout << "RANDOM: " << randomDistrib(gen) << std::endl;
+	targetEntity->SetPosition(glm::vec3(3.0f, 1.0f, 0.0f));
+	renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(targetEntity->GetEntityId(), RENDER));
+	renderComponent->SetModelIndex(6);
+	physicsComponent = reinterpret_cast<PhysicsComponent*>(entityManager.GetComponentOfEntity(targetEntity->GetEntityId(), PHYSICS));
+	physicsComponent->InitComplexShape("Target", physicsWorld, PhysicsComponent::PhysicsType::STATIC, models[renderComponent->GetModelIndex()], targetEntity->GetModelMatrix(), targetEntity->GetEntityId());
+	entityManager.AddSimulatedPhysicsEntity(targetEntity->GetEntityId());
+
+	int numberOfTargets = 5;
 	//targetEntity1 = entityManager.MakeNewEntity(types);
 	//targetEntity1->SetPosition(target1Pos);
 	//renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(targetEntity1->GetEntityId(), RENDER));

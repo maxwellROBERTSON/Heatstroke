@@ -63,6 +63,7 @@ public:
 
 	Crosshair& getCrosshair();
 	int score = 0;
+	int countdown = 30;
 	std::chrono::steady_clock::time_point previous;
 
 	// -- input actions
@@ -91,6 +92,8 @@ public:
 	Engine::Entity* mapEntity;
 
 	// Targets (make a vector (fingers crossed) at some point)
+	Engine::Entity* targetEntity;
+	glm::vec3 targetPos{ 3.0f, 1.0f, 0.0f };
 	//Engine::Entity* targetEntity1;
 	//Engine::Entity* targetEntity2;
 	//Engine::Entity* targetEntity3;
@@ -101,7 +104,9 @@ public:
 	//std::vector<Engine::Entity*> targetEntities;
 	//std::vector<glm::vec3> targetPositions;
 
-	// -- input actions
+
+	//void RespawnTarget();
+
 
 	thread_pool_wait* threadPool;
 	int offlineClientId = 0;

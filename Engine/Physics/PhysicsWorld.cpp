@@ -317,7 +317,7 @@ namespace Engine
 		PxRaycastHit hit;
 		PxRigidActor* selfActor = controller->getActor();
 		IgnoreSelfFilterCallback filter(controller->getActor());
-		bool hitflag = RaycastUtility::SingleHit(gScene, pos, direction, 100.0f, hit, &filter);
+		bool hitflag = RaycastUtility::SingleHit(gScene, pos, direction, 1000.0f, hit, &filter);
 		if (hitflag) {
 			if (hit.actor->is<PxRigidDynamic>()) {
 				// hit dynamic
