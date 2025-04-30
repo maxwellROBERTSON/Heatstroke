@@ -37,6 +37,7 @@ namespace Engine
 		virtual void Update() {}
 		virtual void Run();
 		virtual void DrawGUI() {}
+		virtual void DrawDebugGUI() {}
 		virtual void OnEvent(Event& e);
 
 		virtual void loadOfflineEntities() {}

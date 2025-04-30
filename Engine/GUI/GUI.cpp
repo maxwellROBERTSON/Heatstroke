@@ -21,8 +21,10 @@ namespace Engine
 		ImGui::StyleColorsDark();
 		//ImGui::StyleColorsLight();
 
-		io.Fonts->AddFontFromFileTTF("Engine/third_party/imgui/misc/fonts/Roboto-Medium.ttf", 36.0f);
-		//io.Fonts->AddFontFromFileTTF("C:/dev/Heatstroke/Engine/third_party/imgui/misc/fonts/Roboto-Medium.ttf", 36.0f);
+		// fonts
+		gameFont = io.Fonts->AddFontFromFileTTF("Engine/third_party/imgui/misc/fonts/Roboto-Medium.ttf", 36.0f);
+		defaultFont = io.Fonts->AddFontFromFileTTF("Engine/third_party/imgui/misc/fonts/Roboto-Medium.ttf", 12.0f);
+
 
 		// Setup Platform/Renderer backends
 		ImGui_ImplGlfw_InitForVulkan(&(*game->GetContext().getGLFWWindow()), true);
@@ -374,6 +376,7 @@ namespace Engine
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
 
+		ImGui::PushFont(defaultFont);
 		ImGui::Begin("Debug Menu");
 
 		if (ImGui::Checkbox("VSync", &game->GetRenderer().vsync)) {
@@ -410,7 +413,12 @@ namespace Engine
 			ShowInputDebug();
 
 		if (debugGame)
-			game->DrawGUI();
+		{
+			game->DrawDebugGUI();
+			//ImGui::PushFont(gameFont);
+			//game->DrawGUI();
+			//ImGui::PopFont();
+		}
 
 		ImGui::Text("Animations:");
 		// Iterate over all models and find ones with animations
@@ -440,7 +448,7 @@ namespace Engine
 				ImGui::Text("%s: %s", key.c_str(), value.c_str());
 			}
 		}
-
+		ImGui::PopFont();
 		ImGui::End();
 	}
 

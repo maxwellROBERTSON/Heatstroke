@@ -257,8 +257,30 @@ void FPSTest::DrawGUI()
 	//ImGui::GetIO().Fonts->AddFontFromFileTTF("C:/dev/Heatstroke/Engine/third_party/imgui/misc/fonts/Roboto-Medium.ttf", 36.0f);
 	bool test = true;
 	ImGui::Begin("Game:", &test, window_flags);
+	//ImGui::PushFont(GetGUI().gameFont);
 	ImGui::Text("SCORE: %u", score);
 	ImGui::Text("Time: %u", countdown);
+
+	//ImGui::PopFont();
+
+	ImGui::End();
+}
+
+void FPSTest::DrawDebugGUI()
+{
+	ImGui::Begin("Game Debug");
+	ImGui::Checkbox("Game GUI: ", &showGUI);
+	if (showGUI)
+	{
+		ImGui::PushFont(GetGUI().gameFont);
+		DrawGUI();
+		ImGui::PopFont();
+	}
+	if (ImGui::Button("Reset Game"))
+	{
+		countdown = 31;
+		score = 0;
+	}
 	ImGui::End();
 }
 
@@ -361,7 +383,6 @@ void FPSTest::loadOfflineEntities()
 	types = { RENDER, PHYSICS };
 
 	targetEntity = entityManager.MakeNewEntity(types);
-	std::cout << "RANDOM: " << randomDistrib(gen) << std::endl;
 	targetEntity->SetPosition(glm::vec3(3.0f, 1.0f, 0.0f));
 	renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(targetEntity->GetEntityId(), RENDER));
 	renderComponent->SetModelIndex(6);

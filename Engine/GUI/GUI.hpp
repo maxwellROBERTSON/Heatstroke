@@ -61,6 +61,9 @@ namespace Engine
 		ImGui_ImplVulkanH_Window imGuiWindow;
 		bool changedMSAA = false;
 
+		ImFont* defaultFont;
+		ImFont* gameFont;
+
 	private:
 		std::map<Engine::RenderMode, std::function<void(int*, int*)>> functions;
 		Engine::Game* game;

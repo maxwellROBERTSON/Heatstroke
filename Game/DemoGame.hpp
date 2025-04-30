@@ -49,6 +49,8 @@ public:
 	virtual void Update() override;
 	virtual void OnEvent(Engine::Event& e) override;
 	virtual void DrawGUI() override;
+	virtual void DrawDebugGUI() override;
+
 
 	void initialiseModels();
 
@@ -66,6 +68,8 @@ public:
 	int countdown = 30;
 	bool gameOver = false;
 	std::chrono::steady_clock::time_point previous;
+
+	bool showGUI{ true };
 
 	// -- input actions
 	// Cameras
