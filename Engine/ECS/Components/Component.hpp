@@ -41,16 +41,16 @@ namespace Engine
         // Getters
 
         // Get type of a type
-        ComponentTypes GetType() const { return T::StaticType(); }
-
-        // Type getter in child classes
-        ComponentTypes StaticType() { return ComponentTypes::TYPE_COUNT; }
+        ComponentTypes GetType() const override { return this->StaticType(); }
 
         // Get size of a type
-        size_t GetSize() const { return T::StaticSize(); }
+        size_t GetSize() const override { return this->StaticSize(); }
+        
+        // Type getter in child classes
+        virtual ComponentTypes StaticType() const = 0;
 
         // Size getter in child classes
-        virtual size_t StaticSize() { return 0; }
+        virtual size_t StaticSize() const = 0;
 
         // Get component data
         virtual void GetDataArray(uint8_t*) = 0;

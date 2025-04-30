@@ -1,19 +1,11 @@
 #include "thread_pool_wait.h"
 
-thread_pool_wait* thread_pool_wait::instance = new thread_pool_wait();
-
 //function to get the single instance of the thread pool class
 thread_pool_wait* thread_pool_wait::get_instance()
 {
-	//if the instance doesn't exist
-	if (thread_pool_wait::instance == nullptr)
-	{
-		//create it
-		thread_pool_wait::thread_pool_wait();
-	}
-
-	//return a pointer to the static instance
-	return thread_pool_wait::instance;
+	//initialised once
+	static thread_pool_wait* instance = new thread_pool_wait();
+	return instance;
 }
 
 

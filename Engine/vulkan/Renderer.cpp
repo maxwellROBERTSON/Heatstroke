@@ -1,7 +1,8 @@
 #include "Renderer.hpp"
 
-#include <format>
 #include <numeric>
+#include <sstream>
+#include <iomanip>
 
 #include "../ECS/Components/RenderComponent.hpp"
 #include "Error.hpp"
@@ -19,8 +20,8 @@
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_vulkan.cpp>
 #include <backends/imgui_impl_vulkan.h>
-#include <GLFW\glfw3.h>
-#include <imgui.h>
+#include <backends/imgui_impl_vulkan.cpp>
+#include <GLFW/glfw3.h>
 
 #define MAX_JOINTS 128u
 
@@ -1165,7 +1166,10 @@ namespace Engine {
 			this->lastSecondTime = currTime;
 
 			// Put fps and frame time in window title so we can see them in both debug and release
-			std::string title = std::format("FPS Test Game - Avg FPS: {} - Avg Frame Time: {:.3f}ms", this->avgFps, this->avgFrameTime * 1000.0f);
+			//std::string title = std::format("FPS Test Game - Avg FPS: {} - Avg Frame Time: {:.3f}ms", this->avgFps, this->avgFrameTime * 1000.0f);
+			std::ostringstream oss;
+			oss << "FPS Test Game - Avg FPS: " << this->avgFps << " - Avg Frame Time: " << std::fixed << std::setprecision(3) << this->avgFrameTime * 1000.0f << "ms";
+			std::string title = oss.str();
 			glfwSetWindowTitle(this->context->getGLFWWindow(), title.c_str());
 		}
 		this->prevTime = currTime;
