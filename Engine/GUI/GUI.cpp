@@ -355,7 +355,7 @@ namespace Engine
 			{
 				game->ResetRenderModes();
 				game->GetEntityManager().ClearManager();
-				game->GetRenderer().cleanModelMatrices();
+				game->GetRenderer().unloadScene();
 				game->GetNetwork().Reset();
 			}
 		}
@@ -499,7 +499,7 @@ namespace Engine
 		{
 			game->ResetRenderModes();
 			game->GetEntityManager().ClearManager();
-			game->GetRenderer().cleanModelMatrices();
+			game->GetRenderer().unloadScene();
 			game->GetNetwork().Reset();
 			multiplayerSelected = false;
 			serverSelected = false;
@@ -555,7 +555,7 @@ namespace Engine
 			{
 				game->ResetRenderModes();
 				game->GetEntityManager().ClearManager();
-				game->GetRenderer().cleanModelMatrices();
+				game->GetRenderer().unloadScene();
 				game->GetNetwork().Reset();
 			}
 		}

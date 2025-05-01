@@ -204,15 +204,13 @@ namespace vk {
         materialInfoSSBO = materialInfoDescriptors;
 	}
 
-	void Model::drawModel(VkCommandBuffer aCmdBuf, Renderer* aRenderer, const std::string& aPipelineHandle, bool justGeometry) {
-        VkPipelineLayout pipelineLayout = aRenderer->getPipelineLayout(aPipelineHandle).handle;
-
+	void Model::drawModel(VkCommandBuffer aCmdBuf, VkPipelineLayout aPipelineLayout, bool justGeometry) {
         if (justGeometry) {
 
             // Draw opaque nodes first
             for (Node* node : linearNodes) {
-                vkCmdPushConstants(aCmdBuf, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &node->getGlobalMatrix()[0]);
-                drawNodeGeometry(node, aCmdBuf, pipelineLayout, AlphaMode::ALPHA_OPAQUE);
+                vkCmdPushConstants(aCmdBuf, aPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &node->getGlobalMatrix()[0]); // Model matrix
+                drawNodeGeometry(node, aCmdBuf, aPipelineLayout, AlphaMode::ALPHA_OPAQUE);
             }
 
             // Do we want to do alpha masking on the shadow pass?
@@ -225,30 +223,29 @@ namespace vk {
          
             // Draw alpha masked nodes second
             //for (Node* node : nodes) {
-            //    vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, modelMatricesSet, 1, &modelMatricesDescriptor, 1, &offset);
-            //    offset += dynamicUBOAlignment;
+            //    vkCmdPushConstants(aCmdBuf, aPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &node->getGlobalMatrix()[0]);
             //    drawNodeGeometry(node, aCmdBuf, AlphaMode::ALPHA_MASK);
             //}
 
             return;
         }
 
-        vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 3, 1, &materialInfoSSBO, 0, nullptr); // Material SSBO
+        vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, 3, 1, &materialInfoSSBO, 0, nullptr); // Material SSBO
 
         vkCmdSetCullMode(aCmdBuf, VK_CULL_MODE_BACK_BIT);
 
         // Draw opaque nodes first
 		for (Node* node : linearNodes) {
-            vkCmdPushConstants(aCmdBuf, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &node->getGlobalMatrix()[0]);
-			drawNode(node, aCmdBuf, pipelineLayout, AlphaMode::ALPHA_OPAQUE);
+            vkCmdPushConstants(aCmdBuf, aPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &node->getGlobalMatrix()[0]);
+			drawNode(node, aCmdBuf, aPipelineLayout, AlphaMode::ALPHA_OPAQUE);
 		}
 
         vkCmdSetCullMode(aCmdBuf, VK_CULL_MODE_NONE);
 
         // Draw alpha masked nodes second
         for (Node* node : linearNodes) {
-            vkCmdPushConstants(aCmdBuf, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &node->getGlobalMatrix()[0]);
-            drawNode(node, aCmdBuf, pipelineLayout, AlphaMode::ALPHA_MASK);
+            vkCmdPushConstants(aCmdBuf, aPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &node->getGlobalMatrix()[0]);
+            drawNode(node, aCmdBuf, aPipelineLayout, AlphaMode::ALPHA_MASK);
         }
 	}
 
@@ -262,7 +259,7 @@ namespace vk {
 
                 vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, 1, 1, &aNode->descriptor, 0, nullptr); // Joint matrices
                 vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, 2, 1, &primitive->samplerDescriptorSet, 0, nullptr); // Textures
-                vkCmdPushConstants(aCmdBuf, aPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(glm::mat4), sizeof(std::uint32_t), &i);
+                vkCmdPushConstants(aCmdBuf, aPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(glm::mat4), sizeof(std::uint32_t), &i); // Material index
 
                 VkBuffer vBuffers[8] = {
                     primitive->posBuffer.buffer,

@@ -43,6 +43,8 @@ namespace Engine {
 	vk::RenderPass createShadowRenderPass(const VulkanWindow& aWindow);
 	// UI render pass
 	vk::RenderPass createUIRenderPass(const VulkanWindow& aWindow);
+	vk::RenderPass createOverlayRenderPass(const VulkanWindow& aWindow);
+	vk::RenderPass createOverlayRenderPassMSAA(const VulkanWindow& aWindow, VkSampleCountFlagBits sampleCount);
 	vk::RenderPass createCrosshairRenderPass(const VulkanWindow& aWindow);
 	
 	vk::DescriptorSetLayout createDescriptorLayout(const VulkanWindow& aWindow, std::vector<DescriptorSetting> aDescriptorSettings);

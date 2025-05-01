@@ -34,16 +34,16 @@ namespace Engine {
 
 		void initialiseRenderer();
 		void initialiseJointMatrices();
-		void cleanModelMatrices();
 		void attachCameraComponent(Engine::CameraComponent* cameraComponent);
-		void initialiseModelDescriptors(std::vector<vk::Model>& models);
+		void initialiseModelDescriptors();
 		bool checkSwapchain();
 		bool acquireSwapchainImage();
 		void updateAnimations(float timeDelta);
 		void updateUniforms();
 		void updateModelMatrices();
-		void render(std::vector<vk::Model>& models);
+		void render();
 		void submitRender();
+		void unloadScene();
 		void finishRendering();
 		void destroyImGui();
 
@@ -55,8 +55,8 @@ namespace Engine {
 
 		// Getters
 		VkRenderPass& GetRenderPass(std::string s);
-		Engine::CameraComponent* GetCameraComponentPointer() { return cameraComponent; }
-		Engine::Camera* GetCameraPointer() { return camera; }
+		CameraComponent* GetCameraComponentPointer() { return cameraComponent; }
+		Camera* GetCameraPointer() { return camera; }
 		bool const GetIsSceneLoaded() { return isSceneLoaded; }
 
 		std::map<std::string, vk::PipelineLayout>& getPipelineLayouts();
@@ -127,7 +127,7 @@ namespace Engine {
 		void renderGUI();
 		void renderForward(bool debug);
 		void renderDeferred(bool debug);
-		void drawModels(VkCommandBuffer cmdBuf, std::string handle, bool justGeometry = false);
+		void drawModels(VkCommandBuffer cmdBuf, VkPipelineLayout pipelineLayout, bool justGeometry = false);
 
 		void recreateFormatDependents();
 		void recreateSizeDependents();

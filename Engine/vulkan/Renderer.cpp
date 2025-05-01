@@ -53,6 +53,8 @@ namespace Engine {
 		this->renderPasses.emplace("deferred", createDeferredRenderPass(*this->context->window));
 		this->renderPasses.emplace("shadow", createShadowRenderPass(*this->context->window));
 		this->renderPasses.emplace("ui", createUIRenderPass(*this->context->window));
+		this->renderPasses.emplace("overlay", createOverlayRenderPass(*this->context->window));
+		this->renderPasses.emplace("overlayMSAA", createOverlayRenderPassMSAA(*this->context->window, VK_SAMPLE_COUNT_4_BIT));
 		this->renderPasses.emplace("crosshair", createCrosshairRenderPass(*this->context->window));
 
 		// Descriptor Layouts
@@ -364,7 +366,7 @@ namespace Engine {
 		}
 	}
 
-	void Renderer::cleanModelMatrices() {
+	void Renderer::unloadScene() {
 		this->isSceneLoaded = false;
 	}
 
@@ -373,8 +375,10 @@ namespace Engine {
 		this->camera = cameraComponent->GetCamera();
 	}
 
-	void Renderer::initialiseModelDescriptors(std::vector<vk::Model>& aModels) {
-		for (vk::Model& model : aModels)
+	void Renderer::initialiseModelDescriptors() {
+		std::vector<vk::Model>& models = this->game->GetModels();
+
+		for (vk::Model& model : models)
 			model.createDescriptorSets(*this->context, this->descriptorLayouts["materialLayout"].handle, this->descriptorLayouts["SSBOLayout"].handle);
 	}
 
@@ -508,7 +512,7 @@ namespace Engine {
 		}
 	}
 
-	void Renderer::render(std::vector<vk::Model>& models) {
+	void Renderer::render() {
 		unsigned int modes = *this->game->GetRenderModes();
 		if ((modes & (1 << GUIHOME)) || (modes & (1 << GUISETTINGS)) || (modes & (1 << GUILOADING)) || ((modes & (1 << GUISERVER)) && (modes & (1 << GUIDEBUG)))) {
 			this->renderGUI();
@@ -698,7 +702,7 @@ namespace Engine {
 
 			vkCmdSetDepthBias(cmdBuf, this->depthBiasConstant, 0.0f, this->depthBiasSlopeFactor);
 
-			drawModels(cmdBuf, "shadow", true);
+			drawModels(cmdBuf, this->pipelineLayouts["shadow"].handle, true);
 
 			vkCmdEndRenderPass(cmdBuf);
 		}
@@ -706,7 +710,7 @@ namespace Engine {
 		// Clear attachments
 		std::vector<VkClearValue> clearValues;
 		VkClearValue colourClearValue{};
-		colourClearValue.color = { {0.1f, 0.1f, 0.1f, 1.0f} };
+		colourClearValue.color = { {0.0f, 0.0f, 0.0f, 1.0f} };
 		VkClearValue depthClearValue{};
 		depthClearValue.depthStencil.depth = 1.0f;
 
@@ -766,11 +770,78 @@ namespace Engine {
 			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts[pipelineLayout].handle, 5, 1, &this->descriptorSets["shadowMap"], 0, nullptr); // Shadow map
 		}
 
-		drawModels(cmdBuf, pipelineLayout);
+		drawModels(cmdBuf, this->pipelineLayouts[pipelineLayout].handle);
 
 		if (debug) {
 			ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmdBuf);
 		}
+
+		vkCmdEndRenderPass(cmdBuf);
+
+		// Draw overlay
+
+		// By setting the view matrix to the identity matrix we skip
+		// the transformation into camera space and let the projection
+		// matrix put it straight into screen space
+		this->uniforms.sceneUniform.view = glm::mat4(1.0f);
+
+		Utils::bufferBarrier(
+			cmdBuf,
+			this->uniformBuffers["scene"].buffer,
+			VK_ACCESS_UNIFORM_READ_BIT,
+			VK_ACCESS_TRANSFER_WRITE_BIT,
+			VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+			VK_PIPELINE_STAGE_TRANSFER_BIT
+		);
+
+		vkCmdUpdateBuffer(cmdBuf, this->uniformBuffers["scene"].buffer, 0, sizeof(glsl::SceneUniform), &this->uniforms.sceneUniform);
+
+		Utils::bufferBarrier(
+			cmdBuf,
+			this->uniformBuffers["scene"].buffer,
+			VK_ACCESS_TRANSFER_WRITE_BIT,
+			VK_ACCESS_UNIFORM_READ_BIT,
+			VK_PIPELINE_STAGE_TRANSFER_BIT,
+			VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
+		);
+
+		clearValues.clear();
+		if (msaaFlag) {
+			clearValues.emplace_back(colourClearValue);
+			clearValues.emplace_back(colourClearValue);
+			clearValues.emplace_back(depthClearValue);
+		}
+		else {
+			clearValues.emplace_back(colourClearValue);
+			clearValues.emplace_back(depthClearValue);
+		}
+
+		renderPass = "overlay";
+		if (msaaFlag) {
+			renderPass += "MSAA";
+		}
+
+		VkRenderPassBeginInfo passInfo2{};
+		passInfo2.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		passInfo2.renderPass = this->renderPasses[renderPass].handle;
+		passInfo2.framebuffer = msaaFlag ? this->forwardMSAAFramebuffers[this->imageIndex].handle : this->forwardFramebuffers[this->imageIndex].handle;
+		passInfo2.renderArea.offset = VkOffset2D{ 0, 0 };
+		passInfo2.renderArea.extent = this->context->window->swapchainExtent;
+		passInfo2.clearValueCount = static_cast<uint32_t>(clearValues.size());
+		passInfo2.pClearValues = clearValues.data();
+
+		vkCmdBeginRenderPass(cmdBuf, &passInfo2, VK_SUBPASS_CONTENTS_INLINE);
+
+		vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelines[pipeline].handle);
+
+		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts[pipelineLayout].handle, 0, 1, &this->descriptorSets["scene"], 0, nullptr); // Projective matrices
+
+		if (shadow) {
+			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts[pipelineLayout].handle, 4, 1, &this->descriptorSets["shadow"], 0, nullptr); // Depth matrix
+			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts[pipelineLayout].handle, 5, 1, &this->descriptorSets["shadowMap"], 0, nullptr); // Shadow map
+		}
+
+		models[4].drawModel(cmdBuf, this->pipelineLayouts[pipelineLayout].handle);
 
 		vkCmdEndRenderPass(cmdBuf);
 
@@ -800,16 +871,16 @@ namespace Engine {
 		clearValues.clear();
 		clearValues.emplace_back(colourClearValue);
 
-		VkRenderPassBeginInfo passInfo2{};
-		passInfo2.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		passInfo2.renderPass = this->renderPasses["crosshair"].handle;
-		passInfo2.framebuffer = this->crosshairFramebuffer[this->imageIndex].handle;
-		passInfo2.renderArea.offset = VkOffset2D{ 0, 0 };
-		passInfo2.renderArea.extent = this->context->window->swapchainExtent;
-		passInfo2.clearValueCount = (uint32_t)clearValues.size();
-		passInfo2.pClearValues = clearValues.data();
+		VkRenderPassBeginInfo passInfo3{};
+		passInfo3.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		passInfo3.renderPass = this->renderPasses["crosshair"].handle;
+		passInfo3.framebuffer = this->crosshairFramebuffer[this->imageIndex].handle;
+		passInfo3.renderArea.offset = VkOffset2D{ 0, 0 };
+		passInfo3.renderArea.extent = this->context->window->swapchainExtent;
+		passInfo3.clearValueCount = (uint32_t)clearValues.size();
+		passInfo3.pClearValues = clearValues.data();
 
-		vkCmdBeginRenderPass(cmdBuf, &passInfo2, VK_SUBPASS_CONTENTS_INLINE);
+		vkCmdBeginRenderPass(cmdBuf, &passInfo3, VK_SUBPASS_CONTENTS_INLINE);
 
 		vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelines["crosshair"].handle);
 
@@ -946,7 +1017,7 @@ namespace Engine {
 
 		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["forward"].handle, 0, 1, &this->descriptorSets["scene"], 0, nullptr);
 
-		drawModels(cmdBuf, "forward"); // The gBufWrite stage uses same pipelineLayout as forward
+		drawModels(cmdBuf, this->pipelineLayouts["forward"].handle); // The gBufWrite stage uses same pipelineLayout as forward
 
 		vkCmdNextSubpass(cmdBuf, VK_SUBPASS_CONTENTS_INLINE);
 
@@ -973,6 +1044,8 @@ namespace Engine {
 		this->renderPasses["forwardMSAA"] = createRenderPassMSAA(*this->context->window, Utils::getMSAAMinimum(sampleCount));
 		this->renderPasses["deferred"] = createDeferredRenderPass(*this->context->window);
 		this->renderPasses["shadow"] = createShadowRenderPass(*this->context->window);
+		this->renderPasses["overlay"] = createOverlayRenderPass(*this->context->window);
+		this->renderPasses["overlayMSAA"] = createOverlayRenderPassMSAA(*this->context->window, Utils::getMSAAMinimum(sampleCount));
 		this->renderPasses["crosshair"] = createCrosshairRenderPass(*this->context->window);
 	}
 
@@ -1084,7 +1157,7 @@ namespace Engine {
 			this->depthSampler.handle);
 	}
 
-	void Renderer::drawModels(VkCommandBuffer cmdBuf, std::string handle, bool justGeometry) {
+	void Renderer::drawModels(VkCommandBuffer cmdBuf, VkPipelineLayout pipelineLayout, bool justGeometry) {
 		std::vector<vk::Model>& models = this->game->GetModels();
 
 		std::vector<std::unique_ptr<ComponentBase>>* renderComponents = this->entityManager->GetComponentsOfType(RENDER);
@@ -1096,7 +1169,8 @@ namespace Engine {
 			if (!renderComponent->GetIsActive())
 				continue;
 			int modelIndex = renderComponent->GetModelIndex();
-			models[modelIndex].drawModel(cmdBuf, this, handle, justGeometry);
+			if (modelIndex == 4) continue;
+			models[modelIndex].drawModel(cmdBuf, pipelineLayout, justGeometry);
 		}
 	}
 

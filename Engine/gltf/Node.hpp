@@ -31,6 +31,7 @@ namespace vk {
 		bool dirty = true;
 
 		// Matrix that represents the transform of this node's model matrix multiplied by the owning entity's transform.
+		// This ultimately is what should get sent to the shader
 		glm::mat4 globalMatrix;
 
 		// This gets the matrix transformation local to this node.
