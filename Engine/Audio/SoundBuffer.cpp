@@ -4,6 +4,7 @@
 #include "alc.h"
 #include "sndfile.h"
 #include <iostream>
+#include <climits>
 
 namespace Engine
 {

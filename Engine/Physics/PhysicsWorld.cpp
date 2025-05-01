@@ -44,14 +44,17 @@ namespace Engine
 			std::cerr << "PxDefaultPvdSocketTransportCreate failed!" << std::endl;
 			std::exit(-1);
 		}
-		//bool isConnected = gPvd->connect(*gTransport, PxPvdInstrumentationFlag::eALL);
-		bool isConnected = gPvd->connect(*gTransport, PxPvdInstrumentationFlag::eDEBUG);
+		bool isConnected = gPvd->connect(*gTransport, PxPvdInstrumentationFlag::eALL);
+		//bool isConnected = gPvd->connect(*gTransport, PxPvdInstrumentationFlag::eDEBUG);
 
 		if (!isConnected)
 		{
 			std::cerr << "PVD not connected\n";
 		}
-
+		else
+		{
+			std::cout << "PVD connected\n";
+		}
 
 		gPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *gFoundation, PxTolerancesScale(), true, gPvd);
 #else
@@ -84,7 +87,11 @@ namespace Engine
 
 		// set parameters for the scene
 		gScene->setVisualizationParameter(PxVisualizationParameter::eSCALE, 1.0f);
-		//gScene->setVisualizationParameter(PxVisualizationParameter::eCOLLISION_SHAPES, 1.0f);
+		gScene->setVisualizationParameter(PxVisualizationParameter::eCOLLISION_SHAPES, 1.0f);
+		/*gScene->setVisualizationParameter(PxVisualizationParameter::eWORLD_AXES, 1.0f);
+		gScene->setVisualizationParameter(PxVisualizationParameter::eACTOR_AXES, 1.0f);
+		gScene->setVisualizationParameter(PxVisualizationParameter::eCONTACT_POINT, 1.0f);
+		gScene->setVisualizationParameter(PxVisualizationParameter::eCONTACT_NORMAL, 1.0f);*/
 
 		// material
 		gMaterial = gPhysics->createMaterial(0.5f, 0.5f, 0.5f);
@@ -161,7 +168,7 @@ namespace Engine
 
 			PxVec3 displacement(0.0f, -9.81f * deltatime, 0.0f);
 			PxVec3 old = displacement;
-			float speed = 5.0f;
+			float speed = 1.0f;
 			const float jumpSpeed = 3.0f;
 			const float gravity = -9.81f;
 
@@ -384,6 +391,7 @@ namespace Engine
 				entityManager.GetEntity(p->GetEntityId())->SetPosition(pos.x, pos.y, pos.z);
 			}
 		}
+		PxPvdTransport* transport = gPvd->getTransport();
 	}
 
 	void PhysicsWorld::cleanupPhysX()

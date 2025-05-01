@@ -103,6 +103,7 @@ namespace Engine
 		{
 			this->position -= distance * glm::vec3(0.0f, 1.0f, 0.0f);
 		}
+		//std::fprintf(stdout, "Pos: %f %f %f\n", this->position.x, this->position.y, this->position.z);
 
 
 
