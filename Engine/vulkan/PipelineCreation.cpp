@@ -511,22 +511,13 @@ namespace Engine {
 		return vk::DescriptorSetLayout(aWindow.device->device, layout);
 	}
 
-	vk::PipelineLayout createPipelineLayout(const VulkanWindow& aWindow, std::vector<VkDescriptorSetLayout>& aDescriptorSetLayouts, bool aNeedPushConstant) {
-		VkPushConstantRange pushConstantRange{};
-		
-		if (aNeedPushConstant) {
-			// This always assumes our push constant will be 1 integer in the fragment shader. Until
-			// we need a different push constant this should be fine for now.
-			pushConstantRange.size = sizeof(std::uint32_t);
-			pushConstantRange.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-		}
-
+	vk::PipelineLayout createPipelineLayout(const VulkanWindow& aWindow, std::vector<VkDescriptorSetLayout>& aDescriptorSetLayouts, std::vector<VkPushConstantRange>& aPushConstantRanges) {
 		VkPipelineLayoutCreateInfo layoutInfo{};
 		layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		layoutInfo.setLayoutCount = (std::uint32_t)aDescriptorSetLayouts.size();
+		layoutInfo.setLayoutCount = static_cast<std::uint32_t>(aDescriptorSetLayouts.size());
 		layoutInfo.pSetLayouts = aDescriptorSetLayouts.data();
-		layoutInfo.pushConstantRangeCount = aNeedPushConstant ? 1 : 0;
-		layoutInfo.pPushConstantRanges = &pushConstantRange;
+		layoutInfo.pushConstantRangeCount = static_cast<std::uint32_t>(aPushConstantRanges.size());
+		layoutInfo.pPushConstantRanges = aPushConstantRanges.data();
 
 		VkPipelineLayout layout = VK_NULL_HANDLE;
 		if (const auto res = vkCreatePipelineLayout(aWindow.device->device, &layoutInfo, nullptr, &layout); VK_SUCCESS != res) {

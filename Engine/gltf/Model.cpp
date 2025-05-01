@@ -204,18 +204,14 @@ namespace vk {
         materialInfoSSBO = materialInfoDescriptors;
 	}
 
-	void Model::drawModel(VkCommandBuffer aCmdBuf, Renderer* aRenderer, const std::string& aPipelineHandle, std::uint32_t& offset, bool justGeometry) {
-
-        std::size_t dynamicUBOAlignment = aRenderer->getDynamicUBOAlignment();
+	void Model::drawModel(VkCommandBuffer aCmdBuf, Renderer* aRenderer, const std::string& aPipelineHandle, bool justGeometry) {
         VkPipelineLayout pipelineLayout = aRenderer->getPipelineLayout(aPipelineHandle).handle;
-        VkDescriptorSet modelMatricesDescriptor = aRenderer->getDescriptorSet("modelMatrices");
 
         if (justGeometry) {
 
             // Draw opaque nodes first
             for (Node* node : linearNodes) {
-                vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &modelMatricesDescriptor, 1, &offset); // Model matrices
-                offset += (std::uint32_t)dynamicUBOAlignment;
+                vkCmdPushConstants(aCmdBuf, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &node->getGlobalMatrix()[0]);
                 drawNodeGeometry(node, aCmdBuf, pipelineLayout, AlphaMode::ALPHA_OPAQUE);
             }
 
@@ -237,30 +233,23 @@ namespace vk {
             return;
         }
 
-        vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 4, 1, &materialInfoSSBO, 0, nullptr); // Material SSBO
+        vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 3, 1, &materialInfoSSBO, 0, nullptr); // Material SSBO
 
         vkCmdSetCullMode(aCmdBuf, VK_CULL_MODE_BACK_BIT);
 
-        std::uint32_t tempOffset = offset;
-
         // Draw opaque nodes first
 		for (Node* node : linearNodes) {
-            vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &modelMatricesDescriptor, 1, &offset); // Model matrices
-            offset += (std::uint32_t)dynamicUBOAlignment;
+            vkCmdPushConstants(aCmdBuf, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &node->getGlobalMatrix()[0]);
 			drawNode(node, aCmdBuf, pipelineLayout, AlphaMode::ALPHA_OPAQUE);
 		}
-
-        offset = tempOffset;
 
         vkCmdSetCullMode(aCmdBuf, VK_CULL_MODE_NONE);
 
         // Draw alpha masked nodes second
         for (Node* node : linearNodes) {
-            vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &modelMatricesDescriptor, 1, &offset); // Model matrices
-            offset += (std::uint32_t)dynamicUBOAlignment;
+            vkCmdPushConstants(aCmdBuf, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &node->getGlobalMatrix()[0]);
             drawNode(node, aCmdBuf, pipelineLayout, AlphaMode::ALPHA_MASK);
         }
-
 	}
 
 	void Model::drawNode(Node* aNode, VkCommandBuffer aCmdBuf, VkPipelineLayout aPipelineLayout, AlphaMode aAlphaMode) {
@@ -271,9 +260,9 @@ namespace vk {
                 if (primitive->material.alphaMode != aAlphaMode)
                     continue;
 
-                vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, 2, 1, &aNode->descriptor, 0, nullptr); // Joint matrices
-                vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, 3, 1, &primitive->samplerDescriptorSet, 0, nullptr); // Textures
-                vkCmdPushConstants(aCmdBuf, aPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(std::uint32_t), &i);
+                vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, 1, 1, &aNode->descriptor, 0, nullptr); // Joint matrices
+                vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, 2, 1, &primitive->samplerDescriptorSet, 0, nullptr); // Textures
+                vkCmdPushConstants(aCmdBuf, aPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(glm::mat4), sizeof(std::uint32_t), &i);
 
                 VkBuffer vBuffers[8] = {
                     primitive->posBuffer.buffer,
@@ -301,7 +290,7 @@ namespace vk {
         if (aNode->mesh) {
             for (Primitive* primitive : aNode->mesh->primitives) {
 
-                vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, 2, 1, &aNode->descriptor, 0, nullptr); // Joint matrices
+                vkCmdBindDescriptorSets(aCmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, 1, 1, &aNode->descriptor, 0, nullptr); // Joint matrices
 
                 VkBuffer vBuffers[3] = {
                     primitive->posBuffer.buffer,

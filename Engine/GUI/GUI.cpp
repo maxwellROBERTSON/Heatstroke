@@ -156,7 +156,6 @@ namespace Engine
 					break;
 				}
 			}*/
-			game->GetRenderer().initialiseModelMatrices();
 			game->GetRenderer().initialiseJointMatrices();
 			game->ToggleRenderMode(GUIHOME);
 			game->ToggleRenderMode(FORWARD);
@@ -279,7 +278,6 @@ namespace Engine
 				{
 					errorMsg = "";
 					game->loadOnlineEntities(maxClientsNum);
-					game->GetRenderer().initialiseModelMatrices();
 					game->GetRenderer().initialiseJointMatrices();
 					game->ToggleRenderMode(GUIHOME);
 					game->ToggleRenderMode(GUISERVER);
@@ -529,7 +527,6 @@ namespace Engine
 		Status s = game->GetNetwork().GetStatus();
 		if (s == Status::CLIENT_INITIALIZING_DATA)
 		{
-			game->GetRenderer().initialiseModelMatrices();
 			game->GetRenderer().initialiseJointMatrices();
 			game->ToggleRenderMode(GUILOADING);
 			game->ToggleRenderMode(FORWARD);
