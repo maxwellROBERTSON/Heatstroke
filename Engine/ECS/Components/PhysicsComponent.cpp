@@ -174,6 +174,8 @@ namespace Engine
 			if (desc.height < 0.0f)
 				desc.height = 0.0f;
 			desc.stepOffset = 0.1f;
+			desc.height = 1.f;
+			desc.radius = 0.3f;
 			//desc.contactOffset
 			desc.material = pworld.gPhysics->createMaterial(0.5f, 0.5f, 0.6f);
 			//desc.position = PxExtendedVec3(translation.x, translation.y + desc.height / 2 + desc.radius, translation.z);

@@ -3,6 +3,11 @@
 #include <numeric>
 #include <sstream>
 #include <iomanip>
+#include <imgui.h>
+#include <backends/imgui_impl_glfw.h>
+#include <backends/imgui_impl_vulkan.cpp>
+#include <backends/imgui_impl_vulkan.h>
+#include <GLFW/glfw3.h>
 
 #include "../ECS/Components/RenderComponent.hpp"
 #include "Error.hpp"
@@ -16,12 +21,6 @@
 
 #include "Utils.hpp"
 #include "vulkan/vulkan_core.h"
-
-#include <backends/imgui_impl_glfw.h>
-#include <backends/imgui_impl_vulkan.cpp>
-#include <backends/imgui_impl_vulkan.h>
-#include <backends/imgui_impl_vulkan.cpp>
-#include <GLFW/glfw3.h>
 
 #define MAX_JOINTS 128u
 

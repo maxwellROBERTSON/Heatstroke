@@ -169,6 +169,7 @@ void FPSTest::Update() {
 
 		if (Engine::InputManager::getMouse().isPressed(HS_MOUSE_BUTTON_LEFT) && canFire)
 		{
+			std::cout << "HERE " << std::endl;
 			RenderComponent* playerRenderComponent = reinterpret_cast<RenderComponent*>(GetEntityManager().GetComponentOfEntity(playerEntity->GetEntityId(), RENDER));
 			AudioComponent* playerAudioComponent = reinterpret_cast<AudioComponent*>(GetEntityManager().GetComponentOfEntity(playerEntity->GetEntityId(), AUDIO));
 			int playerModelIndex = playerRenderComponent->GetModelIndex();
