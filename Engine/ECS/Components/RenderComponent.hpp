@@ -25,11 +25,11 @@ namespace Engine
 
 		// Getters
 
-		// Static type getter from Component parent
-		ComponentTypes static StaticType() { return ComponentTypes::RENDER; }
+		// Type getter from Component parent
+		ComponentTypes StaticType() const override { return ComponentTypes::RENDER; }
 
-		// Static size getter from Component parent
-		size_t static StaticSize() { return sizeof(modelIndex) + sizeof(isActive); }
+		// Size getter from Component parent
+		size_t StaticSize() const override { return sizeof(modelIndex) + sizeof(isActive); }
 
 		// Get component data
 		void GetDataArray(uint8_t*) override;

@@ -1,6 +1,7 @@
 -- Adapted from COMP5892M (Advanced Rendering)
 
 workspace "Heatstroke"
+
     language "C++"
     cppdialect "C++20"
     platforms { "x64" }
@@ -37,23 +38,42 @@ workspace "Heatstroke"
     local bootstrapScript = cwd .. "/Engine/third_party/vcpkg/bootstrap-vcpkg.sh"
     local batchFile = cwd .. "/Engine/third_party/vcpkg/vcpkg_setup.bat"
 
+    local vcpkglibstr
+    local vcpkgincludeDirs
+
     if os.istarget("linux") then
         os.execute('chmod 777 "' .. shellScript .. '"')
         os.execute('chmod 777 "' .. bootstrapScript .. '"')
         os.execute('sh "' .. shellScript .. '"')
+        vcpkglibstr = "x64-linux"
+        vcpkgincludeDirs = {
+            "Engine/third_party/vcpkg/installed/x64-linux/include/physx",
+            "Engine/third_party/vcpkg/installed/x64-linux/include/AL",
+            "Engine/third_party/vcpkg/installed/x64-linux/include/ogg",
+            "Engine/third_party/vcpkg/installed/x64-linux/include/vorbis",
+            "Engine/third_party/vcpkg/installed/x64-linux/include/flac",
+            "Engine/third_party/vcpkg/installed/x64-linux/include/opus",
+            "Engine/third_party/vcpkg/installed/x64-linux/include/lame",
+            "Engine/third_party/vcpkg/installed/x64-linux/include"
+        }
     end
     if os.istarget("windows") then
         os.execute('"' .. batchFile .. '"')
+        vcpkglibstr = "x64-windows"
+        vcpkgincludeDirs = {
+            "Engine/third_party/vcpkg/installed/x64-windows/include/physx",
+            "Engine/third_party/vcpkg/installed/x64-windows/include/AL",
+            "Engine/third_party/vcpkg/installed/x64-windows/include"
+        }
     end
 
     if os.isdir("bin") == false then
         os.mkdir("bin")
     end
 
-
     filter "system:linux"
         links "dl"
-        defines {"OS_LINUX"}
+        defines {"OS_LINUX", "DISABLE_CUDA_PHYSX"}
 
     filter "system:windows"
         defines {"OS_WINDOWS"}
@@ -63,20 +83,26 @@ workspace "Heatstroke"
     filter "kind:StaticLib"
         targetdir "lib/"
 
-    filter "kind:ConsoleApp"
-        targetdir "bin/"
+    filter { "configurations:Debug", "kind:ConsoleApp" }
+        targetdir "bin/debug/"
         targetextension ".exe"
-
-    filter "*"
     
     filter "configurations:Debug"
         symbols "On"
-        defines {"_DEBUG=1", "YOJIMBO_DEBUG", "NETCODE_DEBUG", "RELIABLE_DEBUG"}
+        runtime "Debug"
+        defines { "_DEBUG=1", "YOJIMBO_DEBUG", "NETCODE_DEBUG", "RELIABLE_DEBUG" }
+        buildoptions { "/D_ITERATOR_DEBUG_LEVEL=2" }
+    
+    filter { "configurations:Release", "kind:ConsoleApp" }
+        targetdir "bin/"
+        targetextension ".exe"
     
     filter "configurations:Release"
         optimize "On"
-        defines {"NDEBUG=1", "YOJIMBO_RELEASE", "NETCODE_RELEASE", "RELIABLE_RELEASE"}
-
+        runtime "Release"
+        defines { "NDEBUG=1", "YOJIMBO_RELEASE", "NETCODE_RELEASE", "RELIABLE_RELEASE" }
+        buildoptions { "/D_ITERATOR_DEBUG_LEVEL=0" }
+    
     filter "*"
 
 include "Engine/third_party"
@@ -102,39 +128,29 @@ project "Engine"
     }
 
     includedirs {
-        "Engine/Utils/"
+        "Engine/Utils/",
+        vcpkgincludeDirs
     }
-    
+
     kind "StaticLib"
     location "Engine"
 
     filter "*"
 
-    filter "system:linux"
-        includedirs {
-            "Engine/third_party/vcpkg/packages/physx_x64-linux/include/physx",
-            "Engine/third_party/vcpkg/packages/openal-soft_x64-linux/include/AL"
-        }
+    filter "configurations:Debug"
+        libdirs { "Engine/third_party/vcpkg/installed/" .. vcpkglibstr .. "/debug/lib" }
 
-    filter "system:windows"
-        includedirs {
-            "Engine/third_party/vcpkg/packages/physx_x64-windows/include/physx",
-            "Engine/third_party/vcpkg/packages/openal-soft_x64-windows/include/AL",
-            "Engine/third_party/snd/include"
-        }
-
+    filter "configurations:Release"
+        libdirs { "Engine/third_party/vcpkg/installed/" .. vcpkglibstr .. "/lib" }
+    
     filter "*"
     
     files(sources)
     removefiles("**.vcxproj*")
 
     filter "*"
-        
-    filter { "system:linux", "configurations:Debug" }
-        libdirs {
-            "Engine/third_party/vcpkg/packages/physx_x64-linux/debug/lib",
-            "Engine/third_party/vcpkg/packages/openal-soft_x64-linux/debug/lib"
-        }
+    
+    filter { "system:linux" }
         links {
             "PhysXCharacterKinematic_static_64",
             "PhysXExtensions_static_64",
@@ -144,61 +160,28 @@ project "Engine"
             "PhysXCooking_static_64",
             "PhysXCommon_static_64",
             "PhysXFoundation_static_64",
-            "OpenAL32"
-        }
-    filter { "system:linux", "configurations:Release" }
-        libdirs {
-            "Engine/third_party/vcpkg/packages/physx_x64-linux/lib",
-            "Engine/third_party/vcpkg/packages/openal-soft_x64-linux/lib"
-        }
-        links {
-            "PhysXCharacterKinematic_static_64",
-            "PhysXExtensions_static_64",
-            "PhysX_static_64",
-            "PhysXPvdSDK_static_64",
-            "PhysXVehicle_static_64",
-            "PhysXCooking_static_64",
-            "PhysXCommon_static_64",
-            "PhysXFoundation_static_64",
-            "OpenAL32"
+            "openal",
+            "sndfile",
+            "vorbis",
+            "vorbisenc",
+            "ogg",
+            "FLAC",
+            "opus",
+            "mpg123",
+            "mp3lame"
         }
 
     filter "*"
 
-    filter { "system:windows", "configurations:Debug" }
-        libdirs {
-            "Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\debug\\lib",
-            "Engine\\third_party\\vcpkg\\packages\\openal-soft_x64-windows\\debug\\lib",
-            "Engine\\third_party\\snd\\lib"
-        }
+    filter { "system:windows" }
         links {
             "PhysX_64",
             "OpenAL32",
             "sndfile"
         }
         postbuildcommands {
-            "if not exist \"%{wks.location}bin\\PhysXFoundation_64.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\debug\\bin\\PhysXFoundation_64.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\debug\\bin\\PhysXFoundation_64.dll\" \"%{wks.location}bin\"",
-            "if not exist \"%{wks.location}bin\\PhysXCommon_64.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\debug\\bin\\PhysXCommon_64.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\debug\\bin\\PhysXCommon_64.dll\" \"%{wks.location}bin\"",
-            "if not exist \"%{wks.location}bin\\PhysX_64.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\debug\\bin\\PhysX_64.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\debug\\bin\\PhysX_64.dll\" \"%{wks.location}bin\"",
-            "if not exist \"%{wks.location}bin\\PhysXCooking_64.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\debug\\bin\\PhysXCooking_64.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\debug\\bin\\PhysXCooking_64.dll\" \"%{wks.location}bin\""
-        }
-    filter { "system:windows", "configurations:Release" }
-        libdirs {
-            "Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\lib",
-            "Engine\\third_party\\vcpkg\\packages\\openal-soft_x64-windows\\lib",
-            "Engine\\third_party\\snd\\lib"
-        }
-        links {
-            "PhysX_64",
-            "OpenAL32",
-            "sndfile"
-        }
-        postbuildcommands {
-            "if not exist \"%{wks.location}bin\\PhysXFoundation_64.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\bin\\PhysXFoundation_64.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\debug\\bin\\PhysXFoundation_64.dll\" \"%{wks.location}bin\"",
-            "if not exist \"%{wks.location}bin\\PhysXCommon_64.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\bin\\PhysXCommon_64.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\bin\\PhysXCommon_64.dll\" \"%{wks.location}bin\"",
-            "if not exist \"%{wks.location}bin\\PhysX_64.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\bin\\PhysX_64.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\bin\\PhysX_64.dll\" \"%{wks.location}bin\"",
-            "if not exist \"%{wks.location}bin\\PhysXCooking_64.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\bin\\PhysXCooking_64.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\bin\\PhysXCooking_64.dll\" \"%{wks.location}bin\""
-        }
+            "call \"%{wks.location}windows_copy_dlls.bat\" \"%{wks.location}\" \"%{cfg.buildcfg}\""        
+        }    
 
     filter "*"
 
@@ -227,7 +210,8 @@ project "Game"
     includedirs {
         ".",
         "../",
-        "Engine/Utils"
+        "Engine/Utils",
+        vcpkgincludeDirs
     }
 
     kind "ConsoleApp"
@@ -235,31 +219,20 @@ project "Game"
 
     filter "*"
 
-    filter "system:linux"
-        includedirs {
-            "Engine/third_party/vcpkg/packages/physx_x64-linux/include/physx",
-            "Engine/third_party/vcpkg/packages/openal-soft_x64-linux/include/AL"
-        }
+    filter "configurations:Debug"
+        libdirs { "Engine/third_party/vcpkg/installed/" .. vcpkglibstr .. "/debug/lib" }
 
-    filter "system:windows"
-        includedirs {
-            "Engine/third_party/vcpkg/packages/physx_x64-windows/include/physx",
-            "Engine/third_party/vcpkg/packages/openal-soft_x64-windows/include/AL",
-            "Engine/third_party/snd/include"
-        }
-
+    filter "configurations:Release"
+        libdirs { "Engine/third_party/vcpkg/installed/" .. vcpkglibstr .. "/lib" }
+    
     filter "*"
 
     files(sources)
     removefiles("**.vcxproj*")
 
     filter "*"
-
-    filter { "system:linux", "configurations:Debug" }
-        libdirs {
-            "Engine/third_party/vcpkg/packages/physx_x64-linux/debug/lib",
-            "Engine/third_party/vcpkg/packages/openal-soft_x64-linux/debug/lib"
-        }
+        
+    filter { "system:linux" }
         links {
             "PhysXCharacterKinematic_static_64",
             "PhysXExtensions_static_64",
@@ -269,49 +242,20 @@ project "Game"
             "PhysXCooking_static_64",
             "PhysXCommon_static_64",
             "PhysXFoundation_static_64",
-            "OpenAL32"
-        }
-    filter { "system:linux", "configurations:Release" }
-        libdirs {
-            "Engine/third_party/vcpkg/packages/physx_x64-linux/lib",
-            "Engine/third_party/vcpkg/packages/openal-soft_x64-linux/lib"
-        }
-        links {
-            "PhysXCharacterKinematic_static_64",
-            "PhysXExtensions_static_64",
-            "PhysX_static_64",
-            "PhysXPvdSDK_static_64",
-            "PhysXVehicle_static_64",
-            "PhysXCooking_static_64",
-            "PhysXCommon_static_64",
-            "PhysXFoundation_static_64",
-            "OpenAL32"
+            "openal",
+            "sndfile",
+            "vorbis",
+            "vorbisenc",
+            "ogg",
+            "FLAC",
+            "opus",
+            "mpg123",
+            "mp3lame"
         }
 
-    filter { "system:windows", "configurations:Debug" }
-        libdirs {
-            "Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\debug\\lib",
-            "Engine\\third_party\\vcpkg\\packages\\openal-soft_x64-windows\\debug\\lib",
-            "Engine\\third_party\\snd\\lib"
-        }
-        links {
-            "PhysXCharacterKinematic_static_64",
-            "PhysXExtensions_static_64",
-            "PhysX_64",
-            "PhysXPvdSDK_static_64",
-            "PhysXVehicle_static_64",
-            "PhysXCooking_64",
-            "PhysXCommon_64",
-            "PhysXFoundation_64",
-            "OpenAL32",
-            "sndfile"
-        }
-    filter { "system:windows", "configurations:Release" }
-        libdirs {
-            "Engine\\third_party\\vcpkg\\packages\\physx_x64-windows\\lib",
-            "Engine\\third_party\\vcpkg\\packages\\openal-soft_x64-windows\\lib",
-            "Engine\\third_party\\snd\\lib"
-        }
+    filter "*"
+
+    filter { "system:windows" }
         links {
             "PhysXCharacterKinematic_static_64",
             "PhysXExtensions_static_64",

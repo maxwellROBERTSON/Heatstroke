@@ -98,6 +98,4 @@ private:
 
 	//destructor
 	~thread_pool_wait();
-
-	static thread_pool_wait *instance;
 };
