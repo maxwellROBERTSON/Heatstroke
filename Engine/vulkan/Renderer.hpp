@@ -21,7 +21,6 @@ namespace Engine {
 
 	struct Uniforms {
 		glsl::SceneUniform sceneUniform;
-		glsl::ModelMatricesUniform modelMatricesUniform;
 		glsl::MaterialInfoBuffer materialInfoBuffer;
 		glsl::LightsUniform lightsUniform;
 		glsl::DepthMVP depthMVP;
@@ -34,22 +33,20 @@ namespace Engine {
 		Renderer() = default;
 
 		void initialiseRenderer();
-		void initialiseModelMatrices();
 		void initialiseJointMatrices();
-		void cleanModelMatrices();
 		void attachCameraComponent(Engine::CameraComponent* cameraComponent);
-		void initialiseModelDescriptors(std::vector<vk::Model>& models);
+		void initialiseModelDescriptors();
 		bool checkSwapchain();
 		bool acquireSwapchainImage();
 		void updateAnimations(float timeDelta);
 		void updateUniforms();
 		void updateModelMatrices();
-		void render(std::vector<vk::Model>& models);
+		void render();
 		void submitRender();
+		void unloadScene();
 		void finishRendering();
 		void destroyImGui();
 
-		vk::Buffer createDynamicUniformBuffer();
 		void calculateFPS();
 
 		// Setters
@@ -58,8 +55,8 @@ namespace Engine {
 
 		// Getters
 		VkRenderPass& GetRenderPass(std::string s);
-		Engine::CameraComponent* GetCameraComponentPointer() { return cameraComponent; }
-		Engine::Camera* GetCameraPointer() { return camera; }
+		CameraComponent* GetCameraComponentPointer() { return cameraComponent; }
+		Camera* GetCameraPointer() { return camera; }
 		bool const GetIsSceneLoaded() { return isSceneLoaded; }
 
 		std::map<std::string, vk::PipelineLayout>& getPipelineLayouts();
@@ -70,8 +67,6 @@ namespace Engine {
 
 		std::map<std::string, VkDescriptorSet> getDescriptorSets();
 		VkDescriptorSet getDescriptorSet(const std::string& handle);
-
-		std::size_t getDynamicUBOAlignment();
 
 		float getAvgFrameTime();
 		int getAvgFPS();
@@ -117,11 +112,6 @@ namespace Engine {
 		std::vector<vk::Semaphore> imageAvailable;
 		std::vector<vk::Semaphore> renderFinished;
 
-		std::size_t dynamicUBOAlignment;
-		// Number of model matrices when creating dynamic uniform buffer object
-		std::size_t modelMatrices;
-		bool modelMatricesMapped = false; // Flag to keep track of if model matrices are mapped, this should maybe be done in a better way
-
 		Uniforms uniforms;
 
 		bool isSceneLoaded = false;
@@ -135,9 +125,9 @@ namespace Engine {
 		std::vector<const char*> msaaOptions;
 
 		void renderGUI();
-		void renderForward(std::vector<vk::Model>& models, bool debug);
-		void renderDeferred(std::vector<vk::Model>& models, bool debug);
-		void drawModels(VkCommandBuffer cmdBuf, std::vector<vk::Model>& models, std::string handle, bool justGeometry = false);
+		void renderForward(bool debug);
+		void renderDeferred(bool debug);
+		void drawModels(VkCommandBuffer cmdBuf, VkPipelineLayout pipelineLayout, bool justGeometry = false);
 
 		void recreateFormatDependents();
 		void recreateSizeDependents();

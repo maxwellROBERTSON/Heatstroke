@@ -35,7 +35,6 @@ namespace Engine {
 		VkCommandPool cPool = VK_NULL_HANDLE;
 		VkDescriptorPool dPool = VK_NULL_HANDLE;
 
-		VkDeviceSize minUBOAlignment = 0;
 		std::size_t maxSampleCountIndex = 0;
 		std::vector<VkSampleCountFlagBits> possibleSampleCounts = { VK_SAMPLE_COUNT_1_BIT, VK_SAMPLE_COUNT_2_BIT, VK_SAMPLE_COUNT_4_BIT, VK_SAMPLE_COUNT_8_BIT, VK_SAMPLE_COUNT_16_BIT, VK_SAMPLE_COUNT_32_BIT, VK_SAMPLE_COUNT_64_BIT };
 		std::vector<const char*> msaaOptions = { "Disabled", "MSAA 2x", "MSAA 4x", "MSAA 8x", "MSAA 16x", "MSAA 32x", "MSAA 64x" };

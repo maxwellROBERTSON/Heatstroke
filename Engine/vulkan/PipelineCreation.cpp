@@ -442,6 +442,154 @@ namespace Engine {
 		return vk::RenderPass(aWindow.device->device, rpass);
 	}
 
+	vk::RenderPass createOverlayRenderPass(const VulkanWindow& aWindow) {
+		VkAttachmentDescription attachments[2]{};
+		attachments[0].format = aWindow.swapchainFormat;
+		attachments[0].samples = VK_SAMPLE_COUNT_1_BIT;
+		attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+		attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		attachments[0].initialLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+		attachments[0].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+		attachments[1].format = VK_FORMAT_D32_SFLOAT_S8_UINT;
+		attachments[1].samples = VK_SAMPLE_COUNT_1_BIT;
+		attachments[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		attachments[1].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		attachments[1].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		attachments[1].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		attachments[1].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+
+		VkAttachmentReference subpassAttachments[1]{};
+		subpassAttachments[0].attachment = 0;
+		subpassAttachments[0].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+		VkAttachmentReference depthAttachment{};
+		depthAttachment.attachment = 1;
+		depthAttachment.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+		VkSubpassDescription subpasses[1]{};
+		subpasses[0].pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+		subpasses[0].colorAttachmentCount = 1;
+		subpasses[0].pColorAttachments = subpassAttachments;
+		subpasses[0].pDepthStencilAttachment = &depthAttachment;
+
+		VkSubpassDependency deps[2]{};
+		deps[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+		deps[0].srcSubpass = VK_SUBPASS_EXTERNAL;
+		deps[0].srcAccessMask = 0;
+		deps[0].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		deps[0].dstSubpass = 0;
+		deps[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		deps[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+
+		deps[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+		deps[1].srcSubpass = VK_SUBPASS_EXTERNAL;
+		deps[1].srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+		deps[1].srcStageMask = VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+		deps[1].dstSubpass = 0;
+		deps[1].dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
+		deps[1].dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+
+		VkRenderPassCreateInfo passInfo{};
+		passInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+		passInfo.attachmentCount = 2;
+		passInfo.pAttachments = attachments;
+		passInfo.subpassCount = 1;
+		passInfo.pSubpasses = subpasses;
+		passInfo.dependencyCount = 2;
+		passInfo.pDependencies = deps;
+
+		VkRenderPass rpass = VK_NULL_HANDLE;
+		if (const auto res = vkCreateRenderPass(aWindow.device->device, &passInfo, nullptr, &rpass); VK_SUCCESS != res) {
+			throw Utils::Error("Unable to create render pass\n vkCreateRenderPass() returned %s\n", Utils::toString(res).c_str());
+		}
+
+		return vk::RenderPass(aWindow.device->device, rpass);
+	}
+
+	vk::RenderPass createOverlayRenderPassMSAA(const VulkanWindow& aWindow, VkSampleCountFlagBits sampleCount) {
+		VkAttachmentDescription attachments[3]{};
+		// Framebuffer attachment in which multisampled colour attachment will be resolved to.
+		attachments[0].format = aWindow.swapchainFormat;
+		attachments[0].samples = VK_SAMPLE_COUNT_1_BIT;
+		attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		attachments[0].initialLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+		attachments[0].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+		// Multisampled colour attachment
+		attachments[1].format = aWindow.swapchainFormat;
+		attachments[1].samples = sampleCount;
+		attachments[1].loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+		attachments[1].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		attachments[1].initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		attachments[1].finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+		// Mutlisampled depth attachment
+		attachments[2].format = VK_FORMAT_D32_SFLOAT_S8_UINT;
+		attachments[2].samples = sampleCount;
+		attachments[2].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		attachments[2].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		attachments[2].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		attachments[2].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		attachments[2].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+
+		// The attachment we are resolving to (the swapchain attachment)
+		VkAttachmentReference resolveAttachment{};
+		resolveAttachment.attachment = 0;
+		resolveAttachment.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+		// The multisampled colour attachment
+		VkAttachmentReference colourAttachment{};
+		colourAttachment.attachment = 1;
+		colourAttachment.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+		// The multisampled depth attachment
+		VkAttachmentReference depthAttachment{};
+		depthAttachment.attachment = 2;
+		depthAttachment.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+		VkSubpassDescription subpasses[1]{};
+		subpasses[0].pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+		subpasses[0].colorAttachmentCount = 1;
+		subpasses[0].pResolveAttachments = &resolveAttachment;
+		subpasses[0].pColorAttachments = &colourAttachment;
+		subpasses[0].pDepthStencilAttachment = &depthAttachment;
+
+		VkSubpassDependency deps[2]{};
+		deps[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+		deps[0].srcSubpass = VK_SUBPASS_EXTERNAL;
+		deps[0].srcAccessMask = 0;
+		deps[0].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		deps[0].dstSubpass = 0;
+		deps[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		deps[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+
+		deps[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+		deps[1].srcSubpass = VK_SUBPASS_EXTERNAL;
+		deps[1].srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+		deps[1].srcStageMask = VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+		deps[1].dstSubpass = 0;
+		deps[1].dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
+		deps[1].dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+
+		VkRenderPassCreateInfo passInfo{};
+		passInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+		passInfo.attachmentCount = 3;
+		passInfo.pAttachments = attachments;
+		passInfo.subpassCount = 1;
+		passInfo.pSubpasses = subpasses;
+		passInfo.dependencyCount = 2;
+		passInfo.pDependencies = deps;
+
+		VkRenderPass rpass = VK_NULL_HANDLE;
+		if (const auto res = vkCreateRenderPass(aWindow.device->device, &passInfo, nullptr, &rpass); VK_SUCCESS != res) {
+			throw Utils::Error("Unable to create render pass\n vkCreateRenderPass() returned %s\n", Utils::toString(res).c_str());
+		}
+
+		return vk::RenderPass(aWindow.device->device, rpass);
+	}
+
 	vk::RenderPass createCrosshairRenderPass(const VulkanWindow& aWindow) {
 		VkAttachmentDescription attachments[1]{};
 		attachments[0].format = aWindow.swapchainFormat;
@@ -511,22 +659,13 @@ namespace Engine {
 		return vk::DescriptorSetLayout(aWindow.device->device, layout);
 	}
 
-	vk::PipelineLayout createPipelineLayout(const VulkanWindow& aWindow, std::vector<VkDescriptorSetLayout>& aDescriptorSetLayouts, bool aNeedPushConstant) {
-		VkPushConstantRange pushConstantRange{};
-		
-		if (aNeedPushConstant) {
-			// This always assumes our push constant will be 1 integer in the fragment shader. Until
-			// we need a different push constant this should be fine for now.
-			pushConstantRange.size = sizeof(std::uint32_t);
-			pushConstantRange.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-		}
-
+	vk::PipelineLayout createPipelineLayout(const VulkanWindow& aWindow, std::vector<VkDescriptorSetLayout>& aDescriptorSetLayouts, std::vector<VkPushConstantRange>& aPushConstantRanges) {
 		VkPipelineLayoutCreateInfo layoutInfo{};
 		layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		layoutInfo.setLayoutCount = (std::uint32_t)aDescriptorSetLayouts.size();
+		layoutInfo.setLayoutCount = static_cast<std::uint32_t>(aDescriptorSetLayouts.size());
 		layoutInfo.pSetLayouts = aDescriptorSetLayouts.data();
-		layoutInfo.pushConstantRangeCount = aNeedPushConstant ? 1 : 0;
-		layoutInfo.pPushConstantRanges = &pushConstantRange;
+		layoutInfo.pushConstantRangeCount = static_cast<std::uint32_t>(aPushConstantRanges.size());
+		layoutInfo.pPushConstantRanges = aPushConstantRanges.data();
 
 		VkPipelineLayout layout = VK_NULL_HANDLE;
 		if (const auto res = vkCreatePipelineLayout(aWindow.device->device, &layoutInfo, nullptr, &layout); VK_SUCCESS != res) {

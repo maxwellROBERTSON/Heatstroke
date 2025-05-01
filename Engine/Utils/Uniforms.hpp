@@ -12,10 +12,6 @@ namespace glsl {
         glm::vec4 position;
     };
 
-    struct ModelMatricesUniform {
-        glm::mat4* model;
-    };
-
     // Laying out the struct in groups of their
     // types seem to be critical to sending the data
     // to the GPU correctly. When the members are
