@@ -841,7 +841,7 @@ namespace Engine {
 			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts[pipelineLayout].handle, 5, 1, &this->descriptorSets["shadowMap"], 0, nullptr); // Shadow map
 		}
 
-		models[4].drawModel(cmdBuf, this->pipelineLayouts[pipelineLayout].handle);
+		models[2].drawModel(cmdBuf, this->pipelineLayouts[pipelineLayout].handle);
 
 		vkCmdEndRenderPass(cmdBuf);
 
