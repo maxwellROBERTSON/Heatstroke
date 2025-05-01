@@ -25,6 +25,7 @@ workspace "Heatstroke"
     filter "toolset:msc-*"
         defines { "_CRT_SECURE_NO_WARNINGS=1" }
         defines { "_SCL_SECURE_NO_WARNINGS=1" }
+        linkoptions { "/ignore:4099" }
         buildoptions { "/utf-8" }
 
     filter "*"
@@ -88,10 +89,9 @@ workspace "Heatstroke"
     
     filter "configurations:Debug"
         symbols "On"
-        -- runtime "Debug"
+        runtime "Debug"
         defines { "_DEBUG=1", "YOJIMBO_DEBUG", "NETCODE_DEBUG", "RELIABLE_DEBUG" }
-        -- buildoptions { "/D_ITERATOR_DEBUG_LEVEL=2" }
-        vcpkglibstr = vcpkglibstr .. "/debug"
+        buildoptions { "/D_ITERATOR_DEBUG_LEVEL=2" }
     
     filter { "configurations:Release", "kind:ConsoleApp" }
         targetdir "bin/"
@@ -99,12 +99,11 @@ workspace "Heatstroke"
     
     filter "configurations:Release"
         optimize "On"
-        -- runtime "Release"
+        runtime "Release"
         defines { "NDEBUG=1", "YOJIMBO_RELEASE", "NETCODE_RELEASE", "RELIABLE_RELEASE" }
-        -- buildoptions { "/D_ITERATOR_DEBUG_LEVEL=0" }
+        buildoptions { "/D_ITERATOR_DEBUG_LEVEL=0" }
     
     filter "*"
-    
 
 include "Engine/third_party"
 
@@ -133,17 +132,21 @@ project "Engine"
         vcpkgincludeDirs
     }
 
-    libdirs {
-        "Engine/third_party/vcpkg/installed/" .. vcpkglibstr .. "/lib"
-    }
-    
     kind "StaticLib"
     location "Engine"
+
+    filter "*"
+
+    filter "configurations:Debug"
+        libdirs { "Engine/third_party/vcpkg/installed/" .. vcpkglibstr .. "/debug/lib" }
+
+    filter "configurations:Release"
+        libdirs { "Engine/third_party/vcpkg/installed/" .. vcpkglibstr .. "/lib" }
+    
+    filter "*"
     
     files(sources)
     removefiles("**.vcxproj*")
-
-    includedirs { vcpkgincludeDirs }
 
     filter "*"
     
@@ -178,20 +181,7 @@ project "Engine"
         }
         postbuildcommands {
             "call \"%{wks.location}windows_copy_dlls.bat\" \"%{wks.location}\" \"%{cfg.buildcfg}\""        
-            -- "if not exist \"%{wks.location}bin%{getConfigPath()}\\PhysXFoundation_64.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows%{getConfigPath()}\\bin\\PhysXFoundation_64.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows%{getConfigPath()}\\bin\\PhysXFoundation_64.dll\" \"%{wks.location}bin%{getConfigPath()}\\PhysXFoundation_64.dll\"",
-            -- "if not exist \"%{wks.location}bin%{getConfigPath()}\\PhysXCommon_64.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows%{getConfigPath()}\\bin\\PhysXCommon_64.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows%{getConfigPath()}\\bin\\PhysXCommon_64.dll\" \"%{wks.location}bin%{getConfigPath()}\\PhysXCommon_64.dll\"",
-            -- "if not exist \"%{wks.location}bin%{getConfigPath()}\\PhysX_64.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows%{getConfigPath()}\\bin\\PhysX_64.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows%{getConfigPath()}\\bin\\PhysX_64.dll\" \"%{wks.location}bin%{getConfigPath()}\\PhysX_64.dll\"",
-            -- "if not exist \"%{wks.location}bin%{getConfigPath()}\\PhysXCooking_64.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows%{getConfigPath()}\\bin\\PhysXCooking_64.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows%{getConfigPath()}\\bin\\PhysXCooking_64.dll\" \"%{wks.location}bin%{getConfigPath()}\\PhysXCooking_64.dll\"",
-            -- "if not exist \"%{wks.location}bin%{getConfigPath()}\\OpenAL32.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows%{getConfigPath()}\\bin\\OpenAL32.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows%{getConfigPath()}\\bin\\OpenAL32.dll\" \"%{wks.location}bin%{getConfigPath()}\\OpenAL32.dll\"",
-            -- "if not exist \"%{wks.location}bin%{getConfigPath()}\\sndfile.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows%{getConfigPath()}\\bin\\sndfile.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows%{getConfigPath()}\\bin\\sndfile.dll\" \"%{wks.location}bin%{getConfigPath()}\\sndfile.dll\"",
-            -- "if not exist \"%{wks.location}bin%{getConfigPath()}\\ogg.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows%{getConfigPath()}\\bin\\ogg.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows%{getConfigPath()}\\bin\\ogg.dll\" \"%{wks.location}bin%{getConfigPath()}\\ogg.dll\"",
-            -- "if not exist \"%{wks.location}bin%{getConfigPath()}\\vorbis.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows%{getConfigPath()}\\bin\\vorbis.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows%{getConfigPath()}\\bin\\vorbis.dll\" \"%{wks.location}bin%{getConfigPath()}\\vorbis.dll\"",
-            -- "if not exist \"%{wks.location}bin%{getConfigPath()}\\vorbisenc.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows%{getConfigPath()}\\bin\\vorbisenc.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows%{getConfigPath()}\\bin\\vorbisenc.dll\" \"%{wks.location}bin%{getConfigPath()}\\vorbisenc.dll\"",
-            -- "if not exist \"%{wks.location}bin%{getConfigPath()}\\FLAC.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows%{getConfigPath()}\\bin\\FLAC.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows%{getConfigPath()}\\bin\\FLAC.dll\" \"%{wks.location}bin%{getConfigPath()}\\FLAC.dll\"",
-            -- "if not exist \"%{wks.location}bin%{getConfigPath()}\\opus.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows%{getConfigPath()}\\bin\\opus.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows%{getConfigPath()}\\bin\\opus.dll\" \"%{wks.location}bin%{getConfigPath()}\\opus.dll\"",
-            -- "if not exist \"%{wks.location}bin%{getConfigPath()}\\mpg123.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows%{getConfigPath()}\\bin\\mpg123.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows%{getConfigPath()}\\bin\\mpg123.dll\" \"%{wks.location}bin%{getConfigPath()}\\mpg123.dll\"",
-            -- "if not exist \"%{wks.location}bin%{getConfigPath()}\\libmp3lame.dll\" if exist \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows%{getConfigPath()}\\bin\\libmp3lame.dll\" copy /Y \"%{wks.location}Engine\\third_party\\vcpkg\\installed\\x64-windows%{getConfigPath()}\\bin\\libmp3lame.dll\" \"%{wks.location}bin%{getConfigPath()}\\libmp3lame.dll\""
-        }        
+        }    
 
     filter "*"
 
@@ -224,12 +214,18 @@ project "Game"
         vcpkgincludeDirs
     }
 
-    libdirs {
-        "Engine/third_party/vcpkg/installed/" .. vcpkglibstr .. "/lib"
-    }
-
     kind "ConsoleApp"
     location "Game"
+
+    filter "*"
+
+    filter "configurations:Debug"
+        libdirs { "Engine/third_party/vcpkg/installed/" .. vcpkglibstr .. "/debug/lib" }
+
+    filter "configurations:Release"
+        libdirs { "Engine/third_party/vcpkg/installed/" .. vcpkglibstr .. "/lib" }
+    
+    filter "*"
 
     files(sources)
     removefiles("**.vcxproj*")
