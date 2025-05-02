@@ -216,7 +216,10 @@ namespace Engine
 				rotationMatrix[1] = rotationMatrix[1] / nodeScale.y;
 				rotationMatrix[2] = rotationMatrix[2] / nodeScale.z;
 
-				glm::quat nodeRotation = glm::quat_cast(rotationMatrix);
+				// Normalize the quaternion cast to ensure the rotation stays as a unit
+				// quaternion since PxPhysics::createRigidStatic requires a unit quaternion
+				// for it to consider it a valid transform
+				glm::quat nodeRotation = glm::normalize(glm::quat_cast(rotationMatrix));
 
 				PxTransform nodePxTransform(
 					PxVec3(nodeTranslation.x, nodeTranslation.y, nodeTranslation.z),
@@ -323,7 +326,10 @@ namespace Engine
 				rotationMatrix[1] = rotationMatrix[1] / nodeScale.y;
 				rotationMatrix[2] = rotationMatrix[2] / nodeScale.z;
 
-				glm::quat nodeRotation = glm::quat_cast(rotationMatrix);
+				// Normalize the quaternion cast to ensure the rotation stays as a unit
+				// quaternion since PxPhysics::createRigidStatic requires a unit quaternion
+				// for it to consider it a valid transform
+				glm::quat nodeRotation = glm::normalize(glm::quat_cast(rotationMatrix));
 
 				PxTransform nodePxTransform(
 					PxVec3(nodeTranslation.x, nodeTranslation.y, nodeTranslation.z),

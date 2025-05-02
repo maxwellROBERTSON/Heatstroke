@@ -154,6 +154,8 @@ namespace Engine {
 		samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
 		samplerInfo.addressModeU = aSamplerInfo.addressModeU;
 		samplerInfo.addressModeV = aSamplerInfo.addressModeV;
+		samplerInfo.compareEnable = aSamplerInfo.compareEnable;
+		samplerInfo.compareOp = aSamplerInfo.compareOp;
 		samplerInfo.minLod = 0.0f;
 		samplerInfo.maxLod = VK_LOD_CLAMP_NONE;
 		samplerInfo.mipLodBias = 0.0f;

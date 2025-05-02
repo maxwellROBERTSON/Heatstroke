@@ -18,6 +18,11 @@ namespace Engine {
 
 	class Renderer;
 
+	enum class DrawType {
+		WORLD,
+		OVERLAY
+	};
+
 namespace vk {
 
     struct SamplerInfo {
@@ -25,6 +30,8 @@ namespace vk {
 		VkFilter magFilter;
 		VkSamplerAddressMode addressModeU;
 		VkSamplerAddressMode addressModeV;
+		VkBool32 compareEnable = 0;
+		VkCompareOp compareOp = VK_COMPARE_OP_NEVER;
 	};
 
 	enum AlphaMode {
@@ -141,6 +148,8 @@ namespace vk {
         std::vector<ImageView> imageViews;
 		std::vector<Animation> animations;
 		std::vector<Skin*> skins;
+
+		DrawType drawType;
 
 		Sampler defaultSampler; // Default sampler for when a texture doesn't reference any sampler
 		ImageView dummyImageView;

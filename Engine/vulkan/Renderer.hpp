@@ -127,7 +127,7 @@ namespace Engine {
 		void renderGUI();
 		void renderForward(bool debug);
 		void renderDeferred(bool debug);
-		void drawModels(VkCommandBuffer cmdBuf, VkPipelineLayout pipelineLayout, bool justGeometry = false);
+		void drawModels(VkCommandBuffer cmdBuf, VkPipelineLayout pipelineLayout, DrawType drawType, bool justGeometry = false);
 
 		void recreateFormatDependents();
 		void recreateSizeDependents();
