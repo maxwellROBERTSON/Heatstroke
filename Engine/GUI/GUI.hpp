@@ -43,6 +43,8 @@ namespace Engine
 
 		void makeGUI();
 
+		void NullFrame();
+
 		void AddFunction(std::string s, std::function<void(int*, int*)> func);
 
 		void AddFont(std::string s, const char* filename, float size);
@@ -61,5 +63,6 @@ namespace Engine
 
 		std::map<std::string, ImFont*> fonts;
 
+		bool isNullFrame = true;
 	};
 }

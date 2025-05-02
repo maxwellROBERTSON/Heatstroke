@@ -12,7 +12,6 @@
 
 #include "../gltf/Model.hpp"
 
-
 #include "../ECS/EntityManager.hpp"
 #include "../ECS/Entity.hpp"
 
@@ -50,20 +49,19 @@ namespace Engine
 
 		void init(EntityManager*);
 
+		void setControllerEntity(Entity*);
+		void setControllerHeight(float);
+		float getControllerHeight() { return controllerHeight; }
 
-		void handleMovement(PxReal deltatime);
-		void handleMovement(Entity* playerEntity, PxReal deltatime);
-
-		void handleShooting();
-		PxRaycastHit handleShooting(Entity* playerEntity);
-
-		void updatePhysics(Entity* playerEntity, PxReal timeDelta);
-		void updatePhysics(PxReal timeDelta);
+		void updatePhysics(PxReal timeDelta, bool updateCharacter);
 
 		void updateCharacter(PxReal deltatime);
-		void updateCharacter(Entity* playerEntity, PxReal deltatime);
 
-		void updateObjects(Engine::EntityManager& entityManager, std::vector<Engine::vk::Model>& models); //TODO
+		void handleMovement(PxReal deltatime);
+
+		PxRaycastHit handleShooting();
+
+		void updateObjects(std::vector<Engine::vk::Model>& models); //TODO
 
 		void cleanupPhysX();
 
@@ -71,8 +69,9 @@ namespace Engine
 
 		void DebugDrawRayInPVD(PxScene* scene, const PxVec3& start, const PxVec3& end, PxU32 color);
 
-
 	private:
 		EntityManager* entityManager;
+		Entity* controllerEntity;
+		float controllerHeight = 0.f;
 	};
 }

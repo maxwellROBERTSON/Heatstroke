@@ -91,7 +91,7 @@ namespace Engine
 
 		// Flag to set whether model matrix needs to be updated
 		bool dirty = false;
-		glm::vec3 position{};
+		glm::vec3 position{ 0.f };
 		glm::mat4 rotation{ 1.0f };
 		glm::vec3 scale{ 1.0f };
 

@@ -1,27 +1,32 @@
 #include "gameGUI.hpp"
-
-#include "../DemoGame.hpp"
-#include "../gameRendering/Crosshair.hpp"
+#include "../gameModes/GameMode.hpp"
 #include "../gameModes/SinglePlayer.hpp"
-#include "../gameModes/MultiPlayer.hpp"
-
-#include "../../Engine/Core/RenderMode.hpp"
-#include "../../Network/Helpers/GameConfig.hpp"
-#include "../../Engine/Input/Input.hpp"
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+using namespace Engine;
+
+// Define the global variables here
+bool debugInput = false;
+bool debugGame = true;
+bool multiplayerSelected = false;
+bool serverSelected = false;
+std::string errorMsg = "";
+ImVec2 serverBoxSize = ImVec2(0, 0);
+std::string loadingMsg = "Messages not yet setup. Need to put this onto a thread.";
+
 void makeGameGUIS(FPSTest* game)
 {
-	Engine::GUI& gui = game->GetGUI();
+	GUI& gui = game->GetGUI();
 
-	gui.AddFunction("Home", [game](int* w, int* h) { makeDebugGUI(game, w, h); });
+	gui.AddFunction("Home", [game](int* w, int* h) { makeHomeGUI(game, w, h); });
 	gui.AddFunction("Settings", [game](int* w, int* h) { makeSettingsGUI(game, w, h); });
 	gui.AddFunction("Server", [game](int* w, int* h) { makeServerGUI(game, w, h); });
 	gui.AddFunction("Loading", [game](int* w, int* h) { makeLoadingGUI(game, w, h); });
-	gui.AddFunction("Debug", [game](int* w, int* h) { makeLoadingGUI(game, w, h); });
-	gui.AddFunction("Loading", [game](int* w, int* h) { makeLoadingGUI(game, w, h); });
+	gui.AddFunction("Debug", [game](int* w, int* h) { makeDebugGUI(game, w, h); });
+	gui.AddFunction("SinglePlayer", [game](int* w, int* h) { makeSinglePlayerGUI(game, w, h); });
+	gui.AddFunction("MultiPlayer", [game](int* w, int* h) { makeMultiPlayerGUI(game, w, h); });
 
 	gui.AddFont("Game", "Engine/third_party/imgui/misc/fonts/Roboto-Medium.ttf", 36.0f);
 	gui.AddFont("Default", "Engine/third_party/imgui/misc/fonts/Roboto-Medium.ttf", 12.0f);
@@ -31,10 +36,6 @@ void makeGameGUIS(FPSTest* game)
 
 void makeHomeGUI(FPSTest* game, int* w, int* h)
 {
-	ImGui_ImplVulkan_NewFrame();
-	ImGui_ImplGlfw_NewFrame();
-	ImGui::NewFrame();
-
 	ImGui::SetNextWindowPos(ImVec2(0, 0));
 	ImGui::SetNextWindowSize(ImVec2(*w, *h));
 
@@ -48,11 +49,11 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 	ImGui::Text("Demo game made using Heatstroke", ImVec2(*w / 4, *h / 4));
 	if (ImGui::Button("Single Player", ImVec2(*w / 4, *h / 4)))
 	{
+		game->SetGameMode(std::make_unique<SinglePlayer>());
 		game->loadOfflineEntities();
-		game->GetRenderer().initialiseModelMatrices();
 		game->GetRenderer().initialiseJointMatrices();
 		game->GetGUI().ToggleGUIMode("Home");
-		game->SetRenderMode(Engine::RenderMode::FORWARD);
+		game->SetRenderMode(RenderMode::FORWARD);
 		GLFWwindow* window = game->GetContext().getGLFWWindow();
 		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	}
@@ -172,7 +173,6 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 			{
 				errorMsg = "";
 				game->loadOnlineEntities(maxClientsNum);
-				game->GetRenderer().initialiseModelMatrices();
 				game->GetRenderer().initialiseJointMatrices();
 				game->GetGUI().ToggleGUIMode("Home");
 				game->GetGUI().ToggleGUIMode("Server");
@@ -193,12 +193,6 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 
 void makeSettingsGUI(FPSTest* game, int* w, int* h)
 {
-	ImVec4 clear_color = ImVec4(0.8f, 0.5f, 0.5f, 1.00f);
-
-	ImGui_ImplVulkan_NewFrame();
-	ImGui_ImplGlfw_NewFrame();
-	ImGui::NewFrame();
-
 	ImGui::SetNextWindowPos(ImVec2(0, 0));
 	ImGui::SetNextWindowSize(ImVec2(*w, *h));
 
@@ -209,22 +203,22 @@ void makeSettingsGUI(FPSTest* game, int* w, int* h)
 	ImGui::Begin("Settings Menu", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 
 	const char* renderModes[] = { "Forward", "Deferred", "Forward + Shadows" };
-	Engine::RenderMode current = game->GetRenderMode();
+	RenderMode current = game->GetRenderMode();
 
 	int selected = 0;
 	switch (current) {
-	case Engine::RenderMode::FORWARD: selected = 0; break;
-	case Engine::RenderMode::DEFERRED: selected = 1; break;
-	case Engine::RenderMode::FORWARDSHADOWS: selected = 2; break;
+	case RenderMode::FORWARD: selected = 0; break;
+	case RenderMode::DEFERRED: selected = 1; break;
+	case RenderMode::FORWARDSHADOWS: selected = 2; break;
 	}
 
 	// Render mode combo box
 	ImGui::Text("Render Mode:");
 	if (ImGui::Combo("##RenderMode", &selected, renderModes, IM_ARRAYSIZE(renderModes))) {
 		switch (selected) {
-		case 0: game->SetRenderMode(Engine::RenderMode::FORWARD); break;
-		case 1: game->SetRenderMode(Engine::RenderMode::DEFERRED); break;
-		case 2: game->SetRenderMode(Engine::RenderMode::FORWARDSHADOWS); break;
+		case 0: game->SetRenderMode(RenderMode::FORWARD); break;
+		case 1: game->SetRenderMode(RenderMode::DEFERRED); break;
+		case 2: game->SetRenderMode(RenderMode::FORWARDSHADOWS); break;
 		}
 	}
 
@@ -255,9 +249,8 @@ void makeSettingsGUI(FPSTest* game, int* w, int* h)
 	{
 		if (game->GetRenderer().GetIsSceneLoaded())
 		{
-			game->SetRenderMode(Engine::RenderMode::NO_DATA_MODE);
+			game->SetRenderMode(RenderMode::NO_DATA_MODE);
 			game->GetEntityManager().ClearManager();
-			game->GetRenderer().cleanModelMatrices();
 			game->GetNetwork().Reset();
 		}
 	}
@@ -269,10 +262,6 @@ void makeSettingsGUI(FPSTest* game, int* w, int* h)
 
 void makeServerGUI(FPSTest* game, int* w, int* h)
 {
-	ImGui_ImplVulkan_NewFrame();
-	ImGui_ImplGlfw_NewFrame();
-	ImGui::NewFrame();
-
 	ImGui::SetNextWindowPos(ImVec2(0, 0));
 	ImGui::SetNextWindowSize(ImVec2(*w, *h));
 
@@ -290,9 +279,8 @@ void makeServerGUI(FPSTest* game, int* w, int* h)
 
 	if (ImGui::Button("Stop server", ImVec2(*w / 6, *h / 6)))
 	{
-		game->SetRenderMode(Engine::RenderMode::NO_DATA_MODE);
+		game->SetRenderMode(RenderMode::NO_DATA_MODE);
 		game->GetEntityManager().ClearManager();
-		game->GetRenderer().cleanModelMatrices();
 		game->GetNetwork().Reset();
 		multiplayerSelected = false;
 		serverSelected = false;
@@ -305,26 +293,21 @@ void makeServerGUI(FPSTest* game, int* w, int* h)
 
 void makeLoadingGUI(FPSTest* game, int* w, int* h)
 {
-	ImGui_ImplVulkan_NewFrame();
-	ImGui_ImplGlfw_NewFrame();
-	ImGui::NewFrame();
-
 	ImGui::SetNextWindowPos(ImVec2(0, 0));
 	ImGui::SetNextWindowSize(ImVec2(*w, *h));
 
 	ImGui::Begin("Loading Menu", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 
-	Engine::Status s = game->GetNetwork().GetStatus();
-	if (s == Engine::Status::CLIENT_INITIALIZING_DATA)
+	Status s = game->GetNetwork().GetStatus();
+	if (s == Status::CLIENT_INITIALIZING_DATA)
 	{
-		game->GetRenderer().initialiseModelMatrices();
 		game->GetRenderer().initialiseJointMatrices();
 		game->GetGUI().ToggleGUIMode("Loading");
-		game->SetRenderMode(Engine::RenderMode::FORWARD);
+		game->SetRenderMode(RenderMode::FORWARD);
 		GLFWwindow* window = game->GetContext().getGLFWWindow();
 		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	}
-	else if (s == Engine::Status::CLIENT_CONNECTION_FAILED)
+	else if (s == Status::CLIENT_CONNECTION_FAILED)
 	{
 		ImGui::Text("Loading Failed.");
 		ImGui::Text(game->GetNetwork().GetStatusString().c_str());
@@ -336,7 +319,7 @@ void makeLoadingGUI(FPSTest* game, int* w, int* h)
 			game->GetNetwork().Reset();
 		}
 	}
-	else if (s == Engine::Status::CLIENT_DISCONNECTED)
+	else if (s == Status::CLIENT_DISCONNECTED)
 	{
 		ImGui::Text("Client disconnected from server.");
 		ImGui::Text(game->GetNetwork().GetStatusString().c_str());
@@ -344,10 +327,9 @@ void makeLoadingGUI(FPSTest* game, int* w, int* h)
 		ImGui::SetCursorPos(topRightPos);
 		if (ImGui::Button("Home", ImVec2(*w / 6, *h / 6)))
 		{
-			game->SetRenderMode(Engine::RenderMode::NO_DATA_MODE);
+			game->SetRenderMode(RenderMode::NO_DATA_MODE);
 			game->GetGUI().ToggleGUIMode("Home");
 			game->GetEntityManager().ClearManager();
-			game->GetRenderer().cleanModelMatrices();
 			game->GetNetwork().Reset();
 		}
 	}
@@ -361,10 +343,6 @@ void makeLoadingGUI(FPSTest* game, int* w, int* h)
 
 void makeDebugGUI(FPSTest* game, int* w, int* h)
 {
-	ImGui_ImplVulkan_NewFrame();
-	ImGui_ImplGlfw_NewFrame();
-	ImGui::NewFrame();
-
 	ImGui::PushFont(game->GetGUI().GetFont("Default"));
 	ImGui::Begin("Debug Menu");
 
@@ -390,24 +368,24 @@ void makeDebugGUI(FPSTest* game, int* w, int* h)
 	ImGui::Text("FrontDir:");
 	ImGui::InputText("##FrontDir", (char*)fDirStr.c_str(), fDirStr.size() + 1, ImGuiInputTextFlags_ReadOnly);
 
-	if (Engine::InputManager::hasJoysticksConnected())
+	if (InputManager::hasJoysticksConnected())
 	{
 		ImGui::Text("Input:");
-		ImGui::Text("Controller Status: %s", Engine::InputManager::hasJoysticksConnected() ? "Connected" : "Disconnected");
-		if (Engine::InputManager::hasJoysticksConnected())
+		ImGui::Text("Controller Status: %s", InputManager::hasJoysticksConnected() ? "Connected" : "Disconnected");
+		if (InputManager::hasJoysticksConnected())
 		{
-			ImGui::Text("A: %s", Engine::InputManager::getJoystick(0).isPressed(HS_GAMEPAD_BUTTON_A) ? "Pressed" : "Released");
-			ImGui::Text("B: %s", Engine::InputManager::getJoystick(0).isPressed(HS_GAMEPAD_BUTTON_B) ? "Pressed" : "Released");
-			ImGui::Text("Y: %s", Engine::InputManager::getJoystick(0).isPressed(HS_GAMEPAD_BUTTON_Y) ? "Pressed" : "Released");
-			ImGui::Text("X: %s", Engine::InputManager::getJoystick(0).isPressed(HS_GAMEPAD_BUTTON_X) ? "Pressed" : "Released");
-			ImGui::Text("RB: %s", Engine::InputManager::getJoystick(0).isPressed(HS_GAMEPAD_BUTTON_RIGHT_BUMPER) ? "Pressed" : "Released");
-			ImGui::Text("LB: %s", Engine::InputManager::getJoystick(0).isPressed(HS_GAMEPAD_BUTTON_LEFT_BUMPER) ? "Pressed" : "Released");
-			ImGui::Text("RT: %f", Engine::InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_RIGHT_TRIGGER));
-			ImGui::Text("LT: %f", Engine::InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_LEFT_TRIGGER));
-			ImGui::Text("LS - Horizontal: %f", Engine::InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_LEFT_X));
-			ImGui::Text("LS - Vertical: %f", Engine::InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_LEFT_Y));
-			ImGui::Text("RS - Horizontal: %f", Engine::InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_RIGHT_X));
-			ImGui::Text("RS - Vertical: %f", Engine::InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_RIGHT_Y));
+			ImGui::Text("A: %s", InputManager::getJoystick(0).isPressed(HS_GAMEPAD_BUTTON_A) ? "Pressed" : "Released");
+			ImGui::Text("B: %s", InputManager::getJoystick(0).isPressed(HS_GAMEPAD_BUTTON_B) ? "Pressed" : "Released");
+			ImGui::Text("Y: %s", InputManager::getJoystick(0).isPressed(HS_GAMEPAD_BUTTON_Y) ? "Pressed" : "Released");
+			ImGui::Text("X: %s", InputManager::getJoystick(0).isPressed(HS_GAMEPAD_BUTTON_X) ? "Pressed" : "Released");
+			ImGui::Text("RB: %s", InputManager::getJoystick(0).isPressed(HS_GAMEPAD_BUTTON_RIGHT_BUMPER) ? "Pressed" : "Released");
+			ImGui::Text("LB: %s", InputManager::getJoystick(0).isPressed(HS_GAMEPAD_BUTTON_LEFT_BUMPER) ? "Pressed" : "Released");
+			ImGui::Text("RT: %f", InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_RIGHT_TRIGGER));
+			ImGui::Text("LT: %f", InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_LEFT_TRIGGER));
+			ImGui::Text("LS - Horizontal: %f", InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_LEFT_X));
+			ImGui::Text("LS - Vertical: %f", InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_LEFT_Y));
+			ImGui::Text("RS - Horizontal: %f", InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_RIGHT_X));
+			ImGui::Text("RS - Vertical: %f", InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_RIGHT_Y));
 		}
 	}
 
@@ -417,8 +395,8 @@ void makeDebugGUI(FPSTest* game, int* w, int* h)
 
 	ImGui::Text("Animations:");
 	// Iterate over all models and find ones with animations
-	std::vector<Engine::vk::Model>& models = game->GetModels();
-	for (Engine::vk::Model& model : models) {
+	std::vector<vk::Model>& models = game->GetModels();
+	for (vk::Model& model : models) {
 		if (model.animations.size() == 0)
 			continue;
 
@@ -435,7 +413,7 @@ void makeDebugGUI(FPSTest* game, int* w, int* h)
 		}
 	}
 
-	if (game->GetNetwork().GetStatus() != Engine::Status::NETWORK_UNINITIALIZED)
+	if (game->GetNetwork().GetStatus() != Status::NETWORK_UNINITIALIZED)
 	{
 		std::map<std::string, std::string> networkInfo = game->GetNetwork().GetNetworkInfo();
 		for (const auto& [key, value] : networkInfo)
@@ -449,7 +427,7 @@ void makeDebugGUI(FPSTest* game, int* w, int* h)
 
 void makeSinglePlayerGUI(FPSTest* game, int*, int*)
 {
-	SinglePlayer* sp = dynamic_cast<SinglePlayer*>(game->GetGameMode());
+	SinglePlayer* sp = dynamic_cast<SinglePlayer*>(&game->GetGameMode());
 	if (sp)
 	{
 		ImGuiWindowFlags window_flags = 0;
@@ -470,7 +448,7 @@ void makeSinglePlayerGUI(FPSTest* game, int*, int*)
 
 void makeMultiPlayerGUI(FPSTest* game, int*, int*)
 {
-	MultiPlayer* mp = dynamic_cast<MultiPlayer*>(game->GetGameMode());
+	MultiPlayer* mp = dynamic_cast<MultiPlayer*>(&game->GetGameMode());
 	if (mp)
 	{
 		ImGuiWindowFlags window_flags = 0;
@@ -486,8 +464,8 @@ void makeMultiPlayerGUI(FPSTest* game, int*, int*)
 
 void toggleSettings(FPSTest* game)
 {
-	Engine::RenderMode mode = game->GetRenderMode();
-	Engine::GUI& gui = game->GetGUI();
+	RenderMode mode = game->GetRenderMode();
+	GUI& gui = game->GetGUI();
 	if (mode != NO_DATA)
 	{
 		GLFWwindow* aWindow = game->GetContext().getGLFWWindow();

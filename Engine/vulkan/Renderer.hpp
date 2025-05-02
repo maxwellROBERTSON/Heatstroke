@@ -34,7 +34,7 @@ namespace Engine {
 
 		void initialiseRenderer();
 		void initialiseJointMatrices();
-		void attachCameraComponent(Engine::CameraComponent* cameraComponent);
+		void attachCamera(Engine::Camera* camera);
 		void initialiseModelDescriptors();
 		bool checkSwapchain();
 		bool acquireSwapchainImage();
@@ -55,7 +55,6 @@ namespace Engine {
 
 		// Getters
 		VkRenderPass& GetRenderPass(std::string s);
-		CameraComponent* GetCameraComponentPointer() { return cameraComponent; }
 		Camera* GetCameraPointer() { return camera; }
 		bool const GetIsSceneLoaded() { return isSceneLoaded; }
 
@@ -84,7 +83,6 @@ namespace Engine {
 		VulkanContext* context;
 		EntityManager* entityManager;
 		Game* game;
-		CameraComponent* cameraComponent;
 		Camera* camera;
 
 		std::unique_ptr<Skybox> skybox;
@@ -125,8 +123,8 @@ namespace Engine {
 		std::vector<const char*> msaaOptions;
 
 		void renderGUI();
-		void renderForward(bool debug);
-		void renderDeferred(bool debug);
+		void renderForward();
+		void renderDeferred();
 		void drawModels(VkCommandBuffer cmdBuf, VkPipelineLayout pipelineLayout, bool justGeometry = false);
 
 		void recreateFormatDependents();

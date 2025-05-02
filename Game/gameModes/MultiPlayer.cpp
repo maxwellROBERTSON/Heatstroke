@@ -1,8 +1,11 @@
-#pragma once
-
 #include "MultiPlayer.hpp"
 
-void MultiPlayer::Update(float timeDelta)
+void MultiPlayer::Update(Game* game, float timeDelta)
+{
+	;
+}
+
+void MultiPlayer::ToggleSceneCamera(Game* game, Camera* sceneCamera)
 {
 	;
 }

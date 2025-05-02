@@ -5,7 +5,6 @@
 #include <iomanip>
 #include <imgui.h>
 #include <backends/imgui_impl_glfw.h>
-#include <backends/imgui_impl_vulkan.cpp>
 #include <backends/imgui_impl_vulkan.h>
 #include <GLFW/glfw3.h>
 
@@ -370,9 +369,8 @@ namespace Engine {
 		this->isSceneLoaded = false;
 	}
 
-	void Renderer::attachCameraComponent(CameraComponent* cameraComponent) {
-		this->cameraComponent = cameraComponent;
-		this->camera = cameraComponent->GetCamera();
+	void Renderer::attachCamera(Camera* camera) {
+		this->camera = camera;
 	}
 
 	void Renderer::initialiseModelDescriptors() {
@@ -415,7 +413,7 @@ namespace Engine {
 			this->recreateOthers();
 
 			// Update crosshair positons
-			((FPSTest*)this->game)->getCrosshair().shouldUpdateCrosshair = true;
+			((FPSTest*)this->game)->GetCrosshair().shouldUpdateCrosshair = true;
 
 			// Destroy and recreate all semaphores so none are in signaled state, which
 			// may be the case when vkAcquireNextImageKHR returns VK_SUBOPTIMAL_KHR.
@@ -513,16 +511,13 @@ namespace Engine {
 	}
 
 	void Renderer::render() {
-		unsigned int modes = *this->game->GetRenderModes();
-		if ((modes & (1 << GUIHOME)) || (modes & (1 << GUISETTINGS)) || (modes & (1 << GUILOADING)) || ((modes & (1 << GUISERVER)) && (modes & (1 << GUIDEBUG)))) {
+		RenderMode mode = game->GetRenderMode();
+		if (mode == NO_DATA_MODE)
 			this->renderGUI();
-		}
-		else if (modes & (1 << FORWARD)) {
-			this->renderForward(modes & (1 << GUIDEBUG));
-		}
-		else if (modes & (1 << DEFERRED)) {
-			this->renderDeferred(modes & (1 << GUIDEBUG));
-		}
+		else if (mode == DEFERRED)
+			this->renderDeferred();
+		else
+			this->renderForward();
 	}
 
 	void Renderer::submitRender() {
@@ -587,7 +582,8 @@ namespace Engine {
 
 		vkCmdBeginRenderPass(cmdBuf, &passInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmdBuf);
+		if (ImGui::GetDrawData() != nullptr)
+			ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmdBuf);
 
 		vkCmdEndRenderPass(cmdBuf);
 
@@ -595,10 +591,11 @@ namespace Engine {
 			throw Utils::Error("Unable to end command buffer\n vkEndCommandBuffer() returned %s", Utils::toString(res).c_str());
 	}
 
-	void Renderer::renderForward(bool debug) {
+	void Renderer::renderForward() {
 		std::vector<vk::Model>& models = this->game->GetModels();
-		unsigned int modes = *this->game->GetRenderModes();
-		bool shadow = modes & (1 << SHADOWS);
+		bool shadows = false;
+		if (game->GetRenderMode() == FORWARDSHADOWS)
+			shadows = true;
 
 		VkCommandBuffer cmdBuf = this->cmdBuffers[this->frameIndex];
 
@@ -661,7 +658,7 @@ namespace Engine {
 			}
 		}
 
-		if (shadow) {
+		if (shadows) {
 			Utils::bufferBarrier(
 				cmdBuf,
 				this->uniformBuffers["depthMVP"].buffer,
@@ -729,7 +726,7 @@ namespace Engine {
 		std::string renderPass = "forward";
 		std::string pipeline = "forward";
 		std::string pipelineLayout = "forward";
-		if (shadow) {
+		if (shadows) {
 			pipeline += "Shadow";
 			pipelineLayout += "Shadow";
 		}
@@ -765,16 +762,15 @@ namespace Engine {
 
 		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts[pipelineLayout].handle, 0, 1, &this->descriptorSets["scene"], 0, nullptr); // Projective matrices
 
-		if (shadow) {
+		if (shadows) {
 			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts[pipelineLayout].handle, 4, 1, &this->descriptorSets["shadow"], 0, nullptr); // Depth matrix
 			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts[pipelineLayout].handle, 5, 1, &this->descriptorSets["shadowMap"], 0, nullptr); // Shadow map
 		}
 
 		drawModels(cmdBuf, this->pipelineLayouts[pipelineLayout].handle);
 
-		if (debug) {
+		if (ImGui::GetDrawData() != nullptr)
 			ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmdBuf);
-		}
 
 		vkCmdEndRenderPass(cmdBuf);
 
@@ -836,7 +832,7 @@ namespace Engine {
 
 		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts[pipelineLayout].handle, 0, 1, &this->descriptorSets["scene"], 0, nullptr); // Projective matrices
 
-		if (shadow) {
+		if (shadows) {
 			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts[pipelineLayout].handle, 4, 1, &this->descriptorSets["shadow"], 0, nullptr); // Depth matrix
 			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts[pipelineLayout].handle, 5, 1, &this->descriptorSets["shadowMap"], 0, nullptr); // Shadow map
 		}
@@ -846,7 +842,7 @@ namespace Engine {
 		vkCmdEndRenderPass(cmdBuf);
 
 		// Draw crosshair
-		((FPSTest*)this->game)->getCrosshair().updatePositions();
+		((FPSTest*)this->game)->GetCrosshair().updatePositions();
 
 		Utils::bufferBarrier(
 			cmdBuf,
@@ -886,7 +882,7 @@ namespace Engine {
 
 		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["crosshair"].handle, 0, 1, &this->descriptorSets["orthoMatrices"], 0, nullptr);
 
-		((FPSTest*)this->game)->getCrosshair().drawCrosshair(cmdBuf);
+		((FPSTest*)this->game)->GetCrosshair().drawCrosshair(cmdBuf);
 
 		vkCmdEndRenderPass(cmdBuf);
 
@@ -894,7 +890,7 @@ namespace Engine {
 			throw Utils::Error("Unable to end command buffer\n vkEndCommandBuffer() returned %s", Utils::toString(res).c_str());
 	}
 
-	void Renderer::renderDeferred(bool debug) {
+	void Renderer::renderDeferred() {
 		std::vector<vk::Model>& models = this->game->GetModels();
 
 		VkCommandBuffer cmdBuf = this->cmdBuffers[this->frameIndex];
@@ -1028,8 +1024,8 @@ namespace Engine {
 
 		vkCmdDraw(cmdBuf, 3, 1, 0, 0);
 
-		//if (debug)
-			//ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmdBuf);
+		if (ImGui::GetDrawData() != nullptr)
+			ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmdBuf);
 
 		vkCmdEndRenderPass(cmdBuf);
 

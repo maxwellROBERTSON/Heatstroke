@@ -178,6 +178,8 @@ namespace Engine
 			PxCapsuleController* pcontroller = static_cast<PxCapsuleController*>(pworld.gControllerManager->createController(desc));
 			controller = pcontroller;
 			pworld.controller = pcontroller;
+			pworld.setControllerEntity(entity);
+			pworld.setControllerHeight(desc.height);
 
 			break;
 		}

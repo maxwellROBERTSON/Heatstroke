@@ -2,7 +2,6 @@
 #include "GUI.hpp"
 
 #include "../../Game/DemoGame.hpp"
-#include "../../Game/rendering/Crosshair.hpp"
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -26,6 +25,7 @@ namespace Engine
 			if (guiModes[i] == s)
 				return activeGUIModes[i];
 		}
+		return false;
 	}
 
 	// Setters
@@ -88,6 +88,11 @@ namespace Engine
 		int width;
 		int height;
 		glfwGetFramebufferSize(game->GetContext().getGLFWWindow(), &width, &height);
+
+		ImGui_ImplVulkan_NewFrame();
+		ImGui_ImplGlfw_NewFrame();
+		ImGui::NewFrame();
+
 		for (int i = 0; i < activeGUIModes.size(); i++)
 		{
 			if (activeGUIModes[i])
@@ -95,7 +100,17 @@ namespace Engine
 				functions[guiModes[i]](&width, &height);
 			}
 		}
+
+		ImGui::EndFrame();
+
 		ImGui::Render();
+	}
+
+	void GUI::NullFrame()
+	{
+		ImGui_ImplVulkan_NewFrame();
+		ImGui_ImplGlfw_NewFrame();
+		ImGui::NewFrame();
 	}
 
 	void GUI::AddFunction(std::string s, std::function<void(int*, int*)> func)
@@ -115,7 +130,10 @@ namespace Engine
 		for (int i = 0; i < guiModes.size(); i++)
 		{
 			if (guiModes[i] == s)
-				activeGUIModes[i] = -activeGUIModes[i];
+			{
+				activeGUIModes[i] = !activeGUIModes[i];
+				std::cout << "Toggled GUI Mode " << i << std::endl;
+			}
 		}
 	}
 }

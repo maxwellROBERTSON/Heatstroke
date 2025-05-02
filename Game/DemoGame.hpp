@@ -35,10 +35,11 @@
 
 #include "../ThreadPool/thread_pool_wait.h"
 
+#include "gameRendering/Crosshair.hpp"
+
+#include "gameModes/GameMode.hpp"
 #include "gameModes/SinglePlayer.hpp"
 #include "gameModes/MultiPlayer.hpp"
-
-#include "gameRendering/Crosshair.hpp"
 
 class FPSTest : public Engine::Game
 {
@@ -71,31 +72,10 @@ public:
 
 	// -- input actions
 	// Cameras
-	Engine::Camera sceneCam;
-	Engine::CameraComponent serverCameraComponent;
+	Engine::Camera sceneCamera;
 
 	//glm::vec3 cameraOffset = glm::vec3(0.0f, 1.6f, -0.1f); // for character
 
-	// Player 1
-	// (so doesnt break) (TBD)
-	Engine::Entity* playerEntity;
-	glm::vec3 cameraOffset = glm::vec3(0.1f, 1.3f, 0.2f);
-	glm::vec3 playerPos{ 0.0f, 0.0f, 0.0f };
-
-	Engine::Entity* pistolEntity;
-	glm::vec3 pistolCamOffset = glm::vec3(0.1f, 1.3f, 0.2f);
-	glm::vec3 pistolPos{ 0.0f, 0.0f, 0.0f };
-
-	Engine::Entity* rifleEntity;
-	glm::vec3 rifleCamOffset = glm::vec3(-0.1f, 0.5f, 0.5f);
-	glm::vec3 riflePos{ 0.0f, 1.0f, 0.0f };
-
-	// Map
-	Engine::Entity* mapEntity;
-
-	// Targets (make a vector (fingers crossed) at some point)
-	Engine::Entity* targetEntity;
-	glm::vec3 targetPos{ 3.0f, 1.0f, 0.0f };
 	//Engine::Entity* targetEntity1;
 	//Engine::Entity* targetEntity2;
 	//Engine::Entity* targetEntity3;
