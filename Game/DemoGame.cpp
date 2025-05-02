@@ -18,6 +18,7 @@
 #include "Error.hpp"
 #include "glm/gtx/string_cast.hpp"
 #include "toString.hpp"
+#include "gameGUI/gameGUI.cpp"
 
 //#include "glm/gtc/random.hpp" // breaks?
 std::uniform_int_distribution<> randomDistrib(1, 7);
@@ -25,10 +26,6 @@ std::random_device rd;  // a seed source for the random number engine
 std::mt19937 gen(rd()); // mersenne_twister_engine seeded with rd()
 
 using namespace Engine;
-
-float fireDelay = 1.0f;
-bool canFire = true;
-float counter = 1.0f;
 
 void FPSTest::Init()
 {
@@ -50,6 +47,7 @@ void FPSTest::Init()
 	GetRenderer().initialiseRenderer();
 
 	GetGUI().initGUI();
+	makeGameGUIS(this);
 
 	GetRenderer().attachCameraComponent(new CameraComponent(Engine::Camera(100.0f, 0.01f, 256.0f, glm::vec3(-3.0f, 2.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f))));
 
@@ -87,8 +85,6 @@ void FPSTest::Update() {
 
 	Engine::InputManager::Update();
 
-	EntityManager& e = GetEntityManager();
-
 	GetNetwork().Update();
 
 	// Need to process GUI stuff before checking swapchain, since
@@ -110,19 +106,6 @@ void FPSTest::Update() {
 	{
 		renderer.calculateFPS();
 		renderer.GetCameraComponentPointer()->UpdateCamera(this->GetContext().getGLFWWindow(), timeDelta);
-
-		float fixedTimeDelta = std::min<float>(0.016f, timeDelta);
-
-		fireDelay -= timeDelta;
-		counter -= timeDelta;
-		if (fireDelay <= 0.0f)
-			canFire = true;
-
-		if (counter <= 0.0f && countdown > 0)
-		{
-			countdown--;
-			counter = 1.0f;
-		}
 
 		CameraComponent* cameraComponent = reinterpret_cast<CameraComponent*>(GetEntityManager().GetComponentOfEntity(playerEntity->GetEntityId(), CAMERA));
 
@@ -226,40 +209,21 @@ void FPSTest::Update() {
 	renderer.submitRender();
 }
 
-
 void FPSTest::OnEvent(Engine::Event& e)
 {
 	Game::OnEvent(e);
 	GetRenderer().GetCameraPointer()->OnEvent(this->GetContext().getGLFWWindow(), e);
 	EventDispatcher dispatcher(e);
+	dispatcher.Dispatch<ESCEvent>([this](Event& event) { toggleSettings; return true; });
 	dispatcher.Dispatch<KeyPressedEvent>([&](KeyPressedEvent& event)
+	{
+		if (event.GetKeyCode() == HS_KEY_C)
 		{
-			if (event.GetKeyCode() == HS_KEY_C)
-			{
-				CameraComponent* cameraComponent = reinterpret_cast<CameraComponent*>(GetEntityManager().GetComponentOfEntity(playerEntity->GetEntityId(), CAMERA));
-				cameraComponent->swapCameraMode();
-			}
-			return true;
-		});
-}
-
-void FPSTest::DrawGUI()
-{
-	CameraComponent* cameraComponent = reinterpret_cast<CameraComponent*>(GetEntityManager().GetComponentOfEntity(playerEntity->GetEntityId(), CAMERA));
-	ImGuiWindowFlags window_flags = 0;
-	window_flags |= ImGuiWindowFlags_NoBackground;
-	window_flags |= ImGuiWindowFlags_NoTitleBar;
-	//ImGui::ShowStyleEditor();
-	//ImGui::GetIO().Fonts->AddFontFromFileTTF("C:/dev/Heatstroke/Engine/third_party/imgui/misc/fonts/Roboto-Medium.ttf", 36.0f);
-	bool test = true;
-	ImGui::Begin("Game:", &test, window_flags);
-	//ImGui::PushFont(GetGUI().gameFont);
-	ImGui::Text("SCORE: %u", score);
-	ImGui::Text("Time: %u", countdown);
-
-	//ImGui::PopFont();
-
-	ImGui::End();
+			CameraComponent* cameraComponent = reinterpret_cast<CameraComponent*>(GetEntityManager().GetComponentOfEntity(playerEntity->GetEntityId(), CAMERA));
+			cameraComponent->swapCameraMode();
+		}
+		return true;
+	});
 }
 
 void FPSTest::DrawDebugGUI()
@@ -532,7 +496,17 @@ void FPSTest::loadOnlineEntities(int maxClientsNum)
 	GetEntityManager().ResetChanged();
 }
 
-Crosshair& FPSTest::getCrosshair() {
+GameMode& FPSTest::GetGameMode()
+{
+	return *gameMode;
+}
+
+void FPSTest::SetGameMode(std::unique_ptr<GameMode> mode)
+{
+	gameMode = std::move(mode);
+}
+
+Crosshair& FPSTest::GetCrosshair() {
 	return this->crosshair;
 }
 

@@ -3,14 +3,9 @@
 namespace Engine
 {
 	enum RenderMode {
-		GUIDEBUG,
-		GUIHOME,
-		GUISETTINGS,
-		GUILOADING,
-		GUISERVER,
 		FORWARD,
 		DEFERRED,
-		SHADOWS,
-		COUNT
+		FORWARDSHADOWS,
+		NO_DATA_MODE
 	};
 }

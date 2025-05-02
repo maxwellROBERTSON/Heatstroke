@@ -6,7 +6,6 @@
 #include "../Events/Event.hpp"
 #include "../Events/KeyEvent.hpp"
 #include "../Events/MouseEvent.hpp"
-#include "../Events/RenderModeEvent.hpp"
 #include "../Events/WindowEvent.hpp"
 #include "../GUI/GUI.hpp"
 #include "../Input/Callbacks.hpp"
@@ -36,14 +35,7 @@ namespace Engine
 		virtual void Render() {}
 		virtual void Update() {}
 		virtual void Run();
-		virtual void DrawGUI() {}
-		virtual void DrawDebugGUI() {}
 		virtual void OnEvent(Event& e);
-
-		virtual void loadOfflineEntities() {}
-		virtual void loadOnlineEntities(int) {}
-
-		void ResetRenderModes();
 
 		// Getters
 		inline VulkanContext& GetContext() { return mContext; }
@@ -54,24 +46,17 @@ namespace Engine
 		inline Engine::Renderer& GetRenderer() { return *renderer; }
 		inline PhysicsWorld& GetPhysicsWorld() { return physics_world; }
 		inline Engine::GUI& GetGUI() { return *gui; }
-		inline unsigned int* GetRenderModes() { return &renderModes; }
-		inline bool GetRenderMode(Engine::RenderMode r) { return (renderModes & (1 << r)) != 0; }
-		Engine::RenderMode GetGUIRenderMode();
+		inline RenderMode GetRenderMode() { return renderMode; }
 		inline Engine::Network& GetNetwork() { return *network; }
 
-
 		// Setters
-		inline void ToggleRenderMode(Engine::RenderMode r) {
-			renderModes ^= (1 << r);
-			/*RenderModeToggleEvent event(r, on);
-				VulkanWindow& engineWindow = *mContext.window.get();
-				engineWindow.EventCallback(event);*/
-		}
+		inline void SetRenderMode(Engine::RenderMode r) { renderMode = r; }
 		void SetClient(yojimbo::Address);
 		void SetServer(uint16_t, int);
 
 		bool OnWindowClose(WindowCloseEvent& e);
 		static int instanceCount;
+
 	private:
 		VulkanContext mContext;
 		inline static Game* game;
@@ -82,7 +67,7 @@ namespace Engine
 		std::unique_ptr<Engine::Renderer> renderer;
 		std::unique_ptr<Engine::GUI> gui;
 		std::unique_ptr<Engine::Network> network;
-		unsigned int renderModes;
+		RenderMode renderMode = RenderMode::NO_DATA_MODE;
 
 		float deltaTime = 0.0f, lastTime = 0.0f;
 	};

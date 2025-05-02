@@ -40,11 +40,18 @@ namespace Engine
 		// Get component index vector of this entity
 		std::vector<int> GetComponentIndexArray() { return componentTypeIndexList; }
 
+		// Position Getter
+		glm::vec3 GetPosition() const { return position; }
+
+		// Rotation Getter
+		glm::mat4 GetRotation() const { return rotation; }
+
+		// Scale Getter
+		glm::vec3 GetScale() const { return scale; }
+
 		// Setters
 
 		// Set the data for a given entity
-		// void SetData(uint8_t*);
-
 		void SetDataArray(uint8_t*);
 
 		// Position Setters
@@ -60,14 +67,6 @@ namespace Engine
 		// Scale setters
 		void SetScale(float xScale, float yScale, float zScale);
 		void SetScale(float overallScale);
-
-		// from input actions
-		glm::vec3 GetPosition() const { return position; }
-		glm::mat4 GetRotation() const { return rotation; }
-		void SetFrontDirection(float cameraYaw);
-		glm::vec3 GetFrontDirection() const { return frontDirection; }
-		glm::vec3 frontDirection;
-		// from input actions
 
 		// Set model matrix
 		void SetModelMatrix(glm::mat4 aModelMatrix);

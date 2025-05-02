@@ -102,7 +102,6 @@ namespace Engine
 		// Init complex shape
 		void InitComplexShape(PhysicsWorld&, PhysicsType, vk::Model&, glm::mat4, int);
 		void InitComplexShape(const char* name, PhysicsWorld&, PhysicsType, vk::Model&, glm::mat4, int);
-		//void InitComplexShape(const std::string& name, PhysicsWorld&, PhysicsType, vk::Model&, glm::mat4, int);
 
 		// Set physics object type STATIC/DYNAMIC/CONTROLLER
 		void SetPhysicsType(PhysicsType t) { type = t; SetComponentHasChanged(); }

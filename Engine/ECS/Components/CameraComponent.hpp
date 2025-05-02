@@ -30,7 +30,6 @@ namespace Engine
 			this->camera = other.camera;
 		}
 
-
 		void swapCameraMode();
 		// Getters
 
@@ -54,7 +53,6 @@ namespace Engine
 		// Update camera using Camera class
 		void UpdateCamera(GLFWwindow*, float);
 		void UpdateCameraPosition(glm::vec3 pos);
-
 
 		void SetCamera(Engine::Camera aCamera) { camera = aCamera; SetComponentHasChanged(); }
 
@@ -83,13 +81,6 @@ namespace Engine
 		bool hasChanged = false;
 
 		Engine::Camera camera;
-
-
 	};
 }
 
-// 	// Set camera pointer
-// 	void SetCamera(Engine::Camera* aCamera) { camera = aCamera; }
-
-// private:
-// 	Engine::Camera* camera;

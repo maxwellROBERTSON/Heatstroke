@@ -35,7 +35,10 @@
 
 #include "../ThreadPool/thread_pool_wait.h"
 
-#include "rendering/Crosshair.hpp"
+#include "gameModes/SinglePlayer.hpp"
+#include "gameModes/MultiPlayer.hpp"
+
+#include "gameRendering/Crosshair.hpp"
 
 class FPSTest : public Engine::Game
 {
@@ -44,32 +47,27 @@ public:
 	{
 		this->Init();
 	}
+	~FPSTest()
+	{
+		for (Engine::vk::Model& model : GetModels())
+			model.destroy();
+	};
 	virtual void Init() override;
 	virtual void Render() override;
 	virtual void Update() override;
 	virtual void OnEvent(Engine::Event& e) override;
-	virtual void DrawGUI() override;
-	virtual void DrawDebugGUI() override;
-
 
 	void initialiseModels();
 
 	void loadOfflineEntities();
 	void loadOnlineEntities(int);
 
+	GameMode& GetGameMode();
+	void SetGameMode(std::unique_ptr<GameMode>);
 
-	~FPSTest() {
-		for (Engine::vk::Model& model : GetModels())
-			model.destroy();
-	};
+	Crosshair& GetCrosshair();
 
-	Crosshair& getCrosshair();
-	int score = 0;
-	int countdown = 30;
-	bool gameOver = false;
 	std::chrono::steady_clock::time_point previous;
-
-	bool showGUI{ true };
 
 	// -- input actions
 	// Cameras
@@ -77,7 +75,6 @@ public:
 	Engine::CameraComponent serverCameraComponent;
 
 	//glm::vec3 cameraOffset = glm::vec3(0.0f, 1.6f, -0.1f); // for character
-
 
 	// Player 1
 	// (so doesnt break) (TBD)
@@ -111,10 +108,10 @@ public:
 
 
 	//void RespawnTarget();
-
+private:
+	std::unique_ptr<GameMode> gameMode;
+	Crosshair crosshair;
 
 	thread_pool_wait* threadPool;
 	int offlineClientId = 0;
-
-	Crosshair crosshair;
 };

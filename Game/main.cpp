@@ -11,24 +11,6 @@
 #include "../Engine/Physics/PhysicsWorld.hpp"
 #include "DemoGame.hpp"
 
-//int main() try {
-//    // This manual scope is very important, it ensures the objects in models have their associated
-//    // objects' destructors called BEFORE we destroy the vulkan device. Do not move the models vector
-//    // out of this scope unless you also handle the object lifetimes from them.
-//    {
-//        /*PhysicsWorld physicsWorld;
-//		physicsWorld.init();*/
-//
-//        std::vector<Engine::vk::Model> models;
-//		ComponentTypeRegistry registry = ComponentTypeRegistry::Get();
-//		EntityManager entityManager = EntityManager(&registry);
-//
-//		initialiseGame(registry, entityManager);	
-//        initialiseModels(models);
-//		runGameLoop(models, registry, entityManager);
-
-
-
 int main() try
 {
 	std::unique_ptr<FPSTest> game = std::make_unique<FPSTest>();

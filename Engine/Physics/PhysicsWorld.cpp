@@ -209,7 +209,6 @@ namespace Engine
 			if (isGrounded && verticalVelocity < 0.0f) {
 				verticalVelocity = 0.0f;
 			}
-
 		}
 	}
 
@@ -312,7 +311,6 @@ namespace Engine
 
 	PxRaycastHit PhysicsWorld::handleShooting(Entity* playerEntity)
 	{
-
 		CameraComponent* cameraComponent = reinterpret_cast<CameraComponent*>(entityManager->GetComponentOfEntity(playerEntity->GetEntityId(), CAMERA));
 		glm::vec3 cameraPos = cameraComponent->GetCamera()->position;
 		glm::vec3 cameraDir = cameraComponent->GetFrontDirection();
