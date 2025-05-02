@@ -10,14 +10,14 @@ layout(set = 0, binding = 0) uniform Depth {
 	mat4 depthMVP;
 } depth;
 
-layout(set = 1, binding = 0) uniform ModelMatrices {
-	mat4 model;
-} modelMatrix;
-
-layout(set = 2, binding = 0) uniform Node {
+layout(set = 1, binding = 0) uniform Node {
 	mat4 jointMatrix[MAX_JOINTS];
 	int isSkinned;
 } node;
+
+layout(push_constant) uniform ModelMatrix {
+    mat4 model;
+} modelMatrix;
 
 void main() {
 	mat4 transformationMatrix = modelMatrix.model;

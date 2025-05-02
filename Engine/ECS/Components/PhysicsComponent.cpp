@@ -162,14 +162,7 @@ namespace Engine
 
 			// set ControllerDescription
 			PxCapsuleControllerDesc desc;
-			/*glm::vec3 worldMin = glm::vec3(transform * glm::vec4(model.bbMin, 1.0f));
-			glm::vec3 worldMax = glm::vec3(transform * glm::vec4(model.bbMax, 1.0f));*/
-			/*glm::vec3 worldMin = model.bbMin;
-			glm::vec3 worldMax = model.bbMax;
-
-			glmHalfExtent = (worldMax - worldMin) / 2.0f;*/
-			//halfExtent = PxVec3(std::max(0.001f, glmHalfExtent.x), std::max(0.001f, glmHalfExtent.y), std::max(0.001f, glmHalfExtent.z));
-			desc.radius = halfExtent.x > halfExtent.z ? halfExtent.x: halfExtent.z;
+			desc.radius = halfExtent.x > halfExtent.z ? halfExtent.x : halfExtent.z;
 			desc.height = halfExtent.y * 2 - (2.0f * desc.radius);
 			if (desc.height < 0.0f)
 				desc.height = 0.0f;
@@ -178,8 +171,7 @@ namespace Engine
 			desc.radius = 0.3f;
 			//desc.contactOffset
 			desc.material = pworld.gPhysics->createMaterial(0.5f, 0.5f, 0.6f);
-			//desc.position = PxExtendedVec3(translation.x, translation.y + desc.height / 2 + desc.radius, translation.z);
-			desc.position = PxExtendedVec3(translation.x, translation.y, translation.z);
+			desc.position = PxExtendedVec3(translation.x, translation.y + desc.height / 2 + desc.radius, translation.z);
 			desc.slopeLimit = 0.8f;
 			desc.upDirection = PxVec3(0, 1, 0);
 
@@ -279,7 +271,6 @@ namespace Engine
 						std::cerr << "Only static triangle mesh geometries are supported currently!" << std::endl;
 						assert(physicsType == PhysicsType::STATIC);
 					}
-					//assert(physicsType == PhysicsType::STATIC, "Only static triangle mesh geometries are supported currently!");
 
 					switch (physicsType) {
 					case PhysicsType::STATIC:
@@ -387,7 +378,6 @@ namespace Engine
 						std::cerr << "Only static triangle mesh geometries are supported currently!" << std::endl;
 						assert(physicsType == PhysicsType::STATIC);
 					}
-					//assert(physicsType == PhysicsType::STATIC, "Only static triangle mesh geometries are supported currently!");
 
 					switch (physicsType) {
 					case PhysicsType::STATIC:

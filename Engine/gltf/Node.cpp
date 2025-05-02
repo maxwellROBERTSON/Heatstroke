@@ -34,6 +34,10 @@ namespace vk {
         return matrix;
     }
 
+    glm::mat4 Node::getGlobalMatrix() {
+        return this->globalMatrix;
+    }
+
 	void Node::update() {
         this->dirty = true;
 

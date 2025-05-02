@@ -269,7 +269,6 @@ namespace Engine {
 
 		window.get()->device = createDevice(*window.get(), window.get()->physicalDevice, queueFamilyIndices, enabledDevExensions);
 
-		window.get()->device->minUBOAlignment = minUBOAlignment;
 		window.get()->device->maxSampleCountIndex = maxSampleCountIndex;
 
 		// Retrieve VkQueues

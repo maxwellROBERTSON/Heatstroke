@@ -60,6 +60,7 @@ namespace Engine
 #else
 		gPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *gFoundation, PxTolerancesScale(), true, NULL);
 #endif
+
 		if (!gPhysics)
 		{
 			std::cerr << "PxCreatePhysics failed!" << std::endl;
@@ -87,7 +88,7 @@ namespace Engine
 
 		// set parameters for the scene
 		gScene->setVisualizationParameter(PxVisualizationParameter::eSCALE, 1.0f);
-		gScene->setVisualizationParameter(PxVisualizationParameter::eCOLLISION_SHAPES, 1.0f);
+		//gScene->setVisualizationParameter(PxVisualizationParameter::eCOLLISION_SHAPES, 1.0f);
 		/*gScene->setVisualizationParameter(PxVisualizationParameter::eWORLD_AXES, 1.0f);
 		gScene->setVisualizationParameter(PxVisualizationParameter::eACTOR_AXES, 1.0f);
 		gScene->setVisualizationParameter(PxVisualizationParameter::eCONTACT_POINT, 1.0f);
@@ -104,22 +105,7 @@ namespace Engine
 		this->entityManager = entityManager;
 	}
 
-	void PhysicsWorld::updatePhysics(Entity* playerEntity, PxReal timeDelta)
-	{
-		this->gTimestep = std::clamp(timeDelta, 1.0f / 240.0f, 1.0f / 60.0f);
-
-		this->gSimulationTimer += timeDelta;
-
-		if (this->gSimulationTimer > gTimestep) {
-			if (playerEntity != nullptr)
-				this->updateCharacter(playerEntity, gTimestep);
-			this->gScene->simulate(gTimestep);
-			this->gScene->fetchResults(true);
-			this->gSimulationTimer -= gTimestep;
-		}
-	}
-
-	void PhysicsWorld::updatePhysics(PxReal timeDelta) {
+	void PhysicsWorld::updatePhysics(Entity* playerEntity, PxReal timeDelta) {
 		// Previously, when we didn't have the option of turning VSync off,
 		// the timeDelta was 1/x where x was the refresh rate of the users
 		// monitor, which most of the time was slightly less than 0.016f (1/60).
@@ -142,17 +128,12 @@ namespace Engine
 		this->gSimulationTimer += timeDelta;
 
 		if (this->gSimulationTimer > gTimestep) {
-			this->updateCharacter(gTimestep);
+			if (playerEntity != nullptr)
+				this->updateCharacter(playerEntity, gTimestep);
 			this->gScene->simulate(gTimestep);
 			this->gScene->fetchResults(true);
 			this->gSimulationTimer -= gTimestep;
 		}
-	}
-
-	void PhysicsWorld::updateCharacter(PxReal deltatime) {
-		//handleMovement(playerEntity, deltatime);
-		handleMovement(deltatime);
-		//handleShooting();
 	}
 
 	void PhysicsWorld::updateCharacter(Entity* playerEntity, PxReal deltatime)
@@ -218,8 +199,8 @@ namespace Engine
 		glm::vec3 entityRightDir = glm::normalize(glm::cross(entityFrontDir, glm::vec3(0.0f, 1.0f, 0.0f)));
 		if (this->controller)
 		{
-			//const float gravity = -9.81f;
-			const float gravity = 0.0f;
+			const float gravity = -9.81f;
+			//const float gravity = 0.0f;
 			PxVec3 displacement(0.0f, gravity * deltatime, 0.0f);
 			PxVec3 old = displacement;
 			float speed = 5.0f;
@@ -250,7 +231,6 @@ namespace Engine
 			controller->getState(cstate);
 			bool isGrounded = (cstate.collisionFlags & PxControllerCollisionFlag::eCOLLISION_DOWN);
 
-
 			if (isGrounded && keyboard.isPressed(HS_KEY_SPACE)) {
 				verticalVelocity = jumpSpeed;
 			}
@@ -268,44 +248,6 @@ namespace Engine
 			if (isGrounded && verticalVelocity < 0.0f) {
 				verticalVelocity = 0.0f;
 			}
-
-		}
-	}
-
-	void PhysicsWorld::handleShooting() {
-		//auto& keyboard = Engine::InputManager::getKeyboard();
-		////auto& mouse = Engine::InputManager::getMouse();
-		//if (keyboard.isPressed(HS_KEY_P)) {
-
-			//get the audio component from the player entity which has an ID of 1 
-		//AudioComponent* audioComponent = reinterpret_cast<AudioComponent*>(this->entityManager->GetComponentOfEntity(1, AUDIO));
-		//audioComponent->playSound("GunShot");
-		PxExtendedVec3 extPos = controller->getFootPosition();
-		PxVec3 pos = PxVec3(static_cast<float>(extPos.x), static_cast<float>(extPos.y), static_cast<float>(extPos.z));
-		PxVec3 direction(0.f, 1.f, 1.f);
-		direction.normalize();
-
-		PxRaycastHit hit;
-		PxRigidActor* selfActor = controller->getActor();
-		IgnoreSelfFilterCallback filter(controller->getActor());
-		bool hitflag = RaycastUtility::SingleHit(gScene, pos, direction, 100.0f, hit, &filter);
-		if (hitflag) {
-			if (hit.actor->is<PxRigidDynamic>()) {
-				// hit dynamic
-				DebugDrawRayInPVD(gScene, pos, pos + direction * hit.distance, 0xFF000000);
-				std::cout << "Hit dynamic actor at (" << hit.position.x << ", " << hit.position.y << ", " << hit.position.z << ")\n";
-			}
-			else {
-				// hit static
-				std::cout << "HERE" << std::endl;
-				DebugDrawRayInPVD(gScene, pos, pos + direction * hit.distance, 0xFFFFFF00);
-				std::cout << "Hit static object\n";
-			}
-		}
-		else {
-			// hit nothing
-			DebugDrawRayInPVD(gScene, pos, pos + direction * 100.0f, 0xFFFFFF00);
-			std::cout << "Hit nothing\n";
 		}
 	}
 
@@ -358,10 +300,6 @@ namespace Engine
 			// dynamic update
 			if (p->GetPhysicsType() == PhysicsComponent::PhysicsType::DYNAMIC)
 			{
-				//glm::mat4 matrix = ConvertPxTransformToGlmMat4(p->GetDynamicBody()->getGlobalPose());
-				//matrix = glm::scale(matrix, p->GetScale());
-				//entityManager.GetEntity(p->GetEntityId())->SetModelMatrix(matrix);
-				//continue;
 				Entity* entity = entityManager.GetEntity(p->GetEntityId());
 				PxTransform transform = p->GetDynamicBody()->getGlobalPose();
 				entity->SetPosition(transform.p.x, transform.p.y, transform.p.z);
@@ -374,22 +312,10 @@ namespace Engine
 			// controller update
 			if (p->GetPhysicsType() == PhysicsComponent::PhysicsType::CONTROLLER)
 			{
-				//PxExtendedVec3 pos = p->GetController()->getFootPosition();
-				//glm::vec3 glmPos = glm::vec3(pos.x, pos.y, pos.z);
-				//glm::mat4 matrix = glm::translate(glm::mat4(1.0f), glmPos);
-				//matrix = glm::scale(matrix, p->GetScale());
-
-				//entityManager.GetEntity(p->GetEntityId())->SetModelMatrix(matrix);
-				//Entity* entity = entityManager.GetEntity(p->GetEntityId());
-				//PxTransform transform = p->GetDynamicBody()->getGlobalPose();
-				//entity->SetPosition(transform.p.x, transform.p.y, transform.p.z);
-				//entity->SetRotation(glm::quat(transform.q.w, transform.q.x, transform.q.y, transform.q.z));
-				//entity->SetScale(p->GetScale().x, p->GetScale().y, p->GetScale().z);
 				PxExtendedVec3 pos = p->GetController()->getFootPosition();
 				entityManager.GetEntity(p->GetEntityId())->SetPosition(pos.x, pos.y, pos.z);
 			}
 		}
-		PxPvdTransport* transport = gPvd->getTransport();
 	}
 
 	void PhysicsWorld::cleanupPhysX()
