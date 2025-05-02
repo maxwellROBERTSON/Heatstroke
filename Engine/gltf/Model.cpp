@@ -247,6 +247,14 @@ namespace vk {
             vkCmdPushConstants(aCmdBuf, aPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &node->getGlobalMatrix()[0]);
             drawNode(node, aCmdBuf, aPipelineLayout, AlphaMode::ALPHA_MASK);
         }
+
+        vkCmdSetCullMode(aCmdBuf, VK_CULL_MODE_BACK_BIT);
+
+        // Draw alpha blend nodes third
+        for (Node* node : linearNodes) {
+            vkCmdPushConstants(aCmdBuf, aPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &node->getGlobalMatrix()[0]);
+            drawNode(node, aCmdBuf, aPipelineLayout, AlphaMode::ALPHA_BLEND);
+        }
 	}
 
 	void Model::drawNode(Node* aNode, VkCommandBuffer aCmdBuf, VkPipelineLayout aPipelineLayout, AlphaMode aAlphaMode) {

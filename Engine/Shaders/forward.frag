@@ -175,5 +175,5 @@ void main() {
 
     colour += emissive;
 
-    oColor = vec4(colour, 1.0f);
+    oColor = vec4(colour, albedo.a);
 }

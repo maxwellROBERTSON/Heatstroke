@@ -816,10 +816,13 @@ namespace Engine {
 
 		VkPipelineColorBlendAttachmentState blendStates[1]{};
 		blendStates[0].blendEnable = VK_TRUE;
-		blendStates[0].colorBlendOp = VK_BLEND_OP_ADD;
+		blendStates[0].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
 		blendStates[0].srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
 		blendStates[0].dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-		blendStates[0].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+		blendStates[0].colorBlendOp = VK_BLEND_OP_ADD;
+		blendStates[0].srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+		blendStates[0].dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+		blendStates[0].alphaBlendOp = VK_BLEND_OP_ADD;
 
 		VkPipelineColorBlendStateCreateInfo blendInfo{};
 		blendInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
@@ -835,14 +838,14 @@ namespace Engine {
 		depthInfo.minDepthBounds = 0.0f;
 		depthInfo.maxDepthBounds = 1.0f;
 
-		VkDynamicState dynamicStates = {
+		VkDynamicState dynamicStates[1] = {
 			VK_DYNAMIC_STATE_CULL_MODE
 		};
 
 		VkPipelineDynamicStateCreateInfo dynamicInfo{};
 		dynamicInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
 		dynamicInfo.dynamicStateCount = 1;
-		dynamicInfo.pDynamicStates = &dynamicStates;
+		dynamicInfo.pDynamicStates = dynamicStates;
 
 		VkGraphicsPipelineCreateInfo pipeInfo{};
 		pipeInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;

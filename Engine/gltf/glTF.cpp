@@ -5,6 +5,7 @@
 
 #include "../vulkan/objects/Buffer.hpp"
 #include "../vulkan/VulkanDevice.hpp"
+#include "../vulkan/Renderer.hpp"
 #include "Animation.hpp"
 #include "Error.hpp"
 #include "toString.hpp"
@@ -41,7 +42,7 @@ namespace Engine {
 		return model;
 	}
 
-	vk::Model makeVulkanModel(const VulkanContext& aContext, tinygltf::Model& model) {
+	vk::Model makeVulkanModel(const VulkanContext& aContext, tinygltf::Model& model, DrawType drawType) {
 		vk::Model vkModel{};
 
 		// 1. Load material info
@@ -72,6 +73,8 @@ namespace Engine {
 		loadSkins(model, vkModel);
 
 		createVulkanBuffers(aContext, vkModel);
+
+		vkModel.drawType = drawType;
 
 		return vkModel;
 	}

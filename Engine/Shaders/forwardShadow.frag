@@ -42,7 +42,7 @@ layout(std430, set = 3, binding = 0) readonly buffer MaterialInfoSSBO {
     MaterialInfo materialInfo[];
 };
 
-layout(set = 5, binding = 0) uniform sampler2D shadowMap;
+layout(set = 5, binding = 0) uniform sampler2DShadow shadowMap;
 
 layout(push_constant) uniform MaterialIndex {
     layout(offset = 64) int index;
@@ -127,31 +127,6 @@ vec3 getNormal() {
     return normalize(TBN * tangentNormal);
 }
 
-float textureP(vec4 shadowCoord, vec2 offset)
-{
-	float shadow = 1.0f;
-	if (shadowCoord.z > -1.0f && shadowCoord.z < 1.0f) {
-		float dist = texture(shadowMap, shadowCoord.st + offset).r;
-		if (shadowCoord.w > 0.0f && dist < shadowCoord.z) {
-			shadow = 0.1f;
-		}
-	}
-	return shadow;
-}
-
-float shadowPCF(vec4 shadowCoords) {
-    float shadow = 0.0f;
-    vec2 texelSize = 1.0f / textureSize(shadowMap, 0);
-
-    for (int x = -1; x <= 1; x++) {
-        for (int y = -1; y <= 1; y++) {
-            shadow += textureP(shadowCoords, vec2(texelSize.x * x, texelSize.y * y));
-        }
-    }
-
-    return shadow / 9;
-}
-
 void main() {
     MaterialInfo matInfo = materialInfo[materialIndex.index];
 
@@ -184,9 +159,13 @@ void main() {
     vec3 brdfVal = brdf(lightDir, viewDir, normal, metallicFactor, roughnessFactor) * 100;
     float NdotL = max(dot(normal, lightDir), 0.0f);
     float attenuation = 1 / pow(length(lightPos - v2fPosition), 1);
+    float shadow = max(texture(shadowMap, v2fLightSpacePosition.xyz / v2fLightSpacePosition.w), 0.1f);
 
-    //float shadow = textureP(v2fLightSpacePosition / v2fLightSpacePosition.w, vec2(0.0f));
-    float shadow = shadowPCF(v2fLightSpacePosition / v2fLightSpacePosition.w);
+    // If we are rendering an overlay ignore shadows
+    if (sceneUbo.view == mat4(1.0f)) {
+        shadow = 1.0f;
+    }
+
     vec3 colour = ambient + ((brdfVal * lightCol * NdotL) * shadow) * attenuation;
 
     // Occlusion factor
@@ -205,5 +184,5 @@ void main() {
 
     colour += emissive;
 
-    oColor = vec4(colour, 1.0f);
+    oColor = vec4(colour, albedo.a);
 }
