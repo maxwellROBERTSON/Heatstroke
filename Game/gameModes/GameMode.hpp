@@ -31,7 +31,9 @@ public:
 
 	virtual void ToggleSceneCamera(Game*, Camera*) = 0;
 
-	virtual void SetPlayerEntity(Entity*) {};
+	virtual Entity* GetPlayerEntity() { return nullptr; };
+
+	virtual void SetPlayerEntity(Game*, Entity*) {};
 
 	virtual void SetPistolEntity(Entity*) {};
 

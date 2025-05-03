@@ -16,20 +16,19 @@ public:
 	// Constructor
 	SinglePlayer() {}
 
-	// Setters
-	void AddEntityToMap(std::string,Entity*, glm::vec3, glm::vec3);
+	void Update(Game*, float) override;
 
-	void Update(Game*, float);
+	void ToggleSceneCamera(Game*, Camera*) override;
 
-	void ToggleSceneCamera(Game*, Camera*);
+	Entity* GetPlayerEntity() override { return playerEntity; }
 
-	void SetPlayerEntity(Entity* e) { playerEntity = e; isPlayerCam = true; }
+	void SetPlayerEntity(Game*, Entity*) override;
 
-	void SetPistolEntity(Entity* e) { pistolEntity = e; }
+	void SetPistolEntity(Entity* e) override { pistolEntity = e; }
 
-	void SetRifleEntity(Entity* e) { rifleEntity = e; }
+	void SetRifleEntity(Entity* e) override { rifleEntity = e; }
 
-	void SetTargetEntity(Entity* e) { targetEntity = e; }
+	void SetTargetEntity(Entity* e) override { targetEntity = e; }
 
 	int score = 0;
 	int countdown = 30;
@@ -38,13 +37,10 @@ public:
 	bool canFire = true;
 	float counter = 1.0f;
 
-	// Entity*, offset, pos
-	/*std::map<std::string, std::tuple<Entity*, glm::vec3, glm::vec3>> entityMap;*/
-
-	Entity* playerEntity;
-	Entity* pistolEntity;
-	Entity* rifleEntity;
-	Entity* targetEntity;
+	Entity* playerEntity = nullptr;
+	Entity* pistolEntity = nullptr;
+	Entity* rifleEntity = nullptr;
+	Entity* targetEntity = nullptr;
 
 	bool isPlayerCam = false;
 };

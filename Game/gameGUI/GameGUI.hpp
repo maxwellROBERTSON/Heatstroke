@@ -23,3 +23,4 @@ extern bool serverSelected;
 extern std::string errorMsg;
 extern ImVec2 serverBoxSize;
 extern std::string loadingMsg;
+extern Engine::Camera cameraTemp;

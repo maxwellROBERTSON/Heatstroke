@@ -588,6 +588,24 @@ namespace Engine {
 
 		vkCmdEndRenderPass(cmdBuf);
 
+		// Null crosshair pass to satisfy ImGui
+
+		VkRenderPassBeginInfo passInfo3{};
+		passInfo3.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		passInfo3.renderPass = this->renderPasses["crosshair"].handle;
+		passInfo3.framebuffer = this->crosshairFramebuffer[this->imageIndex].handle;
+		passInfo3.renderArea.offset = VkOffset2D{ 0, 0 };
+		passInfo3.renderArea.extent = this->context->window->swapchainExtent;
+		passInfo3.clearValueCount = (uint32_t)clearValues.size();
+		passInfo3.pClearValues = clearValues.data();
+
+		vkCmdBeginRenderPass(cmdBuf, &passInfo3, VK_SUBPASS_CONTENTS_INLINE);
+
+		if (ImGui::GetDrawData() != nullptr)
+			ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmdBuf);
+
+		vkCmdEndRenderPass(cmdBuf);
+
 		if (const auto res = vkEndCommandBuffer(cmdBuf); VK_SUCCESS != res)
 			throw Utils::Error("Unable to end command buffer\n vkEndCommandBuffer() returned %s", Utils::toString(res).c_str());
 	}
@@ -764,9 +782,6 @@ namespace Engine {
 
 		drawModels(cmdBuf, this->pipelineLayouts[pipelineLayout].handle, DrawType::WORLD);
 
-		if (ImGui::GetDrawData() != nullptr)
-			ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmdBuf);
-
 		vkCmdEndRenderPass(cmdBuf);
 
 		// Draw overlay
@@ -874,6 +889,9 @@ namespace Engine {
 		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["crosshair"].handle, 0, 1, &this->descriptorSets["orthoMatrices"], 0, nullptr);
 
 		((FPSTest*)this->game)->GetCrosshair().drawCrosshair(cmdBuf);
+
+		if (ImGui::GetDrawData() != nullptr)
+			ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmdBuf);
 
 		vkCmdEndRenderPass(cmdBuf);
 

@@ -44,7 +44,7 @@ void FPSTest::Init()
 
 	GetRenderer().initialiseRenderer();
 
-	GetGUI().initGUI();
+	GetGUI().initGUICrosshair();
 	makeGameGUIS(this);
 
 	GetRenderer().attachCamera(&sceneCamera);
@@ -199,12 +199,13 @@ void FPSTest::loadOfflineEntities()
 	physicsComponent = reinterpret_cast<PhysicsComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
 	physicsComponent->Init(physicsWorld, PhysicsComponent::PhysicsType::CONTROLLER, models[renderComponent->GetModelIndex()], entity->GetModelMatrix(), entity->GetEntityId(), true, true);
 	entityManager.AddSimulatedPhysicsEntity(entity->GetEntityId());
-	GetGameMode().SetPlayerEntity(entity);
+	GetGameMode().SetPlayerEntity(this, entity);
 
 	// pistol
 	types = { RENDER };
 	entity = entityManager.MakeNewEntity(types);
-	entity->SetPosition(0.0f, 2.0f, -1.0f);
+	entity->SetPosition(0.0f, -2.0f, -1.0f);
+	entity->SetRotation(180.0f, glm::vec3(0.0f, 1.0f, 0.0f));
 	renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
 	renderComponent->SetModelIndex(2);
 	GetGameMode().SetPistolEntity(entity);

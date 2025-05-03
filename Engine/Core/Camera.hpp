@@ -48,6 +48,7 @@ namespace Engine
 				lastY == other.lastY;
 		}
 
+		void init(GLFWwindow* aWindow);
 		virtual void updateCamera(GLFWwindow* aWindow, float timeDelta, bool updatePosition);
 		void OnEvent(GLFWwindow* aWindow, Engine::Event& e);
 

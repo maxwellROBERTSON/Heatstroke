@@ -40,6 +40,7 @@ namespace Engine
 		// Setters
 
 		void initGUI();
+		void initGUICrosshair();
 
 		void makeGUI();
 
@@ -51,7 +52,6 @@ namespace Engine
 
 		void ToggleGUIMode(std::string s);
 
-		//ImGui_ImplVulkanH_Window imGuiWindow;
 		bool changedMSAA = false;
 
 	private:

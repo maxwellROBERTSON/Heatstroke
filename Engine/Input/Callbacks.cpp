@@ -84,7 +84,6 @@ namespace Engine {
 
 	void onMouseMove(GLFWwindow* aWindow, double x, double y)
 	{
-
 		if (glfwGetInputMode(aWindow, GLFW_CURSOR) != GLFW_CURSOR_DISABLED)
 			return;
 		auto& mouse = InputManager::getMouse();

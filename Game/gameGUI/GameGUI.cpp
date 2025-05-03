@@ -15,6 +15,7 @@ bool serverSelected = false;
 std::string errorMsg = "";
 ImVec2 serverBoxSize = ImVec2(0, 0);
 std::string loadingMsg = "Messages not yet setup. Need to put this onto a thread.";
+Engine::Camera cameraTemp;
 
 void makeGameGUIS(FPSTest* game)
 {
@@ -55,6 +56,8 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 		game->loadOfflineEntities();
 		game->GetRenderer().initialiseJointMatrices();
 		game->GetGUI().ToggleGUIMode("Home");
+		if (game->debugging)
+			game->GetGUI().ToggleGUIMode("Debug");
 		game->SetRenderMode(RenderMode::FORWARD);
 		GLFWwindow* window = game->GetContext().getGLFWWindow();
 		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -339,6 +342,8 @@ void makeLoadingGUI(FPSTest* game, int* w, int* h)
 	{
 		game->GetRenderer().initialiseJointMatrices();
 		game->GetGUI().ToggleGUIMode("Loading");
+		if (game->debugging)
+			game->GetGUI().ToggleGUIMode("Debug");
 		game->SetRenderMode(RenderMode::FORWARD);
 		GLFWwindow* window = game->GetContext().getGLFWWindow();
 		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -352,6 +357,8 @@ void makeLoadingGUI(FPSTest* game, int* w, int* h)
 		if (ImGui::Button("Home", ImVec2(*w / 6, *h / 6)))
 		{
 			game->GetGUI().ToggleGUIMode("Home");
+			if (game->debugging)
+				game->GetGUI().ToggleGUIMode("Debug");
 			game->GetNetwork().Reset();
 		}
 	}
@@ -365,6 +372,8 @@ void makeLoadingGUI(FPSTest* game, int* w, int* h)
 		{
 			game->SetRenderMode(RenderMode::NO_DATA_MODE);
 			game->GetGUI().ToggleGUIMode("Home");
+			if (game->debugging)
+				game->GetGUI().ToggleGUIMode("Debug");
 			game->GetEntityManager().ClearManager();
 			game->GetNetwork().Reset();
 		}
@@ -517,11 +526,17 @@ void toggleSettings(FPSTest* game)
 		bool s = gui.GetGUIMode("Settings");
 		if (s)
 		{
-			int width;
-			int height;
-			glfwGetFramebufferSize(game->GetContext().getGLFWWindow(), &width, &height);
-			glfwSetCursorPos(aWindow, width / 2, height / 2);
+			CameraComponent* comp = reinterpret_cast<CameraComponent*>(game->GetEntityManager().GetComponentOfEntity(game->GetGameMode().GetPlayerEntity()->GetEntityId(), CAMERA));
+			cameraTemp = *comp->GetCamera();
+			glfwSetInputMode(aWindow, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 		}
-		glfwSetInputMode(aWindow, GLFW_CURSOR, s ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
+		else
+		{
+			float x = cameraTemp.lastX;
+			float y = cameraTemp.lastY;
+			glfwSetInputMode(aWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+			glfwSetCursorPos(aWindow, x, y);
+		}
+
 	}
 }

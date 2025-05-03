@@ -6,20 +6,6 @@ std::random_device rd;  // Define random device
 std::mt19937 gen(rd()); // Define mersenne_twister engine using rd as seed
 std::uniform_int_distribution<> randomDistrib(1, 7); // Define the distribution
 
-// Constructor
-//SinglePlayer::SinglePlayer()
-//{
-//	entityMap.emplace("Player", std::make_tuple(nullptr, glm::vec3(0.1f, 1.3f, 0.2f), glm::vec3(0.0f, 0.0f, 0.0f)));
-//	entityMap.emplace("Pistol", std::make_tuple(nullptr, glm::vec3(0.1f, 1.3f, 0.2f), glm::vec3(0.0f, 0.0f, 0.0f)));
-//	entityMap.emplace("Rifle", std::make_tuple(nullptr, glm::vec3(-0.1f, 0.5f, 0.5f), glm::vec3(0.0f, 1.0f, 0.0f)));
-//	entityMap.emplace("Target", std::make_tuple(nullptr, glm::vec3(0.f, 0.f, 0.f), glm::vec3(3.0f, 1.0f, 0.0f)));
-//}
-
-void SinglePlayer::AddEntityToMap(std::string s, Entity* e, glm::vec3 camOff, glm::vec3 pos)
-{
-	//entityMap.emplace(s, std::make_tuple(e, camOff, pos));
-}
-
 void SinglePlayer::Update(Game* game, float timeDelta)
 {
 	fireDelay -= timeDelta;
@@ -36,6 +22,7 @@ void SinglePlayer::Update(Game* game, float timeDelta)
 	EntityManager& entityManager = game->GetEntityManager();
 	PhysicsWorld& physicsWorld = game->GetPhysicsWorld();
 	Renderer& renderer = game->GetRenderer();
+	Camera* camera = renderer.GetCameraPointer();
 
 	// Update player camera or detached scene camera
 	if (isPlayerCam)
@@ -48,29 +35,8 @@ void SinglePlayer::Update(Game* game, float timeDelta)
 		renderer.GetCameraPointer()->updateCamera(game->GetContext().getGLFWWindow(), timeDelta, true);
 	}
 
-	if (playerEntity == nullptr || pistolEntity == nullptr || rifleEntity == nullptr || targetEntity == nullptr)
+	if (playerEntity == nullptr || pistolEntity == nullptr || targetEntity == nullptr)
 		return;
-
-	//// Get camera data
-	//glm::vec3 cameraPos = renderer.GetCameraPointer()->position;
-	//glm::vec3 forwardDir = glm::normalize(renderer.GetCameraPointer()->frontDirection);
-	//glm::vec3 upDir = glm::vec3(0.0f, 1.0f, 0.0f);
-	//glm::vec3 rightDir = glm::normalize(glm::cross(forwardDir, upDir));
-
-	//// Offset from the camera (tweak these values)
-	//float forwardOffset = 1.0f;  // in front of camera
-	//float upOffset = 1.0f;      // down from camera (for hip-level or eye-level)
-	//float rightOffset = 1.0f;    // to the right of camera
-
-	//glm::vec3 pistolOffset =
-	//	forwardDir * forwardOffset +
-	//	upDir * upOffset +
-	//	rightDir * rightOffset;
-
-	//pistolEntity->SetPosition(cameraPos + pistolOffset);
-
-	//// Set rotation to look where camera looks
-	//pistolEntity->SetRotation(glm::quatLookAt(forwardDir, upDir));
 
 	// Handle shooting
 	if (Engine::InputManager::getMouse().isPressed(HS_MOUSE_BUTTON_LEFT) && canFire)
@@ -130,4 +96,11 @@ void SinglePlayer::ToggleSceneCamera(Game* game, Camera* sceneCamera)
 		renderer.attachCamera(sceneCamera);
 		isPlayerCam = false;
 	}
+}
+
+void SinglePlayer::SetPlayerEntity(Game* g, Entity* e)
+{
+	playerEntity = e;
+	isPlayerCam = true;
+	g->GetRenderer().GetCameraPointer()->init(g->GetContext().getGLFWWindow());
 }

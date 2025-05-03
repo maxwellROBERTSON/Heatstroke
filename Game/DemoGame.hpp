@@ -74,6 +74,12 @@ public:
 	// Cameras
 	Engine::Camera sceneCamera;
 
+#ifdef _DEBUG
+	bool debugging = true;
+#else
+	bool debugging = false;
+#endif
+
 	//glm::vec3 cameraOffset = glm::vec3(0.0f, 1.6f, -0.1f); // for character
 
 	//Engine::Entity* targetEntity1;

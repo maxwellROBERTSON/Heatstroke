@@ -25,11 +25,10 @@ namespace Engine
 	{
 	}
 
-	void Camera::updateCamera(GLFWwindow* aWindow, float timeDelta, bool updatePosition) {
-		if (glfwGetInputMode(aWindow, GLFW_CURSOR) != GLFW_CURSOR_DISABLED)
-			return;
-
-		if (this->firstClick) {
+	void Camera::init(GLFWwindow* aWindow)
+	{
+		if (this->firstClick)
+		{
 			int winX, winY;
 			glfwGetFramebufferSize(aWindow, &winX, &winY);
 
@@ -37,6 +36,14 @@ namespace Engine
 			this->lastY = (float)winY / 2;
 			this->firstClick = false;
 		}
+	}
+
+	void Camera::updateCamera(GLFWwindow* aWindow, float timeDelta, bool updatePosition) {
+		if (glfwGetInputMode(aWindow, GLFW_CURSOR) != GLFW_CURSOR_DISABLED)
+			return;
+
+		Camera* c = this;
+		std::cout << c->farPlane << " " << c->firstClick << " " << c->fov << " " << c->frontDirection.x << " " << c->frontDirection.y << " " << c->frontDirection.z << " " << c->lastX << " " << c->lastY << " " << c->nearPlane << std::endl;
 
 		if (updatePosition)
 		{
@@ -70,6 +77,16 @@ namespace Engine
 			}
 		}
 
+		if (this->firstClick)
+		{
+			int winX, winY;
+			glfwGetFramebufferSize(aWindow, &winX, &winY);
+
+			this->lastX = (float)winX / 2;
+			this->lastY = (float)winY / 2;
+			this->firstClick = false;
+		}
+
 		auto& mouse = InputManager::getMouse();
 
 		float xOffset = mouse.getXPos() - this->lastX;
@@ -85,16 +102,28 @@ namespace Engine
 		this->yaw += xOffset;
 		this->pitch += yOffset;
 
-		if (this->pitch > 89.9f) // 59.9f
-			this->pitch = 89.9f;
-		if (this->pitch < -89.9f)
-			this->pitch = -89.9f;
+		if (updatePosition)
+		{
+			if (this->pitch > 89.9f)
+				this->pitch = 89.9f;
+			if (this->pitch < -89.9f)
+				this->pitch = -89.9f;
+		}
+		else
+		{
+			if (this->pitch > 59.9f)
+				this->pitch = 59.9f;
+			if (this->pitch < -59.9f)
+				this->pitch = -59.9f;
+		}
 
 		glm::vec3 newDir;
 		newDir.x = std::cos(glm::radians(this->yaw)) * std::cos(glm::radians(this->pitch));
 		newDir.y = std::sin(glm::radians(this->pitch));
 		newDir.z = std::sin(glm::radians(this->yaw)) * std::cos(glm::radians(this->pitch));
 		this->frontDirection = glm::normalize(newDir);
+
+		std::cout << c->farPlane << " " << c->firstClick << " " << c->fov << " " << c->frontDirection.x << " " << c->frontDirection.y << " " << c->frontDirection.z << " " << c->lastX << " " << c->lastY << " " << c->nearPlane << "\n" << std::endl;
 	}
 
 	void Camera::OnEvent(GLFWwindow* aWindow, Engine::Event& e)
