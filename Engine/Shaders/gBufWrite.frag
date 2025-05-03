@@ -12,11 +12,11 @@ layout(set = 0, binding = 0) uniform SceneUBO {
 	vec4 position;
 } sceneUbo;
 
-layout(set = 3, binding = 0) uniform sampler2D baseColourMap;
-layout(set = 3, binding = 1) uniform sampler2D metallicRoughness;
-layout(set = 3, binding = 2) uniform sampler2D emissiveMap;
-layout(set = 3, binding = 3) uniform sampler2D occlusionMap;
-layout(set = 3, binding = 4) uniform sampler2D normalMap;
+layout(set = 2, binding = 0) uniform sampler2D baseColourMap;
+layout(set = 2, binding = 1) uniform sampler2D metallicRoughness;
+layout(set = 2, binding = 2) uniform sampler2D emissiveMap;
+layout(set = 2, binding = 3) uniform sampler2D occlusionMap;
+layout(set = 2, binding = 4) uniform sampler2D normalMap;
 
 struct MaterialInfo {
     vec4 emissiveFactor;
@@ -34,13 +34,13 @@ struct MaterialInfo {
     float roughnessFactor;
 };
 
-layout(std430, set = 4, binding = 0) readonly buffer MaterialInfoSSBO {
+layout(std430, set = 3, binding = 0) readonly buffer MaterialInfoSSBO {
     MaterialInfo materialInfo[];
 };
 
-layout(push_constant) uniform PushConstants {
-    int materialIndex;
-} pushConstants;
+layout(push_constant) uniform MaterialIndex {
+    layout(offset = 64) int index;
+} materialIndex;
 
 layout(location = 0) out vec4 outNormals;  // rgb = normals,  a = metalness
 layout(location = 1) out vec4 outAlbedo;   // rgb = albedo,   a = roughness
@@ -75,7 +75,7 @@ vec3 getNormal() {
 }
 
 void main() {
-    MaterialInfo matInfo = materialInfo[pushConstants.materialIndex];
+    MaterialInfo matInfo = materialInfo[materialIndex.index];
 
 	vec3 normal = (matInfo.normalTexSet > -1) ? getNormal() : v2fNormal;
 	outNormals.rgb = normal;

@@ -44,7 +44,6 @@ namespace Engine {
 	void VulkanDevice::createDescriptorPool() {
 		const VkDescriptorPoolSize pools[] = {
 			{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2048},
-			{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 100},
 			{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 100},
 			{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2048}
 		};
@@ -155,6 +154,8 @@ namespace Engine {
 		samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
 		samplerInfo.addressModeU = aSamplerInfo.addressModeU;
 		samplerInfo.addressModeV = aSamplerInfo.addressModeV;
+		samplerInfo.compareEnable = aSamplerInfo.compareEnable;
+		samplerInfo.compareOp = aSamplerInfo.compareOp;
 		samplerInfo.minLod = 0.0f;
 		samplerInfo.maxLod = VK_LOD_CLAMP_NONE;
 		samplerInfo.mipLodBias = 0.0f;

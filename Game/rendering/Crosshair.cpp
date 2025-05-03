@@ -66,24 +66,23 @@ void Crosshair::updatePositions() {
 		vertexSize,
 		VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 		0,
-		VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
-	);
+		VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
+	
 	this->colBuffer = Engine::vk::createBuffer(
 		"crosshairColBuffer",
 		*this->context->allocator,
 		colorSize,
 		VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 		0,
-		VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
-	);
+		VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
+
 	this->indicesBuffer = Engine::vk::createBuffer(
 		"crosshairIndicesBuffer",
 		*this->context->allocator,
 		indexSize,
 		VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 		0,
-		VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
-	);
+		VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
 
 	// Staging buffers
 	Engine::vk::Buffer posStaging = Engine::vk::createBuffer(
@@ -91,22 +90,21 @@ void Crosshair::updatePositions() {
 		*this->context->allocator,
 		vertexSize,
 		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-		VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT
-	);
+		VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT);
+
 	Engine::vk::Buffer colStaging = Engine::vk::createBuffer(
 		"crosshairColStaging",
 		*this->context->allocator,
 		colorSize,
 		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-		VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT
-	);
+		VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT);
+
 	Engine::vk::Buffer indicesStaging = Engine::vk::createBuffer(
 		"crosshairIndicesStaging",
 		*this->context->allocator,
 		indexSize,
 		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-		VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT
-	);
+		VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT);
 
 	// Copy to ptrs
 	void* posPtr = nullptr;
@@ -146,8 +144,7 @@ void Crosshair::updatePositions() {
 		VK_ACCESS_TRANSFER_WRITE_BIT,
 		VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,
 		VK_PIPELINE_STAGE_TRANSFER_BIT,
-		VK_PIPELINE_STAGE_VERTEX_INPUT_BIT
-	);
+		VK_PIPELINE_STAGE_VERTEX_INPUT_BIT);
 
 	VkBufferCopy colCopy{};
 	colCopy.size = colorSize;
@@ -160,8 +157,7 @@ void Crosshair::updatePositions() {
 		VK_ACCESS_TRANSFER_WRITE_BIT,
 		VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,
 		VK_PIPELINE_STAGE_TRANSFER_BIT,
-		VK_PIPELINE_STAGE_VERTEX_INPUT_BIT
-	);
+		VK_PIPELINE_STAGE_VERTEX_INPUT_BIT);
 
 	VkBufferCopy indicesCopy{};
 	indicesCopy.size = indexSize;
@@ -174,8 +170,7 @@ void Crosshair::updatePositions() {
 		VK_ACCESS_TRANSFER_WRITE_BIT,
 		VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,
 		VK_PIPELINE_STAGE_TRANSFER_BIT,
-		VK_PIPELINE_STAGE_VERTEX_INPUT_BIT
-	);
+		VK_PIPELINE_STAGE_VERTEX_INPUT_BIT);
 
 	Engine::endAndSubmitCommandBuffer(*this->context->window, uploadCmdBuf);
 

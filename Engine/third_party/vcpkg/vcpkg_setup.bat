@@ -11,16 +11,40 @@ if not exist "vcpkg.exe" (
 set "VCPKG_ROOT=%CD%"
 set PATH=%VCPKG_ROOT%;%PATH%
 
-REM Run vcpkg list and find PhysX
+REM Run vcpkg list and find physx
 for /f "delims=" %%i in ('vcpkg list ^| findstr "physx"') do set INSTALLED_PHYSX=%%i
 
-REM Check if PhysX is installed
+REM Check if physx is installed
 if not defined INSTALLED_PHYSX (
-    echo PhysX is not installed. Installing...
+    echo physx is not installed. Installing...
     .\vcpkg install physx
 ) else (
-    echo PhysX is already installed:
+    echo physx is already installed:
     echo %INSTALLED_PHYSX%
+)
+
+REM Run vcpkg list and find openal
+for /f "delims=" %%i in ('vcpkg list ^| findstr "openal-soft"') do set INSTALLED_OPENAL=%%i
+
+REM Check if openal is installed
+if not defined INSTALLED_OPENAL (
+    echo openal is not installed. Installing...
+    .\vcpkg install openal-soft
+) else (
+    echo openal is already installed:
+    echo %INSTALLED_OPENAL%
+)
+
+REM Run vcpkg list and find libsndfile
+for /f "delims=" %%i in ('vcpkg list ^| findstr "libsndfile"') do set INSTALLED_LIBSNDFILE=%%i
+
+REM Check if libsndfile is installed
+if not defined INSTALLED_LIBSNDFILE (
+    echo libsndfile is not installed. Installing...
+    .\vcpkg install libsndfile
+) else (
+    echo libsndfile is already installed:
+    echo %INSTALLED_LIBSNDFILE%
 )
 
 REM Check if Vulkan SDK is installed via system environment variables
@@ -44,18 +68,6 @@ if not defined VULKAN_SDK (
     )
 ) else (
     echo Vulkan SDK is already set in environment variable: %VULKAN_SDK%
-)
-
-REM Run vcpkg list and find OpenAL
-for /f "delims=" %%i in ('vcpkg list ^| findstr "openal-soft"') do set INSTALLED_OPENAL=%%i
-
-REM Check if OpenAL is installed
-if not defined INSTALLED_OPENAL (
-    echo OpenAL is not installed. Installing...
-    .\vcpkg install openal-soft
-) else (
-    echo OpenAL is already installed:
-    echo %INSTALLED_OPENAL%
 )
 
 echo Setting up VCPKG_TOOLCHAIN for use with Premake and CMake...

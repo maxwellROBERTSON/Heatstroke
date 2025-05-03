@@ -16,11 +16,11 @@ layout(set = 0, binding = 0) uniform SceneUBO {
 	vec4 position;
 } sceneUbo;
 
-layout(set = 3, binding = 0) uniform sampler2D baseColourMap;
-layout(set = 3, binding = 1) uniform sampler2D metallicRoughness;
-layout(set = 3, binding = 2) uniform sampler2D emissiveMap;
-layout(set = 3, binding = 3) uniform sampler2D occlusionMap;
-layout(set = 3, binding = 4) uniform sampler2D normalMap;
+layout(set = 2, binding = 0) uniform sampler2D baseColourMap;
+layout(set = 2, binding = 1) uniform sampler2D metallicRoughness;
+layout(set = 2, binding = 2) uniform sampler2D emissiveMap;
+layout(set = 2, binding = 3) uniform sampler2D occlusionMap;
+layout(set = 2, binding = 4) uniform sampler2D normalMap;
 
 struct MaterialInfo {
     vec4 emissiveFactor;
@@ -38,15 +38,15 @@ struct MaterialInfo {
     float roughnessFactor;
 };
 
-layout(std430, set = 4, binding = 0) readonly buffer MaterialInfoSSBO {
+layout(std430, set = 3, binding = 0) readonly buffer MaterialInfoSSBO {
     MaterialInfo materialInfo[];
 };
 
-layout(set = 6, binding = 0) uniform sampler2D shadowMap;
+layout(set = 5, binding = 0) uniform sampler2DShadow shadowMap;
 
-layout(push_constant) uniform PushConstants {
-    int materialIndex;
-} pushConstants;
+layout(push_constant) uniform MaterialIndex {
+    layout(offset = 64) int index;
+} materialIndex;
 
 layout(location = 0) out vec4 oColor;
 
@@ -127,33 +127,8 @@ vec3 getNormal() {
     return normalize(TBN * tangentNormal);
 }
 
-float textureP(vec4 shadowCoord, vec2 offset)
-{
-	float shadow = 1.0f;
-	if (shadowCoord.z > -1.0f && shadowCoord.z < 1.0f) {
-		float dist = texture(shadowMap, shadowCoord.st + offset).r;
-		if (shadowCoord.w > 0.0f && dist < shadowCoord.z) {
-			shadow = 0.1f;
-		}
-	}
-	return shadow;
-}
-
-float shadowPCF(vec4 shadowCoords) {
-    float shadow = 0.0f;
-    vec2 texelSize = 1.0f / textureSize(shadowMap, 0);
-
-    for (int x = -1; x <= 1; x++) {
-        for (int y = -1; y <= 1; y++) {
-            shadow += textureP(shadowCoords, vec2(texelSize.x * x, texelSize.y * y));
-        }
-    }
-
-    return shadow / 9;
-}
-
 void main() {
-    MaterialInfo matInfo = materialInfo[pushConstants.materialIndex];
+    MaterialInfo matInfo = materialInfo[materialIndex.index];
 
     vec3 lightCol = vec3(1.0f);
     vec3 lightPos = vec3(0.75f, 20.0f, -0.4f);
@@ -184,9 +159,13 @@ void main() {
     vec3 brdfVal = brdf(lightDir, viewDir, normal, metallicFactor, roughnessFactor) * 100;
     float NdotL = max(dot(normal, lightDir), 0.0f);
     float attenuation = 1 / pow(length(lightPos - v2fPosition), 1);
+    float shadow = max(texture(shadowMap, v2fLightSpacePosition.xyz / v2fLightSpacePosition.w), 0.1f);
 
-    //float shadow = textureP(v2fLightSpacePosition / v2fLightSpacePosition.w, vec2(0.0f));
-    float shadow = shadowPCF(v2fLightSpacePosition / v2fLightSpacePosition.w);
+    // If we are rendering an overlay ignore shadows
+    if (sceneUbo.view == mat4(1.0f)) {
+        shadow = 1.0f;
+    }
+
     vec3 colour = ambient + ((brdfVal * lightCol * NdotL) * shadow) * attenuation;
 
     // Occlusion factor
@@ -205,5 +184,5 @@ void main() {
 
     colour += emissive;
 
-    oColor = vec4(colour, 1.0f);
+    oColor = vec4(colour, albedo.a);
 }

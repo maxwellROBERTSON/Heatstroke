@@ -20,13 +20,12 @@ includedirs("imgui/")
 defines("GLM_FORCE_RADIANS=1")
 defines("GLM_FORCE_SIZE_T_LENGTH=1")
 defines("GLM_ENABLE_EXPERIMENTAL=1")
+defines("GLM_FORCE_DEPTH_ZERO_TO_ONE=1")
 
 filter "system:not windows"
     includedirs( "libsodium-1.0.20/libsodium-build/include")
     libdirs( "libsodium-1.0.20/libsodium-build/lib")
     links { "sodium" }
-
-
 
 project "yojimbo"
     kind "StaticLib"

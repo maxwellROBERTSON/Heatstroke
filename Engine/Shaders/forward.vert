@@ -17,14 +17,14 @@ layout(set = 0, binding = 0) uniform SceneUBO {
 	vec4 position;
 } sceneUbo;
 
-layout(set = 1, binding = 0) uniform modelMatrices {
-	mat4 model;
-} modelMatrix;
-
-layout(set = 2, binding = 0) uniform Node {
+layout(set = 1, binding = 0) uniform Node {
 	mat4 jointMatrix[MAX_JOINTS];
 	int isSkinned;
 } node;
+
+layout(push_constant) uniform ModelMatrix {
+    mat4 model;
+} modelMatrix;
 
 layout(location = 0) out vec3 v2fPosition;
 layout(location = 1) out vec3 v2fNormal;
