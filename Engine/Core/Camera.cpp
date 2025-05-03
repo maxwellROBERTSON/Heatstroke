@@ -79,8 +79,8 @@ namespace Engine
 		this->lastY = mouse.getYPos();
 
 		// Sensitivity multiplier
-		xOffset *= 0.1f;
-		yOffset *= 0.1f;
+		xOffset *= 0.1f * sensitivity;
+		yOffset *= 0.1f * sensitivity;
 
 		this->yaw += xOffset;
 		this->pitch += yOffset;

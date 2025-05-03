@@ -28,14 +28,16 @@ void makeGameGUIS(FPSTest* game)
 	gui.AddFunction("SinglePlayer", [game](int* w, int* h) { makeSinglePlayerGUI(game, w, h); });
 	gui.AddFunction("MultiPlayer", [game](int* w, int* h) { makeMultiPlayerGUI(game, w, h); });
 
-	gui.AddFont("Game", "Engine/third_party/imgui/misc/fonts/Roboto-Medium.ttf", 36.0f);
 	gui.AddFont("Default", "Engine/third_party/imgui/misc/fonts/Roboto-Medium.ttf", 12.0f);
+	gui.AddFont("Game", "Engine/third_party/imgui/misc/fonts/Roboto-Medium.ttf", 36.0f);
 
 	gui.ToggleGUIMode("Home");
 }
 
 void makeHomeGUI(FPSTest* game, int* w, int* h)
 {
+	ImGui::PushFont(game->GetGUI().GetFont("Default"));
+
 	ImGui::SetNextWindowPos(ImVec2(0, 0));
 	ImGui::SetNextWindowSize(ImVec2(*w, *h));
 
@@ -184,15 +186,16 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 		ImGui::EndChild();
 	}
 
-	ImGui::PopStyleColor();
+	ImGui::PopStyleColor(5);
+	ImGui::PopFont();
 
 	ImGui::End();
-
-	ImGui::PopStyleColor(4);
 }
 
 void makeSettingsGUI(FPSTest* game, int* w, int* h)
 {
+	ImGui::PushFont(game->GetGUI().GetFont("Default"));
+
 	ImGui::SetNextWindowPos(ImVec2(0, 0));
 	ImGui::SetNextWindowSize(ImVec2(*w, *h));
 
@@ -243,6 +246,33 @@ void makeSettingsGUI(FPSTest* game, int* w, int* h)
 		crosshair.shouldUpdateCrosshair = true;
 	}
 
+	ImGui::Text("Sensitivity:");
+
+	float sensitivity = game->GetRenderer().GetCameraPointer()->sensitivity;
+	int sensitivityInt = static_cast<int>(sensitivity * 100);
+
+	// Slider from 0.01 to 1.00
+	ImGui::PushItemWidth(*w / 4.f);
+	if (ImGui::SliderInt("##SensitivitySlider", &sensitivityInt, 1, 100))
+	{
+		sensitivity = sensitivityInt / 100.f;
+		sensitivity = std::clamp(sensitivity, 0.01f, 1.0f);
+		game->GetRenderer().GetCameraPointer()->sensitivity = sensitivity;
+	}
+	ImGui::PopItemWidth();
+
+	ImGui::SameLine();
+
+	ImVec2 size = ImGui::CalcTextSize("0.00");
+	ImGui::PushItemWidth(size.x + ImGui::GetStyle().FramePadding.x * 2);
+	if (ImGui::InputInt("##SensitivityInput", &sensitivityInt, 0, 0))
+	{
+		sensitivity = sensitivityInt / 100.f;
+		sensitivity = std::clamp(sensitivity, 0.01f, 1.0f);
+		game->GetRenderer().GetCameraPointer()->sensitivity = sensitivity;
+	}
+	ImGui::PopItemWidth();
+
 	ImVec2 topRightPos = ImVec2(*w - *w / 6 - 10, 30);
 	ImGui::SetCursorPos(topRightPos);
 	if (ImGui::Button("Disconnect", ImVec2(*w / 6, *h / 6)))
@@ -258,10 +288,13 @@ void makeSettingsGUI(FPSTest* game, int* w, int* h)
 	ImGui::End();
 
 	ImGui::PopStyleColor(3);
+	ImGui::PopFont();
 }
 
 void makeServerGUI(FPSTest* game, int* w, int* h)
 {
+	ImGui::PushFont(game->GetGUI().GetFont("Default"));
+
 	ImGui::SetNextWindowPos(ImVec2(0, 0));
 	ImGui::SetNextWindowSize(ImVec2(*w, *h));
 
@@ -289,10 +322,13 @@ void makeServerGUI(FPSTest* game, int* w, int* h)
 	ImGui::End();
 
 	ImGui::PopStyleColor(3);
+	ImGui::PopFont();
 }
 
 void makeLoadingGUI(FPSTest* game, int* w, int* h)
 {
+	ImGui::PushFont(game->GetGUI().GetFont("Default"));
+
 	ImGui::SetNextWindowPos(ImVec2(0, 0));
 	ImGui::SetNextWindowSize(ImVec2(*w, *h));
 
@@ -338,12 +374,16 @@ void makeLoadingGUI(FPSTest* game, int* w, int* h)
 		ImGui::Text("Loading: ");
 		ImGui::Text(game->GetNetwork().GetStatusString().c_str());
 	}
+
 	ImGui::End();
+
+	ImGui::PopFont();
 }
 
 void makeDebugGUI(FPSTest* game, int* w, int* h)
 {
 	ImGui::PushFont(game->GetGUI().GetFont("Default"));
+
 	ImGui::Begin("Debug Menu");
 
 	if (ImGui::Checkbox("VSync", &game->GetRenderer().vsync)) {
@@ -421,8 +461,10 @@ void makeDebugGUI(FPSTest* game, int* w, int* h)
 			ImGui::Text("%s: %s", key.c_str(), value.c_str());
 		}
 	}
-	ImGui::PopFont();
+
 	ImGui::End();
+
+	ImGui::PopFont();
 }
 
 void makeSinglePlayerGUI(FPSTest* game, int*, int*)
@@ -456,9 +498,11 @@ void makeMultiPlayerGUI(FPSTest* game, int*, int*)
 		window_flags |= ImGuiWindowFlags_NoTitleBar;
 		bool test = true;
 
+		ImGui::PushFont(game->GetGUI().GetFont("Game"));
 		ImGui::Begin("Multi Player:", &test, window_flags);
 
 		ImGui::End();
+		ImGui::PopFont();
 	}
 }
 

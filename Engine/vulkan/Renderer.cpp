@@ -283,7 +283,8 @@ namespace Engine {
 			VK_FILTER_LINEAR,
 			VK_FILTER_LINEAR,
 			VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-			VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE };
+			VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+			1, VK_COMPARE_OP_LESS_OR_EQUAL };
 		this->depthSampler = createTextureSampler(*this->context->window, samplerInfo);
 
 		// Descriptor sets
@@ -480,7 +481,7 @@ namespace Engine {
 		this->uniforms.sceneUniform.position = glm::vec4(this->camera->position, 1.0f);
 
 		// Update shadow depth MVP
-		glm::mat4 depthProjection = glm::perspective(glm::radians(45.0f), 1.0f, 1.0f, 96.0f);
+		glm::mat4 depthProjection = glm::ortho(-20.0f, 20.0f, 20.0f, -20.0f, 0.1f, 1000.0f);
 		glm::mat4 depthView = glm::lookAt(glm::vec3(0.75f, 20.0f, -0.4f), glm::vec3(0.75f, 0.0f, -0.4f), glm::vec3(1.0f, 0.0f, 0.0f));
 		//glm::mat4 depthModel = glm::mat4(1.0f); // Model matrix is just identity
 
@@ -608,8 +609,7 @@ namespace Engine {
 			VK_ACCESS_UNIFORM_READ_BIT,
 			VK_ACCESS_TRANSFER_WRITE_BIT,
 			VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-			VK_PIPELINE_STAGE_TRANSFER_BIT
-		);
+			VK_PIPELINE_STAGE_TRANSFER_BIT);
 
 		vkCmdUpdateBuffer(cmdBuf, this->uniformBuffers["scene"].buffer, 0, sizeof(glsl::SceneUniform), &this->uniforms.sceneUniform);
 
@@ -619,8 +619,7 @@ namespace Engine {
 			VK_ACCESS_TRANSFER_WRITE_BIT,
 			VK_ACCESS_UNIFORM_READ_BIT,
 			VK_PIPELINE_STAGE_TRANSFER_BIT,
-			VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
-		);
+			VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 
 		std::vector<std::unique_ptr<ComponentBase>>* renderComponents = this->entityManager->GetComponentsOfType(RENDER);
 		if (renderComponents == nullptr)
@@ -642,8 +641,7 @@ namespace Engine {
 					VK_ACCESS_UNIFORM_READ_BIT,
 					VK_ACCESS_TRANSFER_WRITE_BIT,
 					VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
-					VK_PIPELINE_STAGE_TRANSFER_BIT
-				);
+					VK_PIPELINE_STAGE_TRANSFER_BIT);
 
 				vkCmdUpdateBuffer(cmdBuf, node->descriptorBuffer.buffer, 0, sizeof(glsl::SkinningUniform), &node->skinUniform);
 
@@ -653,8 +651,7 @@ namespace Engine {
 					VK_ACCESS_TRANSFER_WRITE_BIT,
 					VK_ACCESS_UNIFORM_READ_BIT,
 					VK_PIPELINE_STAGE_TRANSFER_BIT,
-					VK_PIPELINE_STAGE_VERTEX_SHADER_BIT
-				);
+					VK_PIPELINE_STAGE_VERTEX_SHADER_BIT);
 			}
 		}
 
@@ -665,8 +662,7 @@ namespace Engine {
 				VK_ACCESS_UNIFORM_READ_BIT,
 				VK_ACCESS_TRANSFER_WRITE_BIT,
 				VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
-				VK_PIPELINE_STAGE_TRANSFER_BIT
-			);
+				VK_PIPELINE_STAGE_TRANSFER_BIT);
 
 			vkCmdUpdateBuffer(cmdBuf, this->uniformBuffers["depthMVP"].buffer, 0, sizeof(glsl::DepthMVP), &this->uniforms.depthMVP);
 
@@ -676,8 +672,7 @@ namespace Engine {
 				VK_ACCESS_TRANSFER_WRITE_BIT,
 				VK_ACCESS_UNIFORM_READ_BIT,
 				VK_PIPELINE_STAGE_TRANSFER_BIT,
-				VK_PIPELINE_STAGE_VERTEX_SHADER_BIT
-			);
+				VK_PIPELINE_STAGE_VERTEX_SHADER_BIT);
 
 			VkClearValue clearValueS[1]{};
 			clearValueS[0].depthStencil = { 1.0f, 0 };
@@ -699,7 +694,7 @@ namespace Engine {
 
 			vkCmdSetDepthBias(cmdBuf, this->depthBiasConstant, 0.0f, this->depthBiasSlopeFactor);
 
-			drawModels(cmdBuf, this->pipelineLayouts["shadow"].handle, true);
+			drawModels(cmdBuf, this->pipelineLayouts["shadow"].handle, DrawType::WORLD, true);
 
 			vkCmdEndRenderPass(cmdBuf);
 		}
@@ -767,7 +762,7 @@ namespace Engine {
 			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts[pipelineLayout].handle, 5, 1, &this->descriptorSets["shadowMap"], 0, nullptr); // Shadow map
 		}
 
-		drawModels(cmdBuf, this->pipelineLayouts[pipelineLayout].handle);
+		drawModels(cmdBuf, this->pipelineLayouts[pipelineLayout].handle, DrawType::WORLD);
 
 		if (ImGui::GetDrawData() != nullptr)
 			ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmdBuf);
@@ -787,8 +782,7 @@ namespace Engine {
 			VK_ACCESS_UNIFORM_READ_BIT,
 			VK_ACCESS_TRANSFER_WRITE_BIT,
 			VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-			VK_PIPELINE_STAGE_TRANSFER_BIT
-		);
+			VK_PIPELINE_STAGE_TRANSFER_BIT);
 
 		vkCmdUpdateBuffer(cmdBuf, this->uniformBuffers["scene"].buffer, 0, sizeof(glsl::SceneUniform), &this->uniforms.sceneUniform);
 
@@ -798,8 +792,7 @@ namespace Engine {
 			VK_ACCESS_TRANSFER_WRITE_BIT,
 			VK_ACCESS_UNIFORM_READ_BIT,
 			VK_PIPELINE_STAGE_TRANSFER_BIT,
-			VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
-		);
+			VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 
 		clearValues.clear();
 		if (msaaFlag) {
@@ -837,7 +830,7 @@ namespace Engine {
 			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts[pipelineLayout].handle, 5, 1, &this->descriptorSets["shadowMap"], 0, nullptr); // Shadow map
 		}
 
-		models[2].drawModel(cmdBuf, this->pipelineLayouts[pipelineLayout].handle);
+		drawModels(cmdBuf, this->pipelineLayouts[pipelineLayout].handle, DrawType::OVERLAY);
 
 		vkCmdEndRenderPass(cmdBuf);
 
@@ -850,8 +843,7 @@ namespace Engine {
 			VK_ACCESS_UNIFORM_READ_BIT,
 			VK_ACCESS_TRANSFER_WRITE_BIT,
 			VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
-			VK_PIPELINE_STAGE_TRANSFER_BIT
-		);
+			VK_PIPELINE_STAGE_TRANSFER_BIT);
 
 		vkCmdUpdateBuffer(cmdBuf, this->uniformBuffers["orthoMatrices"].buffer, 0, sizeof(glsl::OrthoMatrices), &this->uniforms.orthoMatrices);
 
@@ -861,8 +853,7 @@ namespace Engine {
 			VK_ACCESS_TRANSFER_WRITE_BIT,
 			VK_ACCESS_UNIFORM_READ_BIT,
 			VK_PIPELINE_STAGE_TRANSFER_BIT,
-			VK_PIPELINE_STAGE_VERTEX_SHADER_BIT
-		);
+			VK_PIPELINE_STAGE_VERTEX_SHADER_BIT);
 
 		clearValues.clear();
 		clearValues.emplace_back(colourClearValue);
@@ -1013,7 +1004,7 @@ namespace Engine {
 
 		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["forward"].handle, 0, 1, &this->descriptorSets["scene"], 0, nullptr);
 
-		drawModels(cmdBuf, this->pipelineLayouts["forward"].handle); // The gBufWrite stage uses same pipelineLayout as forward
+		drawModels(cmdBuf, this->pipelineLayouts["forward"].handle, DrawType::WORLD); // The gBufWrite stage uses same pipelineLayout as forward
 
 		vkCmdNextSubpass(cmdBuf, VK_SUBPASS_CONTENTS_INLINE);
 
@@ -1153,7 +1144,7 @@ namespace Engine {
 			this->depthSampler.handle);
 	}
 
-	void Renderer::drawModels(VkCommandBuffer cmdBuf, VkPipelineLayout pipelineLayout, bool justGeometry) {
+	void Renderer::drawModels(VkCommandBuffer cmdBuf, VkPipelineLayout pipelineLayout, DrawType drawType, bool justGeometry) {
 		std::vector<vk::Model>& models = this->game->GetModels();
 
 		std::vector<std::unique_ptr<ComponentBase>>* renderComponents = this->entityManager->GetComponentsOfType(RENDER);
@@ -1165,7 +1156,9 @@ namespace Engine {
 			if (!renderComponent->GetIsActive())
 				continue;
 			int modelIndex = renderComponent->GetModelIndex();
-			if (modelIndex == 4) continue;
+
+			if (models[modelIndex].drawType != drawType) continue;
+
 			models[modelIndex].drawModel(cmdBuf, pipelineLayout, justGeometry);
 		}
 	}

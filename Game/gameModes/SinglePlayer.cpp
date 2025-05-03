@@ -51,26 +51,26 @@ void SinglePlayer::Update(Game* game, float timeDelta)
 	if (playerEntity == nullptr || pistolEntity == nullptr || rifleEntity == nullptr || targetEntity == nullptr)
 		return;
 
-	// Get camera data
-	glm::vec3 cameraPos = renderer.GetCameraPointer()->position;
-	glm::vec3 forwardDir = glm::normalize(renderer.GetCameraPointer()->frontDirection);
-	glm::vec3 upDir = glm::vec3(0.0f, 1.0f, 0.0f);
-	glm::vec3 rightDir = glm::normalize(glm::cross(forwardDir, upDir));
+	//// Get camera data
+	//glm::vec3 cameraPos = renderer.GetCameraPointer()->position;
+	//glm::vec3 forwardDir = glm::normalize(renderer.GetCameraPointer()->frontDirection);
+	//glm::vec3 upDir = glm::vec3(0.0f, 1.0f, 0.0f);
+	//glm::vec3 rightDir = glm::normalize(glm::cross(forwardDir, upDir));
 
-	// Offset from the camera (tweak these values)
-	float forwardOffset = 1.0f;  // in front of camera
-	float upOffset = 1.0f;      // down from camera (for hip-level or eye-level)
-	float rightOffset = 1.0f;    // to the right of camera
+	//// Offset from the camera (tweak these values)
+	//float forwardOffset = 1.0f;  // in front of camera
+	//float upOffset = 1.0f;      // down from camera (for hip-level or eye-level)
+	//float rightOffset = 1.0f;    // to the right of camera
 
-	glm::vec3 pistolOffset =
-		forwardDir * forwardOffset +
-		upDir * upOffset +
-		rightDir * rightOffset;
+	//glm::vec3 pistolOffset =
+	//	forwardDir * forwardOffset +
+	//	upDir * upOffset +
+	//	rightDir * rightOffset;
 
-	pistolEntity->SetPosition(cameraPos + pistolOffset);
+	//pistolEntity->SetPosition(cameraPos + pistolOffset);
 
-	// Set rotation to look where camera looks
-	pistolEntity->SetRotation(glm::quatLookAt(forwardDir, upDir));
+	//// Set rotation to look where camera looks
+	//pistolEntity->SetRotation(glm::quatLookAt(forwardDir, upDir));
 
 	// Handle shooting
 	if (Engine::InputManager::getMouse().isPressed(HS_MOUSE_BUTTON_LEFT) && canFire)

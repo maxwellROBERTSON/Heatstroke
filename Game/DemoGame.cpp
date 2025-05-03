@@ -152,12 +152,12 @@ void FPSTest::initialiseModels()
 	tinygltf::Model rifle = Engine::loadFromFile("Game/assets/Assets/guns/rifle/scene.gltf");
 	tinygltf::Model target = Engine::loadFromFile("Game/assets/target/scene.gltf");
 	tinygltf::Model helmet = Engine::loadFromFile("Game/assets/DamagedHelmet.gltf");
-	GetModels().emplace_back(Engine::makeVulkanModel(this->GetContext(), map));
-	GetModels().emplace_back(Engine::makeVulkanModel(this->GetContext(), character));
-	GetModels().emplace_back(Engine::makeVulkanModel(this->GetContext(), pistol));
-	GetModels().emplace_back(Engine::makeVulkanModel(this->GetContext(), rifle));
-	GetModels().emplace_back(Engine::makeVulkanModel(this->GetContext(), target));
-	GetModels().emplace_back(Engine::makeVulkanModel(this->GetContext(), helmet));
+	GetModels().emplace_back(Engine::makeVulkanModel(this->GetContext(), map, DrawType::WORLD));
+	GetModels().emplace_back(Engine::makeVulkanModel(this->GetContext(), character, DrawType::WORLD));
+	GetModels().emplace_back(Engine::makeVulkanModel(this->GetContext(), pistol, DrawType::OVERLAY));
+	GetModels().emplace_back(Engine::makeVulkanModel(this->GetContext(), rifle, DrawType::OVERLAY));
+	GetModels().emplace_back(Engine::makeVulkanModel(this->GetContext(), target, DrawType::WORLD));
+	GetModels().emplace_back(Engine::makeVulkanModel(this->GetContext(), helmet, DrawType::WORLD));
 
 	std::cout << "Models created" << std::endl;
 }

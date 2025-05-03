@@ -8,7 +8,7 @@
 namespace Engine {
 	tinygltf::Model loadFromFile(const std::string& filename);
 
-	vk::Model makeVulkanModel(const VulkanContext& aContext, tinygltf::Model& model);
+	vk::Model makeVulkanModel(const VulkanContext& aContext, tinygltf::Model& model, DrawType drawType);
 
 	void loadMaterials(tinygltf::Model& model, vk::Model& vkModel);
 	void loadTextureSamplers(const VulkanWindow& aWindow, tinygltf::Model& model, vk::Model& vkModel);
