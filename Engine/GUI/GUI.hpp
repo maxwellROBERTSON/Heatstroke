@@ -53,10 +53,8 @@ namespace Engine
 		void makeServerGUI(int*, int*);
 		void makeLoadingGUI(int*, int*);
 
-		// from input actions
-		bool debugInput{ false };
+		bool debugInput{ true };
 		bool debugGame{ true };
-		// from input actions
 
 		ImGui_ImplVulkanH_Window imGuiWindow;
 		bool changedMSAA = false;

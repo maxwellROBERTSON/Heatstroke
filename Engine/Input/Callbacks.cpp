@@ -91,10 +91,13 @@ namespace Engine {
 		mouse.xPos = x;
 		mouse.yPos = y;
 	}
+
 	void onMouseButton(GLFWwindow* aWindow, int aButton, int aAction, int aModifiers)
 	{
+
 		VulkanWindow& engineWindow = *(VulkanWindow*)glfwGetWindowUserPointer(aWindow);
 		auto& mouse = InputManager::getMouse();
+
 
 		if (!ImGui::GetIO().WantCaptureMouse)
 		{

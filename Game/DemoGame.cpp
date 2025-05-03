@@ -24,7 +24,7 @@
 #include <imgui.h>
 
 //#include "glm/gtc/random.hpp" // breaks?
-std::uniform_int_distribution<> randomDistrib(1, 7);
+std::uniform_int_distribution<> randomDistrib(1, 3);
 std::random_device rd;  // a seed source for the random number engine
 std::mt19937 gen(rd()); // mersenne_twister_engine seeded with rd()
 
@@ -190,7 +190,8 @@ void FPSTest::Update() {
 				PhysicsComponent* physicsComponent = reinterpret_cast<PhysicsComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
 				if (physicsComponent->GetStaticBody() == entityHit.actor)
 				{
-					score++;
+					if (countdown > 0)
+						score++;
 
 					RenderComponent* hitRenderComponent = reinterpret_cast<RenderComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), RENDER));
 					hitRenderComponent->SetIsActive(0);
@@ -249,7 +250,6 @@ void FPSTest::OnEvent(Engine::Event& e)
 
 void FPSTest::DrawGUI()
 {
-	CameraComponent* cameraComponent = reinterpret_cast<CameraComponent*>(GetEntityManager().GetComponentOfEntity(playerEntity->GetEntityId(), CAMERA));
 	ImGuiWindowFlags window_flags = 0;
 	window_flags |= ImGuiWindowFlags_NoBackground;
 	window_flags |= ImGuiWindowFlags_NoTitleBar;
