@@ -2,13 +2,34 @@
 #include "GUI.hpp"
 
 #include "../../Game/DemoGame.hpp"
-#include "../../Game/rendering/Crosshair.hpp"
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
 namespace Engine
 {
+	// Getters
+
+	ImFont* GUI::GetFont(std::string s)
+	{
+		auto it = fonts.find(s);
+		if (it != fonts.end())
+			return it->second;
+		return nullptr;
+	}
+
+	bool GUI::GetGUIMode(std::string s)
+	{
+		for (int i = 0; i < guiModes.size(); i++)
+		{
+			if (guiModes[i] == s)
+				return activeGUIModes[i];
+		}
+		return false;
+	}
+
+	// Setters
+
 	void GUI::initGUI()
 	{
 		IMGUI_CHECKVERSION();
@@ -21,20 +42,10 @@ namespace Engine
 		ImGui::StyleColorsDark();
 		//ImGui::StyleColorsLight();
 
-		// fonts
-		gameFont = io.Fonts->AddFontFromFileTTF("Engine/third_party/imgui/misc/fonts/Roboto-Medium.ttf", 36.0f);
-		defaultFont = io.Fonts->AddFontFromFileTTF("Engine/third_party/imgui/misc/fonts/Roboto-Medium.ttf", 12.0f);
-
-
 		// Setup Platform/Renderer backends
 		ImGui_ImplGlfw_InitForVulkan(&(*game->GetContext().getGLFWWindow()), true);
 		ImGui_ImplVulkan_InitInfo init_info = {};
 		Engine::VulkanWindow* window = &(*game->GetContext().window);
-
-		std::string renderPass = "forward";
-		if (this->game->GetRenderer().msaaIndex != 0) {
-			renderPass += "MSAA";
-		}
 
 		VkSampleCountFlagBits sampleCount = this->game->GetContext().window->device->getSampleCount(this->game->GetRenderer().msaaIndex);
 
@@ -45,7 +56,7 @@ namespace Engine
 		init_info.QueueFamily = window->graphicsFamilyIndex;
 		init_info.Queue = window->graphicsQueue;
 		init_info.DescriptorPool = window->device->dPool;
-		init_info.RenderPass = game->GetRenderer().GetRenderPass(renderPass);
+		init_info.RenderPass = game->GetRenderer().GetRenderPass("crosshair");
 		init_info.Subpass = 0;
 
 		VkSurfaceCapabilitiesKHR caps;
@@ -62,28 +73,9 @@ namespace Engine
 
 		init_info.MinImageCount = caps.minImageCount < 2 ? 2 : caps.minImageCount;
 		init_info.ImageCount = imageCount;
-		init_info.MSAASamples = this->game->GetRenderer().msaaIndex != 0 ? sampleCount : VK_SAMPLE_COUNT_1_BIT;
+		init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
 
 		ImGui_ImplVulkan_Init(&init_info);
-	}
-
-	void GUI::toggle()
-	{
-		Engine::RenderMode mode = game->GetGUIRenderMode();
-		if (mode != GUIHOME && mode != GUISERVER)
-		{
-			GLFWwindow* aWindow = game->GetContext().getGLFWWindow();
-			game->ToggleRenderMode(GUISETTINGS);
-			bool s = game->GetRenderMode(GUISETTINGS);
-			if (s)
-			{
-				int width;
-				int height;
-				glfwGetFramebufferSize(game->GetContext().getGLFWWindow(), &width, &height);
-				glfwSetCursorPos(aWindow, width / 2, height / 2);
-			}
-			glfwSetInputMode(aWindow, GLFW_CURSOR, s ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
-		}
 	}
 
 	void GUI::makeGUI()
@@ -91,479 +83,45 @@ namespace Engine
 		int width;
 		int height;
 		glfwGetFramebufferSize(game->GetContext().getGLFWWindow(), &width, &height);
-		Engine::RenderMode mode = game->GetGUIRenderMode();
-		if (functions.find(mode) != functions.end())
-		{
-			functions[mode](&width, &height);
-			ImGui::Render();
-		}
-	}
-
-	void GUI::makeHomeGUI(int* w, int* h)
-	{
-		ImGuiIO& io = ImGui::GetIO();
-		ImVec4 clear_color = ImVec4(0.8f, 0.5f, 0.5f, 1.00f);
 
 		ImGui_ImplVulkan_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
 
-		ImGui::SetNextWindowPos(ImVec2(0, 0));
-		ImGui::SetNextWindowSize(ImVec2(*w, *h));
-
-		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.5f, 0.1f, 0.1f, 1.0f));
-		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.8f, 0.2f, 0.2f, 1.0f));
-		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(1.0f, 0.1f, 0.1f, 1.0f));
-		ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.5f, 0.1f, 0.1f, 1.0f));
-
-		ImGui::Begin("Home Menu", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
-
-		ImGui::Text("Demo game made using Heatstroke", ImVec2(*w / 4, *h / 4));
-		if (ImGui::Button("Single Player", ImVec2(*w / 4, *h / 4)))
+		for (int i = 0; i < activeGUIModes.size(); i++)
 		{
-			game->loadOfflineEntities();
-			/*uint8_t b[1000];
-			game->GetEntityManager().GetAllData(b);
-			game->GetEntityManager().ClearManager();
-			game->GetEntityManager().SetAllData(b);
-			EntityManager* manager = &(game->GetEntityManager());
-			std::vector<int> vec = manager->GetEntitiesWithComponent(PHYSICS);
-			PhysicsComponent* comp;
-			for (int i = 0; i < vec.size(); i++)
+			if (activeGUIModes[i])
 			{
-				comp = reinterpret_cast<PhysicsComponent*>(manager->GetComponentOfEntity(vec[i], PHYSICS));
-				glm::mat4 mat = manager->GetEntity(vec[i])->GetModelMatrix();
-				PhysicsComponent::PhysicsType type = comp->GetPhysicsType();
-				Engine::vk::Model& model = game->GetModels()[vec[i]];
-				if (type == PhysicsComponent::PhysicsType::STATIC)
-				{
-					comp->InitComplexShape(game->GetPhysicsWorld(), type, model, mat, vec[i]);
-				}
-				else
-				{
-					comp->Init(game->GetPhysicsWorld(), type, model, mat, vec[i]);
-				}
-			}
-			std::vector<int> entitiesWithNetworkComponent = manager->GetEntitiesWithComponent(NETWORK);
-			NetworkComponent* networkComponent;
-			for (int i = 0; i < entitiesWithNetworkComponent.size(); i++)
-			{
-				networkComponent = reinterpret_cast<NetworkComponent*>(manager->GetComponentOfEntity(entitiesWithNetworkComponent[i], NETWORK));
-				if (networkComponent->GetClientId() == 0)
-				{
-					CameraComponent* cameraComponent = reinterpret_cast<CameraComponent*>(manager->GetComponentOfEntity(entitiesWithNetworkComponent[i], CAMERA));
-					game->GetRenderer().attachCameraComponent(cameraComponent);
-					break;
-				}
-			}*/
-			game->GetRenderer().initialiseJointMatrices();
-			game->ToggleRenderMode(GUIHOME);
-			game->ToggleRenderMode(FORWARD);
-			GLFWwindow* window = game->GetContext().getGLFWWindow();
-			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-		}
-		if (ImGui::Button("Multi-Player", ImVec2(*w / 4, *h / 4)))
-		{
-			if (multiplayerSelected)
-			{
-				multiplayerSelected = false;
-				serverSelected = false;
-			}
-			else
-			{
-				multiplayerSelected = true;
-				serverSelected = false;
-			}
-		}
-		if (ImGui::Button("Create a Server", ImVec2(*w / 4, *h / 4)))
-		{
-			if (serverSelected)
-			{
-				multiplayerSelected = false;
-				serverSelected = false;
-			}
-			else
-			{
-				multiplayerSelected = false;
-				serverSelected = true;
+				functions[guiModes[i]](&width, &height);
 			}
 		}
 
-		ImVec2 middlePos = ImVec2(*w / 4, *h / 4);
-		ImGui::SetCursorPos(middlePos);
-		ImVec2 childSize = ImVec2(*w / 2, *h / 2);
-		ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.2f, 0.3f, 0.4f, 1.0f));
+		ImGui::EndFrame();
 
-		if (multiplayerSelected)
-		{
-			ImGui::BeginChild("MultiplayerBox", childSize, true, ImGuiWindowFlags_ChildWindow | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
-
-			ImGui::Text("Join a server");
-
-			static char addressStr[16] = "192.168.68.60\0";
-			ImGui::Text("Address:");
-			ImGui::InputText("Address", addressStr, IM_ARRAYSIZE(addressStr));
-
-			static char portStr[6] = "";
-			ImGui::Text("Port:");
-			ImGui::InputText("Port", portStr, IM_ARRAYSIZE(portStr));
-			int portNum = atoi(portStr);
-
-			if (ImGui::Button("Go", ImVec2(40, 40)))
-			{
-				if (strlen(addressStr) == 0)
-				{
-					errorMsg = "Error: Address cannot be empty.";
-				}
-				else if (strlen(portStr) == 0)
-				{
-					errorMsg = "Error: Port cannot be empty.";
-				}
-				else if (!std::regex_match(addressStr, std::regex("^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$")))
-				{
-					errorMsg = "Error: Invalid Address. " + std::string(addressStr) + " not of [www].[xxx].[yyy].[zzz] form";
-				}
-				else if (portNum < 1 || portNum > 65535)
-				{
-					errorMsg = "Error: Invalid Port number. " + std::string(portStr) + " not between 1 and 65535.";
-				}
-				else
-				{
-					errorMsg = "";
-					game->ToggleRenderMode(GUIHOME);
-					game->ToggleRenderMode(GUILOADING);
-					yojimbo::Address address = yojimbo::Address(addressStr, portNum);
-					game->SetClient(address);
-				}
-			}
-			ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), errorMsg.c_str());
-
-			ImGui::EndChild();
-		}
-		else if (serverSelected)
-		{
-			ImGui::BeginChild("ServerBox", childSize, true, ImGuiWindowFlags_ChildWindow | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
-
-			ImGui::Text("Start a server");
-
-			static char portStr[6] = "";
-			ImGui::Text("Port:");
-			ImGui::InputText("Port", portStr, IM_ARRAYSIZE(portStr));
-			int portNum = atoi(portStr);
-
-			static char maxClientsStr[6] = "";
-			ImGui::Text("Max Clients:");
-			ImGui::InputText("Max Clients", maxClientsStr, IM_ARRAYSIZE(maxClientsStr));
-			int maxClientsNum = atoi(maxClientsStr);
-
-			if (ImGui::Button("Go", ImVec2(40, 40)))
-			{
-				if (strlen(portStr) == 0)
-				{
-					errorMsg = "Error: Port cannot be empty.";
-				}
-				else if (strlen(maxClientsStr) == 0)
-				{
-					errorMsg = "Error: Max Clients cannot be empty.";
-				}
-				else if (portNum < 1 || portNum > 65535)
-				{
-					errorMsg = "Error: Invalid Port number. " + std::string(portStr) + " not between 1 and 65535.";
-				}
-				else if (maxClientsNum < 1 || maxClientsNum > 50)
-				{
-					errorMsg = "Error: Invalid Max Clients number. " + std::string(maxClientsStr) + " not between 1 and 50.";
-				}
-				else
-				{
-					errorMsg = "";
-					game->loadOnlineEntities(maxClientsNum);
-					game->GetRenderer().initialiseJointMatrices();
-					game->ToggleRenderMode(GUIHOME);
-					game->ToggleRenderMode(GUISERVER);
-					game->SetServer(portNum, maxClientsNum);
-				}
-			}
-			ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), errorMsg.c_str());
-
-			ImGui::EndChild();
-		}
-
-		ImGui::PopStyleColor();
-
-		ImGui::End();
-
-		ImGui::PopStyleColor(4);
+		ImGui::Render();
 	}
 
-	void GUI::makeSettingsGUI(int* w, int* h)
+	void GUI::AddFunction(std::string s, std::function<void(int*, int*)> func)
 	{
-		ImGuiIO& io = ImGui::GetIO();
-		ImVec4 clear_color = ImVec4(0.8f, 0.5f, 0.5f, 1.00f);
-
-		ImGui_ImplVulkan_NewFrame();
-		ImGui_ImplGlfw_NewFrame();
-		ImGui::NewFrame();
-
-		ImGui::SetNextWindowPos(ImVec2(0, 0));
-		ImGui::SetNextWindowSize(ImVec2(*w, *h));
-
-		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.5f, 0.1f, 0.1f, 1.0f));
-		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.8f, 0.2f, 0.2f, 1.0f));
-		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(1.0f, 0.1f, 0.1f, 1.0f));
-
-		ImGui::Begin("Settings Menu", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
-
-		ImGui::Text("Toggle Forward or Deferred rendering", ImVec2(*w / 4, *h / 4));
-		bool forward = game->GetRenderMode(FORWARD);
-		if (ImGui::Button(forward ? "Forward" : "Deferred", ImVec2(*w / 4, *h / 4)))
-		{
-			game->ToggleRenderMode(FORWARD);
-			game->ToggleRenderMode(DEFERRED);
-		}
-		ImGui::Text("Toggle Shadows (Only available when in forward rendering mode)", ImVec2(*w / 4, *h / 4));
-		//ImGui::Text("SHADOWS CURRENTLY ALWAYS ON IF FORWARD MODE", ImVec2(*w / 4, *h / 4));
-
-		if (forward)
-		{
-			if (ImGui::Button(game->GetRenderMode(SHADOWS) ? "Shadows" : "No Shadows", ImVec2(*w / 4, *h / 4)))
-			{
-				game->ToggleRenderMode(SHADOWS);
-			}
-		}
-
-		ImGui::Text("Anti Aliasing:");
-		std::pair<const char**, int> msaaOptions = game->GetRenderer().getMSAAOptions();
-		if (ImGui::Combo("MSAA:", &game->GetRenderer().msaaIndex, msaaOptions.first, msaaOptions.second, msaaOptions.second)) {
-			// If MSAA was changed, flag swapchain to be recreated so 
-			// ImGui can be remade with corresponding sample count
-			game->GetRenderer().setRecreateSwapchain(true);
-			this->changedMSAA = true;
-		}
-
-		ImGui::Text("Crosshair Color:");
-		Crosshair& crosshair = ((FPSTest*)game)->getCrosshair();
-		if (ImGui::Combo("Color", &crosshair.selectedColor, crosshair.colorNames.data(), (int)crosshair.colorNames.size())) {
-			crosshair.shouldUpdateCrosshair = true;
-		}
-
-		ImVec2 topRightPos = ImVec2(*w - *w / 6 - 10, 30);
-		ImGui::SetCursorPos(topRightPos);
-		if (ImGui::Button("Disconnect", ImVec2(*w / 6, *h / 6)))
-		{
-			if (game->GetRenderer().GetIsSceneLoaded())
-			{
-				game->ResetRenderModes();
-				game->GetEntityManager().ClearManager();
-				game->GetRenderer().unloadScene();
-				game->GetNetwork().Reset();
-			}
-		}
-
-		ImGui::End();
-
-		ImGui::PopStyleColor(3);
+		functions.emplace(s, func);
+		guiModes.emplace_back(s);
+		activeGUIModes.emplace_back(false);
 	}
 
-	void GUI::makeDebugGUI(int* w, int* h)
+	void GUI::AddFont(std::string s, const char* filename, float size)
 	{
-		ImGuiIO& io = ImGui::GetIO();
-		ImVec4 clear_color = ImVec4(0.2f, 0.2f, 0.2f, 1.00f);
-
-		ImGui_ImplVulkan_NewFrame();
-		ImGui_ImplGlfw_NewFrame();
-		ImGui::NewFrame();
-
-		ImGui::PushFont(defaultFont);
-		ImGui::Begin("Debug Menu");
-
-		if (ImGui::Checkbox("VSync", &game->GetRenderer().vsync)) {
-			game->GetRenderer().setRecreateSwapchain(true);
-		}
-
-		ImGui::Text("List of info would go here", ImVec2(*w / 4, *h / 4));
-
-		glm::vec3 pos = game->GetRenderer().GetCameraPointer()->position;
-		glm::vec3 fDir = game->GetRenderer().GetCameraPointer()->frontDirection;
-		std::string posStr = "X: " + std::to_string(pos.x) +
-			" Y: " + std::to_string(pos.y) +
-			" Z: " + std::to_string(pos.z);
-
-		std::string fDirStr = "X: " + std::to_string(fDir.x) +
-			" Y: " + std::to_string(fDir.y) +
-			" Z: " + std::to_string(fDir.z);
-
-		ImGui::Text("Position:");
-		ImGui::InputText("##Position", (char*)posStr.c_str(), posStr.size() + 1, ImGuiInputTextFlags_ReadOnly);
-
-		ImGui::Text("FrontDir:");
-		ImGui::InputText("##FrontDir", (char*)fDirStr.c_str(), fDirStr.size() + 1, ImGuiInputTextFlags_ReadOnly);
-
-		ImGui::Checkbox("Input Debug", &debugInput);
-		ImGui::Checkbox("Game Debug", &debugGame);
-
-		// ImGui::ShowDemoWindow();
-		ImGui::Text("Shadow depth buffer settings:");
-		ImGui::SliderFloat("Depth Bias Constant", &game->GetRenderer().depthBiasConstant, 0.0f, 10.0f);
-		ImGui::SliderFloat("Depth Bias Slope Factor", &game->GetRenderer().depthBiasSlopeFactor, 0.0f, 10.0f);
-
-		if (debugInput || InputManager::hasJoysticksConnected())
-			ShowInputDebug();
-
-		if (debugGame)
-		{
-			game->DrawDebugGUI();
-			//ImGui::PushFont(gameFont);
-			//game->DrawGUI();
-			//ImGui::PopFont();
-		}
-
-		ImGui::Text("Animations:");
-		// Iterate over all models and find ones with animations
-		std::vector<vk::Model>& models = game->GetModels();
-		for (vk::Model& model : models) {
-			if (model.animations.size() == 0)
-				continue;
-
-			// Get the list of animation names
-			std::vector<const char*> list;
-			std::size_t size = model.animations.size();
-			list.reserve(size);
-			for (std::size_t i = 0; i < size; i++)
-				list.push_back(model.animations[i].name.c_str());
-
-			ImGui::Combo("Animation", &model.animationIndex, list.data(), (int)size, (int)size);
-			if (ImGui::Button("Play Animation")) {
-				model.playAnimation();
-			}
-		}
-
-		if (game->GetNetwork().GetStatus() != Status::NETWORK_UNINITIALIZED)
-		{
-			std::map<std::string, std::string> networkInfo = game->GetNetwork().GetNetworkInfo();
-			for (const auto& [key, value] : networkInfo)
-			{
-				ImGui::Text("%s: %s", key.c_str(), value.c_str());
-			}
-		}
-		ImGui::PopFont();
-		ImGui::End();
+		fonts.emplace(s, ImGui::GetIO().Fonts->AddFontFromFileTTF(filename, size));
 	}
 
-	void GUI::ShowInputDebug()
+	void GUI::ToggleGUIMode(std::string s)
 	{
-		ImGui::Begin("Input:");
-		ImGui::Text("Controller Status: %s", InputManager::hasJoysticksConnected() ? "Connected" : "Disconnected");
-		if (InputManager::hasJoysticksConnected())
+		for (int i = 0; i < guiModes.size(); i++)
 		{
-			ImGui::Text("A: %s", InputManager::getJoystick(0).isPressed(HS_GAMEPAD_BUTTON_A) ? "Pressed" : "Released");
-			ImGui::Text("B: %s", InputManager::getJoystick(0).isPressed(HS_GAMEPAD_BUTTON_B) ? "Pressed" : "Released");
-			ImGui::Text("Y: %s", InputManager::getJoystick(0).isPressed(HS_GAMEPAD_BUTTON_Y) ? "Pressed" : "Released");
-			ImGui::Text("X: %s", InputManager::getJoystick(0).isPressed(HS_GAMEPAD_BUTTON_X) ? "Pressed" : "Released");
-			ImGui::Text("RB: %s", InputManager::getJoystick(0).isPressed(HS_GAMEPAD_BUTTON_RIGHT_BUMPER) ? "Pressed" : "Released");
-			ImGui::Text("LB: %s", InputManager::getJoystick(0).isPressed(HS_GAMEPAD_BUTTON_LEFT_BUMPER) ? "Pressed" : "Released");
-			ImGui::Text("RT: %f", InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_RIGHT_TRIGGER));
-			ImGui::Text("LT: %f", InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_LEFT_TRIGGER));
-			ImGui::Text("LS - Horizontal: %f", InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_LEFT_X));
-			ImGui::Text("LS - Vertical: %f", InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_LEFT_Y));
-			ImGui::Text("RS - Horizontal: %f", InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_RIGHT_X));
-			ImGui::Text("RS - Vertical: %f", InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_RIGHT_Y));
-		}
-	}
-
-	void GUI::makeServerGUI(int* w, int* h)
-	{
-		ImGuiIO& io = ImGui::GetIO();
-		ImVec4 clear_color = ImVec4(0.2f, 0.2f, 0.2f, 1.00f);
-
-		ImGui_ImplVulkan_NewFrame();
-		ImGui_ImplGlfw_NewFrame();
-		ImGui::NewFrame();
-
-		ImGui::SetNextWindowPos(ImVec2(0, 0));
-		ImGui::SetNextWindowSize(ImVec2(*w, *h));
-
-		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.5f, 0.1f, 0.1f, 1.0f));
-		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.8f, 0.2f, 0.2f, 1.0f));
-		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(1.0f, 0.1f, 0.1f, 1.0f));
-
-		ImGui::Begin("Server Menu", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
-
-		std::map<std::string, std::string> networkInfo = game->GetNetwork().GetNetworkInfo();
-		for (const auto& [key, value] : networkInfo)
-		{
-			ImGui::Text("%s: %s", key.c_str(), value.c_str());
-		}
-
-		if (ImGui::Button("Stop server", ImVec2(*w / 6, *h / 6)))
-		{
-			game->ResetRenderModes();
-			game->GetEntityManager().ClearManager();
-			game->GetRenderer().unloadScene();
-			game->GetNetwork().Reset();
-			multiplayerSelected = false;
-			serverSelected = false;
-		}
-
-		ImGui::End();
-
-		ImGui::PopStyleColor(3);
-	}
-
-	void GUI::makeLoadingGUI(int* w, int* h)
-	{
-		ImGuiIO& io = ImGui::GetIO();
-		ImVec4 clear_color = ImVec4(0.2f, 0.2f, 0.2f, 1.00f);
-
-		ImGui_ImplVulkan_NewFrame();
-		ImGui_ImplGlfw_NewFrame();
-		ImGui::NewFrame();
-
-		ImGui::SetNextWindowPos(ImVec2(0, 0));
-		ImGui::SetNextWindowSize(ImVec2(*w, *h));
-
-		ImGui::Begin("Loading Menu", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
-
-		Status s = game->GetNetwork().GetStatus();
-		if (s == Status::CLIENT_INITIALIZING_DATA)
-		{
-			game->GetRenderer().initialiseJointMatrices();
-			game->ToggleRenderMode(GUILOADING);
-			game->ToggleRenderMode(FORWARD);
-			GLFWwindow* window = game->GetContext().getGLFWWindow();
-			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-		}
-		else if (s == Status::CLIENT_CONNECTION_FAILED)
-		{
-			ImGui::Text("Loading Failed.");
-			ImGui::Text(game->GetNetwork().GetStatusString().c_str());
-			ImVec2 topRightPos = ImVec2(*w - *w / 6 - 10, 30);
-			ImGui::SetCursorPos(topRightPos);
-			if (ImGui::Button("Home", ImVec2(*w / 6, *h / 6)))
+			if (guiModes[i] == s)
 			{
-				game->ResetRenderModes();
-				game->GetNetwork().Reset();
+				activeGUIModes[i] = !activeGUIModes[i];
+				std::cout << "Toggled GUI Mode " << i << std::endl;
 			}
 		}
-		else if (s == Status::CLIENT_DISCONNECTED)
-		{
-			ImGui::Text("Client disconnected from server.");
-			ImGui::Text(game->GetNetwork().GetStatusString().c_str());
-			ImVec2 topRightPos = ImVec2(*w - *w / 6 - 10, 30);
-			ImGui::SetCursorPos(topRightPos);
-			if (ImGui::Button("Home", ImVec2(*w / 6, *h / 6)))
-			{
-				game->ResetRenderModes();
-				game->GetEntityManager().ClearManager();
-				game->GetRenderer().unloadScene();
-				game->GetNetwork().Reset();
-			}
-		}
-		else
-		{
-			ImGui::Text("Loading: ");
-			ImGui::Text(game->GetNetwork().GetStatusString().c_str());
-		}
-		ImGui::End();
 	}
 }

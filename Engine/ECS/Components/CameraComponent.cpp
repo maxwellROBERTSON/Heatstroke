@@ -10,28 +10,8 @@ namespace Engine
 namespace Engine
 {
 	// Getters
-// Get component data
-
-	void CameraComponent::swapCameraMode()
-	{
-		switch (this->GetCamera()->camMode)
-		{
-		case CameraMode::SCENE:
-			this->GetCamera()->camMode = CameraMode::PLAYER;
-			this->GetCamera()->position = playerEntity->GetPosition();
-			//this->GetCamera()->position = playerEntity->GetPosition() + glm::vec3(0.0f, 1.0f, 0.0f);
-			break;
-		case CameraMode::PLAYER:
-			this->GetCamera()->camMode = CameraMode::SCENE;
-			//this->GetCamera()->position = sceneCamPos;
-			break;
-		default:
-			this->GetCamera()->camMode = CameraMode::SCENE;
-			//this->GetCamera()->position = sceneCamPos;
-			break;
-		}
-	}
-
+	
+	// Get component data
 	void CameraComponent::GetDataArray(uint8_t* data)
 	{
 		size_t offset = 0;
@@ -45,6 +25,16 @@ namespace Engine
 		offset += sizeof(camera.position);
 		std::memcpy(data + offset, &camera.frontDirection, sizeof(camera.frontDirection));
 	}
+
+	// Get camera front direction
+	glm::vec3 CameraComponent::GetFrontDirection()
+	{
+		return this->GetCamera()->frontDirection;
+	}
+
+	// Setters
+
+	// Set component data
 	void CameraComponent::SetDataArray(uint8_t* data)
 	{
 		size_t offset = 0;
@@ -84,22 +74,24 @@ namespace Engine
 		}
 	}
 
-    // Update camera using Camera class
-    void CameraComponent::UpdateCamera(GLFWwindow* aWindow, float timeDelta)
-    {
-        Camera tempCamera = camera;
-        camera.updateCamera(aWindow, timeDelta);
-        if (!(camera == tempCamera))
-            SetComponentHasChanged();
-    }
-
-	void CameraComponent::UpdateCameraPosition(glm::vec3 pos)
+	// Update camera position
+	void CameraComponent::UpdateCameraPosition(float x, float y, float z)
 	{
 		glm::vec3 forwardOffset = glm::normalize(this->GetCamera()->frontDirection) * cameraOffset.z;
 		glm::vec3 upOffset = glm::vec3(0.0f, 1.0f, 0.0f) * cameraOffset.y;
 		glm::vec3 rightOffset = glm::normalize(glm::cross(this->GetCamera()->frontDirection, glm::vec3(0.0f, 1.0f, 0.0f))) * cameraOffset.x;
 		glm::vec3 offset = forwardOffset + upOffset + rightOffset;
-		this->GetCamera()->position = pos + offset;
+		this->GetCamera()->position = glm::vec3(x, y, z) + offset;
+	}
+
+	// Set camera offset
+	void CameraComponent::SetCameraOffset(float x, float y, float z)
+	{
+		cameraOffset = glm::vec3(x, y, z);
+	}
+	void CameraComponent::SetCameraOffset(glm::vec3 offset)
+	{
+		cameraOffset = offset;
 	}
 
 	// Set component has changed in entity manager
@@ -110,18 +102,6 @@ namespace Engine
 			entityManager->AddChangedComponent(StaticType(), entity);
 			hasChanged = true;
 		}
-	}
-	void CameraComponent::SetCameraOffset(float x, float y, float z)
-	{
-		cameraOffset = glm::vec3(x, y, z);
-	}
-	void CameraComponent::SetCameraOffset(glm::vec3 offset)
-	{
-		cameraOffset = offset;
-	}
-	glm::vec3 CameraComponent::GetFrontDirection()
-	{
-		return this->GetCamera()->frontDirection;
 	}
 }
 

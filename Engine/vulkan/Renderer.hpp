@@ -15,8 +15,8 @@ namespace Engine
 	class Game;
 }
 
-namespace Engine {
-
+namespace Engine
+{
 	class Camera;
 
 	struct Uniforms {
@@ -32,9 +32,10 @@ namespace Engine {
 		Renderer(VulkanContext* aContext, EntityManager* entityManager, Game* game);
 		Renderer() = default;
 
+		void initialiseBasicRenderer();
 		void initialiseRenderer();
 		void initialiseJointMatrices();
-		void attachCameraComponent(Engine::CameraComponent* cameraComponent);
+		void attachCamera(Engine::Camera* camera);
 		void initialiseModelDescriptors();
 		bool checkSwapchain();
 		bool acquireSwapchainImage();
@@ -55,7 +56,6 @@ namespace Engine {
 
 		// Getters
 		VkRenderPass& GetRenderPass(std::string s);
-		CameraComponent* GetCameraComponentPointer() { return cameraComponent; }
 		Camera* GetCameraPointer() { return camera; }
 		bool const GetIsSceneLoaded() { return isSceneLoaded; }
 
@@ -76,6 +76,7 @@ namespace Engine {
 
 		bool vsync = true;
 		int msaaIndex = 0;
+		bool changedMSAA = false;
 
 		// Debug things
 		float depthBiasConstant = 7.0f;
@@ -84,7 +85,6 @@ namespace Engine {
 		VulkanContext* context;
 		EntityManager* entityManager;
 		Game* game;
-		CameraComponent* cameraComponent;
 		Camera* camera;
 
 		std::unique_ptr<Skybox> skybox;
@@ -125,8 +125,8 @@ namespace Engine {
 		std::vector<const char*> msaaOptions;
 
 		void renderGUI();
-		void renderForward(bool debug);
-		void renderDeferred(bool debug);
+		void renderForward();
+		void renderDeferred();
 		void drawModels(VkCommandBuffer cmdBuf, VkPipelineLayout pipelineLayout, DrawType drawType, bool justGeometry = false);
 
 		void recreateFormatDependents();
