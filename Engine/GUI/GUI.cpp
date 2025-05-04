@@ -124,4 +124,12 @@ namespace Engine
 			}
 		}
 	}
+
+	void GUI::ResetGUIModes()
+	{
+		for (int i = 0; i < guiModes.size(); i++)
+		{
+			activeGUIModes[i] = false;
+		}
+	}
 }

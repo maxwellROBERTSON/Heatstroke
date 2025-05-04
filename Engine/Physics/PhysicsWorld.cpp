@@ -105,6 +105,12 @@ namespace Engine
 		this->entityManager = entityManager;
 	}
 
+	void PhysicsWorld::reset(EntityManager* e)
+	{
+		cleanupPhysX();
+		init(e);
+	}
+
 	void PhysicsWorld::setControllerEntity(Entity* entity) { controllerEntity = entity; }
 	void PhysicsWorld::setControllerHeight(float height) { controllerHeight = height;  }
 

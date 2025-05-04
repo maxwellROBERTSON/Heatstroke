@@ -49,6 +49,8 @@ namespace Engine
 
 		void init(EntityManager*);
 
+		void reset(EntityManager*);
+
 		void setControllerEntity(Entity*);
 		void setControllerHeight(float);
 		float getControllerHeight() { return controllerHeight; }

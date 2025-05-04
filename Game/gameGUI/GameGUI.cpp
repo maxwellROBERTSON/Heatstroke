@@ -301,6 +301,8 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 	{
 		ImGui::BeginChild("MultiplayerBox", childSize, true, ImGuiWindowFlags_ChildWindow | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 
+		ImGui::PushFont(game->GetGUI().GetFont("Default"));
+
 		ImGui::Text("Join a server");
 
 		static char addressStr[16] = "192.168.68.60\0";
@@ -341,11 +343,15 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 		}
 		ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), errorMsg.c_str());
 
+		ImGui::PopFont();
+
 		ImGui::EndChild();
 	}
 	else if (serverSelected)
 	{
 		ImGui::BeginChild("ServerBox", childSize, true, ImGuiWindowFlags_ChildWindow | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+
+		ImGui::PushFont(game->GetGUI().GetFont("Default"));
 
 		ImGui::Text("Start a server");
 
@@ -388,6 +394,8 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 			}
 		}
 		ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), errorMsg.c_str());
+
+		ImGui::PopFont();
 
 		ImGui::EndChild();
 	}
@@ -487,7 +495,11 @@ void makeSettingsGUI(FPSTest* game, int* w, int* h)
 	{
 		if (renderer.GetIsSceneLoaded())
 		{
+			game->GetGUI().ResetGUIModes();
+			game->GetGUI().ToggleGUIMode("Home");
+			game->GetPhysicsWorld().reset(&game->GetEntityManager());
 			game->SetRenderMode(RenderMode::NO_DATA_MODE);
+			game->SetGameMode(nullptr);
 			game->GetEntityManager().ClearManager();
 			game->GetNetwork().Reset();
 		}
@@ -724,7 +736,12 @@ void toggleSettings(FPSTest* game)
 {
 	RenderMode mode = game->GetRenderMode();
 	GUI& gui = game->GetGUI();
-	if (mode != NO_DATA)
+	if (mode == NO_DATA_MODE)
+	{
+		multiplayerSelected = false;
+		serverSelected = false;
+	}
+	else
 	{
 		GLFWwindow* aWindow = game->GetContext().getGLFWWindow();
 		gui.ToggleGUIMode("Settings");
