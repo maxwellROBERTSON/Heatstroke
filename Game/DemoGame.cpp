@@ -64,6 +64,7 @@ void FPSTest::Init()
 	GetRenderer().addSkybox(std::make_unique<Engine::Skybox>(&GetContext(), skyboxFilenames));
 
 	this->crosshair = Crosshair(&GetContext());
+	this->decals = Decals(&GetContext(), &GetRenderer());
 }
 
 void FPSTest::Render() {
@@ -149,6 +150,9 @@ void FPSTest::Update() {
 			canFire = false;
 			fireDelay = 1.0f;
 			PxRaycastHit entityHit = physicsWorld.handleShooting(playerEntity);
+
+			this->decals.setNextDecal(entityHit.position, entityHit.normal);
+
 			std::vector<int> entitiesWithPhysicsComponent = GetEntityManager().GetEntitiesWithComponent(PHYSICS);
 			for (int i = 0; i < entitiesWithPhysicsComponent.size(); i++)
 			{
@@ -484,4 +488,8 @@ void FPSTest::loadOnlineEntities(int maxClientsNum)
 
 Crosshair& FPSTest::getCrosshair() {
 	return this->crosshair;
+}
+
+Decals& FPSTest::getDecals() {
+	return this->decals;
 }

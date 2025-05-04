@@ -68,6 +68,8 @@ namespace Engine {
 		std::map<std::string, VkDescriptorSet> getDescriptorSets();
 		VkDescriptorSet getDescriptorSet(const std::string& handle);
 
+		VkDescriptorSetLayout getDescriptorLayout(const std::string& handle);
+
 		float getAvgFrameTime();
 		int getAvgFPS();
 

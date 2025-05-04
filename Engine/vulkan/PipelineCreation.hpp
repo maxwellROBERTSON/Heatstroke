@@ -46,6 +46,7 @@ namespace Engine {
 	vk::RenderPass createOverlayRenderPass(const VulkanWindow& aWindow);
 	vk::RenderPass createOverlayRenderPassMSAA(const VulkanWindow& aWindow, VkSampleCountFlagBits sampleCount);
 	vk::RenderPass createCrosshairRenderPass(const VulkanWindow& aWindow);
+	vk::RenderPass createDecalRenderPass(const VulkanWindow& aWindow);
 	
 	vk::DescriptorSetLayout createDescriptorLayout(const VulkanWindow& aWindow, std::vector<DescriptorSetting> aDescriptorSettings);
 
@@ -56,6 +57,7 @@ namespace Engine {
 	vk::Pipeline createShadowOffscreenPipeline(const VulkanWindow& aWindow, VkRenderPass aRenderPass, VkPipelineLayout aPipelineLayout);
 	vk::Pipeline createSkyboxPipeline(const VulkanWindow& aWindow, VkRenderPass aRenderPass, VkPipelineLayout aPipelineLayout, VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT);
 	vk::Pipeline createCrosshairPipeline(const VulkanWindow& aWindow, VkRenderPass aRenderPass, VkPipelineLayout aPipelineLayout);
+	vk::Pipeline createDecalPipeline(const VulkanWindow& aWindow, VkRenderPass aRenderPass, VkPipelineLayout aPipelineLayout);
 
 	std::pair<vk::Texture, vk::ImageView> createTextureBuffer(const VulkanContext& aContext, TextureBufferSetting aBufferSetting);
 	std::uint32_t computeMipLevels(std::uint32_t width, std::uint32_t height);

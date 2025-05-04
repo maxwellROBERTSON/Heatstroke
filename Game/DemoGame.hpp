@@ -35,6 +35,8 @@
 
 #include "../ThreadPool/thread_pool_wait.h"
 
+#include "../Engine/Rendering/Decals.hpp"
+
 #include "rendering/Crosshair.hpp"
 
 class FPSTest : public Engine::Game
@@ -64,6 +66,8 @@ public:
 	};
 
 	Crosshair& getCrosshair();
+	Engine::Decals& getDecals();
+
 	int score = 0;
 	int countdown = 30;
 	bool gameOver = false;
@@ -99,22 +103,10 @@ public:
 	// Targets (make a vector (fingers crossed) at some point)
 	Engine::Entity* targetEntity;
 	glm::vec3 targetPos{ 3.0f, 1.0f, 0.0f };
-	//Engine::Entity* targetEntity1;
-	//Engine::Entity* targetEntity2;
-	//Engine::Entity* targetEntity3;
-	//glm::vec3 target1Pos{ 2.0f, 1.0f, 0.0f }; // generate randomly
-	//glm::vec3 target2Pos{ -2.0f, 1.0f, 0.0f }; // ^
-	//glm::vec3 target3Pos{ 2.0f, 5.0f, 0.0f }; // ^
-
-	//std::vector<Engine::Entity*> targetEntities;
-	//std::vector<glm::vec3> targetPositions;
-
-
-	//void RespawnTarget();
-
 
 	thread_pool_wait* threadPool;
 	int offlineClientId = 0;
 
 	Crosshair crosshair;
+	Engine::Decals decals;
 };

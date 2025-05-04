@@ -61,8 +61,11 @@ namespace Engine {
 		std::vector<DescriptorSetting> sceneSetting = { {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT} };
 		this->descriptorLayouts.emplace("sceneLayout", createDescriptorLayout(*this->context->window, sceneSetting));
 
-		std::vector<DescriptorSetting> ssboSetting = { {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT} };
-		this->descriptorLayouts.emplace("SSBOLayout", createDescriptorLayout(*this->context->window, ssboSetting));
+		std::vector<DescriptorSetting> vertSSBOSetting = { {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT} };
+		this->descriptorLayouts.emplace("vertSSBOLayout", createDescriptorLayout(*this->context->window, vertSSBOSetting));
+
+		std::vector<DescriptorSetting> fragSSBOSetting = { {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT} };
+		this->descriptorLayouts.emplace("fragSSBOLayout", createDescriptorLayout(*this->context->window, fragSSBOSetting));
 
 		std::vector<DescriptorSetting> vertUBOSetting = { {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT} };
 		this->descriptorLayouts.emplace("vertUBOLayout", createDescriptorLayout(*this->context->window, vertUBOSetting));
@@ -95,13 +98,13 @@ namespace Engine {
 		forwardLayouts.emplace_back(this->descriptorLayouts["sceneLayout"].handle);
 		forwardLayouts.emplace_back(this->descriptorLayouts["vertUBOLayout"].handle);
 		forwardLayouts.emplace_back(this->descriptorLayouts["materialLayout"].handle);
-		forwardLayouts.emplace_back(this->descriptorLayouts["SSBOLayout"].handle);
+		forwardLayouts.emplace_back(this->descriptorLayouts["fragSSBOLayout"].handle);
 
 		std::vector<VkDescriptorSetLayout> forwardShadowLayouts;
 		forwardShadowLayouts.emplace_back(this->descriptorLayouts["sceneLayout"].handle);
 		forwardShadowLayouts.emplace_back(this->descriptorLayouts["vertUBOLayout"].handle);
 		forwardShadowLayouts.emplace_back(this->descriptorLayouts["materialLayout"].handle);
-		forwardShadowLayouts.emplace_back(this->descriptorLayouts["SSBOLayout"].handle);
+		forwardShadowLayouts.emplace_back(this->descriptorLayouts["fragSSBOLayout"].handle);
 		forwardShadowLayouts.emplace_back(this->descriptorLayouts["vertUBOLayout"].handle);
 		forwardShadowLayouts.emplace_back(this->descriptorLayouts["fragImageLayout"].handle);
 
@@ -120,6 +123,11 @@ namespace Engine {
 
 		std::vector<VkDescriptorSetLayout> crosshairLayout;
 		crosshairLayout.emplace_back(this->descriptorLayouts["orthoMatrices"].handle);
+
+		std::vector<VkDescriptorSetLayout> decalLayout;
+		decalLayout.emplace_back(this->descriptorLayouts["sceneLayout"].handle);
+		decalLayout.emplace_back(this->descriptorLayouts["vertUBOLayout"].handle);
+		//decalLayout.emplace_back(this->descriptorLayouts["fragImageLayout"].handle);
 
 		// Pipeline layouts
 		// Empty push constant range
@@ -150,6 +158,7 @@ namespace Engine {
 		this->pipelineLayouts.emplace("shadow", createPipelineLayout(*this->context->window, shadowLayout, justModelMatrix));
 		this->pipelineLayouts.emplace("skybox", createPipelineLayout(*this->context->window, skyboxLayout, emptyPushConstant));
 		this->pipelineLayouts.emplace("crosshair", createPipelineLayout(*this->context->window, crosshairLayout, emptyPushConstant));
+		this->pipelineLayouts.emplace("decal", createPipelineLayout(*this->context->window, decalLayout, emptyPushConstant));
 
 		// Pipelines
 		std::tuple<vk::Pipeline, vk::Pipeline> deferredPipelines = createDeferredPipelines(
@@ -168,6 +177,7 @@ namespace Engine {
 		this->pipelines.emplace("skybox", createSkyboxPipeline(*this->context->window, this->renderPasses["forward"].handle, this->pipelineLayouts["skybox"].handle));
 		this->pipelines.emplace("skyboxMSAA", createSkyboxPipeline(*this->context->window, this->renderPasses["forwardMSAA"].handle, this->pipelineLayouts["skybox"].handle, VK_SAMPLE_COUNT_4_BIT));
 		this->pipelines.emplace("crosshair", createCrosshairPipeline(*this->context->window, this->renderPasses["crosshair"].handle, this->pipelineLayouts["crosshair"].handle));
+		this->pipelines.emplace("decal", createDecalPipeline(*this->context->window, this->renderPasses["forward"].handle, this->pipelineLayouts["decal"].handle));
 
 		// Buffers
 		TextureBufferSetting depthTexture = {
@@ -380,7 +390,7 @@ namespace Engine {
 		std::vector<vk::Model>& models = this->game->GetModels();
 
 		for (vk::Model& model : models)
-			model.createDescriptorSets(*this->context, this->descriptorLayouts["materialLayout"].handle, this->descriptorLayouts["SSBOLayout"].handle);
+			model.createDescriptorSets(*this->context, this->descriptorLayouts["materialLayout"].handle, this->descriptorLayouts["fragSSBOLayout"].handle);
 	}
 
 	bool Renderer::checkSwapchain() {
@@ -658,6 +668,8 @@ namespace Engine {
 			}
 		}
 
+		((FPSTest*)this->game)->getDecals().updateUniform(cmdBuf);
+
 		if (shadow) {
 			Utils::bufferBarrier(
 				cmdBuf,
@@ -766,6 +778,14 @@ namespace Engine {
 		}
 
 		drawModels(cmdBuf, this->pipelineLayouts[pipelineLayout].handle, DrawType::WORLD);
+
+		vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelines["decal"].handle);
+
+		VkDescriptorSet decalDescriptorSet = ((FPSTest*)this->game)->getDecals().getDescriptorSet();
+		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["decal"].handle, 0, 1, &this->descriptorSets["scene"], 0, nullptr); // Projective matrices
+		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["decal"].handle, 1, 1, &decalDescriptorSet, 0, nullptr);
+
+		((FPSTest*)this->game)->getDecals().render(cmdBuf);
 
 		if (debug) {
 			ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmdBuf);
@@ -1216,6 +1236,10 @@ namespace Engine {
 
 	VkDescriptorSet Renderer::getDescriptorSet(const std::string& handle) {
 		return this->descriptorSets[handle];
+	}
+
+	VkDescriptorSetLayout Renderer::getDescriptorLayout(const std::string& handle) {
+		return this->descriptorLayouts[handle].handle;
 	}
 
 	float Renderer::getAvgFrameTime() {
