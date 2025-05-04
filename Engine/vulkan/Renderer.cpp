@@ -598,6 +598,9 @@ namespace Engine {
 
 		vkCmdBeginRenderPass(cmdBuf, &passInfo, VK_SUBPASS_CONTENTS_INLINE);
 
+		std::tuple<vk::Texture, vk::ImageView, VkDescriptorSet>* imageTuple = game->GetGUI().GetImage("Test");
+		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["crosshair"].handle, 0, 1, &std::get<2>(*imageTuple), 0, nullptr);
+
 		// Render ImGui
 		if (ImGui::GetDrawData() != nullptr)
 			ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmdBuf);

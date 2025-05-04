@@ -35,6 +35,8 @@ namespace Engine
 
 		ImFont* GetFont(std::string s);
 
+		std::tuple<vk::Texture, vk::ImageView, VkDescriptorSet>* GetImage(std::string s);
+
 		bool GetGUIMode(std::string s);
 
 		// Setters
@@ -47,6 +49,10 @@ namespace Engine
 
 		void AddFont(std::string s, const char* filename, float size);
 
+		void AddTexture(std::string s, const char* filename);
+
+		tinygltf::Image loadPngAsTinyImage(const char* filename);
+
 		void ToggleGUIMode(std::string s);
 
 	private:
@@ -57,6 +63,8 @@ namespace Engine
 		std::map<std::string, std::function<void(int*, int*)>> functions;
 
 		std::map<std::string, ImFont*> fonts;
+
+		std::map<std::string, std::tuple<vk::Texture, vk::ImageView, VkDescriptorSet>> images;
 
 		bool isNullFrame = true;
 	};

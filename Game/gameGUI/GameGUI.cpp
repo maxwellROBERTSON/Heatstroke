@@ -37,11 +37,33 @@ void makeGameGUIS(FPSTest* game)
 	gui.AddFont("HomeHovered", "Engine/third_party/imgui/misc/fonts/Freedom.ttf", 70.0f);
 	gui.AddFont("Game", "Engine/third_party/imgui/misc/fonts/Roboto-Medium.ttf", 36.0f);
 
+	gui.AddTexture("Test", "Game/assets/Assets/maps/russian_house/textures/Balkon_01_baseColor.png");
+
 	gui.ToggleGUIMode("Home");
 }
 
 void makeHomeGUI(FPSTest* game, int* w, int* h)
 {
+	ImGuiViewport* viewport = ImGui::GetMainViewport();
+
+	ImGui::SetNextWindowPos(viewport->Pos, ImGuiCond_Always);
+	ImGui::SetNextWindowSize(viewport->Size, ImGuiCond_Always);
+
+	// Flags to remove decorations and background
+	ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration |
+		ImGuiWindowFlags_NoInputs |
+		ImGuiWindowFlags_NoMove |
+		ImGuiWindowFlags_NoScrollbar |
+		ImGuiWindowFlags_NoScrollWithMouse |
+		ImGuiWindowFlags_NoSavedSettings |
+		ImGuiWindowFlags_NoBringToFrontOnFocus |
+		ImGuiWindowFlags_NoBackground;
+
+	ImGui::Begin("BackgroundImage", nullptr, window_flags);
+	ImGui::SetCursorPos(ImVec2(0.f, 0.f));
+	ImGui::Image((ImTextureID)std::get<2>(*game->GetGUI().GetImage("Test")), viewport->Size);
+	ImGui::End();
+
 	ImGui::SetNextWindowPos(ImVec2(0, 0));
 	ImGui::SetNextWindowSize(ImVec2(*w, *h));
 

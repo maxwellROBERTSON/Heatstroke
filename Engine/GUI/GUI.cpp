@@ -18,6 +18,14 @@ namespace Engine
 		return nullptr;
 	}
 
+	std::tuple<vk::Texture, vk::ImageView, VkDescriptorSet>* GUI::GetImage(std::string s)
+	{
+		auto it = images.find(s);
+		if (it != images.end())
+			return &it->second;
+		return nullptr;
+	}
+
 	bool GUI::GetGUIMode(std::string s)
 	{
 		for (int i = 0; i < guiModes.size(); i++)
@@ -113,6 +121,29 @@ namespace Engine
 		fonts.emplace(s, ImGui::GetIO().Fonts->AddFontFromFileTTF(filename, size));
 	}
 
+	void GUI::AddTexture(std::string s, const char* filename)
+	{
+		images.emplace(s, std::tuple<vk::Texture, vk::ImageView, VkDescriptorSet>{});
+		vk::SamplerInfo samplerInfo;
+		samplerInfo.magFilter = VK_FILTER_NEAREST;
+		samplerInfo.minFilter = VK_FILTER_NEAREST;
+		samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+
+		std::tuple<vk::Texture, vk::ImageView, VkDescriptorSet>* imageTuple = GetImage(s);
+		vk::Sampler sampler = createTextureSampler(*game->GetContext().window, samplerInfo);
+
+		std::get<0>(*imageTuple) = vk::createTexture(game->GetContext(), "ImGui Texture", loadPngAsTinyImage(filename), VK_FORMAT_R8G8B8A8_UNORM, sampler.handle);
+
+		std::get<1>(*imageTuple) = vk::createImageView(*game->GetContext().window, std::get<0>(*imageTuple).image, VK_FORMAT_R8G8B8A8_UNORM);
+
+		std::get<2>(*imageTuple) = ImGui_ImplVulkan_AddTexture(
+			std::get<0>(*imageTuple).sampler,
+			std::get<1>(*imageTuple).handle,
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+		);
+	}
+
 	void GUI::ToggleGUIMode(std::string s)
 	{
 		for (int i = 0; i < guiModes.size(); i++)
@@ -123,5 +154,28 @@ namespace Engine
 				std::cout << "Toggled GUI Mode " << i << std::endl;
 			}
 		}
+	}
+
+	tinygltf::Image GUI::loadPngAsTinyImage(const char* filename)
+	{
+		tinygltf::Image image;
+		int width, height, channels;
+
+		// Load image as 4-channel RGBA
+		unsigned char* data = stbi_load(filename, &width, &height, &channels, STBI_rgb_alpha);
+		if (!data)
+			throw std::runtime_error(std::string("Failed to load PNG: ") + filename);
+
+		size_t dataSize = width * height * 4; // RGBA
+		image.image.assign(data, data + dataSize);
+		image.width = width;
+		image.height = height;
+		image.component = 4; // RGBA
+		image.bits = 8;
+		image.pixel_type = TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE;
+		image.name = filename;
+
+		stbi_image_free(data);
+		return image;
 	}
 }
