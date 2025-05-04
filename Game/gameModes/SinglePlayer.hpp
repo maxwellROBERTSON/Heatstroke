@@ -8,7 +8,8 @@ using namespace Engine;
 
 extern std::random_device rd;  // Declare extern random device
 extern std::mt19937 gen;       // Declare extern mersenne_twister engine
-extern std::uniform_int_distribution<> randomDistrib; // Declare extern distribution
+extern std::uniform_int_distribution<> randomDistribX; // Declare extern distributionX
+extern std::uniform_int_distribution<> randomDistribZ; // Declare extern distributionY
 
 class SinglePlayer : public GameMode
 {

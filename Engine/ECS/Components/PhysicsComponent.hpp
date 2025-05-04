@@ -32,6 +32,7 @@ namespace Engine
 		// three physics objects for now
 		enum class PhysicsType {
 			STATIC,
+			STATICBOUNDED,
 			DYNAMIC,
 			CONTROLLER
 			//...
@@ -100,8 +101,8 @@ namespace Engine
 		void Init(PhysicsWorld&, PhysicsType, vk::Model&, glm::mat4, int, bool, bool);
 
 		// Init complex shape
-		void InitComplexShape(PhysicsWorld&, PhysicsType, vk::Model&, glm::mat4, int);
 		void InitComplexShape(const char* name, PhysicsWorld&, PhysicsType, vk::Model&, glm::mat4, int);
+		void AddBoundingBox(PhysicsWorld&, glm::vec3, glm::vec3, glm::mat4);
 
 		// Set physics object type STATIC/DYNAMIC/CONTROLLER
 		void SetPhysicsType(PhysicsType t) { type = t; SetComponentHasChanged(); }

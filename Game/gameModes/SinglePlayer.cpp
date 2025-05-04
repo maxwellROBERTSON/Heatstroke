@@ -4,7 +4,8 @@ using namespace Engine;
 
 std::random_device rd;  // Define random device
 std::mt19937 gen(rd()); // Define mersenne_twister engine using rd as seed
-std::uniform_int_distribution<> randomDistrib(1, 7); // Define the distribution
+std::uniform_int_distribution<> randomDistribX(-2.82f, 2.76f);
+std::uniform_int_distribution<> randomDistribZ(-9.5f, 3.5f);
 
 void SinglePlayer::Update(Game* game, float timeDelta)
 {
@@ -61,14 +62,19 @@ void SinglePlayer::Update(Game* game, float timeDelta)
 
 				RenderComponent* hitRenderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
 				hitRenderComponent->SetIsActive(0);
-				int xPos = randomDistrib(gen);
-				int yPos = randomDistrib(gen);
-				glm::vec3 newPos{ xPos, yPos, 0.0f };
+				glm::vec3 pos = entity->GetPosition();
+				int xPos = randomDistribX(gen);
+				int zPos = randomDistribZ(gen);
+				glm::vec3 newPos{ xPos, pos.y, zPos };
 				targetEntity->SetPosition(newPos);
+				glm::vec3 translation;
+				glm::vec3 scale;
+				glm::quat rotation;
+				physicsComponent->DecomposeTransform(targetEntity->GetModelMatrix(), translation, rotation, scale);
 				PxTransform pxTransform(
-					PxVec3(newPos.x, newPos.y, newPos.z)
+					PxVec3(translation.x, translation.y, translation.z),
+					PxQuat(rotation.x, rotation.y, rotation.z, rotation.w)
 				);
-				//physicsComponent->SetTranslation(newPos);
 				physicsComponent->GetStaticBody()->setGlobalPose(pxTransform);
 				hitRenderComponent->SetIsActive(1);
 			}

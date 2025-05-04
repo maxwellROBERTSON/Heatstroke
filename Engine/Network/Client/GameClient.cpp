@@ -197,7 +197,7 @@ namespace Engine
 					Engine::vk::Model& model = game->GetModels()[renderComp->GetModelIndex()];
 					if (type == PhysicsComponent::PhysicsType::STATIC)
 					{
-						physicsComp->InitComplexShape(game->GetPhysicsWorld(), type, model, mat, vec[i]);
+						physicsComp->InitComplexShape("Temp", game->GetPhysicsWorld(), type, model, mat, vec[i]);
 					}
 					else
 					{

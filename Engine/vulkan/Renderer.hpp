@@ -15,8 +15,8 @@ namespace Engine
 	class Game;
 }
 
-namespace Engine {
-
+namespace Engine
+{
 	class Camera;
 
 	struct Uniforms {
@@ -32,6 +32,7 @@ namespace Engine {
 		Renderer(VulkanContext* aContext, EntityManager* entityManager, Game* game);
 		Renderer() = default;
 
+		void initialiseBasicRenderer();
 		void initialiseRenderer();
 		void initialiseJointMatrices();
 		void attachCamera(Engine::Camera* camera);
@@ -75,6 +76,7 @@ namespace Engine {
 
 		bool vsync = true;
 		int msaaIndex = 0;
+		bool changedMSAA = false;
 
 		// Debug things
 		float depthBiasConstant = 7.0f;

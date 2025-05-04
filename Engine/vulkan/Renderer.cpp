@@ -44,6 +44,10 @@ namespace Engine {
 		this->skybox = std::move(skybox);
 	}
 
+	void Renderer::initialiseBasicRenderer() {
+		this->renderPasses.emplace("gui", createUIRenderPass(*this->context->window));
+	}
+
 	void Renderer::initialiseRenderer() {
 		// Render passes
 		this->renderPasses.emplace("forward", createRenderPass(*this->context->window));
@@ -51,7 +55,7 @@ namespace Engine {
 		this->renderPasses.emplace("forwardMSAA", createRenderPassMSAA(*this->context->window, VK_SAMPLE_COUNT_4_BIT));
 		this->renderPasses.emplace("deferred", createDeferredRenderPass(*this->context->window));
 		this->renderPasses.emplace("shadow", createShadowRenderPass(*this->context->window));
-		this->renderPasses.emplace("ui", createUIRenderPass(*this->context->window));
+		//this->renderPasses.emplace("ui", createUIRenderPass(*this->context->window));
 		this->renderPasses.emplace("overlay", createOverlayRenderPass(*this->context->window));
 		this->renderPasses.emplace("overlayMSAA", createOverlayRenderPassMSAA(*this->context->window, VK_SAMPLE_COUNT_4_BIT));
 		this->renderPasses.emplace("crosshair", createCrosshairRenderPass(*this->context->window));
@@ -398,17 +402,15 @@ namespace Engine {
 			const auto changes = Engine::recreateSwapchain(*this->context->window, this->vsync ? VK_PRESENT_MODE_FIFO_KHR : VK_PRESENT_MODE_IMMEDIATE_KHR);
 
 			// We also need to recreate format and size dependents if MSAA is changed
-			if (changes.changedFormat || this->game->GetGUI().changedMSAA)
+			bool changedmsaa = this->game->GetRenderer().changedMSAA;
+			if (changes.changedFormat || changedmsaa)
 				this->recreateFormatDependents();
 
-			if (changes.changedSize || this->game->GetGUI().changedMSAA)
+			if (changes.changedSize || changedmsaa)
 				this->recreateSizeDependents();
 
-			// If we changed MSAA setting, recreate ImGui context to match MSAA samples
-			if (this->game->GetGUI().changedMSAA) {
-				this->destroyImGui();
-				this->game->GetGUI().initGUI();
-				this->game->GetGUI().changedMSAA = false;
+			if (changedmsaa) {
+				this->game->GetRenderer().changedMSAA = false;
 			}
 
 			this->recreateOthers();
@@ -545,7 +547,7 @@ namespace Engine {
 	void Renderer::renderGUI() {
 		VkCommandBuffer cmdBuf = this->cmdBuffers[this->frameIndex];
 
-		// Begin recording
+		// Begin recording command buffer
 		beginCommandBuffer(cmdBuf, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
 		// Clear attachments
@@ -583,31 +585,28 @@ namespace Engine {
 
 		vkCmdBeginRenderPass(cmdBuf, &passInfo, VK_SUBPASS_CONTENTS_INLINE);
 
+		vkCmdEndRenderPass(cmdBuf);
+
+		// Begin dummy render pass (required for ImGui)
+
+		clearValues.clear();
+		clearValues.emplace_back(colourClearValue);
+
+		passInfo.renderPass = this->renderPasses["crosshair"].handle;
+		passInfo.framebuffer = this->crosshairFramebuffer[this->imageIndex].handle;
+		passInfo.clearValueCount = (uint32_t)clearValues.size();
+
+		vkCmdBeginRenderPass(cmdBuf, &passInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+		// Render ImGui
 		if (ImGui::GetDrawData() != nullptr)
 			ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmdBuf);
 
 		vkCmdEndRenderPass(cmdBuf);
 
-		// Null crosshair pass to satisfy ImGui
-
-		VkRenderPassBeginInfo passInfo3{};
-		passInfo3.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		passInfo3.renderPass = this->renderPasses["crosshair"].handle;
-		passInfo3.framebuffer = this->crosshairFramebuffer[this->imageIndex].handle;
-		passInfo3.renderArea.offset = VkOffset2D{ 0, 0 };
-		passInfo3.renderArea.extent = this->context->window->swapchainExtent;
-		passInfo3.clearValueCount = (uint32_t)clearValues.size();
-		passInfo3.pClearValues = clearValues.data();
-
-		vkCmdBeginRenderPass(cmdBuf, &passInfo3, VK_SUBPASS_CONTENTS_INLINE);
-
-		if (ImGui::GetDrawData() != nullptr)
-			ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmdBuf);
-
-		vkCmdEndRenderPass(cmdBuf);
-
-		if (const auto res = vkEndCommandBuffer(cmdBuf); VK_SUCCESS != res)
-			throw Utils::Error("Unable to end command buffer\n vkEndCommandBuffer() returned %s", Utils::toString(res).c_str());
+		// Finalize command buffer
+		if (const auto res = vkEndCommandBuffer(cmdBuf); res != VK_SUCCESS)
+			throw Utils::Error("Unable to end command buffer\nvkEndCommandBuffer() returned %s", Utils::toString(res).c_str());
 	}
 
 	void Renderer::renderForward() {
@@ -889,7 +888,7 @@ namespace Engine {
 		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["crosshair"].handle, 0, 1, &this->descriptorSets["orthoMatrices"], 0, nullptr);
 
 		((FPSTest*)this->game)->GetCrosshair().drawCrosshair(cmdBuf);
-
+		// Render ImGui
 		if (ImGui::GetDrawData() != nullptr)
 			ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmdBuf);
 
@@ -1033,10 +1032,48 @@ namespace Engine {
 
 		vkCmdDraw(cmdBuf, 3, 1, 0, 0);
 
+		vkCmdEndRenderPass(cmdBuf);
+
+		// Draw crosshair
+		((FPSTest*)this->game)->GetCrosshair().updatePositions();
+
+		Utils::bufferBarrier(
+			cmdBuf,
+			this->uniformBuffers["orthoMatrices"].buffer,
+			VK_ACCESS_UNIFORM_READ_BIT,
+			VK_ACCESS_TRANSFER_WRITE_BIT,
+			VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
+			VK_PIPELINE_STAGE_TRANSFER_BIT);
+
+		vkCmdUpdateBuffer(cmdBuf, this->uniformBuffers["orthoMatrices"].buffer, 0, sizeof(glsl::OrthoMatrices), &this->uniforms.orthoMatrices);
+
+		Utils::bufferBarrier(
+			cmdBuf,
+			this->uniformBuffers["orthoMatrices"].buffer,
+			VK_ACCESS_TRANSFER_WRITE_BIT,
+			VK_ACCESS_UNIFORM_READ_BIT,
+			VK_PIPELINE_STAGE_TRANSFER_BIT,
+			VK_PIPELINE_STAGE_VERTEX_SHADER_BIT);
+
+		VkRenderPassBeginInfo passInfo3{};
+		passInfo3.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		passInfo3.renderPass = this->renderPasses["crosshair"].handle;
+		passInfo3.framebuffer = this->crosshairFramebuffer[this->imageIndex].handle;
+		passInfo3.renderArea.offset = VkOffset2D{ 0, 0 };
+		passInfo3.renderArea.extent = this->context->window->swapchainExtent;
+		passInfo3.clearValueCount = 5;
+		passInfo3.pClearValues = clearValues;
+
+		vkCmdBeginRenderPass(cmdBuf, &passInfo3, VK_SUBPASS_CONTENTS_INLINE);
+
+		vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelines["crosshair"].handle);
+
+		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["crosshair"].handle, 0, 1, &this->descriptorSets["orthoMatrices"], 0, nullptr);
+
+		((FPSTest*)this->game)->GetCrosshair().drawCrosshair(cmdBuf);
+		// Render ImGui
 		if (ImGui::GetDrawData() != nullptr)
 			ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmdBuf);
-
-		vkCmdEndRenderPass(cmdBuf);
 
 		if (const auto res = vkEndCommandBuffer(cmdBuf); VK_SUCCESS != res)
 			throw Utils::Error("Unable to end command buffer\n vkEndCommandBuffer() returned %s", Utils::toString(res).c_str());

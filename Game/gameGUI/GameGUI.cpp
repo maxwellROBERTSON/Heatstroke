@@ -16,6 +16,9 @@ std::string errorMsg = "";
 ImVec2 serverBoxSize = ImVec2(0, 0);
 std::string loadingMsg = "Messages not yet setup. Need to put this onto a thread.";
 Engine::Camera cameraTemp;
+bool singleHovered = false;
+bool multiHovered = false;
+bool serverHovered = false;
 
 void makeGameGUIS(FPSTest* game)
 {
@@ -30,6 +33,8 @@ void makeGameGUIS(FPSTest* game)
 	gui.AddFunction("MultiPlayer", [game](int* w, int* h) { makeMultiPlayerGUI(game, w, h); });
 
 	gui.AddFont("Default", "Engine/third_party/imgui/misc/fonts/Roboto-Medium.ttf", 12.0f);
+	gui.AddFont("Home", "Engine/third_party/imgui/misc/fonts/Freedom.ttf", 60.0f);
+	gui.AddFont("HomeHovered", "Engine/third_party/imgui/misc/fonts/Freedom.ttf", 70.0f);
 	gui.AddFont("Game", "Engine/third_party/imgui/misc/fonts/Roboto-Medium.ttf", 36.0f);
 
 	gui.ToggleGUIMode("Home");
@@ -37,8 +42,6 @@ void makeGameGUIS(FPSTest* game)
 
 void makeHomeGUI(FPSTest* game, int* w, int* h)
 {
-	ImGui::PushFont(game->GetGUI().GetFont("Default"));
-
 	ImGui::SetNextWindowPos(ImVec2(0, 0));
 	ImGui::SetNextWindowSize(ImVec2(*w, *h));
 
@@ -50,43 +53,243 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 	ImGui::Begin("Home Menu", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 
 	ImGui::Text("Demo game made using Heatstroke", ImVec2(*w / 4, *h / 4));
-	if (ImGui::Button("Single Player", ImVec2(*w / 4, *h / 4)))
+
+	ImGui::PushFont(game->GetGUI().GetFont("Home"));
+
+	const char* label = "Single Player";
+	ImVec2 textSize;
+	ImVec2 boxSize;
+	ImVec2 cursorPos;
+	ImU32 color = ImGui::GetColorU32(ImGuiCol_Text);
+
+	if (singleHovered)
 	{
-		game->SetGameMode(std::make_unique<SinglePlayer>());
-		game->loadOfflineEntities();
-		game->GetRenderer().initialiseJointMatrices();
-		game->GetGUI().ToggleGUIMode("Home");
-		if (game->debugging)
-			game->GetGUI().ToggleGUIMode("Debug");
-		game->SetRenderMode(RenderMode::FORWARD);
-		GLFWwindow* window = game->GetContext().getGLFWWindow();
-		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+		ImGui::PushFont(game->GetGUI().GetFont("HomeHovered"));
+		textSize = ImGui::CalcTextSize(label);
+		boxSize = ImVec2(textSize.x - 10.f, textSize.y - 30.f);
+
+		ImGui::SetCursorPosX(20.f);
+		ImVec2 temp = ImGui::GetCursorScreenPos();
+		temp.y += 20.f;
+		ImGui::SetCursorPos(temp);
+
+		if (ImGui::InvisibleButton("##singlebtn", boxSize))
+		{
+			game->SetGameMode(std::make_unique<SinglePlayer>());
+			game->loadOfflineEntities();
+			game->GetRenderer().initialiseJointMatrices();
+			game->GetGUI().ToggleGUIMode("Home");
+			game->GetGUI().ToggleGUIMode("SinglePlayer");
+			if (game->debugging)
+				game->GetGUI().ToggleGUIMode("Debug");
+			game->SetRenderMode(RenderMode::FORWARD);
+			GLFWwindow* window = game->GetContext().getGLFWWindow();
+			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+		}
+
+		cursorPos = ImGui::GetCursorScreenPos();
+		cursorPos.x += 20.f;
+		cursorPos.y -= boxSize.y + 4;
+		cursorPos.x += (boxSize.x - textSize.x) * 0.5f;
+		cursorPos.y += (boxSize.y - textSize.y) * 0.5f;
+		color = ImGui::GetColorU32(ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+		ImGui::GetWindowDrawList()->AddText(cursorPos, color, label);
+
+		ImGui::PopFont();
+
+		if (!ImGui::IsItemHovered())
+			singleHovered = false;
 	}
-	if (ImGui::Button("Multi-Player", ImVec2(*w / 4, *h / 4)))
+	else
 	{
-		if (multiplayerSelected)
+		textSize = ImGui::CalcTextSize(label);
+		boxSize = ImVec2(textSize.x - 10.f, textSize.y - 30.f);
+
+		ImGui::SetCursorPosX(20.f);
+		ImVec2 temp = ImGui::GetCursorScreenPos();
+		temp.y += 20.f;
+		ImGui::SetCursorPos(temp);
+
+		if (ImGui::InvisibleButton("##singlebtn", boxSize))
 		{
-			multiplayerSelected = false;
-			serverSelected = false;
+			game->SetGameMode(std::make_unique<SinglePlayer>());
+			game->loadOfflineEntities();
+			game->GetRenderer().initialiseJointMatrices();
+			game->GetGUI().ToggleGUIMode("Home");
+			game->GetGUI().ToggleGUIMode("SinglePlayer");
+			if (game->debugging)
+				game->GetGUI().ToggleGUIMode("Debug");
+			game->SetRenderMode(RenderMode::FORWARD);
+			GLFWwindow* window = game->GetContext().getGLFWWindow();
+			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 		}
-		else
-		{
-			multiplayerSelected = true;
-			serverSelected = false;
-		}
+
+		cursorPos = ImGui::GetCursorScreenPos();
+		cursorPos.x += 20.f;
+		cursorPos.y -= boxSize.y + 4;
+		cursorPos.x += (boxSize.x - textSize.x) * 0.5f;
+		cursorPos.y += (boxSize.y - textSize.y) * 0.5f;
+		color = ImGui::GetColorU32(ImVec4(0.7f, 0.7f, 0.7f, 1.0f));
+		ImGui::GetWindowDrawList()->AddText(cursorPos, color, label);
+
+		if (ImGui::IsItemHovered())
+			singleHovered = true;
 	}
-	if (ImGui::Button("Create a Server", ImVec2(*w / 4, *h / 4)))
+
+	ImGui::Dummy(ImVec2(0.0f, 20.0f));
+
+	label = "Multi-Player";
+
+	if (multiHovered)
 	{
-		if (serverSelected)
+		ImGui::PushFont(game->GetGUI().GetFont("HomeHovered"));
+		textSize = ImGui::CalcTextSize(label);
+		boxSize = ImVec2(textSize.x - 10.f, textSize.y - 30.f);
+
+		ImGui::SetCursorPosX(20.f);
+		ImVec2 temp = ImGui::GetCursorScreenPos();
+		temp.y += 20.f;
+		ImGui::SetCursorPos(temp);
+
+		if (ImGui::InvisibleButton("##multibtn", boxSize))
 		{
-			multiplayerSelected = false;
-			serverSelected = false;
+			if (multiplayerSelected)
+			{
+				multiplayerSelected = false;
+				serverSelected = false;
+			}
+			else
+			{
+				multiplayerSelected = true;
+				serverSelected = false;
+			}
 		}
-		else
+
+		cursorPos = ImGui::GetCursorScreenPos();
+		cursorPos.x += 20.f;
+		cursorPos.y -= boxSize.y + 4;
+		cursorPos.x += (boxSize.x - textSize.x) * 0.5f;
+		cursorPos.y += (boxSize.y - textSize.y) * 0.5f;
+		color = ImGui::GetColorU32(ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+		ImGui::GetWindowDrawList()->AddText(cursorPos, color, label);
+
+		ImGui::PopFont();
+
+		if (!ImGui::IsItemHovered())
+			multiHovered = false;
+	}
+	else
+	{
+		textSize = ImGui::CalcTextSize(label);
+		boxSize = ImVec2(textSize.x - 10.f, textSize.y - 30.f);
+
+		ImGui::SetCursorPosX(20.f);
+		ImVec2 temp = ImGui::GetCursorScreenPos();
+		temp.y += 20.f;
+		ImGui::SetCursorPos(temp);
+
+		if (ImGui::InvisibleButton("##multibtn", boxSize))
 		{
-			multiplayerSelected = false;
-			serverSelected = true;
+			if (multiplayerSelected)
+			{
+				multiplayerSelected = false;
+				serverSelected = false;
+			}
+			else
+			{
+				multiplayerSelected = true;
+				serverSelected = false;
+			}
 		}
+
+		cursorPos = ImGui::GetCursorScreenPos();
+		cursorPos.x += 20.f;
+		cursorPos.y -= boxSize.y + 4;
+		cursorPos.x += (boxSize.x - textSize.x) * 0.5f;
+		cursorPos.y += (boxSize.y - textSize.y) * 0.5f;
+		color = ImGui::GetColorU32(ImVec4(0.7f, 0.7f, 0.7f, 1.0f));
+		ImGui::GetWindowDrawList()->AddText(cursorPos, color, label);
+
+		if (ImGui::IsItemHovered())
+			multiHovered = true;
+	}
+
+	ImGui::Dummy(ImVec2(0.0f, 20.0f));
+
+	label = "Create a server";
+
+	if (serverHovered)
+	{
+		ImGui::PushFont(game->GetGUI().GetFont("HomeHovered"));
+		textSize = ImGui::CalcTextSize(label);
+		boxSize = ImVec2(textSize.x - 10.f, textSize.y - 30.f);
+
+		ImGui::SetCursorPosX(20.f);
+		ImVec2 temp = ImGui::GetCursorScreenPos();
+		temp.y += 20.f;
+		ImGui::SetCursorPos(temp);
+
+		if (ImGui::InvisibleButton("##serverbtn", boxSize))
+		{
+			if (serverSelected)
+			{
+				multiplayerSelected = false;
+				serverSelected = false;
+			}
+			else
+			{
+				multiplayerSelected = false;
+				serverSelected = true;
+			}
+		}
+
+		cursorPos = ImGui::GetCursorScreenPos();
+		cursorPos.x += 20.f;
+		cursorPos.y -= boxSize.y + 4;
+		cursorPos.x += (boxSize.x - textSize.x) * 0.5f;
+		cursorPos.y += (boxSize.y - textSize.y) * 0.5f;
+		color = ImGui::GetColorU32(ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+		ImGui::GetWindowDrawList()->AddText(cursorPos, color, label);
+
+		ImGui::PopFont();
+
+		if (!ImGui::IsItemHovered())
+			serverHovered = false;
+	}
+	else
+	{
+		textSize = ImGui::CalcTextSize(label);
+		boxSize = ImVec2(textSize.x - 10.f, textSize.y - 30.f);
+
+		ImGui::SetCursorPosX(20.f);
+		ImVec2 temp = ImGui::GetCursorScreenPos();
+		temp.y += 20.f;
+		ImGui::SetCursorPos(temp);
+
+		if (ImGui::InvisibleButton("##serverbtn", boxSize))
+		{
+			if (serverSelected)
+			{
+				multiplayerSelected = false;
+				serverSelected = false;
+			}
+			else
+			{
+				multiplayerSelected = false;
+				serverSelected = true;
+			}
+		}
+
+		cursorPos = ImGui::GetCursorScreenPos();
+		cursorPos.x += 20.f;
+		cursorPos.y -= boxSize.y + 4;
+		cursorPos.x += (boxSize.x - textSize.x) * 0.5f;
+		cursorPos.y += (boxSize.y - textSize.y) * 0.5f;
+		color = ImGui::GetColorU32(ImVec4(0.7f, 0.7f, 0.7f, 1.0f));
+		ImGui::GetWindowDrawList()->AddText(cursorPos, color, label);
+
+		if (ImGui::IsItemHovered())
+			serverHovered = true;
 	}
 
 	ImVec2 middlePos = ImVec2(*w / 4, *h / 4);
@@ -234,13 +437,15 @@ void makeSettingsGUI(FPSTest* game, int* w, int* h)
 	//ImGui::Checkbox("Shadows Enabled", &shadowsEnabled);
 	//ImGui::EndDisabled();
 
+	Renderer& renderer = game->GetRenderer();
+
 	ImGui::Text("Anti Aliasing:");
-	std::pair<const char**, int> msaaOptions = game->GetRenderer().getMSAAOptions();
-	if (ImGui::Combo("MSAA:", &game->GetRenderer().msaaIndex, msaaOptions.first, msaaOptions.second, msaaOptions.second)) {
+	std::pair<const char**, int> msaaOptions = renderer.getMSAAOptions();
+	if (ImGui::Combo("MSAA:", &renderer.msaaIndex, msaaOptions.first, msaaOptions.second, msaaOptions.second)) {
 		// If MSAA was changed, flag swapchain to be recreated so 
 		// ImGui can be remade with corresponding sample count
-		game->GetRenderer().setRecreateSwapchain(true);
-		game->GetGUI().changedMSAA = true;
+		renderer.setRecreateSwapchain(true);
+		renderer.changedMSAA = true;
 	}
 
 	ImGui::Text("Crosshair Color:");
@@ -251,7 +456,7 @@ void makeSettingsGUI(FPSTest* game, int* w, int* h)
 
 	ImGui::Text("Sensitivity:");
 
-	float sensitivity = game->GetRenderer().GetCameraPointer()->sensitivity;
+	float sensitivity = renderer.GetCameraPointer()->sensitivity;
 	int sensitivityInt = static_cast<int>(sensitivity * 100);
 
 	// Slider from 0.01 to 1.00
@@ -260,7 +465,7 @@ void makeSettingsGUI(FPSTest* game, int* w, int* h)
 	{
 		sensitivity = sensitivityInt / 100.f;
 		sensitivity = std::clamp(sensitivity, 0.01f, 1.0f);
-		game->GetRenderer().GetCameraPointer()->sensitivity = sensitivity;
+		renderer.GetCameraPointer()->sensitivity = sensitivity;
 	}
 	ImGui::PopItemWidth();
 
@@ -272,7 +477,7 @@ void makeSettingsGUI(FPSTest* game, int* w, int* h)
 	{
 		sensitivity = sensitivityInt / 100.f;
 		sensitivity = std::clamp(sensitivity, 0.01f, 1.0f);
-		game->GetRenderer().GetCameraPointer()->sensitivity = sensitivity;
+		renderer.GetCameraPointer()->sensitivity = sensitivity;
 	}
 	ImGui::PopItemWidth();
 
@@ -280,7 +485,7 @@ void makeSettingsGUI(FPSTest* game, int* w, int* h)
 	ImGui::SetCursorPos(topRightPos);
 	if (ImGui::Button("Disconnect", ImVec2(*w / 6, *h / 6)))
 	{
-		if (game->GetRenderer().GetIsSceneLoaded())
+		if (renderer.GetIsSceneLoaded())
 		{
 			game->SetRenderMode(RenderMode::NO_DATA_MODE);
 			game->GetEntityManager().ClearManager();

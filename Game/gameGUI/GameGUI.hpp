@@ -24,3 +24,6 @@ extern std::string errorMsg;
 extern ImVec2 serverBoxSize;
 extern std::string loadingMsg;
 extern Engine::Camera cameraTemp;
+extern bool singleHovered;
+extern bool multiHovered;
+extern bool serverHovered;

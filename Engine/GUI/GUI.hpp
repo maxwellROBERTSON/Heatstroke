@@ -40,19 +40,14 @@ namespace Engine
 		// Setters
 
 		void initGUI();
-		void initGUICrosshair();
 
 		void makeGUI();
-
-		void NullFrame();
 
 		void AddFunction(std::string s, std::function<void(int*, int*)> func);
 
 		void AddFont(std::string s, const char* filename, float size);
 
 		void ToggleGUIMode(std::string s);
-
-		bool changedMSAA = false;
 
 	private:
 		Engine::Game* game;
