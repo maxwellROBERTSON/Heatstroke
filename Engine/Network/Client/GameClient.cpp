@@ -178,7 +178,7 @@ namespace Engine
 					{
 						thisClientEntity = entitiesWithNetworkComponent[i];
 						CameraComponent* cameraComponent = reinterpret_cast<CameraComponent*>(manager->GetComponentOfEntity(entitiesWithNetworkComponent[i], CAMERA));
-						game->GetRenderer().attachCameraComponent(cameraComponent);
+						game->GetRenderer().attachCamera(cameraComponent->GetCamera());
 						clientEntityId = entitiesWithNetworkComponent[i];
 						break;
 					}
@@ -197,7 +197,7 @@ namespace Engine
 					Engine::vk::Model& model = game->GetModels()[renderComp->GetModelIndex()];
 					if (type == PhysicsComponent::PhysicsType::STATIC)
 					{
-						physicsComp->InitComplexShape(game->GetPhysicsWorld(), type, model, mat, vec[i]);
+						physicsComp->InitComplexShape("Temp", game->GetPhysicsWorld(), type, model, mat, vec[i]);
 					}
 					else
 					{
@@ -325,16 +325,12 @@ namespace Engine
 			std::cout << "MESSAGEID = " << message->GetId() << std::endl;
 			game->GetEntityManager().ResetChanged();
 			game->GetNetwork().SetStatus(Status::CLIENT_LOADING_DATA);
-			//client->ReleaseMessage(message);
 		}
 		else if (client->IsDisconnected())
 		{
 			if (status != Status::CLIENT_DISCONNECTED)
-			{
 				game->GetNetwork().SetStatus(Status::CLIENT_DISCONNECTED);
-				if (game->GetRenderMode(GUILOADING) != 1)
-					game->ToggleRenderMode(GUILOADING);
-			}
+			// EDITED
 		}
 		else if (client->ConnectionFailed())
 		{

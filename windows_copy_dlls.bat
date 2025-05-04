@@ -41,12 +41,19 @@ if not exist "%DST_BASE%" (
 :: Loop through DLLs
 for %%D in (%DLL_LIST%) do (
     if not exist "%DST_BASE%\\%%D" (
-        echo DST_BASE = %DST_BASE%
-        echo SRC_BASE = %SRC_BASE%\\%%D
         if exist "%SRC_BASE%\\%%D" (
             echo Copying %%D...
             copy /Y "%SRC_BASE%\\%%D" "%DST_BASE%\\"
         )
+    )
+)
+
+set "SRC_BASE=%WKS%Engine\\third_party\\vcpkg\\installed\\x64-windows\\tools"
+
+if not exist "%DST_BASE%\\PhysXGpu_64.dll" (
+    if exist "%SRC_BASE%\\PhysXGpu_64.dll" (
+        echo Copying PhysXGpu_64.dll...
+        copy /Y "%SRC_BASE%\\PhysXGpu_64.dll" "%DST_BASE%\\"
     )
 )
 

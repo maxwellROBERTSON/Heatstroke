@@ -142,18 +142,6 @@ namespace Engine
 		}
 	}
 
-	// from input actions
-	void Entity::SetFrontDirection(float cameraYaw)
-	{
-		glm::vec3 newDir;
-		newDir.x = std::cos(glm::radians(cameraYaw));
-		newDir.y = 0.0f;
-		newDir.z = std::sin(glm::radians(cameraYaw));
-		this->frontDirection = glm::normalize(newDir);
-		SetEntityHasChanged();
-
-	}
-
 	// Set model matrix with check for if changed
 	void Entity::SetModelMatrix(glm::mat4 aModelMatrix)
 	{
