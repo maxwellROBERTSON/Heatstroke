@@ -46,7 +46,6 @@ namespace Engine {
 	vk::RenderPass createOverlayRenderPass(const VulkanWindow& aWindow);
 	vk::RenderPass createOverlayRenderPassMSAA(const VulkanWindow& aWindow, VkSampleCountFlagBits sampleCount);
 	vk::RenderPass createCrosshairRenderPass(const VulkanWindow& aWindow);
-	vk::RenderPass createDecalRenderPass(const VulkanWindow& aWindow);
 	
 	vk::DescriptorSetLayout createDescriptorLayout(const VulkanWindow& aWindow, std::vector<DescriptorSetting> aDescriptorSettings);
 
@@ -67,5 +66,5 @@ namespace Engine {
 	VkDescriptorSet createUBODescriptor(const VulkanWindow& aWindow, VkDescriptorSetLayout aSetLayout, VkBuffer aBuffer);
 	VkDescriptorSet createModelMatricesDescriptor(const VulkanWindow& aWindow, VkDescriptorSetLayout aSetLayout, VkBuffer aBuffer, VkDeviceSize dynamicAlignment);
 	VkDescriptorSet createDeferredShadingDescriptor(const VulkanWindow& aWindow, VkDescriptorSetLayout aSetLayout, VkImageView aDepthView, VkImageView aNormalsView, VkImageView aAlbedoView, VkImageView aEmissiveView);
-	VkDescriptorSet createImageDescriptor(const VulkanWindow& aWindow, VkDescriptorSetLayout aSetLayout, VkImageView aImageView, VkSampler aSampler);
+	VkDescriptorSet createImageDescriptor(const VulkanWindow& aWindow, VkDescriptorSetLayout aSetLayout, VkImageLayout aImageLayout, VkImageView aImageView, VkSampler aSampler);
 }

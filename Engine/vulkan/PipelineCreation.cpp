@@ -807,7 +807,8 @@ namespace Engine {
 		rasterInfo.rasterizerDiscardEnable = VK_FALSE;
 		rasterInfo.polygonMode = VK_POLYGON_MODE_FILL;
 		rasterInfo.cullMode = VK_CULL_MODE_BACK_BIT;
-		rasterInfo.depthBiasEnable = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+		rasterInfo.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+		rasterInfo.depthBiasEnable = VK_FALSE;
 		rasterInfo.lineWidth = 1.0f;
 
 		VkPipelineMultisampleStateCreateInfo samplingInfo{};
@@ -993,7 +994,8 @@ namespace Engine {
 		rasterInfo.rasterizerDiscardEnable = VK_FALSE;
 		rasterInfo.polygonMode = VK_POLYGON_MODE_FILL;
 		rasterInfo.cullMode = VK_CULL_MODE_BACK_BIT;	
-		rasterInfo.depthBiasEnable = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+		rasterInfo.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+		rasterInfo.depthBiasEnable = VK_FALSE;
 		rasterInfo.lineWidth = 1.0f;
 
 		VkPipelineMultisampleStateCreateInfo samplingInfo{};
@@ -1159,6 +1161,7 @@ namespace Engine {
 		rasterInfo.rasterizerDiscardEnable = VK_FALSE;
 		rasterInfo.polygonMode = VK_POLYGON_MODE_FILL;
 		rasterInfo.cullMode = VK_CULL_MODE_NONE;
+		rasterInfo.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 		rasterInfo.depthBiasEnable = VK_TRUE;
 		rasterInfo.lineWidth = 1.0f;
 
@@ -1266,7 +1269,8 @@ namespace Engine {
 		rasterInfo.rasterizerDiscardEnable = VK_FALSE;
 		rasterInfo.polygonMode = VK_POLYGON_MODE_FILL;
 		rasterInfo.cullMode = VK_CULL_MODE_BACK_BIT;
-		rasterInfo.depthBiasEnable = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+		rasterInfo.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+		rasterInfo.depthBiasEnable = VK_FALSE;
 		rasterInfo.lineWidth = 1.0f;
 
 		VkPipelineMultisampleStateCreateInfo samplingInfo{};
@@ -1389,7 +1393,8 @@ namespace Engine {
 		rasterInfo.rasterizerDiscardEnable = VK_FALSE;
 		rasterInfo.polygonMode = VK_POLYGON_MODE_FILL;
 		rasterInfo.cullMode = VK_CULL_MODE_BACK_BIT;
-		rasterInfo.depthBiasEnable = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+		rasterInfo.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+		rasterInfo.depthBiasEnable = VK_FALSE;
 		rasterInfo.lineWidth = 1.0f;
 
 		VkPipelineMultisampleStateCreateInfo samplingInfo{};
@@ -1505,7 +1510,8 @@ namespace Engine {
 		rasterInfo.rasterizerDiscardEnable = VK_FALSE;
 		rasterInfo.polygonMode = VK_POLYGON_MODE_FILL;
 		rasterInfo.cullMode = VK_CULL_MODE_BACK_BIT;
-		rasterInfo.depthBiasEnable = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+		rasterInfo.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+		rasterInfo.depthBiasEnable = VK_FALSE;
 		rasterInfo.lineWidth = 1.0f;
 
 		VkPipelineMultisampleStateCreateInfo samplingInfo{};
@@ -1514,10 +1520,13 @@ namespace Engine {
 
 		VkPipelineColorBlendAttachmentState blendStates[1]{};
 		blendStates[0].blendEnable = VK_TRUE;
-		blendStates[0].colorBlendOp = VK_BLEND_OP_ADD;
+		blendStates[0].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
 		blendStates[0].srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
 		blendStates[0].dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-		blendStates[0].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+		blendStates[0].colorBlendOp = VK_BLEND_OP_ADD;
+		blendStates[0].srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+		blendStates[0].dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+		blendStates[0].alphaBlendOp = VK_BLEND_OP_ADD;
 
 		VkPipelineColorBlendStateCreateInfo blendInfo{};
 		blendInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
@@ -1755,13 +1764,13 @@ namespace Engine {
 	}
 
 	// Only works for shadow depth image at the moment
-	VkDescriptorSet createImageDescriptor(const VulkanWindow& aWindow, VkDescriptorSetLayout aSetLayout, VkImageView aImageView, VkSampler aSampler) {
+	VkDescriptorSet createImageDescriptor(const VulkanWindow& aWindow, VkDescriptorSetLayout aSetLayout, VkImageLayout aImageLayout, VkImageView aImageView, VkSampler aSampler) {
 		VkDescriptorSet imageDescriptor = allocateDescriptorSet(aWindow, aWindow.device->dPool, aSetLayout);
 		{
 			VkWriteDescriptorSet desc[1]{};
 
 			VkDescriptorImageInfo imageInfo[1]{};
-			imageInfo[0].imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+			imageInfo[0].imageLayout = aImageLayout;
 			imageInfo[0].imageView = aImageView;
 			imageInfo[0].sampler = aSampler;
 

@@ -64,7 +64,7 @@ void FPSTest::Init()
 	GetRenderer().addSkybox(std::make_unique<Engine::Skybox>(&GetContext(), skyboxFilenames));
 
 	this->crosshair = Crosshair(&GetContext());
-	this->decals = Decals(&GetContext(), &GetRenderer());
+	this->decals = Decals(&GetContext(), &GetRenderer(), "Game/assets/decals/bullet_decal.png");
 }
 
 void FPSTest::Render() {
@@ -151,7 +151,7 @@ void FPSTest::Update() {
 			fireDelay = 1.0f;
 			PxRaycastHit entityHit = physicsWorld.handleShooting(playerEntity);
 
-			this->decals.setNextDecal(entityHit.position, entityHit.normal);
+			bool hitTarget = false;
 
 			std::vector<int> entitiesWithPhysicsComponent = GetEntityManager().GetEntitiesWithComponent(PHYSICS);
 			for (int i = 0; i < entitiesWithPhysicsComponent.size(); i++)
@@ -174,7 +174,14 @@ void FPSTest::Update() {
 					//physicsComponent->SetTranslation(newPos);
 					physicsComponent->GetStaticBody()->setGlobalPose(pxTransform);
 					hitRenderComponent->SetIsActive(1);
+
+					hitTarget = true;
 				}
+			}
+
+			if (!hitTarget) {
+				if (entityHit.distance != PX_MAX_REAL)
+					this->decals.setNextDecal(entityHit.position, entityHit.normal);
 			}
 
 			if (countdown <= 0)
@@ -242,6 +249,9 @@ void FPSTest::DrawDebugGUI()
 		countdown = 31;
 		score = 0;
 	}
+
+	ImGui::Text("Active Decals: %d/100", this->decals.getNbActiveDecals());
+
 	ImGui::End();
 }
 

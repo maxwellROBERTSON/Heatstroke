@@ -127,7 +127,7 @@ namespace Engine {
 		std::vector<VkDescriptorSetLayout> decalLayout;
 		decalLayout.emplace_back(this->descriptorLayouts["sceneLayout"].handle);
 		decalLayout.emplace_back(this->descriptorLayouts["vertUBOLayout"].handle);
-		//decalLayout.emplace_back(this->descriptorLayouts["fragImageLayout"].handle);
+		decalLayout.emplace_back(this->descriptorLayouts["fragImageLayout"].handle);
 
 		// Pipeline layouts
 		// Empty push constant range
@@ -326,6 +326,7 @@ namespace Engine {
 			createImageDescriptor(
 				*this->context->window,
 				this->descriptorLayouts["fragImageLayout"].handle,
+				VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
 				this->buffers["shadowDepth"].second.handle,
 				this->depthSampler.handle));
 		this->descriptorSets.emplace("orthoMatrices",
@@ -781,9 +782,11 @@ namespace Engine {
 
 		vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelines["decal"].handle);
 
-		VkDescriptorSet decalDescriptorSet = ((FPSTest*)this->game)->getDecals().getDescriptorSet();
+		VkDescriptorSet decalTransformDescriptorSet = ((FPSTest*)this->game)->getDecals().getTransformDescriptorSet();
+		VkDescriptorSet decalImageDescriptorSet = ((FPSTest*)this->game)->getDecals().getImageDescriptorSet();
 		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["decal"].handle, 0, 1, &this->descriptorSets["scene"], 0, nullptr); // Projective matrices
-		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["decal"].handle, 1, 1, &decalDescriptorSet, 0, nullptr);
+		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["decal"].handle, 1, 1, &decalTransformDescriptorSet, 0, nullptr);
+		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["decal"].handle, 2, 1, &decalImageDescriptorSet, 0, nullptr);
 
 		((FPSTest*)this->game)->getDecals().render(cmdBuf);
 
@@ -1118,6 +1121,7 @@ namespace Engine {
 		this->pipelines["skybox"] = createSkyboxPipeline(*this->context->window, this->renderPasses["forward"].handle, this->pipelineLayouts["skybox"].handle);
 		this->pipelines["skyboxMSAA"] = createSkyboxPipeline(*this->context->window, this->renderPasses["forwardMSAA"].handle, this->pipelineLayouts["skybox"].handle, Utils::getMSAAMinimum(sampleCount));
 		this->pipelines["crosshair"] = createCrosshairPipeline(*this->context->window, this->renderPasses["crosshair"].handle, this->pipelineLayouts["crosshair"].handle);
+		this->pipelines["decal"] = createDecalPipeline(*this->context->window, this->renderPasses["forward"].handle, this->pipelineLayouts["decal"].handle);
 	}
 
 	void Renderer::recreateOthers() {
@@ -1164,6 +1168,7 @@ namespace Engine {
 		this->descriptorSets["shadowMap"] = createImageDescriptor(
 			*this->context->window,
 			this->descriptorLayouts["fragImageLayout"].handle,
+			VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
 			this->buffers["shadowDepth"].second.handle,
 			this->depthSampler.handle);
 	}

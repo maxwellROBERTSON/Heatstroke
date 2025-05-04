@@ -14,13 +14,11 @@ layout(set = 1, binding = 0) uniform Transforms {
 
 layout(location = 0) out vec2 uv;
 
-const vec2 uvCoords[6] = vec2[6](
-	vec2(0.0f, 0.0f), // Top left
-	vec2(1.0f, 0.0f), // Top right
-	vec2(1.0f, 1.0f), // Bottom right
-	vec2(0.0f, 0.0f), // Top left
-	vec2(1.0f, 1.0f), // Bottom right
-	vec2(0.0f, 1.0f)  // Bottom left
+const vec2 uvCoords[4] = vec2[4](
+	vec2(1.0f, 0.0f),
+	vec2(0.0f, 0.0f),
+	vec2(0.0f, 1.0f),
+	vec2(1.0f, 1.0f) 
 );
 
 void main() {

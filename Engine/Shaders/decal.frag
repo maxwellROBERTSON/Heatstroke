@@ -8,11 +8,14 @@ layout(set = 0, binding = 0) uniform SceneUBO {
 	vec4 position;
 } sceneUbo;
 
-//layout(set = 2, binding = 0) uniform sampler2D decalTex;
+layout(set = 2, binding = 0) uniform sampler2D decalTex;
 
 layout(location = 0) out vec4 oColor;
 
 void main() {
-	//oColor = texture(decalTex, uv);
-	oColor = vec4(0.0f, 1.0f, 0.0f, 1.0f);
+	oColor = texture(decalTex, uv);
+
+	if (oColor.a < 0.25) {
+		discard;
+	}
 }
