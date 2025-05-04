@@ -1447,7 +1447,7 @@ namespace Engine {
 		return vk::Pipeline(aWindow.device->device, pipe);
 	}
 
-	vk::Pipeline createDecalPipeline(const VulkanWindow& aWindow, VkRenderPass aRenderPass, VkPipelineLayout aPipelineLayout) {
+	vk::Pipeline createDecalPipeline(const VulkanWindow& aWindow, VkRenderPass aRenderPass, VkPipelineLayout aPipelineLayout, VkSampleCountFlagBits aSampleCount) {
 		vk::ShaderModule vert = loadShaderModule(aWindow, Shaders::decalVert);
 		vk::ShaderModule frag = loadShaderModule(aWindow, Shaders::decalFrag);
 
@@ -1516,7 +1516,7 @@ namespace Engine {
 
 		VkPipelineMultisampleStateCreateInfo samplingInfo{};
 		samplingInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-		samplingInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+		samplingInfo.rasterizationSamples = aSampleCount;
 
 		VkPipelineColorBlendAttachmentState blendStates[1]{};
 		blendStates[0].blendEnable = VK_TRUE;

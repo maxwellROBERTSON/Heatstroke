@@ -181,6 +181,7 @@ namespace Engine {
 		this->pipelines.emplace("skyboxMSAA", createSkyboxPipeline(*this->context->window, this->renderPasses["forwardMSAA"].handle, this->pipelineLayouts["skybox"].handle, VK_SAMPLE_COUNT_4_BIT));
 		this->pipelines.emplace("crosshair", createCrosshairPipeline(*this->context->window, this->renderPasses["crosshair"].handle, this->pipelineLayouts["crosshair"].handle));
 		this->pipelines.emplace("decal", createDecalPipeline(*this->context->window, this->renderPasses["forward"].handle, this->pipelineLayouts["decal"].handle));
+		this->pipelines.emplace("decalMSAA", createDecalPipeline(*this->context->window, this->renderPasses["forwardMSAA"].handle, this->pipelineLayouts["decal"].handle, VK_SAMPLE_COUNT_4_BIT));
 
 		// Buffers
 		TextureBufferSetting depthTexture = {
@@ -796,7 +797,10 @@ namespace Engine {
 
 		drawModels(cmdBuf, this->pipelineLayouts[pipelineLayout].handle, DrawType::WORLD);
 
-		vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelines["decal"].handle);
+		std::string decalPipeline = "decal";
+		if (msaaFlag) decalPipeline += "MSAA";
+
+		vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelines[decalPipeline].handle);
 
 		VkDescriptorSet decalTransformDescriptorSet = ((FPSTest*)this->game)->getDecals().getTransformDescriptorSet();
 		VkDescriptorSet decalImageDescriptorSet = ((FPSTest*)this->game)->getDecals().getImageDescriptorSet();
@@ -1175,6 +1179,7 @@ namespace Engine {
 		this->pipelines["skyboxMSAA"] = createSkyboxPipeline(*this->context->window, this->renderPasses["forwardMSAA"].handle, this->pipelineLayouts["skybox"].handle, Utils::getMSAAMinimum(sampleCount));
 		this->pipelines["crosshair"] = createCrosshairPipeline(*this->context->window, this->renderPasses["crosshair"].handle, this->pipelineLayouts["crosshair"].handle);
 		this->pipelines["decal"] = createDecalPipeline(*this->context->window, this->renderPasses["forward"].handle, this->pipelineLayouts["decal"].handle);
+		this->pipelines["decalMSAA"] = createDecalPipeline(*this->context->window, this->renderPasses["forwardMSAA"].handle, this->pipelineLayouts["decal"].handle, Utils::getMSAAMinimum(sampleCount));
 	}
 
 	void Renderer::recreateOthers() {
