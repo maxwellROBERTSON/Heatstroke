@@ -170,7 +170,7 @@ namespace Engine {
 	}
 
 	VkDescriptorSet Decals::getDescriptorSet() {
-		return this->descriptorSet;
+		return this->transformDescriptorSet;
 	}
 
 }
