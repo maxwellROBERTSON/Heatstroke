@@ -512,8 +512,10 @@ namespace Engine {
 		std::vector<int> renderEntities = this->entityManager->GetEntitiesWithComponent(RENDER);
 		for (std::size_t i = 0; i < renderEntities.size(); i++) {
 			RenderComponent* renderComponent = reinterpret_cast<RenderComponent*>(this->entityManager->GetComponentOfEntity(renderEntities[i], RENDER));
+
 			if (!renderComponent->GetIsActive())
 				continue;
+
 			int modelIndex = renderComponent->GetModelIndex();
 			vk::Model& model = models[modelIndex];
 
@@ -685,7 +687,7 @@ namespace Engine {
 
 		((FPSTest*)this->game)->getDecals().updateUniform(cmdBuf);
 
-		if (shadow) {
+		if (shadows) {
 			Utils::bufferBarrier(
 				cmdBuf,
 				this->uniformBuffers["depthMVP"].buffer,
@@ -803,10 +805,6 @@ namespace Engine {
 		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["decal"].handle, 2, 1, &decalImageDescriptorSet, 0, nullptr);
 
 		((FPSTest*)this->game)->getDecals().render(cmdBuf);
-
-		if (debug) {
-			ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmdBuf);
-		}
 
 		vkCmdEndRenderPass(cmdBuf);
 

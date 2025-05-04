@@ -1,11 +1,15 @@
 #include "MultiPlayer.hpp"
 
-void MultiPlayer::Update(Game* game, float timeDelta)
+MultiPlayer::MultiPlayer(FPSTest* game) {
+	this->game = game;
+}
+
+void MultiPlayer::Update(float timeDelta)
 {
 	;
 }
 
-void MultiPlayer::ToggleSceneCamera(Game* game, Camera* sceneCamera)
+void MultiPlayer::ToggleSceneCamera(Engine::Camera* sceneCamera)
 {
 	;
 }

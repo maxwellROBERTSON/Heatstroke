@@ -1,8 +1,6 @@
 #pragma once
 
 #include <chrono>
-#include <glm/ext/matrix_clip_space.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 
 #include "../Engine/Core/Game.hpp"
 
@@ -12,7 +10,6 @@
 #include "../Engine/ECS/Components/PhysicsComponent.hpp"
 #include "../Engine/ECS/Components/RenderComponent.hpp"
 #include "../Engine/ECS/Entity.hpp"
-#include "../Engine/ECS/EntityManager.hpp"
 #include "../Engine/ECS/EntityManager.hpp"
 
 #include "../Engine/Physics/PhysicsWorld.hpp"
@@ -36,11 +33,10 @@
 #include "../ThreadPool/thread_pool_wait.h"
 
 #include "../Engine/Rendering/Decals.hpp"
+
 #include "gameRendering/Crosshair.hpp"
 
 #include "gameModes/GameMode.hpp"
-#include "gameModes/SinglePlayer.hpp"
-#include "gameModes/MultiPlayer.hpp"
 
 class FPSTest : public Engine::Game
 {
@@ -68,6 +64,7 @@ public:
 	void SetGameMode(std::unique_ptr<GameMode>);
 
 	Crosshair& GetCrosshair();
+	Engine::Decals& getDecals();
 
 	std::chrono::steady_clock::time_point previous;
 
@@ -81,23 +78,10 @@ public:
 	bool debugging = false;
 #endif
 
-	//glm::vec3 cameraOffset = glm::vec3(0.0f, 1.6f, -0.1f); // for character
-
-	//Engine::Entity* targetEntity1;
-	//Engine::Entity* targetEntity2;
-	//Engine::Entity* targetEntity3;
-	//glm::vec3 target1Pos{ 2.0f, 1.0f, 0.0f }; // generate randomly
-	//glm::vec3 target2Pos{ -2.0f, 1.0f, 0.0f }; // ^
-	//glm::vec3 target3Pos{ 2.0f, 5.0f, 0.0f }; // ^
-
-	//std::vector<Engine::Entity*> targetEntities;
-	//std::vector<glm::vec3> targetPositions;
-
-
-	//void RespawnTarget();
 private:
 	std::unique_ptr<GameMode> gameMode;
 	Crosshair crosshair;
+	Engine::Decals decals;
 
 	thread_pool_wait* threadPool;
 	int offlineClientId = 0;

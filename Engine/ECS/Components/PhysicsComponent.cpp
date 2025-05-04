@@ -350,6 +350,7 @@ namespace Engine
 					return;
 				}
 
+				wall->setName("levelBounds");
 				pWorld.gScene->addActor(*wall);
 			};
 

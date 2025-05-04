@@ -1,5 +1,25 @@
 #include "SinglePlayer.hpp"
 
+#include "../../Engine/Core/Game.hpp"
+
+#include "../../Engine/ECS/Components/AudioComponent.hpp"
+#include "../../Engine/ECS/Components/CameraComponent.hpp"
+#include "../../Engine/ECS/Components/NetworkComponent.hpp"
+#include "../../Engine/ECS/Components/PhysicsComponent.hpp"
+#include "../../Engine/ECS/Components/RenderComponent.hpp"
+#include "../../Engine/ECS/Entity.hpp"
+#include "../../Engine/ECS/EntityManager.hpp"
+
+#include "../../Engine/Physics/PhysicsWorld.hpp"
+
+#include "../../Engine/vulkan/Renderer.hpp"
+#include "../../Engine/vulkan/VulkanContext.hpp"
+#include "../../Engine/vulkan/VulkanDevice.hpp"
+
+#include "../../Engine/Core/Camera.hpp"
+
+#include "../DemoGame.hpp"
+
 using namespace Engine;
 
 std::random_device rd;  // Define random device
@@ -7,7 +27,11 @@ std::mt19937 gen(rd()); // Define mersenne_twister engine using rd as seed
 std::uniform_int_distribution<> randomDistribX(-2.82f, 2.76f);
 std::uniform_int_distribution<> randomDistribZ(-9.5f, 3.5f);
 
-void SinglePlayer::Update(Game* game, float timeDelta)
+SinglePlayer::SinglePlayer(FPSTest* game) {
+	this->game = game;
+}
+
+void SinglePlayer::Update(float timeDelta)
 {
 	fireDelay -= timeDelta;
 	counter -= timeDelta;
@@ -20,20 +44,20 @@ void SinglePlayer::Update(Game* game, float timeDelta)
 		counter = 1.0f;
 	}
 
-	EntityManager& entityManager = game->GetEntityManager();
-	PhysicsWorld& physicsWorld = game->GetPhysicsWorld();
-	Renderer& renderer = game->GetRenderer();
-	Camera* camera = renderer.GetCameraPointer();
+	Engine::EntityManager& entityManager = this->game->GetEntityManager();
+	Engine::PhysicsWorld& physicsWorld = this->game->GetPhysicsWorld();
+	Engine::Renderer& renderer = this->game->GetRenderer();
+	Engine::Camera* camera = renderer.GetCameraPointer();
 
 	// Update player camera or detached scene camera
 	if (isPlayerCam)
 	{
 		physicsWorld.updatePhysics(timeDelta, true);
-		renderer.GetCameraPointer()->updateCamera(game->GetContext().getGLFWWindow(), timeDelta, false);
+		renderer.GetCameraPointer()->updateCamera(this->game->GetContext().getGLFWWindow(), timeDelta, false);
 	}
 	else
 	{
-		renderer.GetCameraPointer()->updateCamera(game->GetContext().getGLFWWindow(), timeDelta, true);
+		renderer.GetCameraPointer()->updateCamera(this->game->GetContext().getGLFWWindow(), timeDelta, true);
 	}
 
 	if (playerEntity == nullptr || pistolEntity == nullptr || targetEntity == nullptr)
@@ -42,25 +66,28 @@ void SinglePlayer::Update(Game* game, float timeDelta)
 	// Handle shooting
 	if (Engine::InputManager::getMouse().isPressed(HS_MOUSE_BUTTON_LEFT) && canFire)
 	{
-		RenderComponent* pistolRenderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(pistolEntity->GetEntityId(), RENDER));
-		AudioComponent* playerAudioComponent = reinterpret_cast<AudioComponent*>(entityManager.GetComponentOfEntity(playerEntity->GetEntityId(), AUDIO));
+		Engine::RenderComponent* pistolRenderComponent = reinterpret_cast<Engine::RenderComponent*>(entityManager.GetComponentOfEntity(pistolEntity->GetEntityId(), RENDER));
+		Engine::AudioComponent* playerAudioComponent = reinterpret_cast<Engine::AudioComponent*>(entityManager.GetComponentOfEntity(playerEntity->GetEntityId(), AUDIO));
 		int pistolModelIndex = pistolRenderComponent->GetModelIndex();
-		std::vector<vk::Model>& models = game->GetModels();
+		std::vector<vk::Model>& models = this->game->GetModels();
 		models[pistolModelIndex].animationQueue.push(models[pistolModelIndex].animations[3]);
 		models[pistolModelIndex].blending = true;
 		canFire = false;
 		fireDelay = 1.0f;
 		PxRaycastHit entityHit = physicsWorld.handleShooting();
+
+		bool hitTarget = false;
+
 		std::vector<int> entitiesWithPhysicsComponent = entityManager.GetEntitiesWithComponent(PHYSICS);
 		for (int i = 0; i < entitiesWithPhysicsComponent.size(); i++)
 		{
-			Entity* entity = entityManager.GetEntity(entitiesWithPhysicsComponent[i]);
-			PhysicsComponent* physicsComponent = reinterpret_cast<PhysicsComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
+			Engine::Entity* entity = entityManager.GetEntity(entitiesWithPhysicsComponent[i]);
+			Engine::PhysicsComponent* physicsComponent = reinterpret_cast<Engine::PhysicsComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
 			if (physicsComponent->GetStaticBody() != nullptr && physicsComponent->GetStaticBody() == entityHit.actor)
 			{
 				score++;
 
-				RenderComponent* hitRenderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
+				Engine::RenderComponent* hitRenderComponent = reinterpret_cast<Engine::RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
 				hitRenderComponent->SetIsActive(0);
 				glm::vec3 pos = entity->GetPosition();
 				int xPos = randomDistribX(gen);
@@ -77,6 +104,14 @@ void SinglePlayer::Update(Game* game, float timeDelta)
 				);
 				physicsComponent->GetStaticBody()->setGlobalPose(pxTransform);
 				hitRenderComponent->SetIsActive(1);
+
+				hitTarget = true;
+			}
+		}
+
+		if (!hitTarget) {
+			if (entityHit.actor->getName() != "levelBounds" && entityHit.distance != PX_MAX_REAL) {
+				this->game->getDecals().setNextDecal(entityHit.position, entityHit.normal);
 			}
 		}
 
@@ -85,12 +120,12 @@ void SinglePlayer::Update(Game* game, float timeDelta)
 	}
 }
 
-void SinglePlayer::ToggleSceneCamera(Game* game, Camera* sceneCamera)
+void SinglePlayer::ToggleSceneCamera(Camera* sceneCamera)
 {
-	EntityManager& entityManager = game->GetEntityManager();
-	Renderer& renderer = game->GetRenderer();
+	Engine::EntityManager& entityManager = this->game->GetEntityManager();
+	Engine::Renderer& renderer = this->game->GetRenderer();
 
-	CameraComponent* cameraComponent = reinterpret_cast<CameraComponent*>(game->GetEntityManager().GetComponentOfEntity(playerEntity->GetEntityId(), CAMERA));
+	Engine::CameraComponent* cameraComponent = reinterpret_cast<Engine::CameraComponent*>(this->game->GetEntityManager().GetComponentOfEntity(playerEntity->GetEntityId(), CAMERA));
 
 	if (renderer.GetCameraPointer() == sceneCamera)
 	{
@@ -104,9 +139,9 @@ void SinglePlayer::ToggleSceneCamera(Game* game, Camera* sceneCamera)
 	}
 }
 
-void SinglePlayer::SetPlayerEntity(Game* g, Entity* e)
+void SinglePlayer::SetPlayerEntity(Engine::Entity* e)
 {
 	playerEntity = e;
 	isPlayerCam = true;
-	g->GetRenderer().GetCameraPointer()->init(g->GetContext().getGLFWWindow());
+	this->game->GetRenderer().GetCameraPointer()->init(this->game->GetContext().getGLFWWindow());
 }

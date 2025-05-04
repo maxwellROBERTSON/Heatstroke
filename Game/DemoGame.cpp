@@ -20,6 +20,8 @@
 #include "toString.hpp"
 
 #include "gameGUI/gameGUI.hpp"
+#include "gameModes/SinglePlayer.hpp"
+#include "gameModes/MultiPlayer.hpp"
 
 //#include "glm/gtc/random.hpp" // breaks?
 
@@ -105,7 +107,7 @@ void FPSTest::Update() {
 	{
 		if (gameMode)
 		{
-			gameMode->Update(this, timeDelta);
+			gameMode->Update(timeDelta);
 		}
 
 		physicsWorld.updateObjects(GetModels());
@@ -126,7 +128,7 @@ void FPSTest::OnEvent(Engine::Event& e)
 	dispatcher.Dispatch<ESCEvent>([this](Event& event) { toggleSettings(this); return true; });
 	dispatcher.Dispatch<KeyPressedEvent>([&](KeyPressedEvent& event)
 	{
-		if (event.GetKeyCode() == HS_KEY_C) { GetGameMode().ToggleSceneCamera(this, &sceneCamera); }
+		if (event.GetKeyCode() == HS_KEY_C) { GetGameMode().ToggleSceneCamera(&sceneCamera); }
 		return true;
 	});
 }
@@ -200,7 +202,7 @@ void FPSTest::loadOfflineEntities()
 	physicsComponent = reinterpret_cast<PhysicsComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
 	physicsComponent->Init(physicsWorld, PhysicsComponent::PhysicsType::CONTROLLER, models[renderComponent->GetModelIndex()], entity->GetModelMatrix(), entity->GetEntityId(), true, true);
 	entityManager.AddSimulatedPhysicsEntity(entity->GetEntityId());
-	GetGameMode().SetPlayerEntity(this, entity);
+	GetGameMode().SetPlayerEntity(entity);
 
 	// pistol
 	types = { RENDER };
