@@ -190,12 +190,6 @@ namespace Engine
 	{
 		entityId = index;
 
-		// Decompose transform
-		if (!DecomposeTransform(transform, translation, rotation, scale)) {
-			std::cout << "DecomposeTransform failed!" << std::endl;
-			return;
-		}
-
 		glm::vec3 worldSpaceMin = glm::vec3(0, 0, 0);
 		glm::vec3 worldSpaceMax = glm::vec3(0, 0, 0);
 
@@ -208,29 +202,22 @@ namespace Engine
 			if (node->mesh) {
 				glm::mat4 nodeMatrix = transform * node->getModelMatrix();
 
-				glm::mat3 rotationMatrix = glm::mat3(nodeMatrix);
-				glm::vec3 nodeTranslation = glm::vec3(nodeMatrix[3][0], nodeMatrix[3][1], nodeMatrix[3][2]);
+				glm::vec3 translation;
+				glm::quat rotation;
+				glm::vec3 scale;
 
-				glm::vec3 nodeScale;
-				nodeScale.x = glm::length(rotationMatrix[0]);
-				nodeScale.y = glm::length(rotationMatrix[1]);
-				nodeScale.z = glm::length(rotationMatrix[2]);
-
-				rotationMatrix[0] = rotationMatrix[0] / nodeScale.x;
-				rotationMatrix[1] = rotationMatrix[1] / nodeScale.y;
-				rotationMatrix[2] = rotationMatrix[2] / nodeScale.z;
-
-				// Normalize the quaternion cast to ensure the rotation stays as a unit
-				// quaternion since PxPhysics::createRigidStatic requires a unit quaternion
-				// for it to consider it a valid transform
-				glm::quat nodeRotation = glm::normalize(glm::quat_cast(rotationMatrix));
+				// Decompose transform
+				if (!DecomposeTransform(nodeMatrix, translation, rotation, scale)) {
+					std::cout << "DecomposeTransform failed!" << std::endl;
+					return;
+				}
 
 				PxTransform nodePxTransform(
-					PxVec3(nodeTranslation.x, nodeTranslation.y, nodeTranslation.z),
-					PxQuat(nodeRotation.x, nodeRotation.y, nodeRotation.z, nodeRotation.w)
+					PxVec3(translation.x, translation.y, translation.z),
+					PxQuat(rotation.x, rotation.y, rotation.z, rotation.w)
 				);
 
-				PxVec3 nodePxScale(nodeScale.x, nodeScale.y, nodeScale.z);
+				PxVec3 nodePxScale(scale.x, scale.y, scale.z);
 
 				if (physicsType == PhysicsType::STATICBOUNDED)
 				{
@@ -390,7 +377,9 @@ namespace Engine
 		glm::vec4 perspective;
 		bool success = glm::decompose(matrix, scale, rotation, translation, skew, perspective);
 		if (success) {
-			rotation = glm::conjugate(rotation);
+			// For some reason this conjuagte breaks the rotation for
+			// some nodes in the warehouse map, commenting it out fixes it.
+			//rotation = glm::conjugate(rotation);
 		}
 		return success;
 	}
