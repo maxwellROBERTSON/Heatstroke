@@ -612,6 +612,8 @@ namespace Engine {
 
 		vkCmdBeginRenderPass(cmdBuf, &passInfo, VK_SUBPASS_CONTENTS_INLINE);
 
+		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["crosshair"].handle, 0, 1, &this->descriptorSets["orthoMatrices"], 0, nullptr);
+
 		// Render ImGui
 		if (ImGui::GetDrawData() != nullptr)
 			ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmdBuf);
@@ -917,6 +919,7 @@ namespace Engine {
 		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["crosshair"].handle, 0, 1, &this->descriptorSets["orthoMatrices"], 0, nullptr);
 
 		((FPSTest*)this->game)->GetCrosshair().drawCrosshair(cmdBuf);
+
 		// Render ImGui
 		if (ImGui::GetDrawData() != nullptr)
 			ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmdBuf);
