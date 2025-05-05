@@ -156,7 +156,8 @@ namespace Engine
 		if (this->controller)
 		{
 			CameraComponent* cameraComponent = reinterpret_cast<CameraComponent*>(entityManager->GetComponentOfEntity(controllerEntity->GetEntityId(), CAMERA));
-			glm::vec3 entityFrontDir = cameraComponent->GetFrontDirection();
+			glm::vec3 camFrontDir = cameraComponent->GetFrontDirection();
+			glm::vec3 entityFrontDir = glm::normalize(glm::vec3(camFrontDir.x, 0.0f, camFrontDir.z));
 			glm::vec3 entityRightDir = glm::normalize(glm::cross(entityFrontDir, glm::vec3(0.0f, 1.0f, 0.0f)));
 			const float gravity = -9.81f;
 			PxVec3 displacement(0.0f, gravity * deltatime, 0.0f);

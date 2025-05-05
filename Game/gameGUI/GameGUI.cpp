@@ -1,6 +1,7 @@
 #include "gameGUI.hpp"
 #include "../gameModes/GameMode.hpp"
 #include "../gameModes/SinglePlayer.hpp"
+#include "../gameModes/MultiPlayer.hpp"
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -97,7 +98,7 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 
 		if (ImGui::InvisibleButton("##singlebtn", boxSize))
 		{
-			game->SetGameMode(std::make_unique<SinglePlayer>());
+			game->SetGameMode(std::make_unique<SinglePlayer>(game));
 			game->loadOfflineEntities();
 			game->GetRenderer().initialiseJointMatrices();
 			game->GetGUI().ToggleGUIMode("Home");
@@ -134,7 +135,7 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 
 		if (ImGui::InvisibleButton("##singlebtn", boxSize))
 		{
-			game->SetGameMode(std::make_unique<SinglePlayer>());
+			game->SetGameMode(std::make_unique<SinglePlayer>(game));
 			game->loadOfflineEntities();
 			game->GetRenderer().initialiseJointMatrices();
 			game->GetGUI().ToggleGUIMode("Home");
@@ -700,6 +701,8 @@ void makeDebugGUI(FPSTest* game, int* w, int* h)
 			model.playAnimation();
 		}
 	}
+
+	ImGui::Text("Active Decals: %d/100", game->getDecals().getNbActiveDecals());
 
 	if (game->GetNetwork().GetStatus() != Status::NETWORK_UNINITIALIZED)
 	{

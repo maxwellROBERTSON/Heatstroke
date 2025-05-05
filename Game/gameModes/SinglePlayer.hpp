@@ -4,32 +4,34 @@
 
 #include "GameMode.hpp"
 
-using namespace Engine;
-
 extern std::random_device rd;  // Declare extern random device
 extern std::mt19937 gen;       // Declare extern mersenne_twister engine
 extern std::uniform_int_distribution<> randomDistribX; // Declare extern distributionX
 extern std::uniform_int_distribution<> randomDistribZ; // Declare extern distributionY
 
+class FPSTest;
+
 class SinglePlayer : public GameMode
 {
 public:
 	// Constructor
-	SinglePlayer() {}
+	SinglePlayer(FPSTest* game);
 
-	void Update(Game*, float) override;
+	void Update(float) override;
 
-	void ToggleSceneCamera(Game*, Camera*) override;
+	void ToggleSceneCamera(Engine::Camera*) override;
 
-	Entity* GetPlayerEntity() override { return playerEntity; }
+	Engine::Entity* GetPlayerEntity() override { return playerEntity; }
 
-	void SetPlayerEntity(Game*, Entity*) override;
+	void SetPlayerEntity(Engine::Entity*) override;
 
-	void SetPistolEntity(Entity* e) override { pistolEntity = e; }
+	void SetPistolEntity(Engine::Entity* e) override { pistolEntity = e; }
 
-	void SetRifleEntity(Entity* e) override { rifleEntity = e; }
+	void SetRifleEntity(Engine::Entity* e) override { rifleEntity = e; }
 
-	void SetTargetEntity(Entity* e) override { targetEntity = e; }
+	void SetTargetEntity(Engine::Entity* e) override { targetEntity = e; }
+
+	FPSTest* game;
 
 	int score = 0;
 	int countdown = 30;
@@ -38,10 +40,10 @@ public:
 	bool canFire = true;
 	float counter = 1.0f;
 
-	Entity* playerEntity = nullptr;
-	Entity* pistolEntity = nullptr;
-	Entity* rifleEntity = nullptr;
-	Entity* targetEntity = nullptr;
+	Engine::Entity* playerEntity = nullptr;
+	Engine::Entity* pistolEntity = nullptr;
+	Engine::Entity* rifleEntity = nullptr;
+	Engine::Entity* targetEntity = nullptr;
 
 	bool isPlayerCam = false;
 };

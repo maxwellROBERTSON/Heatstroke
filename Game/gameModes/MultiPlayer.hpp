@@ -2,29 +2,33 @@
 
 #include "GameMode.hpp"
 
+class FPSTest;
+
 class MultiPlayer : public GameMode
 {
 public:
 	// Constructor
-	MultiPlayer() {}
+	MultiPlayer(FPSTest* game);
 
 	// Getters
 
 	// Setters
-	void Update(Game* game, float);
+	void Update(float);
 
-	void ToggleSceneCamera(Game*, Camera*);
+	void ToggleSceneCamera(Engine::Camera*);
 
-	void SetPlayerEntity(Entity* e) { playerEntity = e; isPlayerCam = true; }
+	void SetPlayerEntity(Engine::Entity* e) { playerEntity = e; isPlayerCam = true; }
 
-	void SetPistolEntity(Entity* e) { pistolEntity = e; }
+	void SetPistolEntity(Engine::Entity* e) { pistolEntity = e; }
 
-	void SetRifleEntity(Entity* e) { rifleEntity = e; }
+	void SetRifleEntity(Engine::Entity* e) { rifleEntity = e; }
 
-	Entity* playerEntity;
-	Entity* pistolEntity;
-	Entity* rifleEntity;
-	Entity* targetEntity;
+	FPSTest* game;
+
+	Engine::Entity* playerEntity;
+	Engine::Entity* pistolEntity;
+	Engine::Entity* rifleEntity;
+	Engine::Entity* targetEntity;
 
 	bool isPlayerCam = false;
 };
