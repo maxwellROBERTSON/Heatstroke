@@ -35,7 +35,7 @@ namespace Engine
 
 		ImFont* GetFont(std::string s);
 
-		std::tuple<vk::Texture, vk::ImageView, VkDescriptorSet>* GetImage(std::string s);
+		std::tuple<vk::Sampler, vk::Texture, vk::ImageView, VkDescriptorSet>* GetImage(std::string s);
 
 		bool GetGUIMode(std::string s);
 
@@ -64,7 +64,7 @@ namespace Engine
 
 		std::map<std::string, ImFont*> fonts;
 
-		std::map<std::string, std::tuple<vk::Texture, vk::ImageView, VkDescriptorSet>> images;
+		std::map<std::string, std::tuple<vk::Sampler, vk::Texture, vk::ImageView, VkDescriptorSet>> images;
 
 		bool isNullFrame = true;
 	};

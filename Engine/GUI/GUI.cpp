@@ -18,7 +18,7 @@ namespace Engine
 		return nullptr;
 	}
 
-	std::tuple<vk::Texture, vk::ImageView, VkDescriptorSet>* GUI::GetImage(std::string s)
+	std::tuple<vk::Sampler, vk::Texture, vk::ImageView, VkDescriptorSet>* GUI::GetImage(std::string s)
 	{
 		auto it = images.find(s);
 		if (it != images.end())
@@ -123,23 +123,23 @@ namespace Engine
 
 	void GUI::AddTexture(std::string s, const char* filename)
 	{
-		images.emplace(s, std::tuple<vk::Texture, vk::ImageView, VkDescriptorSet>{});
+		images.emplace(s, std::tuple<vk::Sampler, vk::Texture, vk::ImageView, VkDescriptorSet>{});
 		vk::SamplerInfo samplerInfo;
 		samplerInfo.magFilter = VK_FILTER_NEAREST;
 		samplerInfo.minFilter = VK_FILTER_NEAREST;
 		samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 		samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 
-		std::tuple<vk::Texture, vk::ImageView, VkDescriptorSet>* imageTuple = GetImage(s);
-		vk::Sampler sampler = createTextureSampler(*game->GetContext().window, samplerInfo);
+		std::tuple<vk::Sampler, vk::Texture, vk::ImageView, VkDescriptorSet>* imageTuple = GetImage(s);
+		std::get<0>(*imageTuple) = createTextureSampler(*game->GetContext().window, samplerInfo);
 
-		std::get<0>(*imageTuple) = vk::createTexture(game->GetContext(), "ImGui Texture", loadPngAsTinyImage(filename), VK_FORMAT_R8G8B8A8_UNORM, sampler.handle);
+		std::get<1>(*imageTuple) = vk::createTexture(game->GetContext(), "ImGui Texture", loadPngAsTinyImage(filename), VK_FORMAT_R8G8B8A8_UNORM, std::get<0>(*imageTuple).handle);
 
-		std::get<1>(*imageTuple) = vk::createImageView(*game->GetContext().window, std::get<0>(*imageTuple).image, VK_FORMAT_R8G8B8A8_UNORM);
+		std::get<2>(*imageTuple) = vk::createImageView(*game->GetContext().window, std::get<1>(*imageTuple).image, VK_FORMAT_R8G8B8A8_UNORM);
 
-		std::get<2>(*imageTuple) = ImGui_ImplVulkan_AddTexture(
-			std::get<0>(*imageTuple).sampler,
-			std::get<1>(*imageTuple).handle,
+		std::get<3>(*imageTuple) = ImGui_ImplVulkan_AddTexture(
+			std::get<0>(*imageTuple).handle,
+			std::get<2>(*imageTuple).handle,
 			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
 		);
 	}

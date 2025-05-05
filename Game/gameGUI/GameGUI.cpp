@@ -61,7 +61,7 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 
 	ImGui::Begin("BackgroundImage", nullptr, window_flags);
 	ImGui::SetCursorPos(ImVec2(0.f, 0.f));
-	ImGui::Image((ImTextureID)std::get<2>(*game->GetGUI().GetImage("Test")), viewport->Size);
+	ImGui::Image((ImTextureID)std::get<3>(*game->GetGUI().GetImage("Test")), viewport->Size);
 	ImGui::End();
 
 	ImGui::SetNextWindowPos(ImVec2(0, 0));
