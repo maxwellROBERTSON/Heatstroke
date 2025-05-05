@@ -723,7 +723,20 @@ void makeSinglePlayerGUI(FPSTest* game, int*, int*)
 		ImGuiWindowFlags window_flags = 0;
 		window_flags |= ImGuiWindowFlags_NoBackground;
 		window_flags |= ImGuiWindowFlags_NoTitleBar;
+		window_flags |= ImGuiWindowFlags_AlwaysAutoResize;
 		bool test = true;
+
+		ImVec2 windowPadding = ImVec2(10, 10);
+
+		// Get current window size
+		ImVec2 displaySize = ImGui::GetIO().DisplaySize;
+
+		// Set window position to top-right (with padding)
+		ImGui::SetNextWindowPos(
+			ImVec2(displaySize.x - windowPadding.x, windowPadding.y),
+			ImGuiCond_Always,
+			ImVec2(1.0f, 0.0f) // Pivot (1, 0) means align from top-right corner
+		);
 
 		ImGui::PushFont(game->GetGUI().GetFont("Game"));
 		ImGui::Begin("Game:", &test, window_flags);
