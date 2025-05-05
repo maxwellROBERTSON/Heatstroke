@@ -178,4 +178,12 @@ namespace Engine
 		stbi_image_free(data);
 		return image;
 	}
+
+	void GUI::ResetGUIModes()
+	{
+		for (int i = 0; i < guiModes.size(); i++)
+		{
+			activeGUIModes[i] = false;
+		}
+	}
 }

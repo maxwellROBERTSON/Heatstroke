@@ -55,6 +55,8 @@ namespace Engine
 
 		void ToggleGUIMode(std::string s);
 
+		void ResetGUIModes();
+
 	private:
 		Engine::Game* game;
 
