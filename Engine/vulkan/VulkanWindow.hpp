@@ -59,6 +59,8 @@ namespace Engine {
 
 		VkFormat swapchainFormat;
 		VkExtent2D swapchainExtent;
+
+		VkPhysicalDeviceFeatures deviceFeatures;
 	};
 
 	struct SwapChanges {
@@ -77,7 +79,7 @@ namespace Engine {
 	std::optional<std::uint32_t> findQueueFamily(VkPhysicalDevice, VkQueueFlags, VkSurfaceKHR = VK_NULL_HANDLE);
 
 	std::unique_ptr<VulkanDevice> createDevice(
-		const VulkanWindow& aWindow,
+		VulkanWindow& aWindow,
 		VkPhysicalDevice aPhysicalDev,
 		std::vector<std::uint32_t> const& aQueueFamilies,
 		std::vector<char const*> const& aEnabledDeviceExtensions = {}

@@ -159,7 +159,9 @@ namespace Engine {
 		samplerInfo.addressModeU = aSamplerInfo.addressModeU;
 		samplerInfo.addressModeV = aSamplerInfo.addressModeV;
 		samplerInfo.compareEnable = aSamplerInfo.compareEnable;
-		samplerInfo.compareOp = aSamplerInfo.compareOp;
+		samplerInfo.compareOp = aSamplerInfo.compareOp; 
+		samplerInfo.anisotropyEnable = aWindow.deviceFeatures.samplerAnisotropy ? VK_TRUE : VK_FALSE;
+		samplerInfo.maxAnisotropy = 8.0f;
 		samplerInfo.minLod = 0.0f;
 		samplerInfo.maxLod = VK_LOD_CLAMP_NONE;
 		samplerInfo.mipLodBias = 0.0f;

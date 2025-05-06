@@ -225,7 +225,7 @@ namespace Engine {
 		
 			VkSampleCountFlags supportedSampleCount = std::min(props.limits.framebufferColorSampleCounts, props.limits.framebufferDepthSampleCounts);
 			std::vector<VkSampleCountFlagBits> possibleSampleCounts = { VK_SAMPLE_COUNT_1_BIT, VK_SAMPLE_COUNT_2_BIT, VK_SAMPLE_COUNT_4_BIT, VK_SAMPLE_COUNT_8_BIT, VK_SAMPLE_COUNT_16_BIT, VK_SAMPLE_COUNT_32_BIT, VK_SAMPLE_COUNT_64_BIT };
-			for (std::size_t i = possibleSampleCounts.size() - 1; i >= 0; i--) {
+			for (int i = possibleSampleCounts.size() - 1; i >= 0; i--) {
 				if (possibleSampleCounts[i] & supportedSampleCount) {
 					maxSampleCountIndex = i;
 					break;
@@ -443,7 +443,7 @@ namespace Engine {
 		return {};
 	}
 
-	std::unique_ptr<VulkanDevice> createDevice(const VulkanWindow& aWindow, VkPhysicalDevice aPhysicalDev, std::vector<std::uint32_t> const& aQueues, std::vector<char const*> const& aEnabledExtensions) {
+	std::unique_ptr<VulkanDevice> createDevice(VulkanWindow& aWindow, VkPhysicalDevice aPhysicalDev, std::vector<std::uint32_t> const& aQueues, std::vector<char const*> const& aEnabledExtensions) {
 		if (aQueues.empty())
 			throw Utils::Error("createDevice(): no queues requested");
 
@@ -460,7 +460,15 @@ namespace Engine {
 		}
 
 		VkPhysicalDeviceFeatures deviceFeatures{};
-		// No extra features for now.
+		vkGetPhysicalDeviceFeatures(aWindow.physicalDevice, &deviceFeatures);
+
+		VkPhysicalDeviceFeatures enabledFeatures{};
+		if (deviceFeatures.samplerAnisotropy) {
+			enabledFeatures.samplerAnisotropy = VK_TRUE;
+			std::fprintf(stderr, "Enabling device feature: samplerAnisotropy\n");
+		}
+
+		aWindow.deviceFeatures = enabledFeatures;
 
 		VkDeviceCreateInfo deviceInfo{};
 		deviceInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -471,7 +479,7 @@ namespace Engine {
 		deviceInfo.enabledExtensionCount = std::uint32_t(aEnabledExtensions.size());
 		deviceInfo.ppEnabledExtensionNames = aEnabledExtensions.data();
 
-		deviceInfo.pEnabledFeatures = &deviceFeatures;
+		deviceInfo.pEnabledFeatures = &enabledFeatures;
 
 		VkDevice device = VK_NULL_HANDLE;
 		if (auto const res = vkCreateDevice(aPhysicalDev, &deviceInfo, nullptr, &device); VK_SUCCESS != res)
