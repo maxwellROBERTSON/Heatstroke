@@ -212,6 +212,7 @@ project "Game"
         ".",
         "../",
         "Engine/Utils",
+        "Engine",
         vcpkgincludeDirs
     }
 

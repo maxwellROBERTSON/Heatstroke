@@ -13,8 +13,6 @@ namespace Engine
 		mContext.allocator = createVulkanAllocator(*mContext.window.get());
 		InputManager::RegisterCallbacks(mContext.window.get());
 		mContext.window.get()->SetEventCallback(std::bind(&Game::OnEvent, this, std::placeholders::_1));
-		renderer = std::make_unique<Renderer>(&this->GetContext(), &this->entityManager, this);
-		gui = std::make_unique<GUI>(this);
 		network = std::make_unique<Network>();
 		this->Init();
 	}

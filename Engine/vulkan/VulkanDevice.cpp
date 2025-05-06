@@ -126,9 +126,13 @@ namespace Engine {
 			throw Utils::Error("Unable to begin command buffer\n vkBeginCommandBuffer() returned %s", Utils::toString(res).c_str());
 	}
 
-	void endAndSubmitCommandBuffer(const VulkanWindow& aWindow, VkCommandBuffer aCmdBuff) {
-		if (const auto res = vkEndCommandBuffer(aCmdBuff); VK_SUCCESS != res)
+	void endCommandBuffer(const VulkanWindow& aWindow, VkCommandBuffer cmdBuf) {
+		if (const auto res = vkEndCommandBuffer(cmdBuf); VK_SUCCESS != res)
 			throw Utils::Error("Unable to end command buffer\n vkEndCommandBuffer() returned %s", Utils::toString(res).c_str());
+	}
+
+	void endAndSubmitCommandBuffer(const VulkanWindow& aWindow, VkCommandBuffer aCmdBuff) {
+		endCommandBuffer(aWindow, aCmdBuff);
 
 		vk::Fence uploadComplete = createFence(aWindow);
 

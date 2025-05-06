@@ -12,7 +12,6 @@
 
 #include "../../Engine/Physics/PhysicsWorld.hpp"
 
-#include "../../Engine/vulkan/Renderer.hpp"
 #include "../../Engine/vulkan/VulkanContext.hpp"
 #include "../../Engine/vulkan/VulkanDevice.hpp"
 
@@ -46,18 +45,18 @@ void SinglePlayer::Update(float timeDelta)
 
 	Engine::EntityManager& entityManager = this->game->GetEntityManager();
 	Engine::PhysicsWorld& physicsWorld = this->game->GetPhysicsWorld();
-	Engine::Renderer& renderer = this->game->GetRenderer();
-	Engine::Camera* camera = renderer.GetCameraPointer();
+	Renderer& renderer = this->game->getRenderer();
+	Engine::Camera* camera = renderer.getCameraPointer();
 
 	// Update player camera or detached scene camera
 	if (isPlayerCam)
 	{
 		physicsWorld.updatePhysics(timeDelta, true);
-		renderer.GetCameraPointer()->updateCamera(this->game->GetContext().getGLFWWindow(), timeDelta, false);
+		renderer.getCameraPointer()->updateCamera(this->game->GetContext().getGLFWWindow(), timeDelta, false);
 	}
 	else
 	{
-		renderer.GetCameraPointer()->updateCamera(this->game->GetContext().getGLFWWindow(), timeDelta, true);
+		renderer.getCameraPointer()->updateCamera(this->game->GetContext().getGLFWWindow(), timeDelta, true);
 	}
 
 	if (playerEntity == nullptr || pistolEntity == nullptr || targetEntity == nullptr)
@@ -123,11 +122,11 @@ void SinglePlayer::Update(float timeDelta)
 void SinglePlayer::ToggleSceneCamera(Camera* sceneCamera)
 {
 	Engine::EntityManager& entityManager = this->game->GetEntityManager();
-	Engine::Renderer& renderer = this->game->GetRenderer();
+	Renderer& renderer = this->game->getRenderer();
 
 	Engine::CameraComponent* cameraComponent = reinterpret_cast<Engine::CameraComponent*>(this->game->GetEntityManager().GetComponentOfEntity(playerEntity->GetEntityId(), CAMERA));
 
-	if (renderer.GetCameraPointer() == sceneCamera)
+	if (renderer.getCameraPointer() == sceneCamera)
 	{
 		renderer.attachCamera(cameraComponent->GetCamera());
 		isPlayerCam = true;
@@ -143,5 +142,5 @@ void SinglePlayer::SetPlayerEntity(Engine::Entity* e)
 {
 	playerEntity = e;
 	isPlayerCam = true;
-	this->game->GetRenderer().GetCameraPointer()->init(this->game->GetContext().getGLFWWindow());
+	this->game->getRenderer().getCameraPointer()->init(this->game->GetContext().getGLFWWindow());
 }

@@ -178,7 +178,8 @@ namespace Engine
 					{
 						thisClientEntity = entitiesWithNetworkComponent[i];
 						CameraComponent* cameraComponent = reinterpret_cast<CameraComponent*>(manager->GetComponentOfEntity(entitiesWithNetworkComponent[i], CAMERA));
-						game->GetRenderer().attachCamera(cameraComponent->GetCamera());
+						// TODO change this so it works with the renderer being on client side
+						//game->GetRenderer().attachCamera(cameraComponent->GetCamera());
 						clientEntityId = entitiesWithNetworkComponent[i];
 						break;
 					}

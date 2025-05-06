@@ -7,7 +7,6 @@
 #include "../vulkan/VulkanContext.hpp"
 #include "../vulkan/VulkanDevice.hpp"
 #include "../vulkan/PipelineCreation.hpp"
-#include "../vulkan/Renderer.hpp"
 
 namespace Engine {
 namespace vk {

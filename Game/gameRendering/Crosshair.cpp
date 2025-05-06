@@ -59,6 +59,12 @@ void Crosshair::updatePositions() {
 	std::size_t colorSize = this->vertexCount * sizeof(glm::vec4);
 	std::size_t indexSize = this->indexCount * sizeof(std::uint32_t);
 
+	// Since some of these GPU buffers we are about to recreative 
+	// could be currently in use by one of the in-flight frames, 
+	// we wait for idle before recreating them. Since this is only 
+	// done on a setting change it should be fine to just use vkDeviceWaitIdle
+	vkDeviceWaitIdle(this->context->window->device->device);
+
 	// GPU buffers
 	this->posBuffer = Engine::vk::createBuffer(
 		"crosshairPosBuffer",
