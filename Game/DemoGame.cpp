@@ -12,7 +12,6 @@
 #include "../ECS/Components/AudioComponent.hpp"
 #include "../Engine/vulkan/objects/Buffer.hpp"
 #include "../Engine/vulkan/PipelineCreation.hpp"
-#include "../Engine/vulkan/Renderer.hpp"
 #include "../Engine/vulkan/Skybox.hpp"
 #include "../Engine/vulkan/VulkanDevice.hpp"
 #include "Error.hpp"
@@ -23,12 +22,15 @@
 #include "gameModes/SinglePlayer.hpp"
 #include "gameModes/MultiPlayer.hpp"
 
-//#include "glm/gtc/random.hpp" // breaks?
-
 using namespace Engine;
 
-void FPSTest::Init()
-{
+void FPSTest::Init() {
+
+	this->renderer = Renderer(&GetContext(), &GetEntityManager(), this);
+	this->renderer.initialise();
+
+	this->gui = GUI(this);
+
 	srand(time(0));
 	this->threadPool = thread_pool_wait::get_instance();
 
@@ -44,13 +46,11 @@ void FPSTest::Init()
 
 	GetPhysicsWorld().init(&GetEntityManager());
 
-	GetRenderer().initialiseRenderer();
-
-	GetGUI().initGUI();
+	this->gui.initGUI();
 	makeGameGUIS(this);
 
-	GetRenderer().attachCamera(&sceneCamera);
-	GetRenderer().initialiseModelDescriptors();
+	this->renderer.attachCamera(&sceneCamera);
+	this->renderer.initialiseModelDescriptors();
 
 	std::vector<const char*> skyboxFilenames = {
 		"Game/assets/skybox/right.bmp",
@@ -60,10 +60,10 @@ void FPSTest::Init()
 		"Game/assets/skybox/front.bmp",
 		"Game/assets/skybox/back.bmp",
 	};
-	GetRenderer().addSkybox(std::make_unique<Engine::Skybox>(&GetContext(), skyboxFilenames));
+	this->renderer.addSkybox(std::make_unique<Engine::Skybox>(&GetContext(), skyboxFilenames));
 
 	this->crosshair = Crosshair(&GetContext());
-	this->decals = Decals(&GetContext(), &GetRenderer(), "Game/assets/decals/bullet_decal.png");
+	this->decals = Decals(&GetContext(), &this->renderer, "Game/assets/decals/bullet_decal.png");
 }
 
 void FPSTest::Render() {
@@ -72,15 +72,12 @@ void FPSTest::Render() {
 		Update();
 	}
 
-	GetRenderer().finishRendering();
+	this->renderer.finishRendering();
 }
 
 void FPSTest::Update() {
 
-	Engine::EntityManager& e = GetEntityManager();
-	Engine::Renderer& renderer = GetRenderer();
 	Engine::PhysicsWorld& physicsWorld = GetPhysicsWorld();
-	Engine::GUI& gui = GetGUI();
 
 	Engine::InputManager::Update();
 
@@ -88,12 +85,12 @@ void FPSTest::Update() {
 
 	// Need to process GUI stuff before checking swapchain, since
 	// some GUI settings may require instant swapchain recreation
-	gui.makeGUI();
+	this->gui.makeGUI();
 
-	if (renderer.checkSwapchain())
+	if (this->renderer.checkSwapchain())
 		return;
 
-	if (renderer.acquireSwapchainImage())
+	if (this->renderer.acquireSwapchainImage())
 		return;
 
 	// Calculate time delta
@@ -101,9 +98,9 @@ void FPSTest::Update() {
 	const auto timeDelta = std::chrono::duration_cast<std::chrono::duration<float, std::ratio<1>>>(now - previous).count();
 	previous = now;
 
-	renderer.calculateFPS();
+	this->renderer.calculateFPS();
 
-	if (renderer.GetIsSceneLoaded())
+	if (this->renderer.getIsSceneLoaded())
 	{
 		if (gameMode)
 		{
@@ -112,18 +109,18 @@ void FPSTest::Update() {
 
 		physicsWorld.updateObjects(GetModels());
 
-		renderer.updateAnimations(timeDelta);
+		this->renderer.updateAnimations(timeDelta);
 	}
 
-	renderer.updateUniforms();
-	renderer.render();
-	renderer.submitRender();
+	this->renderer.updateUniforms();
+	this->renderer.render();
+	this->renderer.submitRender();
 }
 
 void FPSTest::OnEvent(Engine::Event& e)
 {
 	Game::OnEvent(e);
-	GetRenderer().GetCameraPointer()->OnEvent(this->GetContext().getGLFWWindow(), e);
+	this->renderer.getCameraPointer()->OnEvent(this->GetContext().getGLFWWindow(), e);
 	EventDispatcher dispatcher(e);
 	dispatcher.Dispatch<ESCEvent>([this](Event& event) { toggleSettings(this); return true; });
 	dispatcher.Dispatch<KeyPressedEvent>([&](KeyPressedEvent& event)
@@ -198,7 +195,7 @@ void FPSTest::loadOfflineEntities()
 	audioComponent->addClip("GunShot", "Game\\assets\\AudioClips\\singlegunshot.wav");
 	cameraComponent = reinterpret_cast<CameraComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), CAMERA));
 	cameraComponent->SetCamera(sceneCamera);
-	GetRenderer().attachCamera(cameraComponent->GetCamera());
+	this->renderer.attachCamera(cameraComponent->GetCamera());
 	physicsComponent = reinterpret_cast<PhysicsComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
 	physicsComponent->Init(physicsWorld, PhysicsComponent::PhysicsType::CONTROLLER, models[renderComponent->GetModelIndex()], entity->GetModelMatrix(), entity->GetEntityId(), true, true);
 	entityManager.AddSimulatedPhysicsEntity(entity->GetEntityId());
@@ -369,6 +366,18 @@ GameMode& FPSTest::GetGameMode()
 void FPSTest::SetGameMode(std::unique_ptr<GameMode> mode)
 {
 	gameMode = std::move(mode);
+}
+
+Renderer& FPSTest::getRenderer() {
+	return this->renderer;
+}
+
+GUI& FPSTest::getGUI() {
+	return this->gui;
+}
+
+RenderMode FPSTest::getRenderMode() {
+	return this->renderMode;
 }
 
 Crosshair& FPSTest::GetCrosshair() {

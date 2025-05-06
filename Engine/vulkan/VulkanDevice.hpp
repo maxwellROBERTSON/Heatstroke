@@ -47,6 +47,7 @@ namespace Engine {
 	VkDescriptorSet allocateDescriptorSet(const VulkanWindow& aWindow, VkDescriptorPool aPool, VkDescriptorSetLayout aSetLayout);
 
 	void beginCommandBuffer(VkCommandBuffer aCmdBuff, VkCommandBufferUsageFlags aFlags = 0);
+	void endCommandBuffer(const VulkanWindow& aWindow, VkCommandBuffer cmdBuf);
 	void endAndSubmitCommandBuffer(const VulkanWindow& aWindow, VkCommandBuffer aCmdBuff);
 
 	vk::Sampler createTextureSampler(const VulkanWindow& aWindow, vk::SamplerInfo aSamplerInfo);

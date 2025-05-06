@@ -5,7 +5,6 @@
 
 #include "../vulkan/objects/Buffer.hpp"
 #include "../vulkan/VulkanDevice.hpp"
-#include "../vulkan/Renderer.hpp"
 #include "Animation.hpp"
 #include "Error.hpp"
 #include "toString.hpp"

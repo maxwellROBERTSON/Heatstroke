@@ -14,7 +14,6 @@
 
 #include "../Engine/Physics/PhysicsWorld.hpp"
 
-#include "../Engine/vulkan/Renderer.hpp"
 #include "../Engine/vulkan/VulkanContext.hpp"
 #include "../Engine/vulkan/VulkanDevice.hpp"
 
@@ -32,24 +31,28 @@
 
 #include "../ThreadPool/thread_pool_wait.h"
 
-#include "../Engine/Rendering/Decals.hpp"
-
+#include "gameRendering/Renderer.hpp"
 #include "gameRendering/Crosshair.hpp"
+#include "gameRendering/Decals.hpp"
+#include "gameRendering/RenderMode.hpp"
+
+#include "gameGUI/GUI.hpp"
 
 #include "gameModes/GameMode.hpp"
+
 
 class FPSTest : public Engine::Game
 {
 public:
-	FPSTest() : Engine::Game("FPS Test Game")
-	{
+	FPSTest() : Engine::Game("FPS Test Game") {
 		this->Init();
 	}
-	~FPSTest()
-	{
+
+	~FPSTest() {
 		for (Engine::vk::Model& model : GetModels())
 			model.destroy();
 	};
+
 	virtual void Init() override;
 	virtual void Render() override;
 	virtual void Update() override;
@@ -60,11 +63,17 @@ public:
 	void loadOfflineEntities();
 	void loadOnlineEntities(int);
 
-	GameMode& GetGameMode();
+	// Setters
 	void SetGameMode(std::unique_ptr<GameMode>);
-
+	void SetRenderMode(RenderMode r) { renderMode = r; }
+	
+	// Getters
+	Renderer& getRenderer();
+	GUI& getGUI();
+	RenderMode getRenderMode();
+	GameMode& GetGameMode();
 	Crosshair& GetCrosshair();
-	Engine::Decals& getDecals();
+	Decals& getDecals();
 
 	std::chrono::steady_clock::time_point previous;
 
@@ -79,9 +88,14 @@ public:
 #endif
 
 private:
+	Renderer renderer;
+	GUI gui;
+
+	RenderMode renderMode = RenderMode::NO_DATA_MODE;
+
 	std::unique_ptr<GameMode> gameMode;
 	Crosshair crosshair;
-	Engine::Decals decals;
+	Decals decals;
 
 	thread_pool_wait* threadPool;
 	int offlineClientId = 0;

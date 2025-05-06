@@ -16,8 +16,6 @@
 
 namespace Engine {
 
-	class Renderer;
-
 	enum class DrawType {
 		WORLD,
 		OVERLAY
