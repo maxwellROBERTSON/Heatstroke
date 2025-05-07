@@ -29,8 +29,6 @@ void FPSTest::Init() {
 	this->renderer = Renderer(&GetContext(), &GetEntityManager(), this);
 	this->renderer.initialise();
 
-	this->gui = GUI(this);
-
 	srand(time(0));
 	this->threadPool = thread_pool_wait::get_instance();
 
@@ -46,7 +44,7 @@ void FPSTest::Init() {
 
 	GetPhysicsWorld().init(&GetEntityManager());
 
-	this->gui.initGUI();
+	GetGUI().initGUI(getRenderer().getRenderPassHandle("gui"));
 	makeGameGUIS(this);
 
 	this->renderer.attachCamera(&sceneCamera);
@@ -85,7 +83,7 @@ void FPSTest::Update() {
 
 	// Need to process GUI stuff before checking swapchain, since
 	// some GUI settings may require instant swapchain recreation
-	this->gui.makeGUI();
+	GetGUI().makeGUI();
 
 	if (this->renderer.checkSwapchain())
 		return;
@@ -370,10 +368,6 @@ void FPSTest::SetGameMode(std::unique_ptr<GameMode> mode)
 
 Renderer& FPSTest::getRenderer() {
 	return this->renderer;
-}
-
-GUI& FPSTest::getGUI() {
-	return this->gui;
 }
 
 RenderMode FPSTest::getRenderMode() {
