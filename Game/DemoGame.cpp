@@ -145,10 +145,10 @@ void FPSTest::initialiseModels()
 
 	// Here we would load all relevant glTF models and put them in the models vector
 
-	tinygltf::Model map = Engine::loadFromFile("Game/assets/Assets/maps/warehouse/scene.gltf");
-	tinygltf::Model character = Engine::loadFromFile("Game/assets/character/scene.gltf");
-	tinygltf::Model pistol = Engine::loadFromFile("Game/assets/Assets/guns/pistol1/scene.gltf");
-	tinygltf::Model rifle = Engine::loadFromFile("Game/assets/Assets/guns/rifle/scene.gltf");
+	tinygltf::Model map = Engine::loadFromFile("Game/assets/maps/warehouse/scene.gltf");
+	tinygltf::Model character = Engine::loadFromFile("Game/assets/characters/csgo/scene.gltf");
+	tinygltf::Model pistol = Engine::loadFromFile("Game/assets/guns/pistol1/scene.gltf");
+	tinygltf::Model rifle = Engine::loadFromFile("Game/assets/guns/rifle/scene.gltf");
 	tinygltf::Model target = Engine::loadFromFile("Game/assets/target/scene.gltf");
 	GetModels().emplace_back(Engine::makeVulkanModel(this->GetContext(), map, DrawType::WORLD));
 	GetModels().emplace_back(Engine::makeVulkanModel(this->GetContext(), character, DrawType::WORLD));
