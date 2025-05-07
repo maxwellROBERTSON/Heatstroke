@@ -30,8 +30,6 @@ namespace Engine
 			this->camera = other.camera;
 		}
 
-
-		void swapCameraMode();
 		// Getters
 
 		// Type getter from Component parent
@@ -46,32 +44,29 @@ namespace Engine
 		// Get camera pointer
 		Engine::Camera* GetCamera() { return &camera; }
 
+		// Get camera front direction
+		glm::vec3 GetFrontDirection();
+
 		// Setters
 
 		// Set component data
 		void SetDataArray(uint8_t*) override;
 
-		// Update camera using Camera class
-		void UpdateCamera(GLFWwindow*, float);
-		void UpdateCameraPosition(glm::vec3 pos);
-
-
+		// Set camera
 		void SetCamera(Engine::Camera aCamera) { camera = aCamera; SetComponentHasChanged(); }
+
+		// Update camera position
+		void UpdateCameraPosition(float x, float y, float z);
+
+		// Set camera offset
+		void SetCameraOffset(float x, float y, float z);
+		void SetCameraOffset(glm::vec3 offset);
 
 		// Set component has changed in entity manager
 		void SetComponentHasChanged();
 
 		// Toggle has changed boolean
 		void ToggleHasChanged() { hasChanged = !hasChanged; }
-
-		// for player
-		Entity* playerEntity;
-		glm::vec3 cameraOffset;
-		glm::vec3 sceneCamPos;
-
-		void SetCameraOffset(float x, float y, float z);
-		void SetCameraOffset(glm::vec3 offset);
-		glm::vec3 GetFrontDirection();
 
 	private:
 		// EntityManager pointer
@@ -84,12 +79,7 @@ namespace Engine
 
 		Engine::Camera camera;
 
-
+		glm::vec3 cameraOffset = glm::vec3(0.f, 0.f, 0.f);
 	};
 }
 
-// 	// Set camera pointer
-// 	void SetCamera(Engine::Camera* aCamera) { camera = aCamera; }
-
-// private:
-// 	Engine::Camera* camera;

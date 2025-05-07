@@ -104,7 +104,16 @@ namespace Engine
 		this->entityManager = entityManager;
 	}
 
-	void PhysicsWorld::updatePhysics(Entity* playerEntity, PxReal timeDelta) {
+	void PhysicsWorld::reset(EntityManager* e)
+	{
+		cleanupPhysX();
+		init(e);
+	}
+
+	void PhysicsWorld::setControllerEntity(Entity* entity) { controllerEntity = entity; }
+	void PhysicsWorld::setControllerHeight(float height) { controllerHeight = height;  }
+
+	void PhysicsWorld::updatePhysics(PxReal timeDelta, bool updateCharacter) {
 		// Previously, when we didn't have the option of turning VSync off,
 		// the timeDelta was 1/x where x was the refresh rate of the users
 		// monitor, which most of the time was slightly less than 0.016f (1/60).
@@ -127,28 +136,29 @@ namespace Engine
 		this->gSimulationTimer += timeDelta;
 
 		if (this->gSimulationTimer > gTimestep) {
-			if (playerEntity != nullptr)
-				this->updateCharacter(playerEntity, gTimestep);
+			if (updateCharacter)
+				this->updateCharacter(gTimestep);
 			this->gScene->simulate(gTimestep);
 			this->gScene->fetchResults(true);
 			this->gSimulationTimer -= gTimestep;
 		}
 	}
 
-	void PhysicsWorld::updateCharacter(Entity* playerEntity, PxReal deltatime)
+	void PhysicsWorld::updateCharacter(PxReal deltatime)
 	{
-		handleMovement(playerEntity, deltatime);
+		handleMovement(deltatime);
 		//handleShooting();
 	}
 
-	void PhysicsWorld::handleMovement(Entity* playerEntity, PxReal deltatime)
+	void PhysicsWorld::handleMovement(PxReal deltatime)
 	{
-		glm::vec3 entityFrontDir = playerEntity->frontDirection;
-		glm::vec3 entityRightDir = glm::normalize(glm::cross(entityFrontDir, glm::vec3(0.0f, 1.0f, 0.0f)));
 		if (this->controller)
 		{
+			CameraComponent* cameraComponent = reinterpret_cast<CameraComponent*>(entityManager->GetComponentOfEntity(controllerEntity->GetEntityId(), CAMERA));
+			glm::vec3 camFrontDir = cameraComponent->GetFrontDirection();
+			glm::vec3 entityFrontDir = glm::normalize(glm::vec3(camFrontDir.x, 0.0f, camFrontDir.z));
+			glm::vec3 entityRightDir = glm::normalize(glm::cross(entityFrontDir, glm::vec3(0.0f, 1.0f, 0.0f)));
 			const float gravity = -9.81f;
-			//const float gravity = 0.0f;
 			PxVec3 displacement(0.0f, gravity * deltatime, 0.0f);
 			PxVec3 old = displacement;
 			float speed = 5.0f;
@@ -207,9 +217,9 @@ namespace Engine
 		}
 	}
 
-	PxRaycastHit PhysicsWorld::handleShooting(Entity* playerEntity)
+	PxRaycastHit PhysicsWorld::handleShooting()
 	{
-		CameraComponent* cameraComponent = reinterpret_cast<CameraComponent*>(entityManager->GetComponentOfEntity(playerEntity->GetEntityId(), CAMERA));
+		CameraComponent* cameraComponent = reinterpret_cast<CameraComponent*>(entityManager->GetComponentOfEntity(controllerEntity->GetEntityId(), CAMERA));
 		glm::vec3 cameraPos = cameraComponent->GetCamera()->position;
 		glm::vec3 cameraDir = cameraComponent->GetFrontDirection();
 		PxExtendedVec3 extPos = PxExtendedVec3(cameraPos.x, cameraPos.y, cameraPos.z);
@@ -239,24 +249,24 @@ namespace Engine
 			DebugDrawRayInPVD(gScene, pos, pos + direction * 100.0f, 0xFFFFFF00);
 			//std::cout << "Hit nothing\n";
 		}
-		AudioComponent* audioComponent = reinterpret_cast<AudioComponent*>(entityManager->GetComponentOfEntity(playerEntity->GetEntityId(), AUDIO));
+		AudioComponent* audioComponent = reinterpret_cast<AudioComponent*>(entityManager->GetComponentOfEntity(controllerEntity->GetEntityId(), AUDIO));
 		audioComponent->playSound("GunShot");
 
 		return hit;
 	}
 
 	// update models matrices
-	void PhysicsWorld::updateObjects(Engine::EntityManager& entityManager, std::vector<Engine::vk::Model>& models)
+	void PhysicsWorld::updateObjects(std::vector<Engine::vk::Model>& models)
 	{
 		// get all PhysicsComponents which are simulated locally
-		std::vector<ComponentBase*> physicsComponents = entityManager.GetSimulatedPhysicsComponents();
+		std::vector<ComponentBase*> physicsComponents = entityManager->GetSimulatedPhysicsComponents();
 		for (std::size_t i = 0; i < physicsComponents.size(); i++) {
 			PhysicsComponent* p = reinterpret_cast<PhysicsComponent*>(physicsComponents[i]);
 
 			// dynamic update
 			if (p->GetPhysicsType() == PhysicsComponent::PhysicsType::DYNAMIC)
 			{
-				Entity* entity = entityManager.GetEntity(p->GetEntityId());
+				Entity* entity = entityManager->GetEntity(p->GetEntityId());
 				PxTransform transform = p->GetDynamicBody()->getGlobalPose();
 				entity->SetPosition(transform.p.x, transform.p.y, transform.p.z);
 				entity->SetRotation(glm::quat(transform.q.w, transform.q.x, transform.q.y, transform.q.z));
@@ -269,7 +279,9 @@ namespace Engine
 			if (p->GetPhysicsType() == PhysicsComponent::PhysicsType::CONTROLLER)
 			{
 				PxExtendedVec3 pos = p->GetController()->getFootPosition();
-				entityManager.GetEntity(p->GetEntityId())->SetPosition(pos.x, pos.y, pos.z);
+				entityManager->GetEntity(p->GetEntityId())->SetPosition(pos.x, pos.y, pos.z);
+				CameraComponent* cameraComponent = reinterpret_cast<CameraComponent*>(entityManager->GetComponentOfEntity(controllerEntity->GetEntityId(), CAMERA));
+				cameraComponent->UpdateCameraPosition(pos.x, pos.y + controllerHeight, pos.z);
 			}
 		}
 	}

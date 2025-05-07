@@ -124,7 +124,8 @@ project "Engine"
         "Engine/Network/**",
         "Engine/ECS/**",
         "Engine/GUI/**",
-        "Engine/Physics/**"
+        "Engine/Physics/**",
+        "Engine/Rendering/**"
     }
 
     includedirs {
@@ -211,6 +212,7 @@ project "Game"
         ".",
         "../",
         "Engine/Utils",
+        "Engine",
         vcpkgincludeDirs
     }
 
