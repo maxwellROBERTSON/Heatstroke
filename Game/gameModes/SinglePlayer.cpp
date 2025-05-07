@@ -126,14 +126,17 @@ void SinglePlayer::ToggleSceneCamera(Camera* sceneCamera)
 	Engine::Renderer& renderer = this->game->GetRenderer();
 
 	Engine::CameraComponent* cameraComponent = reinterpret_cast<Engine::CameraComponent*>(this->game->GetEntityManager().GetComponentOfEntity(playerEntity->GetEntityId(), CAMERA));
+	Engine::RenderComponent* playerRenderComp = reinterpret_cast<Engine::RenderComponent*>(this->game->GetEntityManager().GetComponentOfEntity(playerEntity->GetEntityId(), RENDER));
 
 	if (renderer.GetCameraPointer() == sceneCamera)
 	{
+		playerRenderComp->SetIsActive(false);
 		renderer.attachCamera(cameraComponent->GetCamera());
 		isPlayerCam = true;
 	}
 	else
 	{
+		playerRenderComp->SetIsActive(true);
 		renderer.attachCamera(sceneCamera);
 		isPlayerCam = false;
 	}

@@ -272,6 +272,7 @@ namespace Engine
 			if (p->GetPhysicsType() == PhysicsComponent::PhysicsType::CONTROLLER)
 			{
 				PxExtendedVec3 pos = p->GetController()->getFootPosition();
+				//pos.y -= p->GetController()->getContactOffset();
 				entityManager->GetEntity(p->GetEntityId())->SetPosition(pos.x, pos.y, pos.z);
 				CameraComponent* cameraComponent = reinterpret_cast<CameraComponent*>(entityManager->GetComponentOfEntity(controllerEntity->GetEntityId(), CAMERA));
 				cameraComponent->UpdateCameraPosition(pos.x, pos.y + controllerHeight, pos.z);
