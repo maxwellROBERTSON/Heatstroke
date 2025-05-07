@@ -22,7 +22,8 @@ namespace Engine
 {
 	Camera::Camera(float fov, float _near, float _far, glm::vec3 position, glm::vec3 frontDirection) :
 		fov(fov), nearPlane(_near), farPlane(_far), position(position), frontDirection(frontDirection)
-	{}
+	{
+	}
 
 	void Camera::updateCamera(GLFWwindow* aWindow, float timeDelta) {
 		if (glfwGetInputMode(aWindow, GLFW_CURSOR) != GLFW_CURSOR_DISABLED)
@@ -76,6 +77,7 @@ namespace Engine
 		auto& mouse = InputManager::getMouse();
 		float speedModifier = 1.0f;
 		if (InputManager::IsPressed(HS_KEY_LEFT_SHIFT)) speedModifier = 3.0f;
+		//if (InputManager::IsPressed(HS_KEY_LEFT_SHIFT)) speedModifier = 3.0f;
 		float distance = 1.0f * speedModifier * timeDelta;
 
 		if (InputManager::IsPressed(HS_KEY_W))

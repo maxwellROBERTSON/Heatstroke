@@ -67,7 +67,7 @@ namespace Engine
 		//static void bindAction(const ActionType& action, int aKey, int aButton);
 
 		// Input
-		static bool IsPressed(int);
+		static bool IsPressed(int aKey);
 		//static bool Action(const std::string& actionName);
 		static bool Action(const ControlID action);
 		// ?

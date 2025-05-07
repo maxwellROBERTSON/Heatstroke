@@ -61,15 +61,19 @@ namespace Engine
 		DefaultControls.mapKeyboardButton(Controls::MoveForward, { HS_KEY_W, 1.0f });
 		DefaultControls.mapKeyboardButton(Controls::MoveBackward, { HS_KEY_S, -1.0f });
 		DefaultControls.mapKeyboardButton(Controls::Reload, { HS_KEY_R, 1.0f });
-		DefaultControls.mapGamepadButton(Controls::Reload, { HS_GAMEPAD_BUTTON_Y, 1.0f });
-		//DefaultControls.mapGamepadAxis(Controls::MoveForward, { HS_GAMEPAD_AXIS_RIGHT_Y,AxisType::NEGATIVE, 0.0f, 0.49f });
-		//DefaultControls.mapGamepadAxis(Controls::MoveBackward, { HS_GAMEPAD_AXIS_RIGHT_Y,AxisType::POSITIVE, 0.5f, 1.0f });
 		DefaultControls.mapKeyboardButton(Controls::MoveLeft, { HS_KEY_A, -1.0f });
 		DefaultControls.mapKeyboardButton(Controls::MoveRight, { HS_KEY_D, 1.0f });
 		DefaultControls.mapKeyboardButton(Controls::Jump, { HS_KEY_SPACE, 1.0f });
-		DefaultControls.mapGamepadButton(Controls::Jump, { HS_GAMEPAD_BUTTON_A, 1.0f });
 		DefaultControls.mapMouseButton(Controls::Shoot, { HS_MOUSE_BUTTON_LEFT });
-		DefaultControls.mapGamepadAxis(Controls::Shoot, { HS_GAMEPAD_AXIS_RIGHT_TRIGGER, AxisType::FULL, 0.0f, 1.0f });
+
+		if (InputManager::hasJoysticksConnected())
+		{
+			DefaultControls.mapGamepadButton(Controls::Reload, { HS_GAMEPAD_BUTTON_Y, 1.0f });
+			DefaultControls.mapGamepadButton(Controls::Jump, { HS_GAMEPAD_BUTTON_A, 1.0f });
+			DefaultControls.mapGamepadAxis(Controls::Shoot, { HS_GAMEPAD_AXIS_RIGHT_TRIGGER, AxisType::FULL, 0.0f, 1.0f });
+			//DefaultControls.mapGamepadAxis(Controls::MoveForward, { HS_GAMEPAD_AXIS_RIGHT_Y,AxisType::NEGATIVE, 0.0f, 0.49f });
+			//DefaultControls.mapGamepadAxis(Controls::MoveBackward, { HS_GAMEPAD_AXIS_RIGHT_Y,AxisType::POSITIVE, 0.5f, 1.0f });
+		}
 	}
 
 	bool InputManager::Action(const ControlID action)

@@ -156,8 +156,8 @@ namespace Engine
 			PxVec3 frontDir(entityFrontDir.x, entityFrontDir.y, entityFrontDir.z);
 			PxVec3 rightDir(entityRightDir.x, entityRightDir.y, entityRightDir.z);
 
-			auto& keyboard = Engine::InputManager::getKeyboard();
-			auto& gamepad = Engine::InputManager::getJoystick(0);
+			//auto& keyboard = Engine::InputManager::getKeyboard();
+			//auto& gamepad = Engine::InputManager::getJoystick(0);
 
 			//if (gamepad.getAxisValue(HS_GAMEPAD_AXIS_RIGHT_Y) < -0.2f)
 			//{

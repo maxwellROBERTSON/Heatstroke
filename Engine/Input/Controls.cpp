@@ -74,34 +74,37 @@ namespace Engine
 		}
 
 		//controller check
-		const auto& findGamepad = gamepadControlsById.find(control);
+		if (InputManager::hasJoysticksConnected())
+		{
+			const auto& findGamepad = gamepadControlsById.find(control);
 
-		if (!(findGamepad == gamepadControlsById.end())) {
-			const auto& entries = findGamepad->second;
+			if (!(findGamepad == gamepadControlsById.end())) {
+				const auto& entries = findGamepad->second;
 
-			for (const auto& entry : entries) {
-				switch (entry.inputType)
-				{
-				case InputType::AXIS:
-				{
-					float value = getAxisValue(
-						InputManager::getJoystick(0).getAxisValue(entry.value),
-						entry.axisType,
-						entry.minAnalogueValue,
-						entry.maxAnalogueValue
-					);
-					if (value > 0.0f)
-						controllerIsDown = true;
-					//else std::cout << value << std::endl;
-				}
-				break;
-				case InputType::BUTTON:
-				{
-					if (InputManager::getJoystick(0).isDown(entry.value)) {
-						controllerIsDown = true;
+				for (const auto& entry : entries) {
+					switch (entry.inputType)
+					{
+					case InputType::AXIS:
+					{
+						float value = getAxisValue(
+							InputManager::getJoystick(0).getAxisValue(entry.value),
+							entry.axisType,
+							entry.minAnalogueValue,
+							entry.maxAnalogueValue
+						);
+						if (value > 0.0f)
+							controllerIsDown = true;
+						//else std::cout << value << std::endl;
 					}
-				}
-				break;
+					break;
+					case InputType::BUTTON:
+					{
+						if (InputManager::getJoystick(0).isDown(entry.value)) {
+							controllerIsDown = true;
+						}
+					}
+					break;
+					}
 				}
 			}
 		}
