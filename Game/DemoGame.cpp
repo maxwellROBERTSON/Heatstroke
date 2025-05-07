@@ -128,10 +128,10 @@ void FPSTest::OnEvent(Engine::Event& e)
 	EventDispatcher dispatcher(e);
 	dispatcher.Dispatch<ESCEvent>([this](Event& event) { toggleSettings(this); return true; });
 	dispatcher.Dispatch<KeyPressedEvent>([&](KeyPressedEvent& event)
-	{
-		if (event.GetKeyCode() == HS_KEY_C) { GetGameMode().ToggleSceneCamera(&sceneCamera); }
-		return true;
-	});
+		{
+			if (event.GetKeyCode() == HS_KEY_C) { GetGameMode().ToggleSceneCamera(&sceneCamera); }
+			return true;
+		});
 }
 
 void FPSTest::initialiseModels()
@@ -188,7 +188,7 @@ void FPSTest::loadOfflineEntities()
 	physicsComponent = reinterpret_cast<PhysicsComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
 	physicsComponent->InitComplexShape("Map", physicsWorld, PhysicsComponent::PhysicsType::STATICBOUNDED, models[renderComponent->GetModelIndex()], entity->GetModelMatrix(), entity->GetEntityId());
 	entityManager.AddSimulatedPhysicsEntity(entity->GetEntityId());
-	
+
 	// Character Model
 	types = { AUDIO, CAMERA, PHYSICS };
 	entity = entityManager.MakeNewEntity(types);
