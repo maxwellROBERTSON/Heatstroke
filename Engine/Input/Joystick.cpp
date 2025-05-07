@@ -24,12 +24,7 @@ namespace Engine
 	}
 	ButtonState Joystick::getButtonState(int aButton) const
 	{
-		const auto& button = mButtonStates.find(aButton);
-		if (button == mButtonStates.end()) {
-			return ButtonState::RELEASED;
-		}
-
-		return button->second;
+		return mButtonStates.getButtonState(aButton);
 	}
 	bool Joystick::isConnected()
 	{
@@ -39,12 +34,24 @@ namespace Engine
 	{
 		return getButtonState(aButton) == ButtonState::PRESSED;
 	}
+	bool Joystick::isHeld(int aButton)
+	{
+		return mButtonStates.getButtonState(aButton) == ButtonState::HELD;
+
+	}
+	bool Joystick::isDown(int aButton)
+	{
+		return mButtonStates.getButtonState(aButton) == ButtonState::PRESSED || mButtonStates.getButtonState(aButton) == ButtonState::HELD;
+
+	}
 	void Joystick::Update()
 	{
 		if (!glfwJoystickPresent(joyStickIndex)) {
 			mButtonStates.clear();
 			return;
 		}
+
+		//mButtonStates.Update();
 
 		int buttonCount;
 		const unsigned char* buttons = glfwGetJoystickButtons(joyStickIndex, &buttonCount);
@@ -67,15 +74,7 @@ namespace Engine
 				break;
 			}
 
-			const ButtonState lastState = getButtonState(b);
-
-			if (buttonState == ButtonState::PRESSED) {
-				if (lastState == ButtonState::PRESSED) {
-					buttonState = ButtonState::PRESSED;
-				}
-			}
-
-			mButtonStates[b] = buttonState;
+			mButtonStates.setButtonState(b, buttonState);
 		}
 
 		//  Update each axis

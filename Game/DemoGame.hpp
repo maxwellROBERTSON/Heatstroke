@@ -77,14 +77,15 @@ public:
 
 	std::chrono::steady_clock::time_point previous;
 
-	// -- input actions
 	// Cameras
 	Engine::Camera sceneCamera;
 
 #ifdef _DEBUG
 	bool debugging = true;
+	bool showGUI = true;
 #else
 	bool debugging = false;
+	bool showGUI = true;
 #endif
 
 private:

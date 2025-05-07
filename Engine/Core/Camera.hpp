@@ -60,17 +60,13 @@ namespace Engine
 
 		bool firstClick = true;
 
-		float sensitivity = 0.5f;
+		float sensitivity = 1.0f;
 
 		float yaw = 0.0f;
 		float pitch = 0.0f;
 		float lastX = 0.0f;
 		float lastY = 0.0f;
 
-		bool enableRotation{ true };
-
-	/*private:
-		void updateSceneCamera(float timeDelta);
-		void updatePlayerCamera(float timeDelta);*/
+		bool enableRotation{ true }; // dont think this is necessary anymore
 	};
 }

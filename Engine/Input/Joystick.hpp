@@ -1,8 +1,10 @@
 #pragma once
 
-#include "../Input/Device.hpp"
+#include "Device.hpp"
+#include "InputTypes.hpp"
 
-namespace Engine {
+namespace Engine
+{
 
 	class Joystick : public Device
 	{
@@ -13,7 +15,9 @@ namespace Engine {
 		float getAxisValue(int aAxis) const;
 		ButtonState getButtonState(int aButton) const;
 		bool isConnected();
-		bool isPressed(int aButton);
+		bool isPressed(int aButton); // basically useless for my controller
+		bool isHeld(int aButton);
+		bool isDown(int aButton); // best
 		void Update();
 		const std::string& getDeviceName() const override;
 
@@ -21,6 +25,6 @@ namespace Engine {
 		std::string joyStickName;
 		int joyStickIndex;
 		std::map<int, float> mAxisStates;
-		std::map<int, ButtonState> mButtonStates;
+		ButtonStateMap mButtonStates;
 	};
 }

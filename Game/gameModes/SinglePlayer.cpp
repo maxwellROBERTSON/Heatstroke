@@ -63,59 +63,83 @@ void SinglePlayer::Update(float timeDelta)
 		return;
 
 	// Handle shooting
-	if (Engine::InputManager::getMouse().isPressed(HS_MOUSE_BUTTON_LEFT) && canFire)
+
+	if (InputManager::Action(Controls::Reload))
+	{
+		RenderComponent* pistolRenderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(pistolEntity->GetEntityId(), RENDER));
+		std::vector<vk::Model>& models = this->game->GetModels();
+		int pistolModelIndex = pistolRenderComponent->GetModelIndex();
+		models[pistolModelIndex].animationQueue.push(models[pistolModelIndex].animations[4]);
+		models[pistolModelIndex].blending = true;
+		ammoCount = 6;
+		models[pistolModelIndex].animationQueue.pop();
+	}
+
+	if (InputManager::Action(Controls::Shoot) && canFire)
 	{
 		Engine::RenderComponent* pistolRenderComponent = reinterpret_cast<Engine::RenderComponent*>(entityManager.GetComponentOfEntity(pistolEntity->GetEntityId(), RENDER));
 		Engine::AudioComponent* playerAudioComponent = reinterpret_cast<Engine::AudioComponent*>(entityManager.GetComponentOfEntity(playerEntity->GetEntityId(), AUDIO));
 		int pistolModelIndex = pistolRenderComponent->GetModelIndex();
 		std::vector<vk::Model>& models = this->game->GetModels();
-		models[pistolModelIndex].animationQueue.push(models[pistolModelIndex].animations[3]);
-		models[pistolModelIndex].blending = true;
-		canFire = false;
-		fireDelay = 1.0f;
-		PxRaycastHit entityHit = physicsWorld.handleShooting();
 
-		bool hitTarget = false;
-
-		std::vector<int> entitiesWithPhysicsComponent = entityManager.GetEntitiesWithComponent(PHYSICS);
-		for (int i = 0; i < entitiesWithPhysicsComponent.size(); i++)
+		if (ammoCount <= 0)
 		{
-			Engine::Entity* entity = entityManager.GetEntity(entitiesWithPhysicsComponent[i]);
-			Engine::PhysicsComponent* physicsComponent = reinterpret_cast<Engine::PhysicsComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
-			if (physicsComponent->GetStaticBody() != nullptr && physicsComponent->GetStaticBody() == entityHit.actor)
+			models[pistolModelIndex].animationQueue.push(models[pistolModelIndex].animations[4]);
+			models[pistolModelIndex].blending = true;
+			ammoCount = 7;
+			//models[pistolModelIndex].animationQueue.pop();
+		}
+		else
+		{
+			models[pistolModelIndex].animationQueue.push(models[pistolModelIndex].animations[3]);
+			models[pistolModelIndex].blending = true;
+			ammoCount--;
+			canFire = false;
+			fireDelay = 1.5f;
+
+			PxRaycastHit entityHit = physicsWorld.handleShooting();
+			bool hitTarget = false;
+
+			std::vector<int> entitiesWithPhysicsComponent = entityManager.GetEntitiesWithComponent(PHYSICS);
+			for (int i = 0; i < entitiesWithPhysicsComponent.size(); i++)
 			{
-				score++;
+				Engine::Entity* entity = entityManager.GetEntity(entitiesWithPhysicsComponent[i]);
+				Engine::PhysicsComponent* physicsComponent = reinterpret_cast<Engine::PhysicsComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
+				if (physicsComponent->GetStaticBody() != nullptr && physicsComponent->GetStaticBody() == entityHit.actor)
+				{
+					score++;
 
-				Engine::RenderComponent* hitRenderComponent = reinterpret_cast<Engine::RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
-				hitRenderComponent->SetIsActive(0);
-				glm::vec3 pos = entity->GetPosition();
-				int xPos = randomDistribX(gen);
-				int zPos = randomDistribZ(gen);
-				glm::vec3 newPos{ xPos, pos.y, zPos };
-				targetEntity->SetPosition(newPos);
-				glm::vec3 translation;
-				glm::vec3 scale;
-				glm::quat rotation;
-				physicsComponent->DecomposeTransform(targetEntity->GetModelMatrix(), translation, rotation, scale);
-				PxTransform pxTransform(
-					PxVec3(translation.x, translation.y, translation.z),
-					PxQuat(rotation.x, rotation.y, rotation.z, rotation.w)
-				);
-				physicsComponent->GetStaticBody()->setGlobalPose(pxTransform);
-				hitRenderComponent->SetIsActive(1);
+					Engine::RenderComponent* hitRenderComponent = reinterpret_cast<Engine::RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
+					hitRenderComponent->SetIsActive(0);
+					glm::vec3 pos = entity->GetPosition();
+					int xPos = randomDistribX(gen);
+					int zPos = randomDistribZ(gen);
+					glm::vec3 newPos{ xPos, pos.y, zPos };
+					targetEntity->SetPosition(newPos);
+					glm::vec3 translation;
+					glm::vec3 scale;
+					glm::quat rotation;
+					physicsComponent->DecomposeTransform(targetEntity->GetModelMatrix(), translation, rotation, scale);
+					PxTransform pxTransform(
+						PxVec3(translation.x, translation.y, translation.z),
+						PxQuat(rotation.x, rotation.y, rotation.z, rotation.w)
+					);
+					physicsComponent->GetStaticBody()->setGlobalPose(pxTransform);
+					hitRenderComponent->SetIsActive(1);
 
-				hitTarget = true;
+					hitTarget = true;
+				}
 			}
-		}
 
-		if (!hitTarget) {
-			if (entityHit.actor->getName() != "levelBounds" && entityHit.distance != PX_MAX_REAL) {
-				this->game->getDecals().setNextDecal(entityHit.position, entityHit.normal);
+			if (!hitTarget) {
+				if (entityHit.actor != nullptr && entityHit.actor->getName() != "levelBounds" && entityHit.distance != PX_MAX_REAL) {
+					this->game->getDecals().setNextDecal(entityHit.position, entityHit.normal);
+				}
 			}
-		}
 
-		if (countdown <= 0)
-			gameOver = true;
+			if (countdown <= 0)
+				gameOver = true;
+		}
 	}
 }
 

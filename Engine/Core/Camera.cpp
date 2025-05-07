@@ -104,21 +104,6 @@ namespace Engine
 		if (this->pitch < -89.9f)
 			this->pitch = -89.9f;
 
-		/*if (updatePosition)
-		{
-			if (this->pitch > 89.9f)
-				this->pitch = 89.9f;
-			if (this->pitch < -89.9f)
-				this->pitch = -89.9f;
-		}
-		else
-		{
-			if (this->pitch > 59.9f)
-				this->pitch = 59.9f;
-			if (this->pitch < -59.9f)
-				this->pitch = -59.9f;
-		}*/
-
 		glm::vec3 newDir;
 		newDir.x = std::cos(glm::radians(this->yaw)) * std::cos(glm::radians(this->pitch));
 		newDir.y = std::sin(glm::radians(this->pitch));
@@ -148,3 +133,4 @@ namespace Engine
 		);
 	}
 }
+
