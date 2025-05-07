@@ -18,7 +18,7 @@
 #include "glm/gtx/string_cast.hpp"
 #include "toString.hpp"
 
-#include "gameGUI/gameGUI.hpp"
+#include "gameGUI/GameGUI.hpp"
 #include "gameModes/SinglePlayer.hpp"
 #include "gameModes/MultiPlayer.hpp"
 
@@ -198,7 +198,7 @@ void FPSTest::loadOfflineEntities()
 	physicsComponent->Init(physicsWorld, PhysicsComponent::PhysicsType::CONTROLLER, models[renderComponent->GetModelIndex()], entity->GetModelMatrix(), entity->GetEntityId(), true, true);
 	entityManager.AddSimulatedPhysicsEntity(entity->GetEntityId());
 	audioComponent = reinterpret_cast<AudioComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), AUDIO));
-	audioComponent->addClip("GunShot", "Game\\assets\\AudioClips\\singlegunshot.wav");
+	audioComponent->addClip("GunShot", "Game/assets/AudioClips/singlegunshot.wav");
 	GetGameMode().SetPlayerEntity(entity);
 
 	// pistol

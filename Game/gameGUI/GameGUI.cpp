@@ -1,4 +1,4 @@
-#include "gameGUI.hpp"
+#include "GameGUI.hpp"
 #include "../gameModes/GameMode.hpp"
 #include "../gameModes/SinglePlayer.hpp"
 #include "../gameModes/MultiPlayer.hpp"

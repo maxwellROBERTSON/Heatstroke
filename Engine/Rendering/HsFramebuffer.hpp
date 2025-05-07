@@ -4,6 +4,8 @@
 
 #include "../vulkan/objects/VkObjects.hpp"
 
+#include <cstdint>
+
 namespace Engine {
 
 	class VulkanWindow;
