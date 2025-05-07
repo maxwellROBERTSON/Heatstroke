@@ -94,11 +94,43 @@ namespace Engine
 			PxQuat(rotation.x, rotation.y, rotation.z, rotation.w)
 		);
 
-		glm::vec3 glmHalfExtent = (model.bbMax - model.bbMin) / 2.0f;
+		glm::vec3 worldSpaceMin = glm::vec3(0, 0, 0);
+		glm::vec3 worldSpaceMax = glm::vec3(0, 0, 0);
+
+		for (Engine::vk::Node* node : model.linearNodes) {
+			if (node->mesh) {
+				glm::mat4 nodeMatrix = transform * node->getModelMatrix();
+
+				glm::vec3 localMin = node->bbMin;
+				glm::vec3 localMax = node->bbMax;
+
+				// Generate all 8 corners of the AABB
+				glm::vec3 corners[8] = {
+					node->bbMin,
+					glm::vec3(localMin.x, localMin.y, localMax.z),
+					glm::vec3(localMin.x, localMax.y, localMin.z),
+					glm::vec3(localMin.x, localMax.y, localMax.z),
+					glm::vec3(localMax.x, localMin.y, localMin.z),
+					glm::vec3(localMax.x, localMin.y, localMax.z),
+					glm::vec3(localMax.x, localMax.y, localMin.z),
+					node->bbMax
+				};
+
+				for (int i = 0; i < 8; ++i) {
+					glm::vec3 worldCorner = glm::vec3(nodeMatrix * glm::vec4(corners[i], 1.0f));
+					worldSpaceMin = glm::min(worldSpaceMin, worldCorner);
+					worldSpaceMax = glm::max(worldSpaceMax, worldCorner);
+				}
+			}
+		}
+
+		std::cout << "World Space Min transformed: " << worldSpaceMin.x << " " << worldSpaceMin.y << " " << worldSpaceMin.z << std::endl;
+		std::cout << "World Space Max transformed: " << worldSpaceMax.x << " " << worldSpaceMax.y << " " << worldSpaceMax.z << std::endl;
+
+		glm::vec3 glmHalfExtent = (worldSpaceMax - worldSpaceMin) / 2.0f;
 		PxVec3 halfExtent(std::max(0.001f, glmHalfExtent.x), std::max(0.001f, glmHalfExtent.y), std::max(0.001f, glmHalfExtent.z));
-		halfExtent.x *= scale.x;
-		halfExtent.y *= scale.y;
-		halfExtent.z *= scale.z;
+
+		std::cout << "Half Extent (transformed): " << halfExtent.x << " " << halfExtent.y << " " << halfExtent.z << std::endl;
 
 		PxMaterial* material = pworld.gPhysics->createMaterial(0.5f, 0.5f, 0.5f);
 		material->setRestitution(0.0f);
@@ -119,7 +151,7 @@ namespace Engine
 					*staticBody, PxBoxGeometry(halfExtent), *material
 				);
 
-				//staticBody->setActorFlag(PxActorFlag::eVISUALIZATION, true);
+				staticBody->setActorFlag(PxActorFlag::eVISUALIZATION, true);
 				pworld.gScene->addActor(*staticBody);
 
 			}
@@ -160,26 +192,24 @@ namespace Engine
 			if ((!isClient) || (isClient && !isLocalPlayer))
 				break;
 
-			// set ControllerDescription
 			PxCapsuleControllerDesc desc;
 			desc.radius = halfExtent.x > halfExtent.z ? halfExtent.x : halfExtent.z;
 			desc.height = halfExtent.y * 2 - (2.0f * desc.radius);
-			if (desc.height < 0.0f)
-				desc.height = 0.0f;
+			if (desc.height <= 0.0f)
+				desc.height = 0.01f;
 			desc.stepOffset = 0.1f;
-			desc.height = 1.f;
-			desc.radius = 0.3f;
-			//desc.contactOffset
+			desc.scaleCoeff = 1.0f;
+			desc.contactOffset = 0.001f * desc.radius;
 			desc.material = pworld.gPhysics->createMaterial(0.5f, 0.5f, 0.6f);
-			desc.position = PxExtendedVec3(translation.x, translation.y + desc.height / 2 + desc.radius, translation.z);
-			desc.slopeLimit = 0.8f;
+			desc.position = PxExtendedVec3(translation.x, translation.y + (desc.height / 2 + desc.radius), translation.z);
+			desc.slopeLimit = 0.3f;
 			desc.upDirection = PxVec3(0, 1, 0);
 
 			PxCapsuleController* pcontroller = static_cast<PxCapsuleController*>(pworld.gControllerManager->createController(desc));
 			controller = pcontroller;
 			pworld.controller = pcontroller;
 			pworld.setControllerEntity(entity);
-			pworld.setControllerHeight(desc.height);
+			pworld.setControllerHeight(desc.height + desc.radius);
 
 			break;
 		}
@@ -241,7 +271,7 @@ namespace Engine
 						worldSpaceMax = glm::max(worldSpaceMax, worldCorner);
 					}
 				}
-
+				
 				for (Engine::vk::Primitive* primitive : node->mesh->primitives) {
 					PxMaterial* material = pWorld.gPhysics->createMaterial(0.5f, 0.5f, 0.5f);
 
@@ -278,7 +308,7 @@ namespace Engine
 
 					PxDefaultMemoryInputData readBuffer(writeBuffer.getData(), writeBuffer.getSize());
 					PxTriangleMesh* triMesh = pWorld.gPhysics->createTriangleMesh(readBuffer);
-					PxTriangleMeshGeometry triMeshGeometry(triMesh, PxMeshScale(nodePxScale));
+					PxTriangleMeshGeometry triMeshGeometry(triMesh, PxMeshScale(nodePxScale), PxMeshGeometryFlag::eDOUBLE_SIDED);
 
 					// Only static triangle meshes are supported for now.
 					// Dynamic triangle mesh geometries are possible but are more complicated
@@ -292,7 +322,7 @@ namespace Engine
 					staticBody = pWorld.gPhysics->createRigidStatic(PxTransform(nodePxTransform));
 					if (staticBody) {
 						PxShape* shape = PxRigidActorExt::createExclusiveShape(
-							*staticBody, triMeshGeometry, *material
+							*staticBody, triMeshGeometry, *material 
 						);
 
 						staticBody->setName(name);
@@ -301,6 +331,7 @@ namespace Engine
 				}
 			}
 		}
+
 		if (physicsType == PhysicsType::STATICBOUNDED)
 			AddBoundingBox(pWorld, worldSpaceMin, worldSpaceMax, transform);
 	}
