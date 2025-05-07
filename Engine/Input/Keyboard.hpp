@@ -1,12 +1,14 @@
 #pragma once
 
-#include "../Input/Device.hpp"
+#include "Device.hpp"
+#include "InputTypes.hpp"
 #include <iostream>
 #include <map>
 #include <string>
 
 namespace Engine
 {
+
 	class Keyboard : public Device
 	{
 	public:
@@ -15,10 +17,12 @@ namespace Engine
 
 		const std::string& getDeviceName() const override;
 
-		std::map<int, ButtonState>& getKeyboardState();
-		bool isPressed(int);
-		void setKey(int, ButtonState);
-		std::map<int, ButtonState> mKeyStates;
+		ButtonStateMap& getKeyboardState();
+		bool isPressed(Button aButton); // inconsistent
+		bool isHeld(Button aButton); // inconsistent
+		bool isDown(Button aButton); // best
+		ButtonStateMap mKeyStates;
+		void setKey(Button aButton, ButtonState aButtonState);
 
 	};
 }

@@ -8,6 +8,7 @@
 #include "../Events/WindowEvent.hpp"
 #include "Input.hpp"
 #include "InputCodes.hpp"
+#include "InputTypes.hpp"
 #include "Joystick.hpp"
 #include "Keyboard.hpp"
 #include "Mouse.hpp"
@@ -65,17 +66,11 @@ namespace Engine {
 				KeyReleasedEvent event(aKey);
 				engineWindow.EventCallback(event);
 				keyboard.setKey(aKey, ButtonState::RELEASED);
-				//std::cout << "RELEASE" << std::endl;
 				break;
 			}
 			case GLFW_REPEAT:
 			{
-				// TODO - KeyHeld Event
-
-				//KeyReleasedEvent event(aKey);
-				//engineWindow.EventCallback(event);
-				//keyboard.setKey(aKey, ButtonState::RELEASED);
-				//std::cout << "REPEAT" << std::endl;
+				keyboard.setKey(aKey, ButtonState::HELD);
 				break;
 			}
 			}
@@ -101,19 +96,25 @@ namespace Engine {
 
 		if (!ImGui::GetIO().WantCaptureMouse)
 		{
-			switch (aAction) {
+			switch (aAction)
+			{
 			case GLFW_PRESS:
 			{
-				mouse.mButtonStates[aButton] = ButtonState::PRESSED;
+				mouse.setMouseButton(aButton, ButtonState::PRESSED);
 				MouseButtonPressedEvent event(aButton);
 				engineWindow.EventCallback(event);
 				break;
 			}
 			case GLFW_RELEASE:
 			{
-				mouse.mButtonStates[aButton] = ButtonState::RELEASED;
+				mouse.setMouseButton(aButton, ButtonState::RELEASED);
 				MouseButtonReleasedEvent event(aButton);
 				engineWindow.EventCallback(event);
+				break;
+			}
+			case GLFW_REPEAT:
+			{
+				mouse.setMouseButton(aButton, ButtonState::HELD);
 				break;
 			}
 			}

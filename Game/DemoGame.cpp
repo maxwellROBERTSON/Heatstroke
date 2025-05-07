@@ -3,11 +3,11 @@
 #include <algorithm>
 #include <chrono>
 #include <future>
+#include <GLFW/glfw3.h>
+#include <imgui.h>
 #include <random>
 #include <thread>
 #include <type_traits>
-#include <GLFW/glfw3.h>
-#include <imgui.h>
 
 #include "../ECS/Components/AudioComponent.hpp"
 #include "../Engine/vulkan/objects/Buffer.hpp"
@@ -29,11 +29,14 @@ using namespace Engine;
 float fireDelay = 1.0f;
 bool canFire = true;
 float counter = 1.0f;
+int ammoCount = 6;
 
 void FPSTest::Init()
 {
 	srand(time(0));
 	this->threadPool = thread_pool_wait::get_instance();
+
+	InputManager::InitDefaultControls();
 
 	//submit task to initialise Models to thread pool
 	auto modelsFut = threadPool->submit(&FPSTest::initialiseModels, this);
@@ -112,7 +115,7 @@ void FPSTest::Update() {
 
 		fireDelay -= timeDelta;
 		counter -= timeDelta;
-		if (fireDelay <= 0.0f)
+		if (fireDelay <= 0.0f && ammoCount > 0)
 			canFire = true;
 
 		if (counter <= 0.0f && countdown > 0)
@@ -138,7 +141,19 @@ void FPSTest::Update() {
 			physicsWorld.updatePhysics(nullptr, timeDelta);
 		}
 
-		if (Engine::InputManager::getMouse().isPressed(HS_MOUSE_BUTTON_LEFT) && canFire)
+		if (InputManager::Action(Controls::Reload))
+		{
+			RenderComponent* pistolRenderComponent = reinterpret_cast<RenderComponent*>(GetEntityManager().GetComponentOfEntity(pistolEntity->GetEntityId(), RENDER));
+			std::vector<vk::Model>& models = GetModels();
+			int pistolModelIndex = pistolRenderComponent->GetModelIndex();
+			models[pistolModelIndex].animationQueue.push(models[pistolModelIndex].animations[4]);
+			models[pistolModelIndex].blending = true;
+			ammoCount = 6;
+			models[pistolModelIndex].animationQueue.pop();
+		}
+
+
+		if (InputManager::Action(Controls::Shoot) && canFire)
 		{
 			RenderComponent* pistolRenderComponent = reinterpret_cast<RenderComponent*>(GetEntityManager().GetComponentOfEntity(pistolEntity->GetEntityId(), RENDER));
 			AudioComponent* playerAudioComponent = reinterpret_cast<AudioComponent*>(GetEntityManager().GetComponentOfEntity(playerEntity->GetEntityId(), AUDIO));
@@ -146,6 +161,7 @@ void FPSTest::Update() {
 			std::vector<vk::Model>& models = GetModels();
 			models[pistolModelIndex].animationQueue.push(models[pistolModelIndex].animations[3]);
 			models[pistolModelIndex].blending = true;
+			ammoCount--;
 			canFire = false;
 			fireDelay = 1.0f;
 			PxRaycastHit entityHit = physicsWorld.handleShooting(playerEntity);
@@ -213,26 +229,25 @@ void FPSTest::DrawGUI()
 	//ImGui::ShowStyleEditor();
 	//ImGui::GetIO().Fonts->AddFontFromFileTTF("C:/dev/Heatstroke/Engine/third_party/imgui/misc/fonts/Roboto-Medium.ttf", 36.0f);
 	bool test = true;
-	ImGui::Begin("Game:", &test, window_flags);
-	//ImGui::PushFont(GetGUI().gameFont);
+	ImGui::Begin("Game Stuff:", &test, window_flags);
 	ImGui::Text("SCORE: %u", score);
 	ImGui::Text("Time: %u", countdown);
-
-	//ImGui::PopFont();
-
+	ImGui::End();
+	ImGui::Begin("Gun Stuff:", &test, window_flags);
+	ImGui::Text("Ammo: %u", ammoCount);
 	ImGui::End();
 }
 
 void FPSTest::DrawDebugGUI()
 {
 	ImGui::Begin("Game Debug");
-	ImGui::Checkbox("Game GUI: ", &showGUI);
-	if (showGUI)
-	{
-		ImGui::PushFont(GetGUI().gameFont);
-		DrawGUI();
-		ImGui::PopFont();
-	}
+	//ImGui::Checkbox("Game GUI: ", &showGUI);
+	//if (showGUI)
+	//{
+	//	ImGui::PushFont(GetGUI().gameFont);
+	//	DrawGUI();
+	//	ImGui::PopFont();
+	//}
 	if (ImGui::Button("Reset Game"))
 	{
 		countdown = 31;
@@ -295,7 +310,7 @@ void FPSTest::loadOfflineEntities()
 	physicsComponent = reinterpret_cast<PhysicsComponent*>(entityManager.GetComponentOfEntity(mapEntity->GetEntityId(), PHYSICS));
 	physicsComponent->InitComplexShape("Map", physicsWorld, PhysicsComponent::PhysicsType::STATIC, models[renderComponent->GetModelIndex()], mapEntity->GetModelMatrix(), mapEntity->GetEntityId());
 	entityManager.AddSimulatedPhysicsEntity(mapEntity->GetEntityId());
-	
+
 	// Character Model
 	types = { AUDIO, CAMERA, NETWORK, PHYSICS };
 	playerEntity = entityManager.MakeNewEntity(types);

@@ -49,12 +49,22 @@ namespace Engine
 		void makeHomeGUI(int*, int*);
 		void makeSettingsGUI(int*, int*);
 		void makeDebugGUI(int*, int*);
-		void ShowInputDebug();
 		void makeServerGUI(int*, int*);
 		void makeLoadingGUI(int*, int*);
 
+		// Debug Windows
+		void ShowInputDebug();
+		void ShowRendererDebug();
+		void ShowAnimationDebug();
+
+
+		// debug stuff
+		bool showImGuiDemoWindow{ false };
+		bool debugRenderer{ false };
 		bool debugInput{ true };
-		bool debugGame{ true };
+		bool debugGame{ false };
+		bool debugAnimations{ false };
+		bool showGameGUI{ true };
 
 		ImGui_ImplVulkanH_Window imGuiWindow;
 		bool changedMSAA = false;

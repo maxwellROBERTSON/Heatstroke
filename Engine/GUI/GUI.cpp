@@ -377,12 +377,125 @@ namespace Engine
 		ImGui::PushFont(defaultFont);
 		ImGui::Begin("Debug Menu");
 
-		if (ImGui::Checkbox("VSync", &game->GetRenderer().vsync)) {
-			game->GetRenderer().setRecreateSwapchain(true);
+		// Renderer 
+		if (debugRenderer)
+			ShowRendererDebug();
+
+		// Checkboxes
+		ImGui::Checkbox("Demo Window", &showImGuiDemoWindow);
+		ImGui::Checkbox("Renderer Debug", &debugRenderer);
+		ImGui::Checkbox("Input Debug", &debugInput);
+		ImGui::Checkbox("Animation Debug", &debugAnimations);
+		ImGui::Checkbox("Game Debug", &debugGame);
+		ImGui::Checkbox("Game GUI", &showGameGUI);
+
+		if (showImGuiDemoWindow)
+			ImGui::ShowDemoWindow();
+
+		//if (debugInput || InputManager::hasJoysticksConnected())
+		if (debugInput)
+			ShowInputDebug();
+
+		if (debugGame)
+			game->DrawDebugGUI();
+
+		if (debugAnimations)
+			ShowAnimationDebug();
+
+		if (showGameGUI)
+		{
+			ImGui::PushFont(gameFont);
+			game->DrawGUI();
+			ImGui::PopFont();
 		}
 
-		ImGui::Text("List of info would go here", ImVec2(*w / 4, *h / 4));
+		if (game->GetNetwork().GetStatus() != Status::NETWORK_UNINITIALIZED)
+		{
+			std::map<std::string, std::string> networkInfo = game->GetNetwork().GetNetworkInfo();
+			for (const auto& [key, value] : networkInfo)
+			{
+				ImGui::Text("%s: %s", key.c_str(), value.c_str());
+			}
+		}
+		ImGui::PopFont();
+		ImGui::End();
+	}
 
+	void GUI::ShowInputDebug()
+	{
+#define INPUT_DEBUG(control, control1, control2)\
+		ImGui::Text(#control); ImGui::SameLine();\
+		bool press##control = InputManager::getKeyboard().isPressed(control1);\
+		bool held##control = InputManager::getKeyboard().isHeld(control1);\
+		bool down##control = InputManager::getKeyboard().isDown(control1);\
+		ImGui::Checkbox("##MFKBM", &press##control); ImGui::SameLine();\
+		ImGui::Checkbox("##MFKBM", &held##control); ImGui::SameLine();\
+		ImGui::Checkbox("##MFKBM", &down##control);\
+		if (InputManager::hasJoysticksConnected()) {\
+			ImGui::SameLine();\
+			bool controllerPress##control = InputManager::getJoystick(0).isPressed(control2);\
+			bool controllerHeld##control = InputManager::getJoystick(0).isHeld(control2);\
+			bool controllerDown##control = InputManager::getJoystick(0).isDown(control2);\
+			ImGui::Checkbox("##MFKBM", &controllerPress##control);\
+			ImGui::SameLine();\
+			ImGui::Checkbox("##MFKBM", &controllerHeld##control);\
+			ImGui::SameLine();\
+			ImGui::Checkbox("##MFKBM", &controllerDown##control);\
+		}
+		//bool moveForwardKBMHeld = InputManager::getKeyboard().isHeld(HS_KEY_W);
+		//bool moveForwardKBMDown = InputManager::getKeyboard().isHeld(HS_KEY_W);
+		//ImGui::Checkbox("##MFKBM", &moveForwardKBMHeld); ImGui::SameLine();
+		//ImGui::Checkbox("##MFKBM", &moveForwardKBMDown); ImGui::SameLine();
+		//if (InputManager::hasJoysticksConnected())
+		//{
+		//	bool moveForwardC = InputManager::getJoystick(0).isPressed(HS_GAMEPAD_BUTTON_A);
+		//	ImGui::Checkbox("##MFC", &moveForwardC);
+		//}
+
+		//const char* control[] = { "Move Forward", "Move Backward", "Move Left", "Move Right", "Shoot" };
+
+		ImGui::Begin("Input:");
+		ImGui::Text("Controls");
+		INPUT_DEBUG(MoveForward, HS_KEY_W, HS_GAMEPAD_BUTTON_Y); // TODO: fix (axis)
+		INPUT_DEBUG(MoveBackward, HS_KEY_S, HS_GAMEPAD_BUTTON_X); // TODO: fix (axis)
+		INPUT_DEBUG(Shoot, HS_MOUSE_BUTTON_LEFT, HS_GAMEPAD_BUTTON_B); // TODO: fix (axis), also hard coded keyboard
+		INPUT_DEBUG(Jump, HS_KEY_SPACE, HS_GAMEPAD_BUTTON_A);
+
+		bool shootPressed = InputManager::getMouse().isPressed(HS_MOUSE_BUTTON_LEFT);
+		bool shootHeld = InputManager::getMouse().isHeld(HS_MOUSE_BUTTON_LEFT);
+		bool shootDown = InputManager::getMouse().isDown(HS_MOUSE_BUTTON_LEFT);
+		ImGui::Checkbox("##MFKBM", &shootPressed); ImGui::SameLine();
+		ImGui::Checkbox("##MFKBM", &shootHeld); ImGui::SameLine();
+		ImGui::Checkbox("##MFKBM", &shootDown);
+
+
+		//if defaultControls.getDigitalValue(Controls::Shoot)
+
+		if (InputManager::hasJoysticksConnected())
+		{
+			ImGui::Text("A: %s", InputManager::getJoystick(0).isPressed(HS_GAMEPAD_BUTTON_A) ? "Pressed" : "Released");
+			ImGui::Text("B: %s", InputManager::getJoystick(0).isPressed(HS_GAMEPAD_BUTTON_B) ? "Pressed" : "Released");
+			ImGui::Text("Y: %s", InputManager::getJoystick(0).isPressed(HS_GAMEPAD_BUTTON_Y) ? "Pressed" : "Released");
+			ImGui::Text("X: %s", InputManager::getJoystick(0).isPressed(HS_GAMEPAD_BUTTON_X) ? "Pressed" : "Released");
+			ImGui::Text("RB: %s", InputManager::getJoystick(0).isPressed(HS_GAMEPAD_BUTTON_RIGHT_BUMPER) ? "Pressed" : "Released");
+			ImGui::Text("LB: %s", InputManager::getJoystick(0).isPressed(HS_GAMEPAD_BUTTON_LEFT_BUMPER) ? "Pressed" : "Released");
+			ImGui::Text("RT: %f", InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_RIGHT_TRIGGER));
+			ImGui::Text("LT: %f", InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_LEFT_TRIGGER));
+			ImGui::Text("LS - Horizontal: %f", InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_LEFT_X));
+			ImGui::Text("LS - Vertical: %f", InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_LEFT_Y));
+			ImGui::Text("RS - Horizontal: %f", InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_RIGHT_X));
+			ImGui::Text("RS - Vertical: %f", InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_RIGHT_Y));
+		}
+
+		ImGui::End();
+	}
+
+	void GUI::ShowRendererDebug()
+	{
+		ImGui::Begin("Renderer Debug");
+
+		ImGui::Text("Camera Information (COLLAPSIBLE)");
+		// -- Camera
 		glm::vec3 pos = game->GetRenderer().GetCameraPointer()->position;
 		glm::vec3 fDir = game->GetRenderer().GetCameraPointer()->frontDirection;
 		std::string posStr = "X: " + std::to_string(pos.x) +
@@ -398,27 +511,26 @@ namespace Engine
 
 		ImGui::Text("FrontDir:");
 		ImGui::InputText("##FrontDir", (char*)fDirStr.c_str(), fDirStr.size() + 1, ImGuiInputTextFlags_ReadOnly);
+		//ImGui::Text("List of info would go here", ImVec2(*w / 4, *h / 4)); //??
 
-		ImGui::Checkbox("Input Debug", &debugInput);
-		ImGui::Checkbox("Game Debug", &debugGame);
+		ImGui::Text("Rendering Settings (COLLAPSIBLE)");
 
-		// ImGui::ShowDemoWindow();
+		if (ImGui::Checkbox("VSync", &game->GetRenderer().vsync)) {
+			game->GetRenderer().setRecreateSwapchain(true);
+		}
+
 		ImGui::Text("Shadow depth buffer settings:");
 		ImGui::SliderFloat("Depth Bias Constant", &game->GetRenderer().depthBiasConstant, 0.0f, 10.0f);
 		ImGui::SliderFloat("Depth Bias Slope Factor", &game->GetRenderer().depthBiasSlopeFactor, 0.0f, 10.0f);
 
-		if (debugInput || InputManager::hasJoysticksConnected())
-			ShowInputDebug();
+		ImGui::End();
+	}
 
-		if (debugGame)
-		{
-			game->DrawDebugGUI();
-			//ImGui::PushFont(gameFont);
-			//game->DrawGUI();
-			//ImGui::PopFont();
-		}
+	void GUI::ShowAnimationDebug()
+	{
+		ImGui::Begin("Animations Debug");
 
-		ImGui::Text("Animations:");
+		// Should fix to select model - avoid error
 		// Iterate over all models and find ones with animations
 		std::vector<vk::Model>& models = game->GetModels();
 		for (vk::Model& model : models) {
@@ -437,39 +549,8 @@ namespace Engine
 				model.playAnimation();
 			}
 		}
-
-		if (game->GetNetwork().GetStatus() != Status::NETWORK_UNINITIALIZED)
-		{
-			std::map<std::string, std::string> networkInfo = game->GetNetwork().GetNetworkInfo();
-			for (const auto& [key, value] : networkInfo)
-			{
-				ImGui::Text("%s: %s", key.c_str(), value.c_str());
-			}
-		}
-		ImGui::PopFont();
 		ImGui::End();
-	}
 
-	void GUI::ShowInputDebug()
-	{
-		ImGui::Begin("Input:");
-		//ImGui::Text("Controller Status: %s", InputManager::hasJoysticksConnected() ? "Connected" : "Disconnected");
-		//if (InputManager::hasJoysticksConnected())
-		//{
-		//	ImGui::Text("A: %s", InputManager::getJoystick(0).isPressed(HS_GAMEPAD_BUTTON_A) ? "Pressed" : "Released");
-		//	ImGui::Text("B: %s", InputManager::getJoystick(0).isPressed(HS_GAMEPAD_BUTTON_B) ? "Pressed" : "Released");
-		//	ImGui::Text("Y: %s", InputManager::getJoystick(0).isPressed(HS_GAMEPAD_BUTTON_Y) ? "Pressed" : "Released");
-		//	ImGui::Text("X: %s", InputManager::getJoystick(0).isPressed(HS_GAMEPAD_BUTTON_X) ? "Pressed" : "Released");
-		//	ImGui::Text("RB: %s", InputManager::getJoystick(0).isPressed(HS_GAMEPAD_BUTTON_RIGHT_BUMPER) ? "Pressed" : "Released");
-		//	ImGui::Text("LB: %s", InputManager::getJoystick(0).isPressed(HS_GAMEPAD_BUTTON_LEFT_BUMPER) ? "Pressed" : "Released");
-		//	ImGui::Text("RT: %f", InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_RIGHT_TRIGGER));
-		//	ImGui::Text("LT: %f", InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_LEFT_TRIGGER));
-		//	ImGui::Text("LS - Horizontal: %f", InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_LEFT_X));
-		//	ImGui::Text("LS - Vertical: %f", InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_LEFT_Y));
-		//	ImGui::Text("RS - Horizontal: %f", InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_RIGHT_X));
-		//	ImGui::Text("RS - Vertical: %f", InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_RIGHT_Y));
-		//}
-		ImGui::End();
 	}
 
 	void GUI::makeServerGUI(int* w, int* h)
