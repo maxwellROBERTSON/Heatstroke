@@ -126,9 +126,13 @@ namespace Engine {
 			throw Utils::Error("Unable to begin command buffer\n vkBeginCommandBuffer() returned %s", Utils::toString(res).c_str());
 	}
 
-	void endAndSubmitCommandBuffer(const VulkanWindow& aWindow, VkCommandBuffer aCmdBuff) {
-		if (const auto res = vkEndCommandBuffer(aCmdBuff); VK_SUCCESS != res)
+	void endCommandBuffer(const VulkanWindow& aWindow, VkCommandBuffer cmdBuf) {
+		if (const auto res = vkEndCommandBuffer(cmdBuf); VK_SUCCESS != res)
 			throw Utils::Error("Unable to end command buffer\n vkEndCommandBuffer() returned %s", Utils::toString(res).c_str());
+	}
+
+	void endAndSubmitCommandBuffer(const VulkanWindow& aWindow, VkCommandBuffer aCmdBuff) {
+		endCommandBuffer(aWindow, aCmdBuff);
 
 		vk::Fence uploadComplete = createFence(aWindow);
 
@@ -155,7 +159,9 @@ namespace Engine {
 		samplerInfo.addressModeU = aSamplerInfo.addressModeU;
 		samplerInfo.addressModeV = aSamplerInfo.addressModeV;
 		samplerInfo.compareEnable = aSamplerInfo.compareEnable;
-		samplerInfo.compareOp = aSamplerInfo.compareOp;
+		samplerInfo.compareOp = aSamplerInfo.compareOp; 
+		samplerInfo.anisotropyEnable = aWindow.deviceFeatures.samplerAnisotropy ? VK_TRUE : VK_FALSE;
+		samplerInfo.maxAnisotropy = 8.0f;
 		samplerInfo.minLod = 0.0f;
 		samplerInfo.maxLod = VK_LOD_CLAMP_NONE;
 		samplerInfo.mipLodBias = 0.0f;
