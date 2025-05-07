@@ -18,7 +18,7 @@
 #include "glm/gtx/string_cast.hpp"
 #include "toString.hpp"
 
-#include "gameGUI/gameGUI.hpp"
+#include "gameGUI/GameGUI.hpp"
 #include "gameModes/SinglePlayer.hpp"
 #include "gameModes/MultiPlayer.hpp"
 
@@ -192,7 +192,7 @@ void FPSTest::loadOfflineEntities()
 	entity->SetRotation(90.0f, glm::vec3(0.0f, 0.0f, 1.0f));
 	entity->SetScale(30.0f);
 	audioComponent = reinterpret_cast<AudioComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), AUDIO));
-	audioComponent->addClip("GunShot", "Game\\assets\\AudioClips\\singlegunshot.wav");
+	audioComponent->addClip("GunShot", "Game/assets/AudioClips/singlegunshot.wav");
 	cameraComponent = reinterpret_cast<CameraComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), CAMERA));
 	cameraComponent->SetCamera(sceneCamera);
 	this->renderer.attachCamera(cameraComponent->GetCamera());

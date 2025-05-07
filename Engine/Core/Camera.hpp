@@ -60,7 +60,7 @@ namespace Engine
 
 		bool firstClick = true;
 
-		float sensitivity = 0.1f;
+		float sensitivity = 0.5f;
 
 		float yaw = 0.0f;
 		float pitch = 0.0f;

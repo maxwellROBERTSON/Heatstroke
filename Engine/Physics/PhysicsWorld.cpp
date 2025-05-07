@@ -31,7 +31,7 @@ namespace Engine
 		}
 
 		// Pvd
-#if defined(_WIN32)
+#if defined(OS_WINDOWS)
 		gPvd = PxCreatePvd(*gFoundation);
 		if (!gPvd)
 		{
@@ -300,7 +300,7 @@ namespace Engine
 		}
 
 		// disconnect PVD
-#if defined(_WIN32)
+#if defined(OS_WINDOWS)
 		if (gPvd)
 		{
 			PxPvdTransport* transport = gPvd->getTransport();
