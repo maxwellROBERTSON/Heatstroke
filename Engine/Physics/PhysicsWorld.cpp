@@ -30,7 +30,7 @@ namespace Engine
 		}
 
 		// Pvd
-#if defined(_WIN32)
+#if defined(OS_WINDOWS)
 		gPvd = PxCreatePvd(*gFoundation);
 		if (!gPvd)
 		{
@@ -279,6 +279,7 @@ namespace Engine
 			if (p->GetPhysicsType() == PhysicsComponent::PhysicsType::CONTROLLER)
 			{
 				PxExtendedVec3 pos = p->GetController()->getFootPosition();
+				//pos.y -= p->GetController()->getContactOffset();
 				entityManager->GetEntity(p->GetEntityId())->SetPosition(pos.x, pos.y, pos.z);
 				CameraComponent* cameraComponent = reinterpret_cast<CameraComponent*>(entityManager->GetComponentOfEntity(controllerEntity->GetEntityId(), CAMERA));
 				cameraComponent->UpdateCameraPosition(pos.x, pos.y + controllerHeight, pos.z);
@@ -307,7 +308,7 @@ namespace Engine
 		}
 
 		// disconnect PVD
-#if defined(_WIN32)
+#if defined(OS_WINDOWS)
 		if (gPvd)
 		{
 			PxPvdTransport* transport = gPvd->getTransport();

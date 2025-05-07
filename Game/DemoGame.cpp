@@ -149,19 +149,16 @@ void FPSTest::initialiseModels()
 
 	// Here we would load all relevant glTF models and put them in the models vector
 
-	tinygltf::Model map = Engine::loadFromFile("Game/assets/Assets/maps/warehouse/scene.gltf");
-	//tinygltf::Model map = Engine::loadFromFile("Game/assets/Sponza/glTF/Sponza.gltf");
-	tinygltf::Model character = Engine::loadFromFile("Game/assets/Character/scene.gltf");
-	tinygltf::Model pistol = Engine::loadFromFile("Game/assets/Assets/guns/pistol1/scene.gltf");
-	tinygltf::Model rifle = Engine::loadFromFile("Game/assets/Assets/guns/rifle/scene.gltf");
+	tinygltf::Model map = Engine::loadFromFile("Game/assets/maps/warehouse/scene.gltf");
+	tinygltf::Model character = Engine::loadFromFile("Game/assets/characters/csgo/scene.gltf");
+	tinygltf::Model pistol = Engine::loadFromFile("Game/assets/guns/pistol1/scene.gltf");
+	tinygltf::Model rifle = Engine::loadFromFile("Game/assets/guns/rifle/scene.gltf");
 	tinygltf::Model target = Engine::loadFromFile("Game/assets/target/scene.gltf");
-	tinygltf::Model helmet = Engine::loadFromFile("Game/assets/DamagedHelmet.gltf");
 	GetModels().emplace_back(Engine::makeVulkanModel(this->GetContext(), map, DrawType::WORLD));
 	GetModels().emplace_back(Engine::makeVulkanModel(this->GetContext(), character, DrawType::WORLD));
 	GetModels().emplace_back(Engine::makeVulkanModel(this->GetContext(), pistol, DrawType::OVERLAY));
 	GetModels().emplace_back(Engine::makeVulkanModel(this->GetContext(), rifle, DrawType::OVERLAY));
 	GetModels().emplace_back(Engine::makeVulkanModel(this->GetContext(), target, DrawType::WORLD));
-	GetModels().emplace_back(Engine::makeVulkanModel(this->GetContext(), helmet, DrawType::WORLD));
 
 	std::cout << "Models created" << std::endl;
 }
@@ -190,19 +187,22 @@ void FPSTest::loadOfflineEntities()
 	entityManager.AddSimulatedPhysicsEntity(entity->GetEntityId());
 
 	// Character Model
-	types = { AUDIO, CAMERA, PHYSICS };
+	types = { CAMERA, RENDER, PHYSICS, AUDIO };
 	entity = entityManager.MakeNewEntity(types);
-	entity->SetPosition(0.0f, 2.0f, -1.0f);
+	entity->SetPosition(0.0f, 0.5f, 0.0f);
 	entity->SetRotation(90.0f, glm::vec3(0.0f, 0.0f, 1.0f));
-	entity->SetScale(30.0f);
-	audioComponent = reinterpret_cast<AudioComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), AUDIO));
-	audioComponent->addClip("GunShot", "Game\\assets\\AudioClips\\singlegunshot.wav");
+	entity->SetScale(25.0f);
 	cameraComponent = reinterpret_cast<CameraComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), CAMERA));
 	cameraComponent->SetCamera(sceneCamera);
-	this->renderer.attachCamera(cameraComponent->GetCamera());
+  this->renderer.attachCamera(cameraComponent->GetCamera());
+	renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
+	renderComponent->SetModelIndex(1);
+	renderComponent->SetIsActive(false);
 	physicsComponent = reinterpret_cast<PhysicsComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
 	physicsComponent->Init(physicsWorld, PhysicsComponent::PhysicsType::CONTROLLER, models[renderComponent->GetModelIndex()], entity->GetModelMatrix(), entity->GetEntityId(), true, true);
 	entityManager.AddSimulatedPhysicsEntity(entity->GetEntityId());
+	audioComponent = reinterpret_cast<AudioComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), AUDIO));
+	audioComponent->addClip("GunShot", "Game/assets/AudioClips/singlegunshot.wav");
 	GetGameMode().SetPlayerEntity(entity);
 
 	// pistol

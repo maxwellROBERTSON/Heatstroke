@@ -1,7 +1,8 @@
+#include "GameGUI.hpp"
 #include "../gameModes/GameMode.hpp"
 #include "../gameModes/MultiPlayer.hpp"
 #include "../gameModes/SinglePlayer.hpp"
-#include "gameGUI.hpp"
+
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -43,7 +44,7 @@ void makeGameGUIS(FPSTest* game)
 	gui.AddFont("HomeHovered", "Engine/third_party/imgui/misc/fonts/Freedom.ttf", 70.0f);
 	gui.AddFont("Game", "Engine/third_party/imgui/misc/fonts/Roboto-Medium.ttf", 36.0f);
 
-	gui.AddTexture("Test", "Game/assets/Assets/maps/russian_house/textures/Balkon_01_baseColor.png");
+	gui.AddTexture("Test", "Game/assets/maps/russian_house/textures/Balkon_01_baseColor.png");
 
 	gui.ToggleGUIMode("Home");
 }
