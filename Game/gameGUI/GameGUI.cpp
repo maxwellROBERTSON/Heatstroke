@@ -838,6 +838,7 @@ void ShowInputDebug(FPSTest* game, int* w, int* h)
 
 	ImGui::End();
 }
+
 void ShowRendererDebug(FPSTest* game, int* w, int* h)
 {
 	ImGui::Begin("Renderer Debug");
@@ -876,6 +877,7 @@ void ShowRendererDebug(FPSTest* game, int* w, int* h)
 
 	ImGui::End();
 }
+
 void ShowAnimationDebug(FPSTest* game, int* w, int* h)
 {
 	ImGui::Begin("Animations Debug");
@@ -901,6 +903,7 @@ void ShowAnimationDebug(FPSTest* game, int* w, int* h)
 	}
 	ImGui::End();
 }
+
 void ShowNetworkDebug(FPSTest* game, int* w, int* h)
 {
 	ImGui::Begin("Network Debug");
