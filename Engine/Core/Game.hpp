@@ -14,6 +14,7 @@
 #include "../Physics/PhysicsWorld.hpp"
 #include "../vulkan/VulkanContext.hpp"
 #include "../GUI/GUI.hpp"
+#include "../ThreadPool/thread_pool_wait.h"
 
 #include "Camera.hpp"
 
@@ -61,6 +62,7 @@ namespace Engine
 		PhysicsWorld physics_world;
 		std::unique_ptr<Engine::Network> network;
 		std::unique_ptr<Engine::GUI> gui;
+		thread_pool_wait* threadPool;
 
 		float deltaTime = 0.0f, lastTime = 0.0f;
 	};

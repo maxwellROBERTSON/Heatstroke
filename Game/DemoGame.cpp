@@ -18,7 +18,6 @@
 #include "glm/gtx/string_cast.hpp"
 #include "toString.hpp"
 
-
 #include "gameGUI/GameGUI.hpp"
 #include "gameModes/SinglePlayer.hpp"
 #include "gameModes/MultiPlayer.hpp"
@@ -30,17 +29,18 @@ void FPSTest::Init() {
 	this->renderer = Renderer(&GetContext(), &GetEntityManager(), this);
 	this->renderer.initialise();
 
-	srand(time(0));
-	this->threadPool = thread_pool_wait::get_instance();
+	// srand(time(0));
+	// this->threadPool = thread_pool_wait::get_instance();
 
 	InputManager::InitDefaultControls();
 
-	//submit task to initialise Models to thread pool
-	auto modelsFut = threadPool->submit(&FPSTest::initialiseModels, this);
+	// //submit task to initialise Models to thread pool
+	// auto modelsFut = threadPool->submit(&FPSTest::initialiseModels, this);
 
-	std::cout << "Waiting for model initialisation" << std::endl;
-	//blocks execution of the rest of the program until the initialiseModels Thread has finished
-	modelsFut.get();
+	// std::cout << "Waiting for model initialisation" << std::endl;
+	// //blocks execution of the rest of the program until the initialiseModels Thread has finished
+	// modelsFut.get();
+	initialiseModels();
 
 	// Scene camera
 	sceneCamera = Camera(60.0f, 0.01f, 1000.0f, glm::vec3(0.0f, 0.0f, -5.0f), glm::vec3(0.0f, 0.0f, 1.0f));
@@ -100,6 +100,17 @@ void FPSTest::Update() {
 	previous = now;
 
 	this->renderer.calculateFPS();
+
+	if (gameMode)
+	{
+		{
+			gameMode->Update(timeDelta);
+		}
+
+		physicsWorld.updateObjects(GetModels());
+
+		this->renderer.updateAnimations(timeDelta);
+	}
 
 	if (this->renderer.getIsSceneLoaded())
 	{

@@ -81,7 +81,7 @@ namespace Engine
 
 		// Set component index vector of this entity
 		// Only use if null constructor is used
-		void SetComponentIndexArray(std::vector<int> l);
+		void SetComponentIndexArray(std::vector<int>);
 
 	private:
 		bool hasChanged = false;

@@ -29,15 +29,12 @@
 #include "../Input/InputCodes.hpp"
 #include "../Input/Joystick.hpp"
 
-#include "../ThreadPool/thread_pool_wait.h"
-
 #include "gameRendering/Renderer.hpp"
 #include "gameRendering/Crosshair.hpp"
 #include "gameRendering/Decals.hpp"
 #include "gameRendering/RenderMode.hpp"
 
 #include "gameModes/GameMode.hpp"
-
 
 class FPSTest : public Engine::Game
 {
@@ -94,6 +91,5 @@ private:
 	Crosshair crosshair;
 	Decals decals;
 
-	thread_pool_wait* threadPool;
 	int offlineClientId = 0;
 };
