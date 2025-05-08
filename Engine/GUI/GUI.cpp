@@ -94,6 +94,13 @@ namespace Engine
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
 
+		ImGuiIO& io = ImGui::GetIO();
+		if (glfwGetInputMode(game->GetContext().getGLFWWindow(), GLFW_CURSOR) == GLFW_CURSOR_DISABLED)
+		{
+			io.WantCaptureKeyboard = 0;
+			io.WantCaptureMouse = 0;
+		}
+
 		for (int i = 0; i < activeGUIModes.size(); i++)
 		{
 			if (activeGUIModes[i])

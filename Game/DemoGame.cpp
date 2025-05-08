@@ -111,7 +111,6 @@ void FPSTest::Update() {
 		physicsWorld.updateObjects(GetModels());
 
 		this->renderer.updateAnimations(timeDelta);
-
 	}
 
 	this->renderer.updateUniforms();
