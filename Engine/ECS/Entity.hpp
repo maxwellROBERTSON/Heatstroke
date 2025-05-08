@@ -81,7 +81,7 @@ namespace Engine
 
 		// Set component index vector of this entity
 		// Only use if null constructor is used
-		void SetComponentIndexArray(std::vector<int> l) { componentTypeIndexList = l; }
+		void SetComponentIndexArray(std::vector<int> l);
 
 	private:
 		bool hasChanged = false;
@@ -98,6 +98,6 @@ namespace Engine
 
 		// Holds a list of components with the type = index and
 		// value = component index in that types list
-		std::vector<int> componentTypeIndexList;
+		std::vector<int> componentTypeIndexList = std::vector<int>(TYPE_COUNT);
 	};
 }

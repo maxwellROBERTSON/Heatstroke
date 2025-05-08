@@ -423,6 +423,12 @@ namespace Engine
 					f = block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[CAMERA];
 					reinterpret_cast<CameraComponent*>(base)->SetDataArray(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[CAMERA]);
 					break;
+				case CHILDREN:
+					std::cout << "Setting the " << componentIndexArray[types[j]] << " of component of type " << types[j] << " at ";
+					std::cout << reinterpret_cast<uintptr_t>(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[CHILDREN]) << std::endl;
+					f = block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[CHILDREN];
+					reinterpret_cast<ChildrenComponent*>(base)->SetDataArray(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[CHILDREN]);
+					break;
 				case NETWORK:
 					std::cout << "Setting the " << componentIndexArray[types[j]] << " of component of type " << types[j] << " at ";
 					std::cout << reinterpret_cast<uintptr_t>(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[NETWORK]) << std::endl;
@@ -535,6 +541,10 @@ namespace Engine
 							reinterpret_cast<CameraComponent*>(base)->SetDataArray(block + entityComponentOffsets[(j * 8 + k)]);
 							entityComponentOffsets[(j * 8 + k)] += ComponentSizes[CAMERA];
 							break;
+						case CHILDREN:
+							reinterpret_cast<ChildrenComponent*>(base)->SetDataArray(block + entityComponentOffsets[(j * 8 + k)]);
+							entityComponentOffsets[(j * 8 + k)] += ComponentSizes[CHILDREN];
+							break;
 						case NETWORK:
 							reinterpret_cast<NetworkComponent*>(base)->SetDataArray(block + entityComponentOffsets[(j * 8 + k)]);
 							entityComponentOffsets[(j * 8 + k)] += ComponentSizes[NETWORK];
@@ -583,6 +593,9 @@ namespace Engine
 					break;
 				case CAMERA:
 					reinterpret_cast<CameraComponent*>(base)->ToggleHasChanged();
+					break;
+				case CHILDREN:
+					reinterpret_cast<ChildrenComponent*>(base)->ToggleHasChanged();
 					break;
 				case NETWORK:
 					reinterpret_cast<NetworkComponent*>(base)->ToggleHasChanged();
@@ -672,6 +685,9 @@ namespace Engine
 			case CAMERA:
 				index = AddComponent(CAMERA, entity);
 				break;
+			case CHILDREN:
+				index = AddComponent(CHILDREN, entity);
+				break;
 			case NETWORK:
 				index = AddComponent(NETWORK, entity);
 				break;
@@ -721,6 +737,9 @@ namespace Engine
 				break;
 			case CAMERA:
 				index = AddComponent(CAMERA, entity);
+				break;
+			case CHILDREN:
+				index = AddComponent(CHILDREN, entity);
 				break;
 			case NETWORK:
 				index = AddComponent(NETWORK, entity);
@@ -784,6 +803,9 @@ namespace Engine
 			break;
 		case CAMERA:
 			(*componentMap[CAMERA]).emplace_back(std::make_unique<CameraComponent>(this, entity));
+			break;
+		case CHILDREN:
+			(*componentMap[CHILDREN]).emplace_back(std::make_unique<ChildrenComponent>(this, entity));
 			break;
 		case NETWORK:
 			(*componentMap[NETWORK]).emplace_back(std::make_unique<NetworkComponent>(this, entity));

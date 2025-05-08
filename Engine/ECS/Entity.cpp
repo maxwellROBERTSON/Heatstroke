@@ -20,6 +20,8 @@ namespace Engine
 		: entityManager(entityManager), entityId(entityId)
 	{
 		// Add index list to the entity
+		if (indexList.size() != TYPE_COUNT)
+			throw("Index list for MakeNewEntity not equal to TYPE_COUNT");
 		componentTypeIndexList = indexList;
 	}
 
@@ -160,5 +162,14 @@ namespace Engine
 			modelMatrix = aModelMatrix;
 			SetEntityHasChanged();
 		}
-	} 
+	}
+
+	// Set component index vector of this entity
+	// Only use if null constructor is used
+	void Entity::SetComponentIndexArray(std::vector<int> l)
+	{
+		if (indexList.size() != TYPE_COUNT)
+			throw("Index list for MakeNewEntity not equal to TYPE_COUNT");
+		componentTypeIndexList = l;
+	}
 }
