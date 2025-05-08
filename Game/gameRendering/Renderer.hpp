@@ -4,15 +4,15 @@
 #include <map>
 #include <string>
 
-#include "../../Engine/Rendering/HsRenderPass.hpp"
-#include "../../Engine/Rendering/HsPipeline.hpp"
-#include "../../Engine/Rendering/HsPipelineLayout.hpp"
-#include "../../Engine/Rendering/HsTextureBuffer.hpp"
-#include "../../Engine/Rendering/HsUniformBuffer.hpp"
-#include "../../Engine/Rendering/HsFramebuffer.hpp"
+#include "../../Engine/Rendering/objects/base/HsRenderPass.hpp"
+#include "../../Engine/Rendering/objects/base/HsPipeline.hpp"
+#include "../../Engine/Rendering/objects/base/HsPipelineLayout.hpp"
+#include "../../Engine/Rendering/objects/base/HsTextureBuffer.hpp"
+#include "../../Engine/Rendering/objects/base/HsUniformBuffer.hpp"
+#include "../../Engine/Rendering/objects/base/HsFramebuffer.hpp"
 #include "../../Engine/vulkan/objects/VkObjects.hpp"
 
-#include "../../Engine/vulkan/Skybox.hpp"
+#include "../../Engine/Rendering/features/Skybox.hpp"
 
 #include "../../Engine/gltf/Model.hpp"
 

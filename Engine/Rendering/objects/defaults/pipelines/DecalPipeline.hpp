@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Engine/Rendering/objects/base/HsPipeline.hpp"
+#include "../../base/HsPipeline.hpp"
 
 namespace Engine {
 	class HsRenderPass;
@@ -8,9 +8,9 @@ namespace Engine {
 
 using PipelineLayout = std::unique_ptr<Engine::HsPipelineLayout>;
 
-class CrosshairPipeline : public Engine::HsPipeline {
+class DecalPipeline : public Engine::HsPipeline {
 public:
-	CrosshairPipeline(
+	DecalPipeline(
 		Engine::VulkanWindow* window,
 		PipelineLayout* pipelineLayout,
 		Engine::HsRenderPass* renderPass,

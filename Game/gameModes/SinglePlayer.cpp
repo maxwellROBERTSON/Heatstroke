@@ -133,7 +133,7 @@ void SinglePlayer::Update(float timeDelta)
 
 			if (!hitTarget) {
 				if (entityHit.actor != nullptr && entityHit.actor->getName() != "levelBounds" && entityHit.distance != PX_MAX_REAL) {
-					this->game->getDecals().setNextDecal(entityHit.position, entityHit.normal);
+					this->game->getBulletDecals().setNextDecal(entityHit.position, entityHit.normal);
 				}
 			}
 

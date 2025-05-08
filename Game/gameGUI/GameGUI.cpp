@@ -873,7 +873,7 @@ void ShowRendererDebug(FPSTest* game, int* w, int* h)
 	ImGui::SliderFloat("Depth Bias Constant", &game->getRenderer().depthBiasConstant, 0.0f, 10.0f);
 	ImGui::SliderFloat("Depth Bias Slope Factor", &game->getRenderer().depthBiasSlopeFactor, 0.0f, 10.0f);
 
-	ImGui::Text("Active Decals: %d/100", game->getDecals().getNbActiveDecals());
+	ImGui::Text("Active Decals: %d/100", game->getBulletDecals().getNbActiveDecals());
 
 	ImGui::End();
 }

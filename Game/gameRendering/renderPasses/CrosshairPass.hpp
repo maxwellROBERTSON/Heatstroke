@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Engine/Rendering/HsRenderPass.hpp"
+#include "Engine/Rendering/objects/base/HsRenderPass.hpp"
 
 namespace Engine {
 	class VulkanWindow;
