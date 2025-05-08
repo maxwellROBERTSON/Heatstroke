@@ -5,7 +5,9 @@
 #include "GameAdapter.hpp"
 
 #include "../ECS/Components/Component.hpp"
+#include "../ECS/Components/AudioComponent.hpp"
 #include "../ECS/Components/CameraComponent.hpp"
+#include "../ECS/Components/ChildrenComponent.hpp"
 #include "../ECS/Components/NetworkComponent.hpp"
 #include "../ECS/Components/PhysicsComponent.hpp"
 #include "../ECS/Components/RenderComponent.hpp"

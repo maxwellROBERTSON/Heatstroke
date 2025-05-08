@@ -124,13 +124,8 @@ namespace Engine
 			}
 		}
 
-		std::cout << "World Space Min transformed: " << worldSpaceMin.x << " " << worldSpaceMin.y << " " << worldSpaceMin.z << std::endl;
-		std::cout << "World Space Max transformed: " << worldSpaceMax.x << " " << worldSpaceMax.y << " " << worldSpaceMax.z << std::endl;
-
 		glm::vec3 glmHalfExtent = (worldSpaceMax - worldSpaceMin) / 2.0f;
 		PxVec3 halfExtent(std::max(0.001f, glmHalfExtent.x), std::max(0.001f, glmHalfExtent.y), std::max(0.001f, glmHalfExtent.z));
-
-		std::cout << "Half Extent (transformed): " << halfExtent.x << " " << halfExtent.y << " " << halfExtent.z << std::endl;
 
 		PxMaterial* material = pworld.gPhysics->createMaterial(0.5f, 0.5f, 0.5f);
 		material->setRestitution(0.0f);

@@ -196,7 +196,7 @@ namespace Engine
 					glm::mat4 mat = manager->GetEntity(vec[i])->GetModelMatrix();
 					PhysicsComponent::PhysicsType type = physicsComp->GetPhysicsType();
 					Engine::vk::Model& model = game->GetModels()[renderComp->GetModelIndex()];
-					if (type == PhysicsComponent::PhysicsType::STATIC)
+					if (type == PhysicsComponent::PhysicsType::STATIC || type == PhysicsComponent::PhysicsType::STATICBOUNDED)
 					{
 						physicsComp->InitComplexShape("Temp", game->GetPhysicsWorld(), type, model, mat, vec[i]);
 					}

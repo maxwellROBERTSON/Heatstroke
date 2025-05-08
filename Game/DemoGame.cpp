@@ -30,8 +30,6 @@ void FPSTest::Init() {
 	this->renderer = Renderer(&GetContext(), &GetEntityManager(), this);
 	this->renderer.initialise();
 
-	this->gui = GUI(this);
-
 	srand(time(0));
 	this->threadPool = thread_pool_wait::get_instance();
 
@@ -49,7 +47,7 @@ void FPSTest::Init() {
 
 	GetPhysicsWorld().init(&GetEntityManager());
 
-	this->gui.initGUI();
+	GetGUI().initGUI(getRenderer().getRenderPassHandle("gui"));
 	makeGameGUIS(this);
 
 	this->renderer.attachCamera(&sceneCamera);
@@ -88,7 +86,7 @@ void FPSTest::Update() {
 
 	// Need to process GUI stuff before checking swapchain, since
 	// some GUI settings may require instant swapchain recreation
-	this->gui.makeGUI();
+	GetGUI().makeGUI();
 
 	if (this->renderer.checkSwapchain())
 		return;
@@ -177,8 +175,9 @@ void FPSTest::loadOfflineEntities()
 
 	std::vector<Engine::vk::Model>& models = GetModels();
 
-	// map
 	std::vector<ComponentTypes> types = { RENDER, PHYSICS };
+
+	// map
 	entity = entityManager.MakeNewEntity(types);
 	renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
 	renderComponent->SetModelIndex(0);
@@ -194,7 +193,7 @@ void FPSTest::loadOfflineEntities()
 	entity->SetScale(25.0f);
 	cameraComponent = reinterpret_cast<CameraComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), CAMERA));
 	cameraComponent->SetCamera(sceneCamera);
-  this->renderer.attachCamera(cameraComponent->GetCamera());
+	this->renderer.attachCamera(cameraComponent->GetCamera());
 	renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
 	renderComponent->SetModelIndex(1);
 	renderComponent->SetIsActive(false);
@@ -235,9 +234,10 @@ void FPSTest::loadOnlineEntities(int maxClientsNum)
 	// Pointers
 	Entity* entity;
 	CameraComponent* cameraComponent;
-	// NetworkComponent* networkComponent;
+	NetworkComponent* networkComponent;
 	RenderComponent* renderComponent;
 	PhysicsComponent* physicsComponent;
+	AudioComponent* audioComponent;
 
 	EntityManager& entityManager = GetEntityManager();
 	PhysicsWorld& physicsWorld = GetPhysicsWorld();
@@ -258,17 +258,30 @@ void FPSTest::loadOnlineEntities(int maxClientsNum)
 	types = { AUDIO, CAMERA, NETWORK, RENDER, PHYSICS };
 	for (int i = 0; i < maxClientsNum; i++)
 	{
+		// Character Model
+		types = { CAMERA, RENDER, PHYSICS, AUDIO };
 		entity = entityManager.MakeNewEntity(types);
-		entity->SetPosition(-5.0f, 0.0f, -1.0f);
-		entity->SetRotation(90.0f, glm::vec3(0.0f, 0.0f, -1.0f));
-		entity->SetScale(30.0f);
+		entity->SetPosition(0.0f, 0.5f, 0.0f);
+		entity->SetRotation(90.0f, glm::vec3(0.0f, 0.0f, 1.0f));
+		entity->SetScale(25.0f);
+		cameraComponent = reinterpret_cast<CameraComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), CAMERA));
+		cameraComponent->SetCamera(sceneCamera);
+		this->renderer.attachCamera(cameraComponent->GetCamera());
 		renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
 		renderComponent->SetModelIndex(1);
-		renderComponent->SetIsActive(false); // Players not renderable until client connection
-		physicsComponent = reinterpret_cast<PhysicsComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
-		physicsComponent->Init(physicsWorld, PhysicsComponent::PhysicsType::CONTROLLER, models[renderComponent->GetModelIndex()], entity->GetModelMatrix(), entity->GetEntityId(), false, false);
-		cameraComponent = reinterpret_cast<CameraComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), CAMERA));
-		cameraComponent->SetCamera(Engine::Camera(100.0f, 0.01f, 256.0f, glm::vec3(-3.0f, 20.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
+		renderComponent->SetIsActive(false);
+		physicsComponent = reinterpret_cast<PhysicsComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
+		physicsComponent->Init(physicsWorld, PhysicsComponent::PhysicsType::CONTROLLER, models[renderComponent->GetModelIndex()], entity->GetModelMatrix(), entity->GetEntityId(), true, true);
+		audioComponent = reinterpret_cast<AudioComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), AUDIO));
+		audioComponent->addClip("GunShot", "Game/assets/AudioClips/singlegunshot.wav");
+
+		// pistol
+		types = { RENDER };
+		entity = entityManager.MakeNewEntity(types);
+		entity->SetPosition(0.0f, -2.0f, -1.0f);
+		entity->SetRotation(180.0f, glm::vec3(0.0f, 1.0f, 0.0f));
+		renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
+		renderComponent->SetModelIndex(2);
 	}
 
 	EntityManager& e = GetEntityManager();
@@ -287,10 +300,6 @@ void FPSTest::SetGameMode(std::unique_ptr<GameMode> mode)
 
 Renderer& FPSTest::getRenderer() {
 	return this->renderer;
-}
-
-GUI& FPSTest::getGUI() {
-	return this->gui;
 }
 
 RenderMode FPSTest::getRenderMode() {

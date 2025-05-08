@@ -8,9 +8,6 @@
 
 namespace Engine
 {
-	class EntityManager;
-	class Entity;
-
 	class NetworkComponent : public Component<NetworkComponent>
 	{
 	public:

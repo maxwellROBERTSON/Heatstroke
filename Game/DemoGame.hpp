@@ -36,8 +36,6 @@
 #include "gameRendering/Decals.hpp"
 #include "gameRendering/RenderMode.hpp"
 
-#include "gameGUI/GUI.hpp"
-
 #include "gameModes/GameMode.hpp"
 
 
@@ -69,7 +67,6 @@ public:
 	
 	// Getters
 	Renderer& getRenderer();
-	GUI& getGUI();
 	RenderMode getRenderMode();
 	GameMode& GetGameMode();
 	Crosshair& GetCrosshair();
@@ -90,7 +87,6 @@ public:
 
 private:
 	Renderer renderer;
-	GUI gui;
 
 	RenderMode renderMode = RenderMode::NO_DATA_MODE;
 

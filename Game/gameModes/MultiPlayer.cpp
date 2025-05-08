@@ -8,8 +8,3 @@ void MultiPlayer::Update(float timeDelta)
 {
 	;
 }
-
-void MultiPlayer::ToggleSceneCamera(Engine::Camera* sceneCamera)
-{
-	;
-}
