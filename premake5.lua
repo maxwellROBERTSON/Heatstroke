@@ -73,7 +73,7 @@ workspace "Heatstroke"
 
     filter "system:linux"
         links "dl"
-        defines {"OS_LINUX", "DISABLE_CUDA_PHYSX"}
+        defines {"OS_LINUX"}
 
     filter "system:windows"
         defines {"OS_WINDOWS"}
@@ -91,7 +91,6 @@ workspace "Heatstroke"
         symbols "On"
         runtime "Debug"
         defines { "_DEBUG=1", "YOJIMBO_DEBUG", "NETCODE_DEBUG", "RELIABLE_DEBUG" }
-        buildoptions { "/D_ITERATOR_DEBUG_LEVEL=2" }
     
     filter { "configurations:Release", "kind:ConsoleApp" }
         targetdir "bin/"
@@ -101,7 +100,6 @@ workspace "Heatstroke"
         optimize "On"
         runtime "Release"
         defines { "NDEBUG=1", "YOJIMBO_RELEASE", "NETCODE_RELEASE", "RELIABLE_RELEASE" }
-        buildoptions { "/D_ITERATOR_DEBUG_LEVEL=0" }
     
     filter "*"
 
@@ -153,14 +151,7 @@ project "Engine"
     
     filter { "system:linux" }
         links {
-            "PhysXCharacterKinematic_static_64",
-            "PhysXExtensions_static_64",
             "PhysX_static_64",
-            "PhysXPvdSDK_static_64",
-            "PhysXVehicle_static_64",
-            "PhysXCooking_static_64",
-            "PhysXCommon_static_64",
-            "PhysXFoundation_static_64",
             "openal",
             "sndfile",
             "vorbis",
@@ -216,6 +207,8 @@ project "Game"
         vcpkgincludeDirs
     }
 
+    libdirs( "Engine/third_party/vcpkg/installed/x64-linux/tools")
+
     kind "ConsoleApp"
     location "Game"
 
@@ -236,6 +229,8 @@ project "Game"
         
     filter { "system:linux" }
         links {
+            "cuda",
+            "PhysXGpu_64",
             "PhysXCharacterKinematic_static_64",
             "PhysXExtensions_static_64",
             "PhysX_static_64",
