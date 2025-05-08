@@ -33,9 +33,11 @@ public:
 	int score = 0;
 	int countdown = 30;
 	bool gameOver = false;
-	float fireDelay = 1.0f;
+	float fireDelay = 1.5f;
 	bool canFire = true;
 	float counter = 1.0f;
+	int ammoCount = 6;
+
 
 	Engine::Entity* playerEntity = nullptr;
 	Engine::Entity* pistolEntity = nullptr;

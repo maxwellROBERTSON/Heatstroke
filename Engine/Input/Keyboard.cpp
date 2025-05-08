@@ -6,19 +6,28 @@ namespace Engine {
 		return "Keyboard";
 	}
 
-	std::map<int, ButtonState>& Keyboard::getKeyboardState()
+	ButtonStateMap& Keyboard::getKeyboardState()
 	{
 		return mKeyStates;
 	}
 
-	bool Keyboard::isPressed(int aKey)
+	bool Keyboard::isPressed(Button aButton)
 	{
-		return (mKeyStates[aKey] == ButtonState::PRESSED);
+		return mKeyStates.getButtonState(aButton) == ButtonState::PRESSED;
 	}
 
-	void Keyboard::setKey(int aKey, ButtonState aButtonState)
+	bool Keyboard::isHeld(Button aButton)
 	{
-		mKeyStates[aKey] = aButtonState;
+		return mKeyStates.getButtonState(aButton) == ButtonState::HELD;
 	}
 
+	bool Keyboard::isDown(Button aButton)
+	{
+		return mKeyStates.getButtonState(aButton) == ButtonState::PRESSED || mKeyStates.getButtonState(aButton) == ButtonState::HELD;
+	}
+
+	void Keyboard::setKey(Button aButton, ButtonState aButtonState)
+	{
+		mKeyStates.setButtonState(aButton, aButtonState);
+	}
 }

@@ -6,9 +6,13 @@ namespace Engine {
 		return "Mouse";
 
 	}
-	ButtonState Mouse::getButtonState(int aButton)
+	//ButtonState Mouse::getButtonState(int aButton)
+	//{
+	//	return mButtonStates[aButton];
+	//}
+	ButtonStateMap& Mouse::getMouseState()
 	{
-		return mButtonStates[aButton];
+		return mButtonStates;
 	}
 	float Mouse::getXPos()
 	{
@@ -22,9 +26,23 @@ namespace Engine {
 	{
 		return scrollPos;
 	}
+	void Mouse::setMouseButton(Button aButton, ButtonState aButtonState)
+	{
+		mButtonStates.setButtonState(aButton, aButtonState);
+	}
 	bool Mouse::isPressed(int aButton)
 	{
-		return getButtonState(aButton) == ButtonState::PRESSED;
+		return mButtonStates.getButtonState(aButton) == ButtonState::PRESSED;
+	}
+	bool Mouse::isHeld(int aButton)
+	{
+		return mButtonStates.getButtonState(aButton) == ButtonState::HELD;
+
+	}
+	bool Mouse::isDown(int aButton)
+	{
+		return mButtonStates.getButtonState(aButton) == ButtonState::PRESSED || mButtonStates.getButtonState(aButton) == ButtonState::HELD;
+
 	}
 }
 

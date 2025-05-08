@@ -4,6 +4,8 @@
 #include <map>
 #include <string>
 
+
+
 namespace Engine {
 
 	enum class DeviceType
@@ -11,11 +13,6 @@ namespace Engine {
 		Joystick,
 		Keyboard,
 		Mouse
-	};
-
-	enum class ButtonState
-	{
-		RELEASED, PRESSED
 	};
 
 	class Device

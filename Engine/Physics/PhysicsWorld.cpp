@@ -10,7 +10,6 @@
 #include "IgnoreSelfFilterCallback.hpp"
 #include "PhysicsWorld.hpp"
 #include "RaycastUtility.hpp"
-#include "RaycastUtility.hpp"
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
@@ -167,21 +166,29 @@ namespace Engine
 			PxVec3 frontDir(entityFrontDir.x, entityFrontDir.y, entityFrontDir.z);
 			PxVec3 rightDir(entityRightDir.x, entityRightDir.y, entityRightDir.z);
 
-			auto& keyboard = Engine::InputManager::getKeyboard();
+			//auto& keyboard = Engine::InputManager::getKeyboard();
+			//auto& gamepad = Engine::InputManager::getJoystick(0);
 
-			if (keyboard.isPressed(HS_KEY_W)) {
+			//if (gamepad.getAxisValue(HS_GAMEPAD_AXIS_RIGHT_Y) < -0.2f)
+			//{
+			//	displacement += frontDir * speed * deltatime;
+			//}
+
+			if (InputManager::Action(Controls::MoveForward))
+			{
 				displacement += frontDir * speed * deltatime;
 			}
 
-			if (keyboard.isPressed(HS_KEY_S)) {
+			if (InputManager::Action(Controls::MoveBackward)) {
 				displacement -= frontDir * speed * deltatime;
 			}
 
-			if (keyboard.isPressed(HS_KEY_A)) {
+
+			if (InputManager::Action(Controls::MoveLeft)) {
 				displacement -= rightDir * speed * deltatime;
 			}
 
-			if (keyboard.isPressed(HS_KEY_D)) {
+			if (InputManager::Action(Controls::MoveRight)) {
 				displacement += rightDir * speed * deltatime;
 			}
 
@@ -190,7 +197,7 @@ namespace Engine
 			controller->getState(cstate);
 			bool isGrounded = (cstate.collisionFlags & PxControllerCollisionFlag::eCOLLISION_DOWN);
 
-			if (isGrounded && keyboard.isPressed(HS_KEY_SPACE)) {
+			if (isGrounded && InputManager::Action(Controls::Jump)) {
 				verticalVelocity = jumpSpeed;
 			}
 			verticalVelocity += gravity * deltatime;

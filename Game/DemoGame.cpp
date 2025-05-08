@@ -3,11 +3,11 @@
 #include <algorithm>
 #include <chrono>
 #include <future>
+#include <GLFW/glfw3.h>
+#include <imgui.h>
 #include <random>
 #include <thread>
 #include <type_traits>
-#include <GLFW/glfw3.h>
-#include <imgui.h>
 
 #include "../ECS/Components/AudioComponent.hpp"
 #include "../Engine/vulkan/objects/Buffer.hpp"
@@ -18,7 +18,8 @@
 #include "glm/gtx/string_cast.hpp"
 #include "toString.hpp"
 
-#include "gameGUI/GameGUI.hpp"
+
+#include "gameGUI/gameGUI.hpp"
 #include "gameModes/SinglePlayer.hpp"
 #include "gameModes/MultiPlayer.hpp"
 
@@ -31,6 +32,8 @@ void FPSTest::Init() {
 
 	srand(time(0));
 	this->threadPool = thread_pool_wait::get_instance();
+
+	InputManager::InitDefaultControls();
 
 	//submit task to initialise Models to thread pool
 	auto modelsFut = threadPool->submit(&FPSTest::initialiseModels, this);
@@ -108,6 +111,7 @@ void FPSTest::Update() {
 		physicsWorld.updateObjects(GetModels());
 
 		this->renderer.updateAnimations(timeDelta);
+
 	}
 
 	this->renderer.updateUniforms();
@@ -122,10 +126,10 @@ void FPSTest::OnEvent(Engine::Event& e)
 	EventDispatcher dispatcher(e);
 	dispatcher.Dispatch<ESCEvent>([this](Event& event) { toggleSettings(this); return true; });
 	dispatcher.Dispatch<KeyPressedEvent>([&](KeyPressedEvent& event)
-	{
-		if (event.GetKeyCode() == HS_KEY_C) { GetGameMode().ToggleSceneCamera(&sceneCamera); }
-		return true;
-	});
+		{
+			if (event.GetKeyCode() == HS_KEY_C) { GetGameMode().ToggleSceneCamera(&sceneCamera); }
+			return true;
+		});
 }
 
 void FPSTest::initialiseModels()
@@ -221,31 +225,7 @@ void FPSTest::loadOfflineEntities()
 	entityManager.AddSimulatedPhysicsEntity(entity->GetEntityId());
 	GetGameMode().SetTargetEntity(entity);
 
-	int numberOfTargets = 5;
-	//targetEntity1 = entityManager.MakeNewEntity(types);
-	//targetEntity1->SetPosition(target1Pos);
-	//renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(targetEntity1->GetEntityId(), RENDER));
-	//renderComponent->SetModelIndex(6);
-	//physicsComponent = reinterpret_cast<PhysicsComponent*>(entityManager.GetComponentOfEntity(targetEntity1->GetEntityId(), PHYSICS));
-	//physicsComponent->InitComplexShape("Target", physicsWorld, PhysicsComponent::PhysicsType::STATIC, models[renderComponent->GetModelIndex()], targetEntity1->GetModelMatrix(), targetEntity1->GetEntityId());
-	//entityManager.AddSimulatedPhysicsEntity(targetEntity1->GetEntityId());
-	//renderComponent->SetModelIndex(3);
-
-	//targetEntity2 = entityManager.MakeNewEntity(types);
-	//targetEntity2->SetPosition(target2Pos);
-	//renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(targetEntity2->GetEntityId(), RENDER));
-	//renderComponent->SetModelIndex(6);
-	//physicsComponent = reinterpret_cast<PhysicsComponent*>(entityManager.GetComponentOfEntity(targetEntity2->GetEntityId(), PHYSICS));
-	//physicsComponent->InitComplexShape("Target", physicsWorld, PhysicsComponent::PhysicsType::STATIC, models[renderComponent->GetModelIndex()], targetEntity2->GetModelMatrix(), targetEntity2->GetEntityId());
-	//entityManager.AddSimulatedPhysicsEntity(targetEntity2->GetEntityId());
-
-	//targetEntity3 = entityManager.MakeNewEntity(types);
-	//targetEntity3->SetPosition(target3Pos);
-	//renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(targetEntity3->GetEntityId(), RENDER));
-	//renderComponent->SetModelIndex(6);
-	//physicsComponent = reinterpret_cast<PhysicsComponent*>(entityManager.GetComponentOfEntity(targetEntity3->GetEntityId(), PHYSICS));
-	//physicsComponent->InitComplexShape("Target", physicsWorld, PhysicsComponent::PhysicsType::STATIC, models[renderComponent->GetModelIndex()], targetEntity3->GetModelMatrix(), targetEntity3->GetEntityId());
-	//entityManager.AddSimulatedPhysicsEntity(targetEntity3->GetEntityId());
+	// int numberOfTargets = 5;
 	GetEntityManager().ResetChanged();
 }
 
