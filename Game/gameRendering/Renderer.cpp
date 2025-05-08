@@ -5,41 +5,42 @@
 
 #include "Engine/vulkan/VulkanContext.hpp"
 #include "Engine/vulkan/VulkanDevice.hpp"
-#include "Engine/vulkan/PipelineCreation.hpp"
+#include "Engine/Rendering/PipelineCreation.hpp"
+#include "Engine/Rendering/RenderingUtils.hpp"
 
 #include "VulkanUtils.hpp"
 
 #include "../DemoGame.hpp"
 
-#include "renderPasses/GUIPass.hpp"
-#include "renderPasses/ForwardPass.hpp"
-#include "renderPasses/ShadowPass.hpp"
-#include "renderPasses/OverlayPass.hpp"
+#include "Engine/Rendering/objects/defaults/renderPasses/GUIPass.hpp"
+#include "Engine/Rendering/objects/defaults/renderPasses/ForwardPass.hpp"
+#include "Engine/Rendering/objects/defaults/renderPasses/ShadowPass.hpp"
+#include "Engine/Rendering/objects/defaults/renderPasses/OverlayPass.hpp"
 
-#include "pipelineLayouts/ShadowPipelineLayout.hpp"
-#include "pipelineLayouts/SkyboxPipelineLayout.hpp"
-#include "pipelineLayouts/ForwardPipelineLayout.hpp"
-#include "pipelineLayouts/GUIPipelineLayout.hpp"
-#include "pipelineLayouts/DecalPipelineLayout.hpp"
+#include "Engine/Rendering/objects/defaults/pipelineLayouts/ShadowPipelineLayout.hpp"
+#include "Engine/Rendering/objects/defaults/pipelineLayouts/SkyboxPipelineLayout.hpp"
+#include "Engine/Rendering/objects/defaults/pipelineLayouts/ForwardPipelineLayout.hpp"
+#include "Engine/Rendering/objects/defaults/pipelineLayouts/GUIPipelineLayout.hpp"
+#include "Engine/Rendering/objects/defaults/pipelineLayouts/DecalPipelineLayout.hpp"
 
-#include "pipelines/ShadowPipeline.hpp"
-#include "pipelines/SkyboxPipeline.hpp"
-#include "pipelines/ForwardPipeline.hpp"
+#include "Engine/Rendering/objects/defaults/pipelines/ShadowPipeline.hpp"
+#include "Engine/Rendering/objects/defaults/pipelines/SkyboxPipeline.hpp"
+#include "Engine/Rendering/objects/defaults/pipelines/ForwardPipeline.hpp"
+#include "Engine/Rendering/objects/defaults/pipelines/DecalPipeline.hpp"
 #include "pipelines/CrosshairPipeline.hpp"
-#include "pipelines/DecalPipeline.hpp"
 
-#include "textureBuffers/DepthTextureBuffer.hpp"
-#include "textureBuffers/ShadowDepthTextureBuffer.hpp"
-#include "textureBuffers/MultisampledColourTextureBuffer.hpp"
-#include "textureBuffers/MultisampledDepthTextureBuffer.hpp"
+#include "Engine/Rendering/objects/defaults/textureBuffers/DepthTextureBuffer.hpp"
+#include "Engine/Rendering/objects/defaults/textureBuffers/ShadowDepthTextureBuffer.hpp"
+#include "Engine/Rendering/objects/defaults/textureBuffers/MultisampledColourTextureBuffer.hpp"
+#include "Engine/Rendering/objects/defaults/textureBuffers/MultisampledDepthTextureBuffer.hpp"
 
-#include "framebuffers/ShadowFramebuffer.hpp"
-#include "framebuffers/ForwardFramebuffer.hpp"
-#include "framebuffers/GUIFramebuffer.hpp"
+#include "Engine/Rendering/objects/defaults/framebuffers/ShadowFramebuffer.hpp"
+#include "Engine/Rendering/objects/defaults/framebuffers/ForwardFramebuffer.hpp"
+#include "Engine/Rendering/objects/defaults/framebuffers/GUIFramebuffer.hpp"
 
-#include "uniformBuffers/SceneUniformBuffer.hpp"
-#include "uniformBuffers/DepthMVPUniformBuffer.hpp"
-#include "uniformBuffers/OrthoUniformBuffer.hpp"
+#include "Engine/Rendering/objects/defaults/uniformBuffers/SceneUniformBuffer.hpp"
+#include "Engine/Rendering/objects/defaults/uniformBuffers/DepthMVPUniformBuffer.hpp"
+#include "Engine/Rendering/objects/defaults/uniformBuffers/OrthoUniformBuffer.hpp"
 
 #include <GLFW/glfw3.h>
 
@@ -149,11 +150,11 @@ void Renderer::initialise() {
 	this->descriptorSets.emplace("scene",
 		Engine::createUBODescriptor(*window,
 			this->descriptorLayouts["sceneLayout"].handle,
-			this->uniformBuffers["scene"]->getBufferHandle()));
+			this->uniformBuffers["scene"]->getHandle()));
 	this->descriptorSets.emplace("shadow",
 		Engine::createUBODescriptor(*window,
 			this->descriptorLayouts["vertUBOLayout"].handle,
-			this->uniformBuffers["depthMVP"]->getBufferHandle()));
+			this->uniformBuffers["depthMVP"]->getHandle()));
 	this->descriptorSets.emplace("shadowMap",
 		Engine::createImageDescriptor(*window,
 			this->descriptorLayouts["fragImageLayout"].handle,
@@ -163,7 +164,7 @@ void Renderer::initialise() {
 	this->descriptorSets.emplace("orthoMatrices",
 		Engine::createUBODescriptor(*window,
 			this->descriptorLayouts["orthoMatrices"].handle,
-			this->uniformBuffers["orthoMatrices"]->getBufferHandle()));
+			this->uniformBuffers["orthoMatrices"]->getHandle()));
 }
 
 void Renderer::attachCamera(Engine::Camera* camera) {
@@ -346,23 +347,12 @@ void Renderer::renderGUI() {
 	// Get command buffer
 	VkCommandBuffer cmdBuf = this->cmdBuffers[this->frameIndex];
 	Engine::beginCommandBuffer(cmdBuf, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-
-	VkRenderPassBeginInfo passInfo{};
-	passInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-	passInfo.renderPass = this->renderPasses["gui"]->getRenderPassHandle();
-	passInfo.framebuffer = this->framebuffers["gui"]->getFramebufferHandle(this->imageIndex);
-	passInfo.renderArea.offset = VkOffset2D{ 0, 0 };
-	passInfo.renderArea.extent = this->context->window->swapchainExtent;
-	passInfo.clearValueCount = static_cast<std::uint32_t>(this->renderPasses["gui"]->getClearValues().size());
-	passInfo.pClearValues = this->renderPasses["gui"]->getClearValues().data();
-
-	vkCmdBeginRenderPass(cmdBuf, &passInfo, VK_SUBPASS_CONTENTS_INLINE);
+	Engine::beginRenderPass(cmdBuf, this->renderPasses["gui"].get(), this->framebuffers["gui"].get(), this->imageIndex);
 
 	if (ImGui::GetDrawData() != nullptr)
 		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmdBuf);
 
-	vkCmdEndRenderPass(cmdBuf);
-
+	Engine::endRenderPass(cmdBuf);
 	Engine::endCommandBuffer(*this->context->window, cmdBuf);
 }
 
@@ -411,75 +401,57 @@ void Renderer::renderForward() {
 		}
 	}
 
-	this->game->getDecals().updateUniform(cmdBuf);
+	this->game->getBulletDecals().updateUniform(cmdBuf);
 
 	// If shadows enabled, do shadow pass
 	if (this->shadowsEnabled) {
 		this->uniformBuffers["depthMVP"]->update(cmdBuf);
 
-		VkRenderPassBeginInfo passInfo{};
-		passInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		passInfo.renderPass = this->renderPasses["shadow"]->getRenderPassHandle();
-		passInfo.framebuffer = this->framebuffers["shadow"]->getFramebufferHandle(this->imageIndex);
-		passInfo.renderArea.offset = VkOffset2D{ 0, 0 };
-		passInfo.renderArea.extent = this->shadowResolution;
-		passInfo.clearValueCount = static_cast<std::uint32_t>(this->renderPasses["shadow"]->getClearValues().size());
-		passInfo.pClearValues = this->renderPasses["shadow"]->getClearValues().data();
+		Engine::beginRenderPass(cmdBuf, this->renderPasses["shadow"].get(), this->framebuffers["shadow"].get(), this->imageIndex);
 
-		vkCmdBeginRenderPass(cmdBuf, &passInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-		vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelines["shadow"]->getPipelineHandle());
-		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["shadow"]->getPipelineLayoutHandle(), 0, 1, &this->descriptorSets["shadow"], 0, nullptr);
+		vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelines["shadow"]->getHandle());
+		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["shadow"]->getHandle(), 0, 1, &this->descriptorSets["shadow"], 0, nullptr);
 		vkCmdSetDepthBias(cmdBuf, this->depthBiasConstant, 0.0f, this->depthBiasSlopeFactor);
 
-		this->drawModels(cmdBuf, this->pipelineLayouts["shadow"]->getPipelineLayoutHandle(), Engine::DrawType::WORLD, true);
+		this->drawModels(cmdBuf, this->pipelineLayouts["shadow"]->getHandle(), Engine::DrawType::WORLD, true);
 
-		vkCmdEndRenderPass(cmdBuf);
+		Engine::endRenderPass(cmdBuf);
 	}
 
-	VkRenderPassBeginInfo passInfo{};
-	passInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-	passInfo.renderPass = this->renderPasses["forward"]->getRenderPassHandle();
-	passInfo.framebuffer = this->framebuffers["forward"]->getFramebufferHandle(this->imageIndex);
-	passInfo.renderArea.offset = VkOffset2D { 0, 0 };
-	passInfo.renderArea.extent = this->context->window->swapchainExtent;
-	passInfo.clearValueCount = static_cast<std::uint32_t>(this->renderPasses["forward"]->getClearValues().size());
-	passInfo.pClearValues = this->renderPasses["forward"]->getClearValues().data();
-
-	vkCmdBeginRenderPass(cmdBuf, &passInfo, VK_SUBPASS_CONTENTS_INLINE);
+	Engine::beginRenderPass(cmdBuf, this->renderPasses["forward"].get(), this->framebuffers["forward"].get(), this->imageIndex);
 
 	// Render skybox
 	if (this->skybox) {
-		vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelines["skybox"]->getPipelineHandle());
-		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["skybox"]->getPipelineLayoutHandle(), 0, 1, &this->descriptorSets["scene"], 0, nullptr);
-		this->skybox->bind(cmdBuf, this->pipelineLayouts["skybox"]->getPipelineLayoutHandle());
+		vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelines["skybox"]->getHandle());
+		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["skybox"]->getHandle(), 0, 1, &this->descriptorSets["scene"], 0, nullptr);
+		this->skybox->bind(cmdBuf, this->pipelineLayouts["skybox"]->getHandle());
 
 		vkCmdDraw(cmdBuf, 36, 1, 0, 0);
 	}
 
 	// Render models
-	vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelines["forward"]->getPipelineHandle());
-	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["forward"]->getPipelineLayoutHandle(), 0, 1, &this->descriptorSets["scene"], 0, nullptr);
+	vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelines["forward"]->getHandle());
+	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["forward"]->getHandle(), 0, 1, &this->descriptorSets["scene"], 0, nullptr);
 
 	if (this->shadowsEnabled) {
-		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["forward"]->getPipelineLayoutHandle(), 4, 1, &this->descriptorSets["shadow"], 0, nullptr); // Depth matrix
-		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["forward"]->getPipelineLayoutHandle(), 5, 1, &this->descriptorSets["shadowMap"], 0, nullptr); // Shadow map
+		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["forward"]->getHandle(), 4, 1, &this->descriptorSets["shadow"], 0, nullptr); // Depth matrix
+		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["forward"]->getHandle(), 5, 1, &this->descriptorSets["shadowMap"], 0, nullptr); // Shadow map
 	}
 
-	this->drawModels(cmdBuf, this->pipelineLayouts["forward"]->getPipelineLayoutHandle(), Engine::DrawType::WORLD);
+	this->drawModels(cmdBuf, this->pipelineLayouts["forward"]->getHandle(), Engine::DrawType::WORLD);
 
 	// Render decals
-	vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelines["decal"]->getPipelineHandle());
+	vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelines["decal"]->getHandle());
 
-	VkDescriptorSet decalTransformDescriptorSet = this->game->getDecals().getTransformDescriptorSet();
-	VkDescriptorSet decalImageDescriptorSet = this->game->getDecals().getImageDescriptorSet();
-	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["decal"]->getPipelineLayoutHandle(), 0, 1, &this->descriptorSets["scene"], 0, nullptr); // Projective matrices
-	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["decal"]->getPipelineLayoutHandle(), 1, 1, &decalTransformDescriptorSet, 0, nullptr);
-	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["decal"]->getPipelineLayoutHandle(), 2, 1, &decalImageDescriptorSet, 0, nullptr);
+	VkDescriptorSet decalTransformDescriptorSet = this->game->getBulletDecals().getTransformDescriptorSet();
+	VkDescriptorSet decalImageDescriptorSet = this->game->getBulletDecals().getImageDescriptorSet();
+	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["decal"]->getHandle(), 0, 1, &this->descriptorSets["scene"], 0, nullptr); // Projective matrices
+	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["decal"]->getHandle(), 1, 1, &decalTransformDescriptorSet, 0, nullptr);
+	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["decal"]->getHandle(), 2, 1, &decalImageDescriptorSet, 0, nullptr);
 
-	this->game->getDecals().render(cmdBuf);
+	this->game->getBulletDecals().render(cmdBuf);
 
-	vkCmdEndRenderPass(cmdBuf);
+	Engine::endRenderPass(cmdBuf);
 
 	// Render overlays
 
@@ -490,54 +462,36 @@ void Renderer::renderForward() {
 
 	this->uniformBuffers["scene"]->update(cmdBuf);
 
-	VkRenderPassBeginInfo passInfo2{};
-	passInfo2.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-	passInfo2.renderPass = this->renderPasses["overlay"]->getRenderPassHandle();
-	passInfo2.framebuffer = this->framebuffers["forward"]->getFramebufferHandle(this->imageIndex);
-	passInfo2.renderArea.offset = VkOffset2D{ 0, 0 };
-	passInfo2.renderArea.extent = this->context->window->swapchainExtent;
-	passInfo2.clearValueCount = static_cast<uint32_t>(this->renderPasses["overlay"]->getClearValues().size());
-	passInfo2.pClearValues = this->renderPasses["overlay"]->getClearValues().data();
+	Engine::beginRenderPass(cmdBuf, this->renderPasses["overlay"].get(), this->framebuffers["forward"].get(), this->imageIndex);
 
-	vkCmdBeginRenderPass(cmdBuf, &passInfo2, VK_SUBPASS_CONTENTS_INLINE);
-
-	vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelines["forward"]->getPipelineHandle());
-	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["forward"]->getPipelineLayoutHandle(), 0, 1, &this->descriptorSets["scene"], 0, nullptr);
+	vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelines["forward"]->getHandle());
+	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["forward"]->getHandle(), 0, 1, &this->descriptorSets["scene"], 0, nullptr);
 
 	if (this->shadowsEnabled) {
-		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["forward"]->getPipelineLayoutHandle(), 4, 1, &this->descriptorSets["shadow"], 0, nullptr); // Depth matrix
-		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["forward"]->getPipelineLayoutHandle(), 5, 1, &this->descriptorSets["shadowMap"], 0, nullptr); // Shadow map
+		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["forward"]->getHandle(), 4, 1, &this->descriptorSets["shadow"], 0, nullptr); // Depth matrix
+		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["forward"]->getHandle(), 5, 1, &this->descriptorSets["shadowMap"], 0, nullptr); // Shadow map
 	}
 
-	this->drawModels(cmdBuf, this->pipelineLayouts["forward"]->getPipelineLayoutHandle(), Engine::DrawType::OVERLAY);
+	this->drawModels(cmdBuf, this->pipelineLayouts["forward"]->getHandle(), Engine::DrawType::OVERLAY);
 
-	vkCmdEndRenderPass(cmdBuf);
+	Engine::endRenderPass(cmdBuf);
 
 	// Draw crosshair and GUI
 	this->game->GetCrosshair().updatePositions();
 	this->uniformBuffers["orthoMatrices"]->update(cmdBuf);
 
-	VkRenderPassBeginInfo passInfo3{};
-	passInfo3.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-	passInfo3.renderPass = this->renderPasses["gui"]->getRenderPassHandle();
-	passInfo3.framebuffer = this->framebuffers["gui"]->getFramebufferHandle(this->imageIndex);
-	passInfo3.renderArea.offset = VkOffset2D{ 0, 0 };
-	passInfo3.renderArea.extent = this->context->window->swapchainExtent;
-	passInfo3.clearValueCount = static_cast<uint32_t>(this->renderPasses["gui"]->getClearValues().size());
-	passInfo3.pClearValues = this->renderPasses["gui"]->getClearValues().data();
-
-	vkCmdBeginRenderPass(cmdBuf, &passInfo3, VK_SUBPASS_CONTENTS_INLINE);
+	Engine::beginRenderPass(cmdBuf, this->renderPasses["gui"].get(), this->framebuffers["gui"].get(), this->imageIndex);
 
 	// Due to the nature of the GUI pass and framebuffer we can just render the crosshair here too
-	vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelines["crosshair"]->getPipelineHandle());
-	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["gui"]->getPipelineLayoutHandle(), 0, 1, &this->descriptorSets["orthoMatrices"], 0, nullptr);
+	vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelines["crosshair"]->getHandle());
+	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["gui"]->getHandle(), 0, 1, &this->descriptorSets["orthoMatrices"], 0, nullptr);
 
 	this->game->GetCrosshair().drawCrosshair(cmdBuf);
 
 	if (ImGui::GetDrawData() != nullptr)
 		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmdBuf);
 
-	vkCmdEndRenderPass(cmdBuf);
+	Engine::endRenderPass(cmdBuf);
 
 	Engine::endCommandBuffer(*this->context->window, cmdBuf);
 }
@@ -622,7 +576,7 @@ void Renderer::setRecreateSwapchain(bool value) {
 }
 
 VkRenderPass Renderer::getRenderPassHandle(const std::string& renderPass) {
-	return this->renderPasses[renderPass]->getRenderPassHandle();
+	return this->renderPasses[renderPass]->getHandle();
 }
 
 Engine::Camera* Renderer::getCameraPointer() {

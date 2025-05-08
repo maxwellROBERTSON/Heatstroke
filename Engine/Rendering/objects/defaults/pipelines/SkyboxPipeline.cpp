@@ -1,12 +1,12 @@
-#include "CrosshairPipeline.hpp"
+#include "SkyboxPipeline.hpp"
 
 #include "Error.hpp"
 #include "toString.hpp"
-#include "Engine/vulkan/VulkanDevice.hpp"
-#include "Engine/Rendering/PipelineCreation.hpp"
-#include "Engine/Rendering/objects/base/HsRenderPass.hpp"
+#include "../../../../vulkan/VulkanDevice.hpp"
+#include "../../../PipelineCreation.hpp"
+#include "../../base/HsRenderPass.hpp"
 
-CrosshairPipeline::CrosshairPipeline(
+SkyboxPipeline::SkyboxPipeline(
 	Engine::VulkanWindow* window,
 	PipelineLayout* pipelineLayout,
 	Engine::HsRenderPass* renderPass,
@@ -16,12 +16,14 @@ CrosshairPipeline::CrosshairPipeline(
 	this->pipelineLayout = pipelineLayout;
 	this->renderPass = &renderPass->getRenderPass();
 
+	this->renderExtent = &this->window->swapchainExtent;
+
 	this->recreate();
 }
 
-void CrosshairPipeline::recreate() {
-	Engine::vk::ShaderModule vert = Engine::loadShaderModule(*this->window, "Engine/Shaders/spv/crosshair.vert.spv");
-	Engine::vk::ShaderModule frag = Engine::loadShaderModule(*this->window, "Engine/Shaders/spv/crosshair.frag.spv");
+void SkyboxPipeline::recreate() {
+	Engine::vk::ShaderModule vert = Engine::loadShaderModule(*this->window, "Engine/Shaders/spv/skybox.vert.spv");
+	Engine::vk::ShaderModule frag = Engine::loadShaderModule(*this->window, "Engine/Shaders/spv/skybox.frag.spv");
 
 	VkPipelineShaderStageCreateInfo stages[2]{};
 	stages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -34,30 +36,8 @@ void CrosshairPipeline::recreate() {
 	stages[1].module = frag.handle;
 	stages[1].pName = "main";
 
-	VkVertexInputBindingDescription vertexInputs[2]{};
-	vertexInputs[0].binding = 0;
-	vertexInputs[0].stride = sizeof(float) * 2;
-	vertexInputs[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-	vertexInputs[1].binding = 1;
-	vertexInputs[1].stride = sizeof(unsigned int) * 4;
-	vertexInputs[1].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-	VkVertexInputAttributeDescription vertexAttributes[2]{};
-	vertexAttributes[0].binding = 0;
-	vertexAttributes[0].location = 0;
-	vertexAttributes[0].format = VK_FORMAT_R32G32_SFLOAT;
-	vertexAttributes[0].offset = 0;
-	vertexAttributes[1].binding = 1;
-	vertexAttributes[1].location = 1;
-	vertexAttributes[1].format = VK_FORMAT_R32G32B32A32_SFLOAT;
-	vertexAttributes[1].offset = 0;
-
 	VkPipelineVertexInputStateCreateInfo inputInfo{};
 	inputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-	inputInfo.vertexBindingDescriptionCount = 2;
-	inputInfo.pVertexBindingDescriptions = vertexInputs;
-	inputInfo.vertexAttributeDescriptionCount = 2;
-	inputInfo.pVertexAttributeDescriptions = vertexAttributes;
 
 	VkPipelineInputAssemblyStateCreateInfo assemblyInfo{};
 	assemblyInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -67,14 +47,14 @@ void CrosshairPipeline::recreate() {
 	VkViewport viewport{};
 	viewport.x = 0.0f;
 	viewport.y = 0.0f;
-	viewport.width = float(this->window->swapchainExtent.width);
-	viewport.height = float(this->window->swapchainExtent.height);
+	viewport.width = float(this->renderExtent->width);
+	viewport.height = float(this->renderExtent->height);
 	viewport.minDepth = 0.0f;
 	viewport.maxDepth = 1.0f;
 
 	VkRect2D scissor{};
 	scissor.offset = VkOffset2D{ 0, 0 };
-	scissor.extent = this->window->swapchainExtent;
+	scissor.extent = *this->renderExtent;
 
 	VkPipelineViewportStateCreateInfo viewportInfo{};
 	viewportInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -95,7 +75,7 @@ void CrosshairPipeline::recreate() {
 
 	VkPipelineMultisampleStateCreateInfo samplingInfo{};
 	samplingInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-	samplingInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+	samplingInfo.rasterizationSamples = *this->sampleCount;
 
 	VkPipelineColorBlendAttachmentState blendStates[1]{};
 	blendStates[0].blendEnable = VK_TRUE;

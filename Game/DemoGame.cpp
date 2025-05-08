@@ -11,8 +11,8 @@
 
 #include "../ECS/Components/AudioComponent.hpp"
 #include "../Engine/vulkan/objects/Buffer.hpp"
-#include "../Engine/vulkan/PipelineCreation.hpp"
-#include "../Engine/vulkan/Skybox.hpp"
+#include "../Engine/Rendering/PipelineCreation.hpp"
+#include "../Engine/Rendering/features/Skybox.hpp"
 #include "../Engine/vulkan/VulkanDevice.hpp"
 #include "Error.hpp"
 #include "glm/gtx/string_cast.hpp"
@@ -64,7 +64,7 @@ void FPSTest::Init() {
 	this->renderer.addSkybox(std::make_unique<Engine::Skybox>(&GetContext(), skyboxFilenames));
 
 	this->crosshair = Crosshair(&GetContext());
-	this->decals = Decals(&GetContext(), &this->renderer, "Game/assets/decals/bullet_decal.png");
+	this->bulletDecals = Engine::Decals(&GetContext(), "Game/assets/decals/bullet_decal.png", 100);
 }
 
 void FPSTest::Render() {
@@ -309,6 +309,6 @@ Crosshair& FPSTest::GetCrosshair() {
 	return this->crosshair;
 }
 
-Decals& FPSTest::getDecals() {
-	return this->decals;
+Decals& FPSTest::getBulletDecals() {
+	return this->bulletDecals;
 }

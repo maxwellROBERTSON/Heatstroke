@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Engine/Rendering/objects/base/HsPipeline.hpp"
+#include "../../base/HsPipeline.hpp"
 
 namespace Engine {
 	class HsRenderPass;
@@ -8,14 +8,16 @@ namespace Engine {
 
 using PipelineLayout = std::unique_ptr<Engine::HsPipelineLayout>;
 
-class CrosshairPipeline : public Engine::HsPipeline {
+class ForwardPipeline : public Engine::HsPipeline {
 public:
-	CrosshairPipeline(
-		Engine::VulkanWindow* window,
+	ForwardPipeline(
+		Engine::VulkanWindow* window, 
 		PipelineLayout* pipelineLayout,
 		Engine::HsRenderPass* renderPass,
-		VkSampleCountFlagBits* sampleCount);
+		VkSampleCountFlagBits* sampleCount,
+		bool* shadows);
 
 	void recreate();
 private:
+	bool* shadows = nullptr;
 };
