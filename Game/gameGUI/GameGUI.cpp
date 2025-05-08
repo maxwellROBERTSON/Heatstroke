@@ -41,7 +41,7 @@ void makeGameGUIS(FPSTest* game)
 
 	gui.AddFont("Default", "Engine/third_party/imgui/misc/fonts/Roboto-Medium.ttf", 12.0f);
 	gui.AddFont("Home", "Engine/third_party/imgui/misc/fonts/Freedom-10eM.ttf", 60.0f);
-	gui.AddFont("HomeHovered", "Engine/third_party/imgui/misc/fonts/Freedom.ttf", 70.0f);
+	gui.AddFont("HomeHovered", "Engine/third_party/imgui/misc/fonts/Freedom-10eM.ttf", 70.0f);
 	gui.AddFont("Game", "Engine/third_party/imgui/misc/fonts/Roboto-Medium.ttf", 36.0f);
 
 	gui.AddTexture("Test", "Game/assets/maps/russian_house/textures/Balkon_01_baseColor.png");
@@ -144,9 +144,9 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 			game->SetGameMode(std::make_unique<SinglePlayer>(game));
 			game->loadOfflineEntities();
 			game->getRenderer().initialiseJointMatrices();
-			game->getGUI().ToggleGUIMode("Home");
+			game->GetGUI().ToggleGUIMode("Home");
 			if (game->showGUI) // hope this works
-				game->getGUI().ToggleGUIMode("SinglePlayer");
+				game->GetGUI().ToggleGUIMode("SinglePlayer");
 			if (game->debugging)
 				game->GetGUI().ToggleGUIMode("Debug");
 			game->SetRenderMode(RenderMode::FORWARD);

@@ -19,7 +19,7 @@
 #include "toString.hpp"
 
 
-#include "gameGUI/gameGUI.hpp"
+#include "gameGUI/GameGUI.hpp"
 #include "gameModes/SinglePlayer.hpp"
 #include "gameModes/MultiPlayer.hpp"
 

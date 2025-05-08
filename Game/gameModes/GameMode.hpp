@@ -17,7 +17,7 @@ public:
 
 	// SinglePlayer functions
 
-	virtual void ToggleSceneCamera(Engine::Camera*) = 0;
+	virtual void ToggleSceneCamera(Engine::Camera*) {};
 
 	virtual Engine::Entity* GetPlayerEntity() { return nullptr; };
 

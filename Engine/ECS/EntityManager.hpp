@@ -114,6 +114,7 @@ namespace Engine
 		// Vector for each component type
 		std::vector<std::unique_ptr<ComponentBase>> audioComponents;
 		std::vector<std::unique_ptr<ComponentBase>> cameraComponents;
+		std::vector<std::unique_ptr<ComponentBase>> childrenComponents;
 		std::vector<std::unique_ptr<ComponentBase>> networkComponents;
 		std::vector<std::unique_ptr<ComponentBase>> physicsComponents;
 		std::vector<std::unique_ptr<ComponentBase>> renderComponents;
@@ -123,6 +124,7 @@ namespace Engine
 		{
 			{ ComponentTypes::AUDIO, &audioComponents },
 			{ ComponentTypes::CAMERA, &cameraComponents },
+			{ ComponentTypes::CHILDREN, &childrenComponents },
 			{ ComponentTypes::NETWORK, &networkComponents },
 			{ ComponentTypes::PHYSICS, &physicsComponents },
 			{ ComponentTypes::RENDER, &renderComponents }

@@ -23,7 +23,7 @@ namespace Engine
 		ComponentTypes StaticType() const override { return ComponentTypes::CHILDREN; }
 
 		// Size getter from Component parent
-		size_t StaticSize() const override { return sizeof(childrenEntityIds); }
+		size_t StaticSize() const override { return childrenEntityIds.size() * sizeof(int); }
 		
 		// Get component data
 		void GetDataArray(uint8_t*) override;

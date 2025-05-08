@@ -18,28 +18,46 @@ namespace Engine
 		// Check map size
 		if (componentMap.size() != ComponentTypes::TYPE_COUNT)
 		{
-			std::cout << "componentMap.size(): " << componentMap.size() << "ComponentTypes::TYPE_COUNT: " << ComponentTypes::TYPE_COUNT << std::endl;
+			std::cout << "componentMap.size(): " << componentMap.size() << " ComponentTypes::TYPE_COUNT: " << ComponentTypes::TYPE_COUNT << std::endl;
 			throw std::runtime_error("Size mismatch between componentMap and ComponentTypes");
 		}
 		// Check if ComponentSizes is correct
-		AudioComponent a;
-		if (ComponentSizes[AUDIO] != a.StaticSize())
-			throw std::runtime_error("Size mismatch between: ComponentSizes[AUDIO] and Audio size");
-		CameraComponent c;
-		if (ComponentSizes[CAMERA] != c.StaticSize())
-			throw std::runtime_error("Size mismatch between: ComponentSizes[CAMERA] and Camera size");
-		ChildrenComponent ch;
-		if (ComponentSizes[CHILDREN] != ch.StaticSize())
-			throw std::runtime_error("Size mismatch between: ComponentSizes[CHILDREN] and Children size");
-		NetworkComponent n;
-		if (ComponentSizes[NETWORK] != n.StaticSize())
-			throw std::runtime_error("Size mismatch between: ComponentSizes[NETWORK] and Network size");
-		PhysicsComponent p;
-		if (ComponentSizes[PHYSICS] != p.StaticSize())
-			throw std::runtime_error("Size mismatch between: ComponentSizes[PHYSICS] and Physics size");
-		RenderComponent r;
-		if (ComponentSizes[RENDER] != r.StaticSize())
-			throw std::runtime_error("Size mismatch between: ComponentSizes[RENDER] and Render size");
+		AudioComponent audio;
+		if (audio.StaticSize() != ComponentSizes[AUDIO])
+		{
+			std::cout << "audio.StaticSize(): " << audio.StaticSize() << " ComponentSizes[AUDIO]: " << static_cast<int>(ComponentSizes[AUDIO]) << std::endl;
+			throw std::runtime_error("Size mismatch between: Audio size and ComponentSizes[AUDIO]");
+		}
+		CameraComponent camera;
+		if (camera.StaticSize() != ComponentSizes[CAMERA])
+		{
+			std::cout << "camera.StaticSize(): " << camera.StaticSize() << " ComponentSizes[CAMERA]: " << static_cast<int>(ComponentSizes[CAMERA]) << std::endl;
+			throw std::runtime_error("Size mismatch between: Camera size and ComponentSizes[CAMERA]");
+		}
+		ChildrenComponent children;
+		if (children.StaticSize() != ComponentSizes[CHILDREN])
+		{
+			std::cout << "children.StaticSize(): " << children.StaticSize() << " ComponentSizes[CHILDREN]: " << static_cast<int>(ComponentSizes[CHILDREN]) << std::endl;
+			throw std::runtime_error("Size mismatch between: Children size and ComponentSizes[CHILDREN]");
+		}
+		NetworkComponent network;
+		if (network.StaticSize() != ComponentSizes[NETWORK])
+		{
+			std::cout << "network.StaticSize(): " << network.StaticSize() << " ComponentSizes[NETWORK]: " << static_cast<int>(ComponentSizes[NETWORK]) << std::endl;
+			throw std::runtime_error("Size mismatch between: Network size and ComponentSizes[NETWORK]");
+		}
+		PhysicsComponent physics;
+		if (physics.StaticSize() != ComponentSizes[PHYSICS])
+		{
+			std::cout << "physics.StaticSize(): " << physics.StaticSize() << " ComponentSizes[PHYSICS]: " << static_cast<int>(ComponentSizes[PHYSICS]) << std::endl;
+			throw std::runtime_error("Size mismatch between: Physics size and ComponentSizes[PHYSICS]");
+		}
+		RenderComponent render;
+		if (render.StaticSize() != ComponentSizes[RENDER])
+		{
+			std::cout << "render.StaticSize(): " << render.StaticSize() << " ComponentSizes[RENDER]: " << ComponentSizes[RENDER] << std::endl;
+			throw std::runtime_error("Size mismatch between: Render size and ComponentSizes[RENDER]");
+		}
 	};
 
 	// Getters
