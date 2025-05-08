@@ -4,6 +4,7 @@
 #include <map>
 #include <string>
 
+#include "../../Engine/Rendering/HsRenderer.hpp"
 #include "../../Engine/Rendering/HsRenderPass.hpp"
 #include "../../Engine/Rendering/HsPipeline.hpp"
 #include "../../Engine/Rendering/HsPipelineLayout.hpp"
@@ -20,6 +21,7 @@ namespace Engine {
 	struct VulkanContext;
 	class EntityManager;
 	class Camera;
+	class HsRenderer;
 }
 
 struct Uniforms {
@@ -37,14 +39,14 @@ using TextureBuffer = std::unique_ptr<Engine::HsTextureBuffer>;
 using UniformBuffer = std::unique_ptr<Engine::HsUniformBuffer>;
 using Framebuffer = std::unique_ptr<Engine::HsFramebuffer>;
 
-class Renderer {
+class Renderer : public Engine::HsRenderer {
 public:
 	Renderer() = default;
 	Renderer(Engine::VulkanContext* context, Engine::EntityManager* entityManager, FPSTest* game);
 
 	// Initialisation
 	void initialise();
-	void attachCamera(Engine::Camera* camera);
+	void attachCamera(Engine::Camera* camera) override;
 	void initialiseJointMatrices();
 	void initialiseModelDescriptors();
 

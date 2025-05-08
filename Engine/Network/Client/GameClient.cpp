@@ -22,11 +22,6 @@ namespace Engine
 			*adapter,
 			clientTime);
 
-		client->SetLatency(1000.0f);
-		client->SetJitter(100.0f);
-		client->SetPacketLoss(25.0f);
-		client->SetDuplicates(25.0f);
-
 		while(clientId == 0)
 			yojimbo_random_bytes((uint8_t*)&clientId, 8);
 
@@ -179,7 +174,7 @@ namespace Engine
 						thisClientEntity = entitiesWithNetworkComponent[i];
 						CameraComponent* cameraComponent = reinterpret_cast<CameraComponent*>(manager->GetComponentOfEntity(entitiesWithNetworkComponent[i], CAMERA));
 						// TODO change this so it works with the renderer being on client side
-						//game->GetRenderer().attachCamera(cameraComponent->GetCamera());
+						game->GetRenderer()->attachCamera(cameraComponent->GetCamera());
 						clientEntityId = entitiesWithNetworkComponent[i];
 						break;
 					}

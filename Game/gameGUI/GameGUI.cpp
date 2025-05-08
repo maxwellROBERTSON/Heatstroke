@@ -335,7 +335,7 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 
 		ImGui::Text("Join a server");
 
-		static char addressStr[16] = "10.41.204.183\0";
+		static char addressStr[16] = "129.11.146.213\0";
 		ImGui::Text("Address:");
 		ImGui::InputText("Address", addressStr, IM_ARRAYSIZE(addressStr));
 
@@ -564,7 +564,11 @@ void makeServerGUI(FPSTest* game, int* w, int* h)
 
 	if (ImGui::Button("Stop server", ImVec2(*w / 6, *h / 6)))
 	{
+		game->GetGUI().ResetGUIModes();
+		game->GetGUI().ToggleGUIMode("Home");
+		game->GetPhysicsWorld().reset(&game->GetEntityManager());
 		game->SetRenderMode(RenderMode::NO_DATA_MODE);
+		game->SetGameMode(nullptr);
 		game->GetEntityManager().ClearManager();
 		game->GetNetwork().Reset();
 		multiplayerSelected = false;

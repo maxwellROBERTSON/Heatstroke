@@ -17,6 +17,8 @@
 #include "../Engine/vulkan/VulkanContext.hpp"
 #include "../Engine/vulkan/VulkanDevice.hpp"
 
+#include "../Engine/Rendering/HsRenderer.hpp"
+
 #include "../Engine/Core/Camera.hpp"
 #include "Uniforms.hpp"
 
@@ -25,10 +27,6 @@
 #include "../Engine/Events/MouseEvent.hpp"
 #include "../Engine/Events/WindowEvent.hpp"
 
-#include "../Input/Input.hpp"
-#include "../Input/InputCodes.hpp"
-#include "../Input/Joystick.hpp"
-
 #include "gameRendering/Renderer.hpp"
 #include "gameRendering/Crosshair.hpp"
 #include "gameRendering/Decals.hpp"
@@ -36,11 +34,14 @@
 
 #include "gameModes/GameMode.hpp"
 
+class HsRenderer;
+
 class FPSTest : public Engine::Game
 {
 public:
 	FPSTest() : Engine::Game("FPS Test Game") {
 		this->Init();
+		hsRenderer = &renderer;
 	}
 
 	~FPSTest() {
@@ -63,6 +64,7 @@ public:
 	void SetRenderMode(RenderMode r) { renderMode = r; }
 	
 	// Getters
+	Renderer* GetRenderer() override;
 	Renderer& getRenderer();
 	RenderMode getRenderMode();
 	GameMode& GetGameMode();

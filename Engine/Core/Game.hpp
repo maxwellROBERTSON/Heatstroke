@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "../Rendering/HsRenderer.hpp"
 #include "../ECS/EntityManager.hpp"
 #include "../Events/Event.hpp"
 #include "../Events/KeyEvent.hpp"
@@ -17,7 +18,6 @@
 #include "../ThreadPool/thread_pool_wait.h"
 
 #include "Camera.hpp"
-
 
 namespace Engine
 {
@@ -39,12 +39,14 @@ namespace Engine
 		// Getters
 		inline VulkanContext& GetContext() { return mContext; }
 		inline static Game& Get() { return *game; }
-		inline std::vector<Engine::vk::Model>& GetModels() { return models; }
+		inline std::vector<vk::Model>& GetModels() { return models; }
 		inline bool GetRecreateSwapchain() { return recreateSwapchain; }
 		inline EntityManager& GetEntityManager() { return entityManager; }
 		inline PhysicsWorld& GetPhysicsWorld() { return physics_world; }
-		inline Engine::Network& GetNetwork() { return *network; }
-		inline Engine::GUI& GetGUI() { return *gui; }
+		inline Network& GetNetwork() { return *network; }
+		inline GUI& GetGUI() { return *gui; }
+		inline thread_pool_wait& GetThreadPool() { return *threadPool; }
+		virtual HsRenderer* GetRenderer() { return hsRenderer; }
 
 		// Setters
 		void SetClient(yojimbo::Address);
@@ -53,15 +55,17 @@ namespace Engine
 		bool OnWindowClose(WindowCloseEvent& e);
 		static int instanceCount;
 
+		Engine::HsRenderer* hsRenderer;
+
 	private:
 		VulkanContext mContext;
 		inline static Game* game;
-		std::vector<Engine::vk::Model> models;
+		std::vector<vk::Model> models;
 		bool recreateSwapchain;
 		EntityManager entityManager = EntityManager();
 		PhysicsWorld physics_world;
-		std::unique_ptr<Engine::Network> network;
-		std::unique_ptr<Engine::GUI> gui;
+		std::unique_ptr<Network> network;
+		std::unique_ptr<GUI> gui;
 		thread_pool_wait* threadPool;
 
 		float deltaTime = 0.0f, lastTime = 0.0f;

@@ -3,6 +3,7 @@
 #include "../DemoGame.hpp"
 
 #include <string>
+#include <future>
 
 void makeGameGUIS(FPSTest* game);
 void makeHomeGUI(FPSTest* game, int*, int*);

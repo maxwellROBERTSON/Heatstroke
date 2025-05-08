@@ -1,4 +1,3 @@
-#include "../../Game/DemoGame.hpp"
 #include "../Core/Game.hpp"
 #include "../ECS/Components/AudioComponent.hpp"
 #include "../ECS/Components/PhysicsComponent.hpp"

@@ -101,17 +101,6 @@ void FPSTest::Update() {
 
 	this->renderer.calculateFPS();
 
-	if (gameMode)
-	{
-		{
-			gameMode->Update(timeDelta);
-		}
-
-		physicsWorld.updateObjects(GetModels());
-
-		this->renderer.updateAnimations(timeDelta);
-	}
-
 	if (this->renderer.getIsSceneLoaded())
 	{
 		if (gameMode)
@@ -265,11 +254,10 @@ void FPSTest::loadOnlineEntities(int maxClientsNum)
 	entityManager.AddSimulatedPhysicsEntity(entity->GetEntityId());
 
 	// Load maxClientsNum of players
-	types = { AUDIO, CAMERA, NETWORK, RENDER, PHYSICS };
 	for (int i = 0; i < maxClientsNum; i++)
 	{
 		// Character Model
-		types = { CAMERA, RENDER, PHYSICS, AUDIO };
+		types = { CAMERA, RENDER, NETWORK, PHYSICS, AUDIO };
 		entity = entityManager.MakeNewEntity(types);
 		entity->SetPosition(0.0f, 0.5f, 0.0f);
 		entity->SetRotation(90.0f, glm::vec3(0.0f, 0.0f, 1.0f));
@@ -306,6 +294,10 @@ GameMode& FPSTest::GetGameMode()
 void FPSTest::SetGameMode(std::unique_ptr<GameMode> mode)
 {
 	gameMode = std::move(mode);
+}
+
+Renderer* FPSTest::GetRenderer() {
+	return &this->renderer;
 }
 
 Renderer& FPSTest::getRenderer() {

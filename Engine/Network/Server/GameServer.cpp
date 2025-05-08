@@ -31,11 +31,6 @@ namespace Engine
 
 		adapter->SetServer(server);
 
-		server->SetLatency(1000.0f);
-		server->SetJitter(100.0f);
-		server->SetPacketLoss(25.0f);
-		server->SetDuplicates(25.0f);
-
 		game->GetNetwork().SetStatus(Status::SERVER_INITIALIZED);
 
 		Start();
@@ -114,8 +109,8 @@ namespace Engine
 	void GameServer::HandleClientUpdateEntityData(int clientIndex, ClientUpdateEntityData* message)
 	{
 		int blockSize = message->GetBlockSize();
-		/*if (blockSize == 0)
-			throw std::runtime_error("Null block data size");*/
+		if (blockSize == 0)
+			throw std::runtime_error("Null block data size");
 
 		if (game->GetNetwork().GetStatus() == Status::SERVER_INITIALIZED)
 		{
