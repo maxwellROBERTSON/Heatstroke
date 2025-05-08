@@ -6,9 +6,9 @@
 #include "Components/AudioComponent.hpp"
 #include "Components/CameraComponent.hpp"
 #include "Components/NetworkComponent.hpp"
+#include "Components/ChildrenComponent.hpp"
 #include "Components/PhysicsComponent.hpp"
 #include "Components/RenderComponent.hpp"
-#include "Components/AudioComponent.hpp"
 
 namespace Engine
 {
@@ -28,6 +28,9 @@ namespace Engine
 		CameraComponent c;
 		if (ComponentSizes[CAMERA] != c.StaticSize())
 			throw std::runtime_error("Size mismatch between: ComponentSizes[CAMERA] and Camera size");
+		ChildrenComponent ch;
+		if (ComponentSizes[CHILDREN] != ch.StaticSize())
+			throw std::runtime_error("Size mismatch between: ComponentSizes[CHILDREN] and Children size");
 		NetworkComponent n;
 		if (ComponentSizes[NETWORK] != n.StaticSize())
 			throw std::runtime_error("Size mismatch between: ComponentSizes[NETWORK] and Network size");

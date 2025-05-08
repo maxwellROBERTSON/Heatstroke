@@ -171,8 +171,9 @@ void FPSTest::loadOfflineEntities()
 
 	std::vector<Engine::vk::Model>& models = GetModels();
 
-	// map
 	std::vector<ComponentTypes> types = { RENDER, PHYSICS };
+
+	// map
 	entity = entityManager.MakeNewEntity(types);
 	renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
 	renderComponent->SetModelIndex(0);
@@ -188,7 +189,7 @@ void FPSTest::loadOfflineEntities()
 	entity->SetScale(25.0f);
 	cameraComponent = reinterpret_cast<CameraComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), CAMERA));
 	cameraComponent->SetCamera(sceneCamera);
-  this->renderer.attachCamera(cameraComponent->GetCamera());
+	this->renderer.attachCamera(cameraComponent->GetCamera());
 	renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
 	renderComponent->SetModelIndex(1);
 	renderComponent->SetIsActive(false);
@@ -253,9 +254,10 @@ void FPSTest::loadOnlineEntities(int maxClientsNum)
 	// Pointers
 	Entity* entity;
 	CameraComponent* cameraComponent;
-	// NetworkComponent* networkComponent;
+	NetworkComponent* networkComponent;
 	RenderComponent* renderComponent;
 	PhysicsComponent* physicsComponent;
+	AudioComponent* audioComponent;
 
 	EntityManager& entityManager = GetEntityManager();
 	PhysicsWorld& physicsWorld = GetPhysicsWorld();
@@ -272,84 +274,34 @@ void FPSTest::loadOnlineEntities(int maxClientsNum)
 	physicsComponent->InitComplexShape("Map", physicsWorld, PhysicsComponent::PhysicsType::STATICBOUNDED, models[renderComponent->GetModelIndex()], entity->GetModelMatrix(), entity->GetEntityId());
 	entityManager.AddSimulatedPhysicsEntity(entity->GetEntityId());
 
-	// Helmet
-	//entity = entityManager.MakeNewEntity(types);
-	//entity->SetPosition(0.0f, 2.0f, 0.0f);
-	//entity->SetRotation(90.0f, glm::vec3(0.0f, 1.0f, 0.0f));
-	//entity->SetScale(0.2f);
-	//// configure physics component
-	//renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
-	//renderComponent->SetModelIndex(1);
-	//physicsComponent = reinterpret_cast<PhysicsComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
-	//physicsComponent->Init(physicsWorld, PhysicsComponent::PhysicsType::DYNAMIC, models[renderComponent->GetModelIndex()], entity->GetModelMatrix(), entity->GetEntityId(), false, false);
-	//entityManager.AddSimulatedPhysicsEntity(entity->GetEntityId());
-
-	// Cube
-	//entity = entityManager.MakeNewEntity(types);
-	//entity->SetPosition(0.3f, 1.0f, -1.0f);
-	//// configure physics component
-	//renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
-	//renderComponent->SetModelIndex(2);
-	//physicsComponent = reinterpret_cast<PhysicsComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
-	//physicsComponent->Init(physicsWorld, PhysicsComponent::PhysicsType::DYNAMIC, models[renderComponent->GetModelIndex()], entity->GetModelMatrix(), entity->GetEntityId(), false, false);
-	//entityManager.AddSimulatedPhysicsEntity(entity->GetEntityId());
-
-	// ---- input actions ----- 
-
-	// Player 1
-	// types = { CAMERA, NETWORK, RENDER, PHYSICS };
-	// entity = entityManager.AddEntity(types);
-	// entity->SetPosition(-5.0f, 0.0f, -1.0f);
-	// entity->SetRotation(90.0f, glm::vec3(0.0f, 0.0f, 1.0f));
-	// entity->SetScale(30.0f);
-	// renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
-	// renderComponent->SetModelIndex(3);
-	// physicsComponent = reinterpret_cast<PhysicsComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
-	// physicsComponent->init(physicsWorld, PhysicsComponent::PhysicsType::CONTROLLER, models[renderComponent->GetModelIndex()], entity->GetModelMatrix(), entity->GetEntityId());
-	// cameraComponent = reinterpret_cast<CameraComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), CAMERA));
-	// cameraComponent->SetCamera(new Engine::Camera(100.0f, 0.01f, 256.0f, glm::vec3(-3.0f, 2.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
-	// networkComponent = reinterpret_cast<NetworkComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), NETWORK));
-	// networkComponent->SetClientId(0);
-
-	// types = { RENDER };
-
-	// // Player 2
-	// entity = entityManager.AddEntity(types);
-	// entity->SetPosition(5.0f, 0.0f, -1.0f);
-	// entity->SetRotation(90.0f, glm::vec3(0.0f, 0.0f, 1.0f));
-	// entity->SetScale(30.0f);
-	// renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
-	// renderComponent->SetModelIndex(3);
-
-	// // Pistol
-	// types = { RENDER };
-	// entity = entityManager.AddEntity(types);
-	// entity->SetPosition(-1.0f, 1.0f, 0.0f);
-	// entity->SetRotation(-90.0f, glm::vec3(0.0f, 1.0f, 0.0f));
-	// entity->SetScale(0.5f);
-	// renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
-	// renderComponent->SetModelIndex(4);
-
-	// std::vector<int> entitiesWithNetworkComponent = entityManager.GetEntitiesWithComponent(NETWORK);
-	// for (int i = 0; i < entitiesWithNetworkComponent.size(); i++)
-
-	// ---- input actions ----- 
-
 	// Load maxClientsNum of players
 	types = { AUDIO, CAMERA, NETWORK, RENDER, PHYSICS };
 	for (int i = 0; i < maxClientsNum; i++)
 	{
+		// Character Model
+		types = { CAMERA, RENDER, PHYSICS, AUDIO };
 		entity = entityManager.MakeNewEntity(types);
-		entity->SetPosition(-5.0f, 0.0f, -1.0f);
-		entity->SetRotation(90.0f, glm::vec3(0.0f, 0.0f, -1.0f));
-		entity->SetScale(30.0f);
+		entity->SetPosition(0.0f, 0.5f, 0.0f);
+		entity->SetRotation(90.0f, glm::vec3(0.0f, 0.0f, 1.0f));
+		entity->SetScale(25.0f);
+		cameraComponent = reinterpret_cast<CameraComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), CAMERA));
+		cameraComponent->SetCamera(sceneCamera);
+		this->renderer.attachCamera(cameraComponent->GetCamera());
 		renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
 		renderComponent->SetModelIndex(1);
-		renderComponent->SetIsActive(false); // Players not renderable until client connection
-		physicsComponent = reinterpret_cast<PhysicsComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
-		physicsComponent->Init(physicsWorld, PhysicsComponent::PhysicsType::CONTROLLER, models[renderComponent->GetModelIndex()], entity->GetModelMatrix(), entity->GetEntityId(), false, false);
-		cameraComponent = reinterpret_cast<CameraComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), CAMERA));
-		cameraComponent->SetCamera(Engine::Camera(100.0f, 0.01f, 256.0f, glm::vec3(-3.0f, 20.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f)));
+		renderComponent->SetIsActive(false);
+		physicsComponent = reinterpret_cast<PhysicsComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
+		physicsComponent->Init(physicsWorld, PhysicsComponent::PhysicsType::CONTROLLER, models[renderComponent->GetModelIndex()], entity->GetModelMatrix(), entity->GetEntityId(), true, true);
+		audioComponent = reinterpret_cast<AudioComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), AUDIO));
+		audioComponent->addClip("GunShot", "Game/assets/AudioClips/singlegunshot.wav");
+
+		// pistol
+		types = { RENDER };
+		entity = entityManager.MakeNewEntity(types);
+		entity->SetPosition(0.0f, -2.0f, -1.0f);
+		entity->SetRotation(180.0f, glm::vec3(0.0f, 1.0f, 0.0f));
+		renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
+		renderComponent->SetModelIndex(2);
 	}
 
 	EntityManager& e = GetEntityManager();

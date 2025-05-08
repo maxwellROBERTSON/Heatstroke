@@ -10,25 +10,20 @@ public:
 	// Constructor
 	MultiPlayer(FPSTest* game);
 
-	// Getters
-
-	// Setters
 	void Update(float);
 
-	void ToggleSceneCamera(Engine::Camera*);
-
-	void SetPlayerEntity(Engine::Entity* e) { playerEntity = e; isPlayerCam = true; }
-
-	void SetPistolEntity(Engine::Entity* e) { pistolEntity = e; }
-
-	void SetRifleEntity(Engine::Entity* e) { rifleEntity = e; }
+	void SetPlayerEntities(std::vector<Engine::Entity*> e) override { playerEntities = e; };
+	void SetPistolEntities(std::vector<Engine::Entity*> e) override { pistolEntities = e; };
 
 	FPSTest* game;
 
-	Engine::Entity* playerEntity;
-	Engine::Entity* pistolEntity;
-	Engine::Entity* rifleEntity;
-	Engine::Entity* targetEntity;
+	int score = 0;
+	int countdown = 30;
+	bool gameOver = false;
+	float fireDelay = 1.0f;
+	bool canFire = true;
+	float counter = 1.0f;
 
-	bool isPlayerCam = false;
+	std::vector<Engine::Entity*> playerEntities = std::vector<Engine::Entity*>(0);
+	std::vector<Engine::Entity*> pistolEntities = std::vector<Engine::Entity*>(0);
 };

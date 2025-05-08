@@ -34,7 +34,7 @@ void makeGameGUIS(FPSTest* game)
 	gui.AddFunction("MultiPlayer", [game](int* w, int* h) { makeMultiPlayerGUI(game, w, h); });
 
 	gui.AddFont("Default", "Engine/third_party/imgui/misc/fonts/Roboto-Medium.ttf", 12.0f);
-	gui.AddFont("Home", "Engine/third_party/imgui/misc/fonts/Freedom.ttf", 60.0f);
+	gui.AddFont("Home", "Engine/third_party/imgui/misc/fonts/Freedom-10eM.ttf", 60.0f);
 	gui.AddFont("HomeHovered", "Engine/third_party/imgui/misc/fonts/Freedom.ttf", 70.0f);
 	gui.AddFont("Game", "Engine/third_party/imgui/misc/fonts/Roboto-Medium.ttf", 36.0f);
 
@@ -328,7 +328,7 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 
 		ImGui::Text("Join a server");
 
-		static char addressStr[16] = "192.168.68.60\0";
+		static char addressStr[16] = "10.41.204.183\0";
 		ImGui::Text("Address:");
 		ImGui::InputText("Address", addressStr, IM_ARRAYSIZE(addressStr));
 
@@ -582,8 +582,10 @@ void makeLoadingGUI(FPSTest* game, int* w, int* h)
 	Status s = game->GetNetwork().GetStatus();
 	if (s == Status::CLIENT_INITIALIZING_DATA)
 	{
+		game->SetGameMode(std::make_unique<MultiPlayer>(game));
 		game->getRenderer().initialiseJointMatrices();
 		game->GetGUI().ToggleGUIMode("Loading");
+		game->GetGUI().ToggleGUIMode("MultiPlayer");
 		if (game->debugging)
 			game->GetGUI().ToggleGUIMode("Debug");
 		game->SetRenderMode(RenderMode::FORWARD);
@@ -598,9 +600,12 @@ void makeLoadingGUI(FPSTest* game, int* w, int* h)
 		ImGui::SetCursorPos(topRightPos);
 		if (ImGui::Button("Home", ImVec2(*w / 6, *h / 6)))
 		{
+			game->GetGUI().ResetGUIModes();
 			game->GetGUI().ToggleGUIMode("Home");
-			if (game->debugging)
-				game->GetGUI().ToggleGUIMode("Debug");
+			game->GetPhysicsWorld().reset(&game->GetEntityManager());
+			game->SetRenderMode(RenderMode::NO_DATA_MODE);
+			game->SetGameMode(nullptr);
+			game->GetEntityManager().ClearManager();
 			game->GetNetwork().Reset();
 		}
 	}
@@ -612,10 +617,11 @@ void makeLoadingGUI(FPSTest* game, int* w, int* h)
 		ImGui::SetCursorPos(topRightPos);
 		if (ImGui::Button("Home", ImVec2(*w / 6, *h / 6)))
 		{
-			game->SetRenderMode(RenderMode::NO_DATA_MODE);
+			game->GetGUI().ResetGUIModes();
 			game->GetGUI().ToggleGUIMode("Home");
-			if (game->debugging)
-				game->GetGUI().ToggleGUIMode("Debug");
+			game->GetPhysicsWorld().reset(&game->GetEntityManager());
+			game->SetRenderMode(RenderMode::NO_DATA_MODE);
+			game->SetGameMode(nullptr);
 			game->GetEntityManager().ClearManager();
 			game->GetNetwork().Reset();
 		}

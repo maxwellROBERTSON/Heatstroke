@@ -67,6 +67,16 @@ namespace Engine
 		}
 	}
 
+	// Set component has changed in entity manager
+	void Entity::SetEntityHasChanged()
+	{
+		if (!hasChanged)
+		{
+			entityManager->AddChangedEntity(this);
+			hasChanged = true;
+		}
+	}
+
 	// Position Setters
 	void Entity::SetPosition(float x, float y, float z)
 	{
@@ -151,14 +161,4 @@ namespace Engine
 			SetEntityHasChanged();
 		}
 	} 
-
-	// Set component has changed in entity manager
-	void Entity::SetEntityHasChanged()
-	{
-		if (!hasChanged)
-		{
-			entityManager->AddChangedEntity(this);
-			hasChanged = true;
-		}
-	}
 }

@@ -15,7 +15,6 @@ namespace Engine
 	class SoundDevice;
 	class SoundSource;
 	class SoundBuffer;
-
 }
 namespace Engine
 {

@@ -24,11 +24,8 @@ public:
 	Engine::Entity* GetPlayerEntity() override { return playerEntity; }
 
 	void SetPlayerEntity(Engine::Entity*) override;
-
 	void SetPistolEntity(Engine::Entity* e) override { pistolEntity = e; }
-
 	void SetRifleEntity(Engine::Entity* e) override { rifleEntity = e; }
-
 	void SetTargetEntity(Engine::Entity* e) override { targetEntity = e; }
 
 	FPSTest* game;
