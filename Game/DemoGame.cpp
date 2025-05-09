@@ -20,8 +20,8 @@
 
 
 #include "gameGUI/gameGUI.hpp"
-#include "gameModes/SinglePlayer.hpp"
 #include "gameModes/MultiPlayer.hpp"
+#include "gameModes/SinglePlayer.hpp"
 
 using namespace Engine;
 
@@ -30,12 +30,12 @@ void FPSTest::Init() {
 	this->renderer = Renderer(&GetContext(), &GetEntityManager(), this);
 	this->renderer.initialise();
 
+
 	this->gui = GUI(this);
 
 	srand(time(0));
 	this->threadPool = thread_pool_wait::get_instance();
 
-	InputManager::InitDefaultControls();
 
 	//submit task to initialise Models to thread pool
 	auto modelsFut = threadPool->submit(&FPSTest::initialiseModels, this);
@@ -153,7 +153,8 @@ void FPSTest::initialiseModels()
 	//tinygltf::Model map = Engine::loadFromFile("Game/assets/Sponza/glTF/Sponza.gltf");
 	tinygltf::Model character = Engine::loadFromFile("Game/assets/Character/scene.gltf");
 	tinygltf::Model pistol = Engine::loadFromFile("Game/assets/Assets/guns/pistol1/scene.gltf");
-	tinygltf::Model rifle = Engine::loadFromFile("Game/assets/Assets/guns/rifle/scene.gltf");
+	tinygltf::Model rifle = Engine::loadFromFile("Game/assets/Assets/guns/scorpion/scene.gltf");
+	//tinygltf::Model rifle = Engine::loadFromFile("Game/assets/Assets/guns/rifle/scene.gltf");
 	tinygltf::Model target = Engine::loadFromFile("Game/assets/target/scene.gltf");
 	tinygltf::Model helmet = Engine::loadFromFile("Game/assets/DamagedHelmet.gltf");
 	GetModels().emplace_back(Engine::makeVulkanModel(this->GetContext(), map, DrawType::WORLD));
@@ -205,7 +206,7 @@ void FPSTest::loadOfflineEntities()
 	entityManager.AddSimulatedPhysicsEntity(entity->GetEntityId());
 	GetGameMode().SetPlayerEntity(entity);
 
-	// pistol
+	//// pistol
 	types = { RENDER };
 	entity = entityManager.MakeNewEntity(types);
 	entity->SetPosition(0.0f, -2.0f, -1.0f);
@@ -213,6 +214,26 @@ void FPSTest::loadOfflineEntities()
 	renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
 	renderComponent->SetModelIndex(2);
 	GetGameMode().SetPistolEntity(entity);
+
+	//// rifle
+	//types = { RENDER };
+	//entity = entityManager.MakeNewEntity(types);
+	//entity->SetPosition(0.3f, -0.4f, -0.5f);
+	//entity->SetRotation(180.0f, glm::vec3(0.0f, 1.0f, 0.0f));
+	//renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
+	//renderComponent->SetModelIndex(3);
+	//renderComponent->SetIsActive(false);
+	//GetGameMode().SetRifleEntity(entity);
+
+	// secondary
+	types = { RENDER };
+	entity = entityManager.MakeNewEntity(types);
+	entity->SetPosition(0.3f, -0.4f, -0.5f);
+	entity->SetRotation(180.0f, glm::vec3(0.0f, 1.0f, 0.0f));
+	renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
+	renderComponent->SetModelIndex(3);
+	renderComponent->SetIsActive(false);
+	GetGameMode().SetRifleEntity(entity);
 
 	// target
 	types = { RENDER, PHYSICS };

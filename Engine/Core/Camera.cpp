@@ -42,10 +42,14 @@ namespace Engine
 		if (glfwGetInputMode(aWindow, GLFW_CURSOR) != GLFW_CURSOR_DISABLED)
 			return;
 
+		float deadzone = 0.05f;
 		if (updatePosition)
 		{
 			float speedModifier = 1.0f;
-			if (InputManager::IsPressed(HS_KEY_LEFT_SHIFT)) speedModifier = 3.0f;
+
+			if (InputManager::IsPressed(HS_KEY_LEFT_SHIFT))
+				speedModifier = 3.0f;
+
 			float distance = 1.0f * speedModifier * timeDelta;
 
 			if (InputManager::IsPressed(HS_KEY_W))
@@ -84,31 +88,106 @@ namespace Engine
 			this->firstClick = false;
 		}
 
-		auto& mouse = InputManager::getMouse();
+		switch (InputManager::getInputDevice()) {
+		case InputDevice::CONTROLLER:
+		{
 
-		float xOffset = mouse.getXPos() - this->lastX;
-		float yOffset = this->lastY - mouse.getYPos();
+			float xRot = 0.0f;
+			float yRot = 0.0f;
 
-		this->lastX = mouse.getXPos();
-		this->lastY = mouse.getYPos();
+			if (InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_RIGHT_X) > deadzone)
+				xRot = InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_RIGHT_X);
+			else if (InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_RIGHT_X) < -deadzone)
+				xRot = InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_RIGHT_X);
+			else
+				xRot = 0.0f;
 
-		// Sensitivity multiplier
-		xOffset *= 0.1f * sensitivity;
-		yOffset *= 0.1f * sensitivity;
+			if (InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_RIGHT_Y) > deadzone)
+				yRot = InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_RIGHT_Y) * -1.0f;
+			else if (InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_RIGHT_Y) < -deadzone)
+				yRot = InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_RIGHT_Y) * -1.0f;
+			else
+				yRot = 0.0f;
 
-		this->yaw += xOffset;
-		this->pitch += yOffset;
+			this->yaw += xRot * sensitivity;
+			this->pitch += yRot * sensitivity;
 
-		if (this->pitch > 89.9f)
-			this->pitch = 89.9f;
-		if (this->pitch < -89.9f)
-			this->pitch = -89.9f;
+			if (this->pitch > 89.9f)
+				this->pitch = 89.9f;
+			if (this->pitch < -89.9f)
+				this->pitch = -89.9f;
 
-		glm::vec3 newDir;
-		newDir.x = std::cos(glm::radians(this->yaw)) * std::cos(glm::radians(this->pitch));
-		newDir.y = std::sin(glm::radians(this->pitch));
-		newDir.z = std::sin(glm::radians(this->yaw)) * std::cos(glm::radians(this->pitch));
-		this->frontDirection = glm::normalize(newDir);
+			glm::vec3 newDir;
+			newDir.x = std::cos(glm::radians(this->yaw)) * std::cos(glm::radians(this->pitch));
+			newDir.y = std::sin(glm::radians(this->pitch));
+			newDir.z = std::sin(glm::radians(this->yaw)) * std::cos(glm::radians(this->pitch));
+			this->frontDirection = glm::normalize(newDir);
+			break;
+		}
+		case InputDevice::KBM:
+		{
+			auto& mouse = InputManager::getMouse();
+
+			float xOffset = mouse.getXPos() - this->lastX;
+			float yOffset = this->lastY - mouse.getYPos();
+
+			this->lastX = mouse.getXPos();
+			this->lastY = mouse.getYPos();
+
+			// Sensitivity multiplier
+			xOffset *= 0.1f * sensitivity;
+			yOffset *= 0.1f * sensitivity;
+
+			this->yaw += xOffset;
+			this->pitch += yOffset;
+
+			if (this->pitch > 89.9f)
+				this->pitch = 89.9f;
+			if (this->pitch < -89.9f)
+				this->pitch = -89.9f;
+
+			glm::vec3 newDir;
+			newDir.x = std::cos(glm::radians(this->yaw)) * std::cos(glm::radians(this->pitch));
+			newDir.y = std::sin(glm::radians(this->pitch));
+			newDir.z = std::sin(glm::radians(this->yaw)) * std::cos(glm::radians(this->pitch));
+			this->frontDirection = glm::normalize(newDir);
+			break;
+		}
+		}
+		//if (InputManager::hasJoysticksConnected())
+		//{
+
+		//	float xRot = 0.0f;
+		//	float yRot = 0.0f;
+
+		//	if (InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_RIGHT_X) > deadzone)
+		//		xRot = InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_RIGHT_X);
+		//	else if (InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_RIGHT_X) < -deadzone)
+		//		xRot = InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_RIGHT_X);
+		//	else
+		//		xRot = 0.0f;
+
+		//	if (InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_RIGHT_Y) > deadzone)
+		//		yRot = InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_RIGHT_Y) * -1.0f;
+		//	else if (InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_RIGHT_Y) < -deadzone)
+		//		yRot = InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_RIGHT_Y) * -1.0f;
+		//	else
+		//		yRot = 0.0f;
+
+		//	this->yaw += xRot * sensitivity;
+		//	this->pitch += yRot * sensitivity;
+
+		//	if (this->pitch > 89.9f)
+		//		this->pitch = 89.9f;
+		//	if (this->pitch < -89.9f)
+		//		this->pitch = -89.9f;
+
+		//	glm::vec3 newDir;
+		//	newDir.x = std::cos(glm::radians(this->yaw)) * std::cos(glm::radians(this->pitch));
+		//	newDir.y = std::sin(glm::radians(this->pitch));
+		//	newDir.z = std::sin(glm::radians(this->yaw)) * std::cos(glm::radians(this->pitch));
+		//	this->frontDirection = glm::normalize(newDir);
+		//}
 	}
 
 	void Camera::OnEvent(GLFWwindow* aWindow, Engine::Event& e)

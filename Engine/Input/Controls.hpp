@@ -17,8 +17,6 @@ namespace Engine
 	{
 		unsigned axis;
 		AxisType axisType;
-		float minAnalogueValue;
-		float maxAnalogueValue;
 	};
 
 	struct KeyboardEntry

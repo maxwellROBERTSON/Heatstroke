@@ -10,10 +10,8 @@ namespace Engine
 	Keyboard InputManager::mKeyboard;
 	Mouse InputManager::mMouse;
 	ControlMap InputManager::DefaultControls;
-	//std::map<std::string, std::pair<int, int>> InputManager::mActionMap;
-	// 
-	//std::map<ActionType, std::pair<int, int>> InputManager::mActionMap;
-
+	InputDevice InputManager::mInputDevice = InputDevice::KBM;
+	float InputManager::ControllerDeadzone = 0.05f;
 
 	Joystick& InputManager::getJoystick(int index)
 	{
@@ -51,6 +49,16 @@ namespace Engine
 		return (mJoysticks.size() != 0);
 	}
 
+	void InputManager::setInputDevivce(InputDevice inputDevice)
+	{
+		mInputDevice = inputDevice;
+	}
+
+	InputDevice& InputManager::getInputDevice()
+	{
+		return mInputDevice;
+	}
+
 	ControlMap& InputManager::getDefaultControls()
 	{
 		return DefaultControls;
@@ -64,16 +72,18 @@ namespace Engine
 		DefaultControls.mapKeyboardButton(Controls::MoveLeft, { HS_KEY_A, -1.0f });
 		DefaultControls.mapKeyboardButton(Controls::MoveRight, { HS_KEY_D, 1.0f });
 		DefaultControls.mapKeyboardButton(Controls::Jump, { HS_KEY_SPACE, 1.0f });
+		DefaultControls.mapKeyboardButton(Controls::SwapWeapon, { HS_KEY_C, 1.0f });
+		DefaultControls.mapKeyboardButton(Controls::Sprint, { HS_KEY_LEFT_SHIFT, 1.0f });
 		DefaultControls.mapMouseButton(Controls::Shoot, { HS_MOUSE_BUTTON_LEFT });
 
-		if (InputManager::hasJoysticksConnected())
-		{
-			DefaultControls.mapGamepadButton(Controls::Reload, { HS_GAMEPAD_BUTTON_Y, 1.0f });
-			DefaultControls.mapGamepadButton(Controls::Jump, { HS_GAMEPAD_BUTTON_A, 1.0f });
-			DefaultControls.mapGamepadAxis(Controls::Shoot, { HS_GAMEPAD_AXIS_RIGHT_TRIGGER, AxisType::FULL, 0.0f, 1.0f });
-			//DefaultControls.mapGamepadAxis(Controls::MoveForward, { HS_GAMEPAD_AXIS_RIGHT_Y,AxisType::NEGATIVE, 0.0f, 0.49f });
-			//DefaultControls.mapGamepadAxis(Controls::MoveBackward, { HS_GAMEPAD_AXIS_RIGHT_Y,AxisType::POSITIVE, 0.5f, 1.0f });
-		}
+		//if (InputManager::hasJoysticksConnected())
+		//{
+		//	DefaultControls.mapGamepadButton(Controls::Reload, { HS_GAMEPAD_BUTTON_Y, 1.0f });
+		//	DefaultControls.mapGamepadButton(Controls::Jump, { HS_GAMEPAD_BUTTON_A, 1.0f });
+		//	DefaultControls.mapGamepadAxis(Controls::Shoot, { HS_GAMEPAD_AXIS_RIGHT_TRIGGER, AxisType::POSITIVE });
+		//	DefaultControls.mapGamepadAxis(Controls::MoveForward, { HS_GAMEPAD_AXIS_RIGHT_Y,AxisType::NEGATIVE });
+		//	DefaultControls.mapGamepadAxis(Controls::MoveBackward, { HS_GAMEPAD_AXIS_RIGHT_Y,AxisType::POSITIVE });
+		//}
 	}
 
 	bool InputManager::Action(const ControlID action)
@@ -86,7 +96,7 @@ namespace Engine
 		glfwPollEvents();
 
 		//mKeyboard.getKeyboardState().Update();
-		mMouse.getMouseState().Update();
+		//mMouse.getMouseState().Update();
 
 		for (int j = 0; j < GLFW_JOYSTICK_LAST; ++j) {
 			if (glfwJoystickPresent(j) == GLFW_TRUE) {

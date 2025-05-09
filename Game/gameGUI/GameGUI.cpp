@@ -11,7 +11,7 @@ using namespace Engine;
 // Define the global variables here
 bool showImGuiDemoWindow{ false };
 bool debugRenderer{ false };
-bool debugInput = false;
+bool debugInput = true;
 bool debugGame = true;
 bool debugAnimations{ false };
 bool debugNetwork{ false };
@@ -114,6 +114,8 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 			GLFWwindow* window = game->GetContext().getGLFWWindow();
 			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 		}
+
+		InputManager::InitDefaultControls();
 
 		cursorPos = ImGui::GetCursorScreenPos();
 		cursorPos.x += 20.f;
@@ -804,6 +806,7 @@ void ShowInputDebug(FPSTest* game, int* w, int* h)
 	INPUT_DEBUG(Shoot, HS_MOUSE_BUTTON_LEFT, HS_GAMEPAD_BUTTON_B); // TODO: fix (axis), also hard coded keyboard
 	INPUT_DEBUG(Jump, HS_KEY_SPACE, HS_GAMEPAD_BUTTON_A);
 
+	ImGui::Text("Shoot: "); ImGui::SameLine();
 	bool shootPressed = InputManager::getMouse().isPressed(HS_MOUSE_BUTTON_LEFT);
 	bool shootHeld = InputManager::getMouse().isHeld(HS_MOUSE_BUTTON_LEFT);
 	bool shootDown = InputManager::getMouse().isDown(HS_MOUSE_BUTTON_LEFT);
@@ -811,22 +814,33 @@ void ShowInputDebug(FPSTest* game, int* w, int* h)
 	ImGui::Checkbox("##MFKBM", &shootHeld); ImGui::SameLine();
 	ImGui::Checkbox("##MFKBM", &shootDown);
 
-	//if defaultControls.getDigitalValue(Controls::Shoot)
-
+	int currentInputDevice = InputManager::getInputDevice();
+	const char* inputDeviceNames[InputDevice::INPUT_DEVICE_COUNT] = { "Keyboard & Mouse", "Controller" };
+	const char* inputDeviceName = (currentInputDevice >= 0 && currentInputDevice < INPUT_DEVICE_COUNT) ? inputDeviceNames[currentInputDevice] : "Unknown";
 	if (InputManager::hasJoysticksConnected())
 	{
-		ImGui::Text("A: %s", InputManager::getJoystick(0).isPressed(HS_GAMEPAD_BUTTON_A) ? "Pressed" : "Released");
-		ImGui::Text("B: %s", InputManager::getJoystick(0).isPressed(HS_GAMEPAD_BUTTON_B) ? "Pressed" : "Released");
-		ImGui::Text("Y: %s", InputManager::getJoystick(0).isPressed(HS_GAMEPAD_BUTTON_Y) ? "Pressed" : "Released");
-		ImGui::Text("X: %s", InputManager::getJoystick(0).isPressed(HS_GAMEPAD_BUTTON_X) ? "Pressed" : "Released");
-		ImGui::Text("RB: %s", InputManager::getJoystick(0).isPressed(HS_GAMEPAD_BUTTON_RIGHT_BUMPER) ? "Pressed" : "Released");
-		ImGui::Text("LB: %s", InputManager::getJoystick(0).isPressed(HS_GAMEPAD_BUTTON_LEFT_BUMPER) ? "Pressed" : "Released");
+		ImGui::SliderInt("Input Device", &currentInputDevice, 0, INPUT_DEVICE_COUNT - 1, inputDeviceName); // Use ImGuiSliderFlags_NoInput flag to disable CTRL+Click here.
+		InputManager::setInputDevivce((InputDevice)currentInputDevice);
+	}
+	else
+		InputManager::setInputDevivce(InputDevice::KBM);
+
+	if (InputManager::getInputDevice() == InputDevice::CONTROLLER)
+	{
+		ImGui::Text("A: %s", InputManager::getJoystick(0).isDown(HS_GAMEPAD_BUTTON_A) ? "Pressed" : "Released");
+		ImGui::Text("B: %s", InputManager::getJoystick(0).isDown(HS_GAMEPAD_BUTTON_B) ? "Pressed" : "Released");
+		ImGui::Text("Y: %s", InputManager::getJoystick(0).isDown(HS_GAMEPAD_BUTTON_Y) ? "Pressed" : "Released");
+		ImGui::Text("X: %s", InputManager::getJoystick(0).isDown(HS_GAMEPAD_BUTTON_X) ? "Pressed" : "Released");
+		ImGui::Text("RB: %s", InputManager::getJoystick(0).isDown(HS_GAMEPAD_BUTTON_RIGHT_BUMPER) ? "Pressed" : "Released");
+		ImGui::Text("LB: %s", InputManager::getJoystick(0).isDown(HS_GAMEPAD_BUTTON_LEFT_BUMPER) ? "Pressed" : "Released");
 		ImGui::Text("RT: %f", InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_RIGHT_TRIGGER));
 		ImGui::Text("LT: %f", InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_LEFT_TRIGGER));
 		ImGui::Text("LS - Horizontal: %f", InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_LEFT_X));
 		ImGui::Text("LS - Vertical: %f", InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_LEFT_Y));
 		ImGui::Text("RS - Horizontal: %f", InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_RIGHT_X));
 		ImGui::Text("RS - Vertical: %f", InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_RIGHT_Y));
+		ImGui::Text("RS: %s", InputManager::getJoystick(0).isDown(HS_GAMEPAD_BUTTON_RIGHT_THUMB) ? "Pressed" : "Released");
+		ImGui::Text("LS: % s", InputManager::getJoystick(0).isDown(HS_GAMEPAD_BUTTON_LEFT_THUMB) ? "Pressed" : "Released");
 	}
 
 	ImGui::End();
@@ -922,6 +936,13 @@ void ShowGameDebug(FPSTest* game, int* w, int* h)
 			sp->countdown = 31;
 			sp->score = 0;
 		}
+
+		ImGui::InputFloat3("Rifle Position", &sp->riflePosition.x);
+		sp->rifleEntity->SetPosition(sp->riflePosition);
+		ImGui::InputFloat("Rifle X Rot:", &sp->rifleXRot);
+		sp->rifleEntity->SetRotation(sp->rifleXRot, glm::vec3(1.0f, 0.0f, 0.0f));
+		ImGui::InputFloat("Rifle Y Rot:", &sp->rifleYRot);
+		sp->rifleEntity->SetRotation(sp->rifleYRot, glm::vec3(0.0f, 1.0f, 0.0f));
 	}
 	ImGui::End();
 }

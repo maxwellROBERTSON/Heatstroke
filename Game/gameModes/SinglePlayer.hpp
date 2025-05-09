@@ -3,6 +3,7 @@
 #include <random>
 
 #include "GameMode.hpp"
+#include <glm/glm.hpp>
 
 extern std::random_device rd;  // Declare extern random device
 extern std::mt19937 gen;       // Declare extern mersenne_twister engine
@@ -31,21 +32,34 @@ public:
 
 	void SetTargetEntity(Engine::Entity* e) override { targetEntity = e; }
 
+	//void swapCurrentGun();
+
 	FPSTest* game;
 
 	int score = 0;
 	int countdown = 30;
 	bool gameOver = false;
-	float fireDelay = 1.5f;
+	float fireDelay = 1.0f;
 	bool canFire = true;
 	float counter = 1.0f;
 	int ammoCount = 6;
-
+	bool isReloading{ false };
+	float reloadDelay = 0.5f;
+	bool canReload{ true };
 
 	Engine::Entity* playerEntity = nullptr;
 	Engine::Entity* pistolEntity = nullptr;
 	Engine::Entity* rifleEntity = nullptr;
 	Engine::Entity* targetEntity = nullptr;
 
+	// debug stuff
+	glm::vec3 riflePosition{};
+	float rifleXRot{};
+	float rifleYRot{};
+
 	bool isPlayerCam = false;
+
+	void swapWeapon();
+	void reloadPistol();
+	void shootPistol();
 };
