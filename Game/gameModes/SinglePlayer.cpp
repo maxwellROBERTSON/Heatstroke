@@ -162,7 +162,6 @@ void SinglePlayer::reloadPistol()
 
 void SinglePlayer::shootPistol()
 {
-	std::cout << "FIRE" << std::endl;
 	Engine::RenderComponent* pistolRenderComponent = reinterpret_cast<Engine::RenderComponent*>(this->game->GetEntityManager().GetComponentOfEntity(pistolEntity->GetEntityId(), RENDER));
 	Engine::AudioComponent* playerAudioComponent = reinterpret_cast<Engine::AudioComponent*>(this->game->GetEntityManager().GetComponentOfEntity(playerEntity->GetEntityId(), AUDIO));
 	int pistolModelIndex = pistolRenderComponent->GetModelIndex();
@@ -170,9 +169,6 @@ void SinglePlayer::shootPistol()
 
 	if (ammoCount <= 0)
 	{
-		//models[pistolModelIndex].animationQueue.push(models[pistolModelIndex].animations[4]);
-		//models[pistolModelIndex].blending = true;
-		//ammoCount = 7;
 		reloadPistol();
 	}
 	else
