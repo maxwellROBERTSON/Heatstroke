@@ -2,7 +2,7 @@
 
 #include "PxPhysicsAPI.h"
 #include <iostream>
-#if defined(_WIN32)
+#if defined(OS_WINDOWS)
 #include <conio.h>
 #else
 #include <termios.h>
@@ -39,7 +39,7 @@ namespace Engine
 		float verticalVelocity = 0.0f;
 
 		// PVD
-#if defined(_WIN32)
+#if defined(OS_WINDOWS)
 		PxPvd* gPvd = nullptr;
 		PxPvdTransport* gTransport = nullptr;
 #endif
