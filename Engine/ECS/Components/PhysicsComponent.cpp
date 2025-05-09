@@ -24,6 +24,20 @@ namespace Engine
 		std::memcpy(data + offset, &entityId, sizeof(entityId));
 	}
 
+	// Get this components physx actor
+	PxActor* PhysicsComponent::GetComponentActor()
+	{
+		switch (type)
+		{
+		case PhysicsComponent::PhysicsType::STATIC:
+			return GetStaticBody();
+		case PhysicsComponent::PhysicsType::DYNAMIC:
+			return GetDynamicBody();
+		case PhysicsComponent::PhysicsType::CONTROLLER:
+			return GetController()->getActor();
+		}
+	}
+
 	// Setters
 
 	// Set component data
@@ -81,6 +95,21 @@ namespace Engine
 	{
 		entityId = index;
 
+		type = physicsType;
+
+		if (!isClient)
+		{
+			simulation = PhysicsSimulation::NOTUPDATED;
+		}
+		else if (isClient && !isLocalPlayer)
+		{
+			simulation = PhysicsSimulation::LOCALLYUPDATED;
+		}
+		else if (isClient && isLocalPlayer)
+		{
+			simulation = PhysicsSimulation::LOCALLYSIMULATED;
+		}
+
 		// parse mat4
 		if (!DecomposeTransform(transform, translation, rotation, scale))
 		{
@@ -128,7 +157,6 @@ namespace Engine
 
 		PxMaterial* material = pworld.gPhysics->createMaterial(0.5f, 0.5f, 0.5f);
 		material->setRestitution(0.0f);
-		type = physicsType;
 
 		switch (type)
 		{
@@ -207,14 +235,16 @@ namespace Engine
 			desc.scaleCoeff = 1.0f;
 			desc.contactOffset = 0.001f * radius;
 			desc.material = pworld.gPhysics->createMaterial(0.5f, 0.5f, 0.6f);
+			std::cout << "Translation: " << translation.x << " " << translation.y << " " << translation.z << std::endl;
 			desc.position = PxExtendedVec3(translation.x, translation.y + (height / 2 + radius), translation.z);
+			std::cout << "Position: " << desc.position.x << " " << desc.position.y << " " << desc.position.z << std::endl;
 			desc.slopeLimit = 0.3f;
 			desc.upDirection = PxVec3(0, 1, 0);
 
 			PxCapsuleController* pcontroller = static_cast<PxCapsuleController*>(pworld.gControllerManager->createController(desc));
 			controller = pcontroller;
 
-			if (!(isClient && !isLocalPlayer))
+			if (isLocalPlayer)
 			{
 				pworld.controller = pcontroller;
 				pworld.setControllerEntity(entity);

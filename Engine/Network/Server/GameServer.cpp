@@ -248,9 +248,7 @@ namespace Engine
 				RenderComponent* renderComp = reinterpret_cast<RenderComponent*>(game->GetEntityManager().GetComponentOfEntity(entity, RENDER));
 				renderComp->SetIsActive(false);
 				Entity* entityPtr = game->GetEntityManager().GetEntity(entity);
-				entityPtr->SetPosition(-5.0f, 0.0f, -1.0f);
-				entityPtr->SetRotation(90.0f, glm::vec3(0.0f, 0.0f, 1.0f));
-				entityPtr->SetScale(30.0f);
+				entityPtr->ResetToSpawnState();
 				game->GetEntityManager().AddToNetworkComponentQueue(entityPtr->GetComponent(NETWORK));
 			}
 		}

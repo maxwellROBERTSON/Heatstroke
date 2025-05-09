@@ -23,14 +23,16 @@ public:
 
 	glm::vec3 GetStartPos(int team) override;
 
+	bool IsMultiPlayer() override { return true; }
+
 	FPSTest* game;
 
 	// Max 4 teams
 	std::vector<glm::vec3> startPositions = {
 		{0.0f, 0.5f, 0.0f},
-		{1.0f, 0.5f, 0.0f},
-		{2.0f, 0.5f, 0.0f},
-		{3.0f, 0.5f, 0.0f}
+		{0.0f, 0.5f, 0.0f},
+		{0.0f, 0.5f, 0.0f},
+		{0.0f, 0.5f, 0.0f}
 	};
 
 	int score = 0;

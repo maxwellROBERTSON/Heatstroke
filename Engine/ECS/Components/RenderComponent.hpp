@@ -42,6 +42,9 @@ namespace Engine
 		// Get is the entity an active render component
 		bool GetIsActive() { return isActive; }
 
+		// Get entity pointer
+		Entity* GetEntityPointer() { return entity; }
+
 		// Setters
 
 		// Set component data

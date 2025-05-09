@@ -31,4 +31,6 @@ public:
 	virtual void SetTargetEntity(Engine::Entity*) {};
 
 	virtual glm::vec3 GetStartPos(int) = 0;
+
+	virtual bool IsMultiPlayer() = 0;
 };

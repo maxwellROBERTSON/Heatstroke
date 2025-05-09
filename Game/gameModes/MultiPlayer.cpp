@@ -54,7 +54,7 @@ void MultiPlayer::InitNetwork()
 	PhysicsComponent* physicsComp;
 	RenderComponent* renderComp;
 
-	manager->ClearChangedActors();
+	manager->ClearUpdatedPhysicsComps();
 
 	for (int i = 0; i < vec.size(); i++)
 	{
@@ -71,26 +71,7 @@ void MultiPlayer::InitNetwork()
 		{
 			if (vec[i] == thisClientEntity)
 			{
-				Entity* entity = manager->GetEntity(vec[i]);
-
-				mat = manager->GetEntity(vec[i])->GetModelMatrix();
 				physicsComp->Init(game->GetPhysicsWorld(), type, model, mat, vec[i], true, true);
-				manager->AddSimulatedPhysicsEntity(vec[i]);
-				/*glm::vec3 translation;
-				glm::quat rotation;
-				glm::vec3 scale;
-				Entity* entity;
-				if (physicsComp->DecomposeTransform(mat, translation, rotation, scale))
-				{
-					entity = manager->GetEntity(vec[i]);
-					entity->SetPosition(translation);
-					entity->SetRotation(rotation);
-					entity->SetScale(scale.x, scale.y, scale.z);
-				}
-				else
-				{
-					throw ("Failed to decompose matrix for client's entity");
-				}*/
 			}
 			else
 			{
@@ -99,18 +80,7 @@ void MultiPlayer::InitNetwork()
 		}
 		if (renderComp->GetIsActive())
 		{
-			switch (type)
-			{
-			case PhysicsComponent::PhysicsType::STATIC:
-				manager->AddChangedActor(physicsComp->GetStaticBody(), true);
-				break;
-			case PhysicsComponent::PhysicsType::DYNAMIC:
-				manager->AddChangedActor(physicsComp->GetDynamicBody(), true);
-				break;
-			case PhysicsComponent::PhysicsType::CONTROLLER:
-				manager->AddChangedActor(physicsComp->GetController()->getActor(), true);
-				break;
-			}
+			manager->AddUpdatedPhysicsComp(physicsComp, true);
 		}
 	}
 
@@ -133,6 +103,15 @@ void MultiPlayer::Update(float timeDelta)
 	{
 		countdown--;
 		counter = 1.0f;
+	}
+
+	std::vector<int> ents = entityManager.GetEntitiesWithComponent(PHYSICS);
+	std::vector<bool> isActives;
+	for (int i = 0; i < ents.size(); i++)
+	{
+		Engine::Entity* entity = entityManager.GetEntity(ents[i]);
+		Engine::RenderComponent* renderComponent = reinterpret_cast<Engine::RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
+		std::cout << renderComponent->GetIsActive() << std::endl;//isActives.emplace_back(renderComponent->GetIsActive());
 	}
 
 	/*if (countdown <= 0)
@@ -221,8 +200,7 @@ void MultiPlayer::Update(float timeDelta)
 				{
 					score++;
 
-					Engine::NetworkComponent* networkComponent = reinterpret_cast<Engine::NetworkComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), NETWORK));
-					entity->SetPosition(GetStartPos(networkComponent->GetTeam()));
+					entity->ResetToSpawnState();
 					glm::vec3 translation;
 					glm::vec3 scale;
 					glm::quat rotation;

@@ -76,7 +76,7 @@ namespace Engine
 			return 0;
 
 		int numEntities = GetNumberOfEntities();
-		size_t totalSize = 2 + entities[0].get()->GetEntitySize() * numEntities + TYPE_COUNT + TYPE_COUNT * numEntities;
+		size_t totalSize = 2 + entities[0].get()->GetInitialEntitySize() * numEntities + TYPE_COUNT + TYPE_COUNT * numEntities;
 		ComponentTypes type;
 		for (int i = 0; i < TYPE_COUNT; i++)
 		{
@@ -194,10 +194,10 @@ namespace Engine
 		block[offset++] = static_cast<uint8_t>(numEntities);
 
 		// | entity_data | * # entites
-		size_t sizeOfEntity = entities[0].get()->GetEntitySize();
+		size_t sizeOfEntity = entities[0].get()->GetInitialEntitySize();
 		for (size_t i = 0; i < numEntities; i++)
 		{
-			entities[i].get()->GetDataArray(block + offset);
+			entities[i].get()->GetInitialDataArray(block + offset);
 			offset += sizeOfEntity;
 		}
 
@@ -330,17 +330,6 @@ namespace Engine
 		}
 	}
 
-	// Get physics components of entities to be simulated locally
-	std::vector<ComponentBase*> EntityManager::GetSimulatedPhysicsComponents()
-	{
-		std::vector<ComponentBase*> returnVec;
-		for (int i = 0; i < simulatedPhysicsEntities.size(); i++)
-		{
-			returnVec.emplace_back(GetComponentOfEntity(simulatedPhysicsEntities[i], PHYSICS));
-		}
-		return returnVec;
-	}
-
 	// Setters
 
 	// Format is
@@ -366,8 +355,8 @@ namespace Engine
 		{
 			entities.push_back(std::make_unique<Entity>(this));
 			Entity* entity = entities.back().get();
-			entity->SetDataArray(block + offset);
-			offset += entities[0].get()->GetEntitySize();
+			entity->SetInitialDataArray(block + offset);
+			offset += entities[0].get()->GetInitialEntitySize();
 		}
 
 		// | # components of type | * # types
@@ -651,8 +640,8 @@ namespace Engine
 	// Set next network component unassigned to a client
 	void EntityManager::AssignNextClient(uint64_t clientId)
 	{
-		NetworkComponent* netcomp = reinterpret_cast<NetworkComponent*>((*componentMap[NETWORK])[availableNetworkComponentQueue.back()].get());
-		availableNetworkComponentQueue.pop_back();
+		NetworkComponent* netcomp = reinterpret_cast<NetworkComponent*>((*componentMap[NETWORK])[availableNetworkComponentQueue.front()].get());
+		availableNetworkComponentQueue.pop_front();
 		netcomp->SetClientId(clientId);
 		Entity* e = netcomp->GetEntityPointer();
 		RenderComponent* rencomp = reinterpret_cast<RenderComponent*>(GetComponentOfEntity(e->GetEntityId(), RENDER));
@@ -783,20 +772,6 @@ namespace Engine
 		return entity;
 	}
 
-	// Add physics entity to be simulated locally
-	void EntityManager::AddSimulatedPhysicsEntity(int entityId)
-	{
-		simulatedPhysicsEntities.emplace_back(entityId);
-	}
-
-	// Remove physics entity to be simulated locally
-	void EntityManager::RemoveSimulatedPhysicsEntity(int entityId)
-	{
-		auto it = std::find(simulatedPhysicsEntities.begin(), simulatedPhysicsEntities.end(), entityId);
-		if (it != simulatedPhysicsEntities.end())
-			simulatedPhysicsEntities.erase(it);
-	}
-
 	// Clears the manager on disconnect
 	void EntityManager::ClearManager()
 	{
@@ -813,7 +788,8 @@ namespace Engine
 		}
 
 		availableNetworkComponentQueue.clear();
-		simulatedPhysicsEntities.clear();
+		updatedPhysicsComponents.clear();
+
 		numTeams = 1;
 	}
 

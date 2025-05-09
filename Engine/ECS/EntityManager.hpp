@@ -6,10 +6,13 @@
 #include <PxActor.h>
 
 #include "Entity.hpp"
+#include "Components/PhysicsComponent.hpp"
 
 namespace Engine
 {
 	using namespace physx;
+
+	class PhysicsComponent;
 
 	class EntityManager
 	{
@@ -63,11 +66,8 @@ namespace Engine
 		// Get all changed entity and component data
 		void GetAllChangedData(uint8_t*);
 
-		// Get physics components of entities to be simulated locally
-		std::vector<ComponentBase*> GetSimulatedPhysicsComponents();
-
-		// Get changed actors
-		std::vector<std::pair<PxActor*, bool>>* GetChangedActors() { return &changedActors; }
+		// Get physics components of entites with an updated renderComponent.isActive()
+		std::vector<std::pair<PhysicsComponent*, bool>>* GetUpdatedPhysicsComps() { return &updatedPhysicsComponents; }
 
 		// Setters
 
@@ -100,23 +100,17 @@ namespace Engine
 		// Add an entity with given types
 		Entity* MakeNewEntity(std::vector<ComponentTypes>);
 
-		// Add physics entity to be simulated locally
-		void AddSimulatedPhysicsEntity(int entityId);
-
-		// Remove physics entity to be simulated locally
-		void RemoveSimulatedPhysicsEntity(int entityId);
-
 		// Add a network component to the queue
 		void AddToNetworkComponentQueue(int index) { availableNetworkComponentQueue.push_back(index); }
 
 		// Clears the manager on disconnect
 		void ClearManager();
 
-		// Add a changed actor to change the simulation flag
-		void AddChangedActor(PxActor* a, bool b) { changedActors.emplace_back(std::make_pair(a, b)); }
+		// Add a physics component of entity with an updated renderComponent.isActive()
+		void AddUpdatedPhysicsComp(PhysicsComponent* c, bool b) { updatedPhysicsComponents.emplace_back(std::make_pair(c, b)); }
 
-		// Clear changed actors
-		void ClearChangedActors() { changedActors.clear(); }
+		// Clear all updated physics components
+		void ClearUpdatedPhysicsComps() { updatedPhysicsComponents.clear(); }
 
 	private:
 		// Data to be used when updating client server information
@@ -158,13 +152,10 @@ namespace Engine
 		std::vector<std::vector<int>> entitiesWithType = std::vector<std::vector<int>>(TYPE_COUNT);
 
 		// Queue to store the entities with network components unassigned to clients
-		std::vector<int> availableNetworkComponentQueue;
+		std::deque<int> availableNetworkComponentQueue;
 
-		// Vector of entities with physics components that need to be updated locally per frame
-		std::vector<int> simulatedPhysicsEntities;
-
-		// Changed actors pointers
-		std::vector<std::pair<PxActor*, bool>> changedActors;
+		// PhysicsComponents of entites with a recently updated renderComponent.isActive()
+		std::vector<std::pair<PhysicsComponent*, bool>> updatedPhysicsComponents;
 
 		// For each entity:
 		// Component vector of int = registry.GetNumComponents * sizeof(int)

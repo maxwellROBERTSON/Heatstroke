@@ -148,12 +148,30 @@ namespace Engine
 
 	void PhysicsWorld::updateActors()
 	{
-		for(auto& actorPair : *entityManager->GetChangedActors())
+		for(auto& actorPair : *entityManager->GetUpdatedPhysicsComps())
 		{
-			if (actorPair.first != nullptr)
-				actorPair.first->setActorFlag(PxActorFlag::eDISABLE_SIMULATION, actorPair.second);
+			if (actorPair.first == nullptr)
+				continue;
+
+			PhysicsComponent* comp = actorPair.first;
+			
+			if(comp->GetPhysicsType() == PhysicsComponent::PhysicsType::CONTROLLER)
+			{
+				if (actorPair.second)
+				{
+					gScene->addActor(*comp->GetComponentActor());
+				}
+				else
+				{
+					gScene->removeActor(*comp->GetComponentActor());
+				}
+			}
+			else
+			{
+				actorPair.first->GetComponentActor()->setActorFlag(PxActorFlag::eDISABLE_SIMULATION, !actorPair.second);
+			}
 		}
-		entityManager->ClearChangedActors();
+		entityManager->ClearUpdatedPhysicsComps();
 	}
 
 	void PhysicsWorld::updateCharacter(PxReal deltatime)
@@ -270,13 +288,13 @@ namespace Engine
 	// update models matrices
 	void PhysicsWorld::updateObjects(std::vector<Engine::vk::Model>& models)
 	{
-		// get all PhysicsComponents which are simulated locally
-		std::vector<ComponentBase*> physicsComponents = entityManager->GetSimulatedPhysicsComponents();
-		for (std::size_t i = 0; i < physicsComponents.size(); i++) {
-			PhysicsComponent* p = reinterpret_cast<PhysicsComponent*>(physicsComponents[i]);
+		// get all PhysicsComponents
+		std::vector<std::unique_ptr<ComponentBase>>* physicsComponents = entityManager->GetComponentsOfType(PHYSICS);
+		for (std::size_t i = 0; i < physicsComponents->size(); i++) {
+			PhysicsComponent* p = reinterpret_cast<PhysicsComponent*>((*physicsComponents)[i].get());
 
 			// dynamic update
-			if (p->GetPhysicsType() == PhysicsComponent::PhysicsType::DYNAMIC)
+			if (p->GetPhysicsType() == PhysicsComponent::PhysicsType::DYNAMIC && p->GetSimulation() == PhysicsComponent::PhysicsSimulation::LOCALLYSIMULATED)
 			{
 				Entity* entity = entityManager->GetEntity(p->GetEntityId());
 				PxTransform transform = p->GetDynamicBody()->getGlobalPose();
@@ -284,16 +302,37 @@ namespace Engine
 				entity->SetRotation(glm::quat(transform.q.w, transform.q.x, transform.q.y, transform.q.z));
 				entity->SetScale(p->GetScale().x, p->GetScale().y, p->GetScale().z);
 
-				continue; //?
+				continue;
+			}
+			else if (p->GetPhysicsType() == PhysicsComponent::PhysicsType::DYNAMIC && p->GetSimulation() == PhysicsComponent::PhysicsSimulation::LOCALLYUPDATED)
+			{
+				Entity* entity = entityManager->GetEntity(p->GetEntityId());
+
+				glm::vec3 position = entity->GetPosition();
+				glm::quat rotation = entity->GetRotation();
+
+				PxTransform transform(
+					PxVec3(position.x, position.y, position.z),
+					PxQuat(rotation.x, rotation.y, rotation.z, rotation.w)
+				);
+
+				p->GetDynamicBody()->setGlobalPose(transform);
+
+				continue;
 			}
 
 			// controller update
-			if (p->GetPhysicsType() == PhysicsComponent::PhysicsType::CONTROLLER && p->GetController() == this->controller)
+			if (p->GetPhysicsType() == PhysicsComponent::PhysicsType::CONTROLLER && p->GetSimulation() == PhysicsComponent::PhysicsSimulation::LOCALLYSIMULATED)
 			{
 				PxExtendedVec3 pos = p->GetController()->getFootPosition();
 				entityManager->GetEntity(p->GetEntityId())->SetPosition(pos.x, pos.y, pos.z);
 				CameraComponent* cameraComponent = reinterpret_cast<CameraComponent*>(entityManager->GetComponentOfEntity(controllerEntity->GetEntityId(), CAMERA));
 				cameraComponent->UpdateCameraPosition(pos.x, pos.y + controllerHeight, pos.z);
+			}
+			else if (p->GetPhysicsType() == PhysicsComponent::PhysicsType::CONTROLLER && p->GetSimulation() == PhysicsComponent::PhysicsSimulation::LOCALLYUPDATED)
+			{
+				glm::vec3 pos = entityManager->GetEntity(p->GetEntityId())->GetPosition();
+				p->GetController()->setFootPosition(PxExtendedVec3(pos.x, pos.y, pos.z));
 			}
 		}
 	}
