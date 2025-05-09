@@ -157,9 +157,9 @@ void main() {
 
     vec3 ambient = vec3(0.03f) * texture(baseColourMap, v2fTexCoord0).rgb;
     vec3 brdfVal = brdf(lightDir, viewDir, normal, metallicFactor, roughnessFactor) * 100;
-    float NdotL = max(dot(normal, lightDir), 0.0f);
+    float NdotL = max(dot(normal, lightDir), 0.001f);
     float attenuation = 1 / pow(length(lightPos - v2fPosition), 1);
-    float shadow = max(texture(shadowMap, v2fLightSpacePosition.xyz / v2fLightSpacePosition.w), 0.1f);
+    float shadow = max(texture(shadowMap, v2fLightSpacePosition.xyz / v2fLightSpacePosition.w), 0.2f);
 
     // If we are rendering an overlay ignore shadows
     if (sceneUbo.view == mat4(1.0f)) {

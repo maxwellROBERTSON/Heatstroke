@@ -107,7 +107,7 @@ void Renderer::initialise() {
 	this->pipelineLayouts.emplace("decal", std::make_unique<DecalPipelineLayout>(window, &this->descriptorLayouts));
 
 	// Pipelines
-	this->pipelines.emplace("shadow", std::make_unique<ShadowPipeline>(window, &this->pipelineLayouts["shadow"], this->renderPasses["shadow"].get(), &this->sampleCountSetting, &this->shadowResolution));
+	this->pipelines.emplace("shadow", std::make_unique<ShadowPipeline>(window, &this->pipelineLayouts["shadow"], this->renderPasses["shadow"].get(), &this->sampleCountSetting, &this->currentShadowResolution));
 	this->pipelines.emplace("skybox", std::make_unique<SkyboxPipeline>(window, &this->pipelineLayouts["skybox"], this->renderPasses["forward"].get(), &this->sampleCountSetting));
 	this->pipelines.emplace("forward", std::make_unique<ForwardPipeline>(window, &this->pipelineLayouts["forward"], this->renderPasses["forward"].get(), &this->sampleCountSetting, &this->shadowsEnabled));
 	this->pipelines.emplace("crosshair", std::make_unique<CrosshairPipeline>(window, &this->pipelineLayouts["gui"], this->renderPasses["gui"].get(), &this->sampleCountSetting));
@@ -115,12 +115,12 @@ void Renderer::initialise() {
 
 	// Texture Buffers
 	this->textureBuffers.emplace("depth", std::make_unique<DepthTextureBuffer>(this->context, &this->sampleCountSetting));
-	this->textureBuffers.emplace("shadowDepth", std::make_unique<ShadowDepthTextureBuffer>(this->context, &this->sampleCountSetting, &this->shadowResolution));
+	this->textureBuffers.emplace("shadowDepth", std::make_unique<ShadowDepthTextureBuffer>(this->context, &this->sampleCountSetting, &this->currentShadowResolution));
 	this->textureBuffers.emplace("multisampleColour", std::make_unique<MultisampledColourTextureBuffer>(this->context, &this->sampleCountSetting));
 	this->textureBuffers.emplace("multisampleDepth", std::make_unique<MultisampledDepthTextureBuffer>(this->context, &this->sampleCountSetting));
 
 	// Framebuffers
-	this->framebuffers.emplace("shadow", std::make_unique<ShadowFramebuffer>(window, &this->textureBuffers, this->renderPasses["shadow"].get(), &this->shadowResolution));
+	this->framebuffers.emplace("shadow", std::make_unique<ShadowFramebuffer>(window, &this->textureBuffers, this->renderPasses["shadow"].get(), &this->currentShadowResolution));
 	this->framebuffers.emplace("forward", std::make_unique<ForwardFramebuffer>(window, &this->textureBuffers, this->renderPasses["forward"].get(), &this->sampleCountSetting));
 	this->framebuffers.emplace("gui", std::make_unique<GUIFramebuffer>(window, &this->textureBuffers, this->renderPasses["gui"].get()));
 
@@ -303,8 +303,8 @@ void Renderer::updateUniforms() {
 	this->uniforms.sceneUniform.position = glm::vec4(this->camera->position, 1.0f);
 
 	// Update shadow depth MVP
-	glm::mat4 depthProjection = glm::ortho(-20.0f, 20.0f, 20.0f, -20.0f, 0.1f, 1000.0f);
-	glm::mat4 depthView = glm::lookAt(glm::vec3(0.75f, 20.0f, -0.4f), glm::vec3(0.75f, 0.0f, -0.4f), glm::vec3(1.0f, 0.0f, 0.0f));
+	glm::mat4 depthProjection = glm::ortho(-30.0f, 30.0f, 30.0f, -30.0f, 0.1f, 1000.0f);
+	glm::mat4 depthView = glm::lookAt(glm::vec3(20.0f, 20.0f, -40.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 	//glm::mat4 depthModel = glm::mat4(1.0f); // Model matrix is just identity
 
 	this->uniforms.depthMVP.depthMVP = depthProjection * depthView;
@@ -347,6 +347,35 @@ void Renderer::renderGUI() {
 	// Get command buffer
 	VkCommandBuffer cmdBuf = this->cmdBuffers[this->frameIndex];
 	Engine::beginCommandBuffer(cmdBuf, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+
+	// Since the GUI pass expects an image already in VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+	// and if it is the first render pass then the swapchain image will be in 
+	// VK_IMAGE_LAYOUT_UNDEFINED, so we need to transition it along with a clear color image cmd.
+	// Transition to OPTIMAL
+	Utils::imageBarrier(cmdBuf,
+		this->context->window->swapImages[this->imageIndex],
+		0, 0,
+		VK_IMAGE_LAYOUT_UNDEFINED,
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+		VK_PIPELINE_STAGE_TRANSFER_BIT);
+
+	VkClearColorValue clearColor = { {0.0f, 0.0f, 0.0f, 1.0f} }; // Black with full alpha
+	VkImageSubresourceRange clearRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+
+	vkCmdClearColorImage(cmdBuf,
+		this->context->window->swapImages[this->imageIndex],
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearColor, 1, &clearRange);
+
+	// Transition to PRESENT
+	Utils::imageBarrier(cmdBuf,
+		this->context->window->swapImages[this->imageIndex],
+		0, 0,
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+		VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+		VK_PIPELINE_STAGE_TRANSFER_BIT,
+		VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
+
 	Engine::beginRenderPass(cmdBuf, this->renderPasses["gui"].get(), this->framebuffers["gui"].get(), this->imageIndex);
 
 	if (ImGui::GetDrawData() != nullptr)
@@ -575,6 +604,10 @@ void Renderer::setRecreateSwapchain(bool value) {
 	this->recreateSwapchain = value;
 }
 
+void Renderer::updateShadowMapResolution() {
+	this->currentShadowResolution = this->shadowResolutions[this->shadowResolutionIndex];
+}
+
 VkRenderPass Renderer::getRenderPassHandle(const std::string& renderPass) {
 	return this->renderPasses[renderPass]->getHandle();
 }
@@ -601,6 +634,10 @@ int Renderer::getAvgFPS() {
 
 bool& Renderer::getShadowState() {
 	return this->shadowsEnabled;
+}
+
+int& Renderer::getShadowResolutionIndex() {
+	return this->shadowResolutionIndex;
 }
 
 VkDescriptorSetLayout Renderer::getDescriptorLayout(const std::string& handle) {

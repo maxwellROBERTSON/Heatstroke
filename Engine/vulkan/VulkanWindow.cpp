@@ -17,7 +17,6 @@
 
 #include "ContextHelper.hpp"
 #include "Error.hpp"
-#include "PipelineCreation.hpp"
 #include "toString.hpp"
 #include "VulkanContext.hpp"
 #include "VulkanDevice.hpp"
@@ -582,7 +581,7 @@ namespace Engine {
 		chainInfo.imageColorSpace = format.colorSpace;
 		chainInfo.imageExtent = extent;
 		chainInfo.imageArrayLayers = 1;
-		chainInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+		chainInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 		chainInfo.preTransform = caps.currentTransform;
 		chainInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
 		chainInfo.presentMode = presentMode;

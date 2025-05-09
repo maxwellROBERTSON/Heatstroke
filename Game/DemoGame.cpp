@@ -146,6 +146,7 @@ void FPSTest::initialiseModels()
 
 	// Here we would load all relevant glTF models and put them in the models vector
 
+	//tinygltf::Model map = Engine::loadFromFile("Game/assets/Sponza/glTF/Sponza.gltf");
 	tinygltf::Model map = Engine::loadFromFile("Game/assets/maps/warehouse/scene.gltf");
 	tinygltf::Model character = Engine::loadFromFile("Game/assets/characters/csgo/scene.gltf");
 	tinygltf::Model pistol = Engine::loadFromFile("Game/assets/guns/pistol1/scene.gltf");

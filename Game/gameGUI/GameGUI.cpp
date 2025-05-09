@@ -474,6 +474,14 @@ void makeSettingsGUI(FPSTest* game, int* w, int* h)
 		game->getRenderer().setRecreateSwapchain(true);
 	}
 
+	const char* shadowResolutions[] = { "1024x1024", "2048x2048", "4096x4096", "8192x8192" };
+
+	ImGui::Text("Shadow Map Resolution:");
+	if (ImGui::Combo("Shadow Map Resolution", &game->getRenderer().getShadowResolutionIndex(), shadowResolutions, IM_ARRAYSIZE(shadowResolutions))) {
+		game->getRenderer().updateShadowMapResolution();
+		game->getRenderer().setRecreateSwapchain(true);
+	}
+
 	//// Shadow toggle display (reflects render mode but can't be toggled directly)
 	//bool shadowsEnabled = (selected == 2);
 	//ImGui::BeginDisabled(); // Shadows are implied by mode, not toggleable separately
