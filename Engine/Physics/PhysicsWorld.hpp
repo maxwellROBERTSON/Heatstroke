@@ -57,6 +57,8 @@ namespace Engine
 
 		void updatePhysics(PxReal timeDelta, bool updateCharacter);
 
+		void updateActors();
+
 		void updateCharacter(PxReal deltatime);
 
 		void handleMovement(PxReal deltatime);

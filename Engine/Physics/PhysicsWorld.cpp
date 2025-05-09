@@ -139,10 +139,21 @@ namespace Engine
 		if (this->gSimulationTimer > gTimestep) {
 			if (updateCharacter)
 				this->updateCharacter(gTimestep);
+			this->updateActors();
 			this->gScene->simulate(gTimestep);
 			this->gScene->fetchResults(true);
 			this->gSimulationTimer -= gTimestep;
 		}
+	}
+
+	void PhysicsWorld::updateActors()
+	{
+		for(auto& actorPair : *entityManager->GetChangedActors())
+		{
+			if (actorPair.first != nullptr)
+				actorPair.first->setActorFlag(PxActorFlag::eDISABLE_SIMULATION, actorPair.second);
+		}
+		entityManager->ClearChangedActors();
 	}
 
 	void PhysicsWorld::updateCharacter(PxReal deltatime)
@@ -277,10 +288,9 @@ namespace Engine
 			}
 
 			// controller update
-			if (p->GetPhysicsType() == PhysicsComponent::PhysicsType::CONTROLLER)
+			if (p->GetPhysicsType() == PhysicsComponent::PhysicsType::CONTROLLER && p->GetController() == this->controller)
 			{
 				PxExtendedVec3 pos = p->GetController()->getFootPosition();
-				//pos.y -= p->GetController()->getContactOffset();
 				entityManager->GetEntity(p->GetEntityId())->SetPosition(pos.x, pos.y, pos.z);
 				CameraComponent* cameraComponent = reinterpret_cast<CameraComponent*>(entityManager->GetComponentOfEntity(controllerEntity->GetEntityId(), CAMERA));
 				cameraComponent->UpdateCameraPosition(pos.x, pos.y + controllerHeight, pos.z);

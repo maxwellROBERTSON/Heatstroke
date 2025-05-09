@@ -3,11 +3,14 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <PxActor.h>
 
 #include "Entity.hpp"
 
 namespace Engine
 {
+	using namespace physx;
+
 	class EntityManager
 	{
 	public:
@@ -63,6 +66,9 @@ namespace Engine
 		// Get physics components of entities to be simulated locally
 		std::vector<ComponentBase*> GetSimulatedPhysicsComponents();
 
+		// Get changed actors
+		std::vector<std::pair<PxActor*, bool>>* GetChangedActors() { return &changedActors; }
+
 		// Setters
 
 		// Set component data of all entities for all component type
@@ -95,13 +101,22 @@ namespace Engine
 		Entity* MakeNewEntity(std::vector<ComponentTypes>);
 
 		// Add physics entity to be simulated locally
-		void AddSimulatedPhysicsEntity(int entityId) { simulatedPhysicsEntities.emplace_back(entityId); }
+		void AddSimulatedPhysicsEntity(int entityId);
+
+		// Remove physics entity to be simulated locally
+		void RemoveSimulatedPhysicsEntity(int entityId);
 
 		// Add a network component to the queue
 		void AddToNetworkComponentQueue(int index) { availableNetworkComponentQueue.push_back(index); }
 
 		// Clears the manager on disconnect
 		void ClearManager();
+
+		// Add a changed actor to change the simulation flag
+		void AddChangedActor(PxActor* a, bool b) { changedActors.emplace_back(std::make_pair(a, b)); }
+
+		// Clear changed actors
+		void ClearChangedActors() { changedActors.clear(); }
 
 	private:
 		// Data to be used when updating client server information
@@ -147,6 +162,9 @@ namespace Engine
 
 		// Vector of entities with physics components that need to be updated locally per frame
 		std::vector<int> simulatedPhysicsEntities;
+
+		// Changed actors pointers
+		std::vector<std::pair<PxActor*, bool>> changedActors;
 
 		// For each entity:
 		// Component vector of int = registry.GetNumComponents * sizeof(int)

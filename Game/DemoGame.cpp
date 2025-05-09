@@ -290,37 +290,6 @@ void FPSTest::loadOnlineEntities(int maxClientsNum, int numTeams)
 		childrenComponent->AddChild(entity->GetEntityId());
 	}
 
-	int team = maxClientsNum % numTeams + 1;
-	// Character Model
-	types = { CAMERA, RENDER, NETWORK, PHYSICS, AUDIO, CHILDREN };
-	entity = entityManager.MakeNewEntity(types);
-	entity->SetPosition(GetGameMode().GetStartPos(team));
-	entity->SetRotation(90.0f, glm::vec3(0.0f, 0.0f, 1.0f));
-	entity->SetScale(25.0f);
-	cameraComponent = reinterpret_cast<CameraComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), CAMERA));
-	cameraComponent->SetCamera(sceneCamera);
-	this->renderer.attachCamera(cameraComponent->GetCamera());
-	renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
-	renderComponent->SetModelIndex(1);
-	renderComponent->SetIsActive(true);
-	networkComponent = reinterpret_cast<NetworkComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), NETWORK));
-	networkComponent->SetTeam(team);
-	physicsComponent = reinterpret_cast<PhysicsComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
-	physicsComponent->Init(physicsWorld, PhysicsComponent::PhysicsType::CONTROLLER, models[renderComponent->GetModelIndex()], entity->GetModelMatrix(), entity->GetEntityId(), true, true);
-	audioComponent = reinterpret_cast<AudioComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), AUDIO));
-	audioComponent->addClip("GunShot", "Game/assets/AudioClips/singlegunshot.wav");
-	childrenComponent = reinterpret_cast<ChildrenComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), CHILDREN));
-
-	// pistol
-	types = { RENDER };
-	entity = entityManager.MakeNewEntity(types);
-	entity->SetPosition(0.0f, -2.0f, -1.0f);
-	entity->SetRotation(180.0f, glm::vec3(0.0f, 1.0f, 0.0f));
-	renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
-	renderComponent->SetModelIndex(2);
-
-	childrenComponent->AddChild(entity->GetEntityId());
-
 	GetEntityManager().ResetChanged();
 }
 

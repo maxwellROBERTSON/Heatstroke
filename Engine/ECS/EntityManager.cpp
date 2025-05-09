@@ -783,6 +783,20 @@ namespace Engine
 		return entity;
 	}
 
+	// Add physics entity to be simulated locally
+	void EntityManager::AddSimulatedPhysicsEntity(int entityId)
+	{
+		simulatedPhysicsEntities.emplace_back(entityId);
+	}
+
+	// Remove physics entity to be simulated locally
+	void EntityManager::RemoveSimulatedPhysicsEntity(int entityId)
+	{
+		auto it = std::find(simulatedPhysicsEntities.begin(), simulatedPhysicsEntities.end(), entityId);
+		if (it != simulatedPhysicsEntities.end())
+			simulatedPhysicsEntities.erase(it);
+	}
+
 	// Clears the manager on disconnect
 	void EntityManager::ClearManager()
 	{

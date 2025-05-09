@@ -335,7 +335,7 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 
 		ImGui::Text("Join a server");
 
-		static char addressStr[16] = "192.168.0.77\0";
+		static char addressStr[16] = "129.11.146.204\0";
 		ImGui::Text("Address:");
 		ImGui::InputText("Address", addressStr, IM_ARRAYSIZE(addressStr));
 
@@ -390,7 +390,7 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 		ImGui::InputText("Port", portStr, IM_ARRAYSIZE(portStr));
 		int portNum = atoi(portStr);
 
-		static char maxClientsStr[6] = "1";
+		static char maxClientsStr[6] = "2";
 		ImGui::Text("Max Clients:");
 		ImGui::InputText("Max Clients", maxClientsStr, IM_ARRAYSIZE(maxClientsStr));
 		int maxClientsNum = atoi(maxClientsStr);

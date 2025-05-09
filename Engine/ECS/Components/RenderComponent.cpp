@@ -1,4 +1,5 @@
 #include "RenderComponent.hpp"
+#include "PhysicsComponent.hpp"
 
 #include <cstring>
 
@@ -34,6 +35,25 @@ namespace Engine
 		{
 			std::memcpy(&isActive, data + offset, sizeof(isActive));
 			SetComponentHasChanged();
+
+			PhysicsComponent* physicsComponent = reinterpret_cast<Engine::PhysicsComponent*>(entityManager->GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
+			PhysicsComponent::PhysicsType type = physicsComponent->GetPhysicsType();
+			
+			switch (type)
+			{
+			case PhysicsComponent::PhysicsType::STATIC:
+				if (physicsComponent->GetStaticBody() != NULL)
+					entityManager->AddChangedActor(physicsComponent->GetStaticBody(), !isActive);
+				break;
+			case PhysicsComponent::PhysicsType::DYNAMIC:
+				if (physicsComponent->GetDynamicBody() != NULL)
+					entityManager->AddChangedActor(physicsComponent->GetDynamicBody(), !isActive);
+				break;
+			case PhysicsComponent::PhysicsType::CONTROLLER:
+				if (physicsComponent->GetController() != NULL)
+					entityManager->AddChangedActor(physicsComponent->GetController()->getActor(), !isActive);
+				break;
+			}
 		}
 		offset += sizeof(isActive);
 	}

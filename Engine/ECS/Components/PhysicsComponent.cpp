@@ -74,7 +74,6 @@ namespace Engine
 		offset += sizeof(entityId);
 	}
 
-
 	// Init
 	// isClient = true if the system using the function is a client (not the server)
 	// isLocalPlayer = true if this entity is the local client's entity
@@ -184,37 +183,39 @@ namespace Engine
 			if (height <= 0.0f)
 				height = 0.01f;
 
-			if (isClient && !isLocalPlayer)
+			// if (isClient && !isLocalPlayer)
+			// {
+			// 	PxCapsuleGeometry capsuleGeom(radius, halfExtent.y);
+
+			// 	dynamicBody = pworld.gPhysics->createRigidDynamic(pxTransform);
+
+			// 	dynamicBody->setActorFlag(PxActorFlag::eVISUALIZATION, true);
+
+			// 	PxShape* shape = PxRigidActorExt::createExclusiveShape(
+			// 		*dynamicBody, PxCapsuleGeometry(radius, halfExtent.y), *material
+			// 	);
+
+			// 	dynamicBody->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, true);
+
+			// 	pworld.gScene->addActor(*dynamicBody);
+			// }
+			
+			PxCapsuleControllerDesc desc;
+			desc.radius = radius;
+			desc.height = height;
+			desc.stepOffset = 0.1f;
+			desc.scaleCoeff = 1.0f;
+			desc.contactOffset = 0.001f * radius;
+			desc.material = pworld.gPhysics->createMaterial(0.5f, 0.5f, 0.6f);
+			desc.position = PxExtendedVec3(translation.x, translation.y + (height / 2 + radius), translation.z);
+			desc.slopeLimit = 0.3f;
+			desc.upDirection = PxVec3(0, 1, 0);
+
+			PxCapsuleController* pcontroller = static_cast<PxCapsuleController*>(pworld.gControllerManager->createController(desc));
+			controller = pcontroller;
+
+			if (!(isClient && !isLocalPlayer))
 			{
-				PxCapsuleGeometry capsuleGeom(radius, halfExtent.y);
-
-				dynamicBody = pworld.gPhysics->createRigidDynamic(pxTransform);
-
-				dynamicBody->setActorFlag(PxActorFlag::eVISUALIZATION, true);
-
-				PxShape* shape = PxRigidActorExt::createExclusiveShape(
-					*dynamicBody, PxCapsuleGeometry(radius, halfExtent.y), *material
-				);
-
-				dynamicBody->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, true);
-
-				pworld.gScene->addActor(*dynamicBody);
-			}
-			else
-			{
-				PxCapsuleControllerDesc desc;
-				desc.radius = radius;
-				desc.height = height;
-				desc.stepOffset = 0.1f;
-				desc.scaleCoeff = 1.0f;
-				desc.contactOffset = 0.001f * radius;
-				desc.material = pworld.gPhysics->createMaterial(0.5f, 0.5f, 0.6f);
-				desc.position = PxExtendedVec3(translation.x, translation.y + (height / 2 + radius), translation.z);
-				desc.slopeLimit = 0.3f;
-				desc.upDirection = PxVec3(0, 1, 0);
-
-				PxCapsuleController* pcontroller = static_cast<PxCapsuleController*>(pworld.gControllerManager->createController(desc));
-				controller = pcontroller;
 				pworld.controller = pcontroller;
 				pworld.setControllerEntity(entity);
 				pworld.setControllerHeight(height + radius);

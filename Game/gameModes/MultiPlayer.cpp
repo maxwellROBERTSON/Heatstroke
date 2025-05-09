@@ -54,6 +54,8 @@ void MultiPlayer::InitNetwork()
 	PhysicsComponent* physicsComp;
 	RenderComponent* renderComp;
 
+	manager->ClearChangedActors();
+
 	for (int i = 0; i < vec.size(); i++)
 	{
 		physicsComp = reinterpret_cast<PhysicsComponent*>(manager->GetComponentOfEntity(vec[i], PHYSICS));
@@ -93,6 +95,21 @@ void MultiPlayer::InitNetwork()
 			else
 			{
 				physicsComp->Init(game->GetPhysicsWorld(), type, model, mat, vec[i], true, false);
+			}
+		}
+		if (renderComp->GetIsActive())
+		{
+			switch (type)
+			{
+			case PhysicsComponent::PhysicsType::STATIC:
+				manager->AddChangedActor(physicsComp->GetStaticBody(), true);
+				break;
+			case PhysicsComponent::PhysicsType::DYNAMIC:
+				manager->AddChangedActor(physicsComp->GetDynamicBody(), true);
+				break;
+			case PhysicsComponent::PhysicsType::CONTROLLER:
+				manager->AddChangedActor(physicsComp->GetController()->getActor(), true);
+				break;
 			}
 		}
 	}
