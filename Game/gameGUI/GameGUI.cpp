@@ -44,7 +44,7 @@ void makeGameGUIS(FPSTest* game)
 	gui.AddFont("HomeHovered", "Engine/third_party/imgui/misc/fonts/Freedom-10eM.ttf", 70.0f);
 	gui.AddFont("Game", "Engine/third_party/imgui/misc/fonts/Roboto-Medium.ttf", 36.0f);
 
-	gui.AddTexture("Test", "Game/assets/maps/russian_house/textures/Balkon_01_baseColor.png");
+	gui.AddTexture("HomeBackground", "Game/assets/heatstroke_background.png");
 
 	gui.ToggleGUIMode("Home");
 }
@@ -68,7 +68,7 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 
 	ImGui::Begin("BackgroundImage", nullptr, window_flags);
 	ImGui::SetCursorPos(ImVec2(0.f, 0.f));
-	ImGui::Image((ImTextureID)std::get<3>(*game->GetGUI().GetImage("Test")), viewport->Size);
+	ImGui::Image((ImTextureID)std::get<3>(*game->GetGUI().GetImage("HomeBackground")), viewport->Size);
 	ImGui::End();
 
 	ImGui::SetNextWindowPos(ImVec2(0, 0));
