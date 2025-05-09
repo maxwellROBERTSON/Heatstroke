@@ -15,6 +15,7 @@ namespace Engine
 	void CameraComponent::GetDataArray(uint8_t* data)
 	{
 		size_t offset = 0;
+
 		std::memcpy(data + offset, &camera.fov, sizeof(camera.fov));
 		offset += sizeof(camera.fov);
 		std::memcpy(data + offset, &camera.nearPlane, sizeof(camera.nearPlane));

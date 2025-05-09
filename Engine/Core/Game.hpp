@@ -2,7 +2,6 @@
 
 #include <memory>
 
-#include "../Rendering/HsRenderer.hpp"
 #include "../ECS/EntityManager.hpp"
 #include "../Events/Event.hpp"
 #include "../Events/KeyEvent.hpp"
@@ -46,7 +45,6 @@ namespace Engine
 		inline Network& GetNetwork() { return *network; }
 		inline GUI& GetGUI() { return *gui; }
 		inline thread_pool_wait& GetThreadPool() { return *threadPool; }
-		virtual HsRenderer* GetRenderer() { return hsRenderer; }
 
 		// Setters
 		void SetClient(yojimbo::Address);
@@ -54,8 +52,6 @@ namespace Engine
 
 		bool OnWindowClose(WindowCloseEvent& e);
 		static int instanceCount;
-
-		Engine::HsRenderer* hsRenderer;
 
 	private:
 		VulkanContext mContext;

@@ -9,17 +9,18 @@ namespace Engine
 	{
 		uint32_t offset = 0;
 
-		std::memcpy(data + offset, &childrenEntityIds, sizeof(childrenEntityIds));
-		offset += sizeof(childrenEntityIds);
+		std::memcpy(data + offset, &numChildren, sizeof(numChildren));
+		offset += sizeof(numChildren);
+		std::memcpy(data + offset, childrenEntityIds.data(), sizeof(int) * childrenEntityIds.size());
 	}
 
 	// Get entityIds of children
 	std::vector<int> ChildrenComponent::GetChildrenEntityIds()
 	{
-		std::vector<int> children;
+		std::vector<int> children(numChildren);
 		for (int i = 0; i < numChildren; i++)
 		{
-			children.emplace_back(childrenEntityIds.at(i));
+			children[i] = childrenEntityIds[i];
 		}
 
 		return children;
@@ -30,12 +31,17 @@ namespace Engine
 	{
 		size_t offset = 0;
 
-		if (std::memcmp(&childrenEntityIds, data + offset, sizeof(childrenEntityIds)) != 0)
+		if (std::memcmp(&numChildren, data + offset, sizeof(numChildren)) != 0)
 		{
-			std::memcpy(&childrenEntityIds, data + offset, sizeof(childrenEntityIds));
+			std::memcpy(&numChildren, data + offset, sizeof(numChildren));
 			SetComponentHasChanged();
 		}
-		offset += sizeof(childrenEntityIds);
+		offset += sizeof(numChildren);
+		if (std::memcmp(childrenEntityIds.data(), data + offset, sizeof(int) * childrenEntityIds.size()) != 0)
+		{
+			std::memcpy(childrenEntityIds.data(), data + offset, sizeof(int) * childrenEntityIds.size());
+			SetComponentHasChanged();
+		}
 	}
 
 	// Set component has changed in entity manager
@@ -51,7 +57,13 @@ namespace Engine
 	// Add a child of this entity
 	void ChildrenComponent::AddChild(int entityId)
 	{
+		if (numChildren == childrenEntityIds.size())
+		{
+			std::cout << "Max children reached." << std::endl;
+			return;
+		}
 		childrenEntityIds.at(numChildren) = entityId;
 		numChildren++;
+		SetComponentHasChanged();
 	}
 }

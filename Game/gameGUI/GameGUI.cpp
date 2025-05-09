@@ -335,11 +335,11 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 
 		ImGui::Text("Join a server");
 
-		static char addressStr[16] = "129.11.146.213\0";
+		static char addressStr[16] = "192.168.0.77\0";
 		ImGui::Text("Address:");
 		ImGui::InputText("Address", addressStr, IM_ARRAYSIZE(addressStr));
 
-		static char portStr[6] = "";
+		static char portStr[6] = "3000";
 		ImGui::Text("Port:");
 		ImGui::InputText("Port", portStr, IM_ARRAYSIZE(portStr));
 		int portNum = atoi(portStr);
@@ -385,15 +385,20 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 
 		ImGui::Text("Start a server");
 
-		static char portStr[6] = "";
+		static char portStr[6] = "3000";
 		ImGui::Text("Port:");
 		ImGui::InputText("Port", portStr, IM_ARRAYSIZE(portStr));
 		int portNum = atoi(portStr);
 
-		static char maxClientsStr[6] = "";
+		static char maxClientsStr[6] = "1";
 		ImGui::Text("Max Clients:");
 		ImGui::InputText("Max Clients", maxClientsStr, IM_ARRAYSIZE(maxClientsStr));
 		int maxClientsNum = atoi(maxClientsStr);
+
+		static char numTeamsStr[6] = "2";
+		ImGui::Text("Number of Teams:");
+		ImGui::InputText("Number of Teams", numTeamsStr, IM_ARRAYSIZE(numTeamsStr));
+		int numTeamsNum = atoi(numTeamsStr);
 
 		if (ImGui::Button("Go", ImVec2(40, 40)))
 		{
@@ -405,6 +410,10 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 			{
 				errorMsg = "Error: Max Clients cannot be empty.";
 			}
+			else if (strlen(maxClientsStr) == 0)
+			{
+				errorMsg = "Error: Number of teams cannot be empty.";
+			}
 			else if (portNum < 1 || portNum > 65535)
 			{
 				errorMsg = "Error: Invalid Port number. " + std::string(portStr) + " not between 1 and 65535.";
@@ -413,10 +422,16 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 			{
 				errorMsg = "Error: Invalid Max Clients number. " + std::string(maxClientsStr) + " not between 1 and 50.";
 			}
+			else if (numTeamsNum < 1 || numTeamsNum > 4)
+			{
+				errorMsg = "Error: Invalid Number of teams number. " + std::string(numTeamsStr) + " not between 1 and 4.";
+			}
 			else
 			{
 				errorMsg = "";
-				game->loadOnlineEntities(maxClientsNum);
+
+				game->SetGameMode(std::make_unique<MultiPlayer>(game));
+				game->loadOnlineEntities(maxClientsNum, numTeamsNum);
 				game->getRenderer().initialiseJointMatrices();
 				game->GetGUI().ToggleGUIMode("Home");
 				game->GetGUI().ToggleGUIMode("Server");
@@ -594,6 +609,7 @@ void makeLoadingGUI(FPSTest* game, int* w, int* h)
 	if (s == Status::CLIENT_INITIALIZING_DATA)
 	{
 		game->SetGameMode(std::make_unique<MultiPlayer>(game));
+		game->GetGameMode().InitNetwork();
 		game->getRenderer().initialiseJointMatrices();
 		game->GetGUI().ToggleGUIMode("Loading");
 		game->GetGUI().ToggleGUIMode("MultiPlayer");
@@ -734,12 +750,32 @@ void makeMultiPlayerGUI(FPSTest* game, int*, int*)
 		ImGuiWindowFlags window_flags = 0;
 		window_flags |= ImGuiWindowFlags_NoBackground;
 		window_flags |= ImGuiWindowFlags_NoTitleBar;
+		window_flags |= ImGuiWindowFlags_AlwaysAutoResize;
 		bool test = true;
 
+		ImVec2 windowPadding = ImVec2(10, 10);
+
+		// Get current window size
+		ImVec2 displaySize = ImGui::GetIO().DisplaySize;
+
+		// Set window position to top-right (with padding)
+		ImGui::SetNextWindowPos(
+			ImVec2(displaySize.x - windowPadding.x, windowPadding.y),
+			ImGuiCond_Always,
+			ImVec2(1.0f, 0.0f) // Pivot (1, 0) means align from top-right corner
+		);
+
 		ImGui::PushFont(game->GetGUI().GetFont("Game"));
-		ImGui::Begin("Multi Player:", &test, window_flags);
+		ImGui::Begin("Game:", &test, window_flags);
+
+		ImGui::Text("SCORE: %u", mp->score);
 
 		ImGui::End();
+
+		ImGui::Begin("Gun Stuff:", &test, window_flags);
+		ImGui::Text("Ammo: %u", mp->ammoCount);
+		ImGui::End();
+
 		ImGui::PopFont();
 	}
 }

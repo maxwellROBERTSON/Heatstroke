@@ -63,6 +63,7 @@ namespace Engine
 	// Getters
 
 	// Format is
+	// | # teams |
 	// | # entities |
 	// | entity_data | * # entites
 	// | # components of type | * # types
@@ -75,7 +76,7 @@ namespace Engine
 			return 0;
 
 		int numEntities = GetNumberOfEntities();
-		size_t totalSize = 1 + entities[0].get()->GetEntitySize() * numEntities + TYPE_COUNT + TYPE_COUNT * numEntities;
+		size_t totalSize = 2 + entities[0].get()->GetEntitySize() * numEntities + TYPE_COUNT + TYPE_COUNT * numEntities;
 		ComponentTypes type;
 		for (int i = 0; i < TYPE_COUNT; i++)
 		{
@@ -173,6 +174,7 @@ namespace Engine
 	}
 
 	// Format is
+	// | # teams |
 	// | # entities |
 	// | entity_data | * # entites
 	// | # components of type | * # types
@@ -184,6 +186,9 @@ namespace Engine
 		size_t offset = 0;
 		ComponentTypes type;
 		size_t numEntities = entities.size();
+
+		// | # teams |
+		block[offset++] = numTeams;
 
 		// | # entities |
 		block[offset++] = static_cast<uint8_t>(numEntities);
@@ -339,6 +344,7 @@ namespace Engine
 	// Setters
 
 	// Format is
+	// | # teams |
 	// | # entities |
 	// | entity_data | * # entites
 	// | # components of type | * # types
@@ -348,11 +354,12 @@ namespace Engine
 	void EntityManager::SetAllData(uint8_t* block)
 	{
 		size_t offset = 0;
-		uint8_t* f;
+
+		// | # teams |
+		uint8_t numTeams = block[offset++];
 
 		// | # entities |
 		int numEntities = static_cast<int>(block[offset++]);
-		f = block + offset;
 
 		// | entity_data | * # entites
 		for (int i = 0; i < numEntities; i++)
@@ -361,7 +368,6 @@ namespace Engine
 			Entity* entity = entities.back().get();
 			entity->SetDataArray(block + offset);
 			offset += entities[0].get()->GetEntitySize();
-			f = block + offset;
 		}
 
 		// | # components of type | * # types
@@ -377,8 +383,6 @@ namespace Engine
 			componentOffsets[i] = offset + TYPE_COUNT * numEntities + componentsSizeCount;
 			componentsSizeCount += componentCounts[i] * ComponentSizes[static_cast<ComponentTypes>(i)];
 		}
-
-		f = block + offset;
 
 		std::vector<int> componentIndexArray = std::vector<int>(TYPE_COUNT);
 		std::vector<ComponentTypes> types;
@@ -414,37 +418,31 @@ namespace Engine
 				case AUDIO:
 					std::cout << "Setting the " << componentIndexArray[types[j]] << " of component of type " << types[j] << " at ";
 					std::cout << reinterpret_cast<uintptr_t>(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[AUDIO]) << std::endl;
-					f = block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[AUDIO];
 					reinterpret_cast<AudioComponent*>(base)->SetDataArray(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[AUDIO]);
 					break;
 				case CAMERA:
 					std::cout << "Setting the " << componentIndexArray[types[j]] << " of component of type " << types[j] << " at ";
 					std::cout << reinterpret_cast<uintptr_t>(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[CAMERA]) << std::endl;
-					f = block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[CAMERA];
 					reinterpret_cast<CameraComponent*>(base)->SetDataArray(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[CAMERA]);
 					break;
 				case CHILDREN:
 					std::cout << "Setting the " << componentIndexArray[types[j]] << " of component of type " << types[j] << " at ";
 					std::cout << reinterpret_cast<uintptr_t>(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[CHILDREN]) << std::endl;
-					f = block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[CHILDREN];
 					reinterpret_cast<ChildrenComponent*>(base)->SetDataArray(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[CHILDREN]);
 					break;
 				case NETWORK:
 					std::cout << "Setting the " << componentIndexArray[types[j]] << " of component of type " << types[j] << " at ";
 					std::cout << reinterpret_cast<uintptr_t>(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[NETWORK]) << std::endl;
-					f = block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[NETWORK];
 					reinterpret_cast<NetworkComponent*>(base)->SetDataArray(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[NETWORK]);
 					break;
 				case PHYSICS:
 					std::cout << "Setting the " << componentIndexArray[types[j]] << " of component of type " << types[j] << " at ";
 					std::cout << reinterpret_cast<uintptr_t>(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[PHYSICS]) << std::endl;
-					f = block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[PHYSICS];
 					reinterpret_cast<PhysicsComponent*>(base)->SetDataArray(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[PHYSICS]);
 					break;
 				case RENDER:
 					std::cout << "Setting the " << componentIndexArray[types[j]] << " of component of type " << types[j] << " at ";
 					std::cout << reinterpret_cast<uintptr_t>(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[RENDER]) << std::endl;
-					f = block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[RENDER];
 					reinterpret_cast<RenderComponent*>(base)->SetDataArray(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[RENDER]);
 					break;
 				default:
@@ -469,12 +467,10 @@ namespace Engine
 	void EntityManager::SetAllChangedData(uint8_t* block, int clientEntityId)
 	{
 		size_t offset = 0;
-		uint8_t* f;
 
 		// | # changed entities |
 		int numChangedEntities = static_cast<int>(block[offset++]);
 		std::cout << "numChangedEntities: " << numChangedEntities << std::endl;
-		f = block + offset;
 
 		// | entity ID's | * # changed entities
 		std::vector<int> entityIdEntityComponentIndex = std::vector<int>(numChangedEntities);
@@ -663,6 +659,23 @@ namespace Engine
 		rencomp->SetIsActive(true);
 	}
 
+	// Set the number of teams (max = 4)
+	void EntityManager::SetNumTeams(int t)
+	{
+		if (t >= 4)
+		{
+			numTeams = 4;
+		}
+		else if (t <= 0)
+		{
+			numTeams = 1;
+		}
+		else
+		{
+			numTeams = t;
+		}
+	}
+
 	// Add an existing entity to the manager
 	// ComponentIndexArray overwritten so only use if components not yet initialised
 	void EntityManager::AddEntity(Entity* entity, std::vector<ComponentTypes> components)
@@ -787,6 +800,7 @@ namespace Engine
 
 		availableNetworkComponentQueue.clear();
 		simulatedPhysicsEntities.clear();
+		numTeams = 1;
 	}
 
 	// Private used in AddEntity - doesn't add to entity's

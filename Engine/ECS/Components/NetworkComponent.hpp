@@ -25,13 +25,16 @@ namespace Engine
 		ComponentTypes StaticType() const override { return ComponentTypes::NETWORK; }
 
 		// Size getter from Component parent
-		size_t StaticSize() const override { return sizeof(clientId); }
+		size_t StaticSize() const override { return sizeof(clientId) + sizeof(team); }
 
 		// Get component data
 		void GetDataArray(uint8_t*) override;
 
 		// Get client id
 		uint64_t GetClientId() { return clientId; };
+
+		// Get team
+		uint8_t GetTeam() { return team; };
 
 		// Get entity pointer
 		Entity* GetEntityPointer() { return entity; }
@@ -43,6 +46,9 @@ namespace Engine
 
 		// Set client id
 		void SetClientId(uint64_t aClientId) { clientId = aClientId; SetComponentHasChanged(); }
+
+		// Set team
+		void SetTeam(uint8_t t) { team = t; SetComponentHasChanged(); }
 
 		// Set component has changed in entity manager
 		void SetComponentHasChanged();
@@ -60,5 +66,6 @@ namespace Engine
 		bool hasChanged = false;
 
 		uint64_t clientId = -1;
+		uint8_t team = -1;
 	};
 }

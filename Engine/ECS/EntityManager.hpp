@@ -54,6 +54,9 @@ namespace Engine
 		// Get component data of all entities for all component type
 		void GetAllData(uint8_t*);
 
+		// Get number of teams
+		int GetNumTeams() { return static_cast<int>(numTeams); }
+
 		// Get all changed entity and component data
 		void GetAllChangedData(uint8_t*);
 
@@ -81,6 +84,9 @@ namespace Engine
 		// Set next network component unassigned to a client
 		void AssignNextClient(uint64_t);
 
+		// Set the number of teams (max = 4)
+		void SetNumTeams(int t);
+
 		// Add an existing entity to the manager
 		// ComponentIndexArray overwritten so only use if components not yet initialised
 		void AddEntity(Entity*, std::vector<ComponentTypes>);
@@ -103,6 +109,9 @@ namespace Engine
 		// first = entity id,
 		// second = vector(size TYPE_COUNT + 1) to hold bits for if entity or component data has changed
 		std::vector<std::pair<int, std::vector<int>>> changedEntitiesAndComponents = std::vector<std::pair<int, std::vector<int>>>(0);
+
+		// Number of teams for multiplayer mode
+		uint8_t numTeams = 1;
 
 		// Private used in AddEntity - doesn't add to entity's
 		// vector so mustn't be used except when making a new entity

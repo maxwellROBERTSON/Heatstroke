@@ -40,6 +40,9 @@ namespace Engine
 		// Handle a response from a request for entity data
 		void HandleResponseEntityData(ResponseEntityData*);
 
+		// Send client initialsed message to server
+		void SendClientInitialised();
+
 		// Handle a server update message 
 		void HandleServerUpdateEntityData(ServerUpdateEntityData*);
 
@@ -52,12 +55,26 @@ namespace Engine
 		// Get debugging info for the client
 		std::map<std::string, std::string> GetInfo();
 
+		// Get clientId from yojimbo
+		uint64_t GetClientId() { return clientId; }
+
+		// Get clientEntityId
+		int GetClientEntityId() { return clientEntityId; }
+
+		// Set clientEntityId
+		void SetClientEntityId(int id) { clientEntityId = id; }
+
+		// Toggle sendInitMessage for next update loop
+		void ReadyToSendInitMessage() { sendInitMessage = true; }
+
 	private:
 		double clientTime;
 
 		uint64_t clientId = 0;
 
 		int clientEntityId = -1;
+
+		bool sendInitMessage = false;
 
 		yojimbo::Address serverAddress;
 

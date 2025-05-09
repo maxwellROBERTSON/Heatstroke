@@ -85,7 +85,9 @@ namespace Engine
 		gControllerManager = PxCreateControllerManager(*gScene);
 
 		// set parameters for the scene
+#if defined(_DEBUG)
 		gScene->setVisualizationParameter(PxVisualizationParameter::eSCALE, 1.0f);
+#endif
 		//gScene->setVisualizationParameter(PxVisualizationParameter::eCOLLISION_SHAPES, 1.0f);
 		/*gScene->setVisualizationParameter(PxVisualizationParameter::eWORLD_AXES, 1.0f);
 		gScene->setVisualizationParameter(PxVisualizationParameter::eACTOR_AXES, 1.0f);

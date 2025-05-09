@@ -10,20 +10,39 @@ public:
 	// Constructor
 	MultiPlayer(FPSTest* game);
 
-	void Update(float);
+	void InitNetwork() override;
 
-	void SetPlayerEntities(std::vector<Engine::Entity*> e) override { playerEntities = e; };
-	void SetPistolEntities(std::vector<Engine::Entity*> e) override { pistolEntities = e; };
+	void Update(float) override;
+
+	Engine::Entity* GetPlayerEntity() override { return playerEntity; }
+
+	void SetPlayerEntity(Engine::Entity*) override;
+	void SetPistolEntity(Engine::Entity* e) override { pistolEntity = e; }
+	void SetRifleEntity(Engine::Entity* e) override { rifleEntity = e; }
+	void SetTargetEntity(Engine::Entity* e) override { targetEntity = e; }
+
+	glm::vec3 GetStartPos(int team) override;
 
 	FPSTest* game;
 
+	// Max 4 teams
+	std::vector<glm::vec3> startPositions = {
+		{0.0f, 0.5f, 0.0f},
+		{1.0f, 0.5f, 0.0f},
+		{2.0f, 0.5f, 0.0f},
+		{3.0f, 0.5f, 0.0f}
+	};
+
 	int score = 0;
-	int countdown = 30;
-	bool gameOver = false;
-	float fireDelay = 1.0f;
+	int countdown = 60;
+	float fireDelay = 1.5f;
 	bool canFire = true;
 	float counter = 1.0f;
+	int ammoCount = 6;
 
-	std::vector<Engine::Entity*> playerEntities = std::vector<Engine::Entity*>(0);
-	std::vector<Engine::Entity*> pistolEntities = std::vector<Engine::Entity*>(0);
+	Engine::Entity* playerEntity = nullptr;
+	Engine::Entity* pistolEntity = nullptr;
+	Engine::Entity* rifleEntity = nullptr;
+	Engine::Entity* targetEntity = nullptr;
+
 };

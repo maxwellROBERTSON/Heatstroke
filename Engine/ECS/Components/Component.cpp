@@ -7,7 +7,7 @@ namespace Engine
 		{ComponentTypes::AUDIO, 4},
 		{ComponentTypes::CAMERA, 36},
 		{ComponentTypes::CHILDREN, 40},
-		{ComponentTypes::NETWORK, 8},
+		{ComponentTypes::NETWORK, 9},
 		{ComponentTypes::PHYSICS, 49},
 		{ComponentTypes::RENDER, 8}
 	};

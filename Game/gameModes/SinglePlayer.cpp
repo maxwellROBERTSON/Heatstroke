@@ -52,11 +52,11 @@ void SinglePlayer::Update(float timeDelta)
 	if (isPlayerCam)
 	{
 		physicsWorld.updatePhysics(timeDelta, true);
-		renderer.getCameraPointer()->updateCamera(this->game->GetContext().getGLFWWindow(), timeDelta, false);
+		camera->updateCamera(this->game->GetContext().getGLFWWindow(), timeDelta, false);
 	}
 	else
 	{
-		renderer.getCameraPointer()->updateCamera(this->game->GetContext().getGLFWWindow(), timeDelta, true);
+		camera->updateCamera(this->game->GetContext().getGLFWWindow(), timeDelta, true);
 	}
 
 	if (playerEntity == nullptr || pistolEntity == nullptr || targetEntity == nullptr)
@@ -109,23 +109,20 @@ void SinglePlayer::Update(float timeDelta)
 				{
 					score++;
 
-					Engine::RenderComponent* hitRenderComponent = reinterpret_cast<Engine::RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
-					hitRenderComponent->SetIsActive(0);
 					glm::vec3 pos = entity->GetPosition();
 					int xPos = randomDistribX(gen);
 					int zPos = randomDistribZ(gen);
 					glm::vec3 newPos{ xPos, pos.y, zPos };
-					targetEntity->SetPosition(newPos);
+					entity->SetPosition(newPos);
 					glm::vec3 translation;
 					glm::vec3 scale;
 					glm::quat rotation;
-					physicsComponent->DecomposeTransform(targetEntity->GetModelMatrix(), translation, rotation, scale);
+					physicsComponent->DecomposeTransform(entity->GetModelMatrix(), translation, rotation, scale);
 					PxTransform pxTransform(
 						PxVec3(translation.x, translation.y, translation.z),
 						PxQuat(rotation.x, rotation.y, rotation.z, rotation.w)
 					);
 					physicsComponent->GetStaticBody()->setGlobalPose(pxTransform);
-					hitRenderComponent->SetIsActive(1);
 
 					hitTarget = true;
 				}

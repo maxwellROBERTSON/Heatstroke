@@ -17,8 +17,6 @@
 #include "../Engine/vulkan/VulkanContext.hpp"
 #include "../Engine/vulkan/VulkanDevice.hpp"
 
-#include "../Engine/Rendering/HsRenderer.hpp"
-
 #include "../Engine/Core/Camera.hpp"
 #include "Uniforms.hpp"
 
@@ -41,7 +39,6 @@ class FPSTest : public Engine::Game
 public:
 	FPSTest() : Engine::Game("FPS Test Game") {
 		this->Init();
-		hsRenderer = &renderer;
 	}
 
 	~FPSTest() {
@@ -57,14 +54,13 @@ public:
 	void initialiseModels();
 
 	void loadOfflineEntities();
-	void loadOnlineEntities(int);
+	void loadOnlineEntities(int, int);
 
 	// Setters
 	void SetGameMode(std::unique_ptr<GameMode>);
 	void SetRenderMode(RenderMode r) { renderMode = r; }
 	
 	// Getters
-	Renderer* GetRenderer() override;
 	Renderer& getRenderer();
 	RenderMode getRenderMode();
 	GameMode& GetGameMode();
