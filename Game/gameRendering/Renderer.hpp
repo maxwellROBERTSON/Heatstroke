@@ -69,6 +69,7 @@ public:
 	// Setters
 	void setRecreateSwapchain(bool value);
 	void addSkybox(std::unique_ptr<Engine::Skybox> skybox);
+	void updateShadowMapResolution();
 
 	// Getters
 	VkRenderPass getRenderPassHandle(const std::string& renderPass);
@@ -78,6 +79,7 @@ public:
 	float getAvgFrameTime();
 	int getAvgFPS();
 	bool& getShadowState();
+	int& getShadowResolutionIndex();
 
 	VkDescriptorSetLayout getDescriptorLayout(const std::string& handle);
 
@@ -131,7 +133,15 @@ private:
 	// Renderer settings
 	VkSampleCountFlagBits sampleCountSetting = VK_SAMPLE_COUNT_1_BIT;
 	bool shadowsEnabled = false;
-	VkExtent2D shadowResolution = VkExtent2D{ 2048, 2048 };
+
+	std::vector<VkExtent2D> shadowResolutions = {
+		VkExtent2D{1024, 1024},
+		VkExtent2D{2048, 2048},
+		VkExtent2D{4096, 4096},
+		VkExtent2D{8192, 8192}
+	};
+	VkExtent2D currentShadowResolution = VkExtent2D{ 2048, 2048 };
+	int shadowResolutionIndex = 1;
 	int msaaIndex = 0;
 
 	void renderGUI();
