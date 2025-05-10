@@ -87,7 +87,7 @@ void SinglePlayer::Update(float timeDelta)
 	case InputDevice::KBM:
 	{
 		//if (InputManager::Action(Controls::SwapWeapon))
-		if (InputManager::getKeyboard().isPressed(HS_KEY_C))
+		if (InputManager::getKeyboard().isPressed(HS_KEY_X))
 			swapWeapon();
 
 		//if (InputManager::Action(Controls::Reload))
@@ -138,10 +138,22 @@ void SinglePlayer::SetPlayerEntity(Engine::Entity* e)
 
 void SinglePlayer::swapWeapon()
 {
-	RenderComponent* pistolRenderComponent = reinterpret_cast<RenderComponent*>(this->game->GetEntityManager().GetComponentOfEntity(pistolEntity->GetEntityId(), RENDER));
-	pistolRenderComponent->SetIsActive(false);
-	RenderComponent* rifleRenderComponent = reinterpret_cast<RenderComponent*>(this->game->GetEntityManager().GetComponentOfEntity(rifleEntity->GetEntityId(), RENDER));
-	rifleRenderComponent->SetIsActive(true);
+	if (holdingPistol)
+	{
+		RenderComponent* pistolRenderComponent = reinterpret_cast<RenderComponent*>(this->game->GetEntityManager().GetComponentOfEntity(pistolEntity->GetEntityId(), RENDER));
+		pistolRenderComponent->SetIsActive(false);
+		RenderComponent* rifleRenderComponent = reinterpret_cast<RenderComponent*>(this->game->GetEntityManager().GetComponentOfEntity(rifleEntity->GetEntityId(), RENDER));
+		rifleRenderComponent->SetIsActive(true);
+		holdingPistol = false;
+	}
+	else
+	{
+		RenderComponent* pistolRenderComponent = reinterpret_cast<RenderComponent*>(this->game->GetEntityManager().GetComponentOfEntity(pistolEntity->GetEntityId(), RENDER));
+		pistolRenderComponent->SetIsActive(true);
+		RenderComponent* rifleRenderComponent = reinterpret_cast<RenderComponent*>(this->game->GetEntityManager().GetComponentOfEntity(rifleEntity->GetEntityId(), RENDER));
+		rifleRenderComponent->SetIsActive(false);
+		holdingPistol = true;
+	}
 }
 
 void SinglePlayer::reloadPistol()

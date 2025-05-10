@@ -151,7 +151,8 @@ void FPSTest::initialiseModels()
 	tinygltf::Model map = Engine::loadFromFile("Game/assets/maps/warehouse/scene.gltf");
 	tinygltf::Model character = Engine::loadFromFile("Game/assets/characters/csgo/scene.gltf");
 	tinygltf::Model pistol = Engine::loadFromFile("Game/assets/guns/pistol1/scene.gltf");
-	tinygltf::Model rifle = Engine::loadFromFile("Game/assets/guns/rifle/scene.gltf");
+	tinygltf::Model rifle = Engine::loadFromFile("Game/assets/guns/smg/scene.gltf");
+	//tinygltf::Model rifle = Engine::loadFromFile("Game/assets/guns/rifle/scene.gltf");
 	tinygltf::Model target = Engine::loadFromFile("Game/assets/target/scene.gltf");
 	GetModels().emplace_back(Engine::makeVulkanModel(this->GetContext(), map, DrawType::WORLD));
 	GetModels().emplace_back(Engine::makeVulkanModel(this->GetContext(), character, DrawType::WORLD));
@@ -193,7 +194,7 @@ void FPSTest::loadOfflineEntities()
 	entity->SetScale(25.0f);
 	cameraComponent = reinterpret_cast<CameraComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), CAMERA));
 	cameraComponent->SetCamera(sceneCamera);
-  this->renderer.attachCamera(cameraComponent->GetCamera());
+	this->renderer.attachCamera(cameraComponent->GetCamera());
 	renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
 	renderComponent->SetModelIndex(1);
 	renderComponent->SetIsActive(false);
@@ -204,7 +205,7 @@ void FPSTest::loadOfflineEntities()
 	audioComponent->addClip("GunShot", "Game/assets/AudioClips/singlegunshot.wav");
 	GetGameMode().SetPlayerEntity(entity);
 
-	//// pistol
+	// secondary
 	types = { RENDER };
 	entity = entityManager.MakeNewEntity(types);
 	entity->SetPosition(0.0f, -2.0f, -1.0f);
@@ -213,21 +214,12 @@ void FPSTest::loadOfflineEntities()
 	renderComponent->SetModelIndex(2);
 	GetGameMode().SetPistolEntity(entity);
 
-	//// rifle
-	//types = { RENDER };
-	//entity = entityManager.MakeNewEntity(types);
-	//entity->SetPosition(0.3f, -0.4f, -0.5f);
-	//entity->SetRotation(180.0f, glm::vec3(0.0f, 1.0f, 0.0f));
-	//renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
-	//renderComponent->SetModelIndex(3);
-	//renderComponent->SetIsActive(false);
-	//GetGameMode().SetRifleEntity(entity);
-
-	// secondary
+	// primary
 	types = { RENDER };
 	entity = entityManager.MakeNewEntity(types);
-	entity->SetPosition(0.3f, -0.4f, -0.5f);
-	entity->SetRotation(180.0f, glm::vec3(0.0f, 1.0f, 0.0f));
+	entity->SetPosition(0.1f, -0.35f, 0.1f);
+	entity->SetRotation(180.f, glm::vec3(0.0f, 1.0f, 0.0f));
+	entity->SetScale(0.75f);
 	renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
 	renderComponent->SetModelIndex(3);
 	renderComponent->SetIsActive(false);

@@ -590,7 +590,7 @@ namespace Engine {
 			}
 
 			// If animation name contains 'idle' set it to loop
-			if (animation.name == "Pistol_IDLE") {
+			if (animation.name == "IDLE") {
 				animation.loop = true;
 				animation.animating = true;
 				vkModel.idleAnimation = animation;

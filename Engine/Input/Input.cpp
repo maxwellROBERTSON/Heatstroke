@@ -72,7 +72,7 @@ namespace Engine
 		DefaultControls.mapKeyboardButton(Controls::MoveLeft, { HS_KEY_A, -1.0f });
 		DefaultControls.mapKeyboardButton(Controls::MoveRight, { HS_KEY_D, 1.0f });
 		DefaultControls.mapKeyboardButton(Controls::Jump, { HS_KEY_SPACE, 1.0f });
-		DefaultControls.mapKeyboardButton(Controls::SwapWeapon, { HS_KEY_C, 1.0f });
+		DefaultControls.mapKeyboardButton(Controls::SwapWeapon, { HS_KEY_X, 1.0f });
 		DefaultControls.mapKeyboardButton(Controls::Sprint, { HS_KEY_LEFT_SHIFT, 1.0f });
 		DefaultControls.mapMouseButton(Controls::Shoot, { HS_MOUSE_BUTTON_LEFT });
 

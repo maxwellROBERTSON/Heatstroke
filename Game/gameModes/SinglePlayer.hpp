@@ -46,6 +46,7 @@ public:
 	bool isReloading{ false };
 	float reloadDelay = 0.5f;
 	bool canReload{ true };
+	bool holdingPistol{ true };
 
 	Engine::Entity* playerEntity = nullptr;
 	Engine::Entity* pistolEntity = nullptr;
@@ -53,9 +54,10 @@ public:
 	Engine::Entity* targetEntity = nullptr;
 
 	// debug stuff
-	glm::vec3 riflePosition{};
-	float rifleXRot{};
-	float rifleYRot{};
+	glm::vec3 riflePosition{ 0.1f, -0.35f, 0.1f };
+	float rifleXRot{ 0.f };
+	float rifleYRot{ 180.f };
+	float rifleScale{ 0.75f };
 
 	bool isPlayerCam = false;
 
