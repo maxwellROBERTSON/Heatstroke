@@ -21,6 +21,8 @@ namespace Engine {
 		OVERLAY
 	};
 
+	class Entity;
+
 namespace vk {
 
     struct SamplerInfo {
@@ -171,7 +173,7 @@ namespace vk {
 		glm::vec3 bbMax;
 
 		void createDescriptorSets(const VulkanContext& aContext, VkDescriptorSetLayout aSamplerSetLayout, VkDescriptorSetLayout aMaterialInfoSetLayout);
-        void drawModel(VkCommandBuffer aCmdBuf, VkPipelineLayout aPipelineLayout, bool justGeometry = false);
+        void drawModel(VkCommandBuffer aCmdBuf, VkPipelineLayout aPipelineLayout, Entity* aEntity, bool justGeometry = false);
 		void drawNode(Node* node, VkCommandBuffer aCmdBuf, VkPipelineLayout aPipelineLayout, AlphaMode aAlphaMode);
 		void drawNodeGeometry(Node* node, VkCommandBuffer aCmdBuf, VkPipelineLayout aPipelineLayout, AlphaMode aAlphaMode);
 

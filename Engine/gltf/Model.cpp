@@ -7,6 +7,7 @@
 #include "../vulkan/VulkanContext.hpp"
 #include "../vulkan/VulkanDevice.hpp"
 #include "../Rendering/PipelineCreation.hpp"
+#include "../ECS/Entity.hpp"
 
 namespace Engine {
 namespace vk {
@@ -203,12 +204,15 @@ namespace vk {
         materialInfoSSBO = materialInfoDescriptors;
 	}
 
-	void Model::drawModel(VkCommandBuffer aCmdBuf, VkPipelineLayout aPipelineLayout, bool justGeometry) {
+	void Model::drawModel(VkCommandBuffer aCmdBuf, VkPipelineLayout aPipelineLayout, Entity* aEntity, bool justGeometry) {
         if (justGeometry) {
 
             // Draw opaque nodes first
             for (Node* node : linearNodes) {
-                vkCmdPushConstants(aCmdBuf, aPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &node->getGlobalMatrix()[0]); // Model matrix
+
+                glm::mat4 transform = aEntity->GetModelMatrix() * node->getModelMatrix();
+
+                vkCmdPushConstants(aCmdBuf, aPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &transform[0]); // Model matrix
                 drawNodeGeometry(node, aCmdBuf, aPipelineLayout, AlphaMode::ALPHA_OPAQUE);
             }
 
@@ -235,7 +239,10 @@ namespace vk {
 
         // Draw opaque nodes first
 		for (Node* node : linearNodes) {
-            vkCmdPushConstants(aCmdBuf, aPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &node->getGlobalMatrix()[0]);
+
+            glm::mat4 transform = aEntity->GetModelMatrix() * node->getModelMatrix();
+
+            vkCmdPushConstants(aCmdBuf, aPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &transform[0]);
 			drawNode(node, aCmdBuf, aPipelineLayout, AlphaMode::ALPHA_OPAQUE);
 		}
 
@@ -243,7 +250,10 @@ namespace vk {
 
         // Draw alpha masked nodes second
         for (Node* node : linearNodes) {
-            vkCmdPushConstants(aCmdBuf, aPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &node->getGlobalMatrix()[0]);
+
+            glm::mat4 transform = aEntity->GetModelMatrix() * node->getModelMatrix();
+
+            vkCmdPushConstants(aCmdBuf, aPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &transform[0]);
             drawNode(node, aCmdBuf, aPipelineLayout, AlphaMode::ALPHA_MASK);
         }
 
@@ -251,7 +261,10 @@ namespace vk {
 
         // Draw alpha blend nodes third
         for (Node* node : linearNodes) {
-            vkCmdPushConstants(aCmdBuf, aPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &node->getGlobalMatrix()[0]);
+
+            glm::mat4 transform = aEntity->GetModelMatrix() * node->getModelMatrix();
+
+            vkCmdPushConstants(aCmdBuf, aPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &transform[0]);
             drawNode(node, aCmdBuf, aPipelineLayout, AlphaMode::ALPHA_BLEND);
         }
 	}

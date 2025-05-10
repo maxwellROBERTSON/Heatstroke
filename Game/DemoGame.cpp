@@ -225,6 +225,23 @@ void FPSTest::loadOfflineEntities()
 	entityManager.AddSimulatedPhysicsEntity(entity->GetEntityId());
 	GetGameMode().SetTargetEntity(entity);
 
+	// player model
+	//types = { RENDER };
+	//entity = entityManager.MakeNewEntity(types);
+	//entity->SetPosition(glm::vec3(0.0f, 0.0f, 0.0f));
+	//entity->SetRotation(90.0f, glm::vec3(0.0f, 0.0f, 1.0f));
+	//entity->SetScale(30.0f);
+	//renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
+	//renderComponent->SetModelIndex(1);
+
+	//types = { RENDER };
+	//entity = entityManager.MakeNewEntity(types);
+	//entity->SetPosition(glm::vec3(0.0f, 0.0f, -5.0f));
+	//entity->SetRotation(90.0f, glm::vec3(0.0f, 0.0f, 1.0f));
+	//entity->SetScale(30.0f);
+	//renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
+	//renderComponent->SetModelIndex(1);
+
 	// int numberOfTargets = 5;
 	GetEntityManager().ResetChanged();
 }

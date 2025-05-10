@@ -54,7 +54,6 @@ public:
 
 	void updateAnimations(float timeDelta);
 	void updateUniforms();
-	void updateModelMatrices();
 	void render();
 
 	void submitRender();
