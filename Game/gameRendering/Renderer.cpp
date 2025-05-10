@@ -310,29 +310,6 @@ void Renderer::updateUniforms() {
 	this->uniforms.depthMVP.depthMVP = depthProjection * depthView;
 
 	this->uniforms.orthoMatrices.projection = glm::ortho(0.0f, width, height, 0.0f);
-
-	if (this->isSceneLoaded)
-		this->updateModelMatrices();
-}
-
-void Renderer::updateModelMatrices() {
-	std::vector<Engine::vk::Model>& models = this->game->GetModels();
-
-	std::vector<int> renderEntities = this->entityManager->GetEntitiesWithComponent(Engine::RENDER);
-	for (std::size_t i = 0; i < renderEntities.size(); i++) {
-		Engine::RenderComponent* renderComponent = reinterpret_cast<Engine::RenderComponent*>(this->entityManager->GetComponentOfEntity(renderEntities[i], Engine::RENDER));
-
-		if (!renderComponent->GetIsActive())
-			continue;
-
-		int modelIndex = renderComponent->GetModelIndex();
-		Engine::vk::Model& model = models[modelIndex];
-
-		for (std::size_t j = 0; j < model.linearNodes.size(); j++) {
-			// Get the entities model matrix (post transform) and times it by the models model matrix (the one from the glTF file) 
-			model.linearNodes[j]->globalMatrix = this->entityManager->GetEntity(renderEntities[i])->GetModelMatrix() * model.linearNodes[j]->getModelMatrix();
-		}
-	}
 }
 
 void Renderer::render() {
@@ -574,7 +551,7 @@ void Renderer::drawModels(VkCommandBuffer cmdBuf, VkPipelineLayout pipelineLayou
 
 		if (models[modelIndex].drawType != drawType) continue;
 
-		models[modelIndex].drawModel(cmdBuf, pipelineLayout, justGeometry);
+		models[modelIndex].drawModel(cmdBuf, pipelineLayout, renderComponent->GetEntity(), justGeometry);
 	}
 }
 
