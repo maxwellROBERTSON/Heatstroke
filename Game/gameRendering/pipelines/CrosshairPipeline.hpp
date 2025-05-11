@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Engine/Rendering/HsPipeline.hpp"
+#include "Engine/Rendering/objects/base/HsPipeline.hpp"
 
 namespace Engine {
 	class HsRenderPass;

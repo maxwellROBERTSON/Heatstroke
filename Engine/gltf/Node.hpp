@@ -30,10 +30,6 @@ namespace vk {
 		// Marked true when cached matrix should be recalculated
 		bool dirty = true;
 
-		// Matrix that represents the transform of this node's model matrix multiplied by the owning entity's transform.
-		// This ultimately is what should get sent to the shader
-		glm::mat4 globalMatrix;
-
 		// This gets the matrix transformation local to this node.
 		// You most likely will want the getModelMatrix() method
 		// which returns the transformation matrix for this node
@@ -41,8 +37,6 @@ namespace vk {
 		glm::mat4 getLocalMatrix();
 		// Returns global transformation matrix for this node.
 		glm::mat4 getModelMatrix();
-		// Returns the matrix of this node's model matrix multiplied by the owning entities transformation.
-		glm::mat4 getGlobalMatrix();
 
 		void update();
 

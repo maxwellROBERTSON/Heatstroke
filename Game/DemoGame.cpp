@@ -11,8 +11,8 @@
 
 #include "../ECS/Components/AudioComponent.hpp"
 #include "../Engine/vulkan/objects/Buffer.hpp"
-#include "../Engine/vulkan/PipelineCreation.hpp"
-#include "../Engine/vulkan/Skybox.hpp"
+#include "../Engine/Rendering/PipelineCreation.hpp"
+#include "../Engine/Rendering/features/Skybox.hpp"
 #include "../Engine/vulkan/VulkanDevice.hpp"
 #include "Error.hpp"
 #include "glm/gtx/string_cast.hpp"
@@ -64,7 +64,7 @@ void FPSTest::Init() {
 	this->renderer.addSkybox(std::make_unique<Engine::Skybox>(&GetContext(), skyboxFilenames));
 
 	this->crosshair = Crosshair(&GetContext());
-	this->decals = Decals(&GetContext(), &this->renderer, "Game/assets/decals/bullet_decal.png");
+	this->bulletDecals = Engine::Decals(&GetContext(), "Game/assets/decals/bullet_decal.png", 100);
 }
 
 void FPSTest::Render() {
@@ -144,6 +144,7 @@ void FPSTest::initialiseModels()
 
 	// Here we would load all relevant glTF models and put them in the models vector
 
+	//tinygltf::Model map = Engine::loadFromFile("Game/assets/Sponza/glTF/Sponza.gltf");
 	tinygltf::Model map = Engine::loadFromFile("Game/assets/maps/warehouse/scene.gltf");
 	tinygltf::Model character = Engine::loadFromFile("Game/assets/characters/csgo/scene.gltf");
 	tinygltf::Model pistol = Engine::loadFromFile("Game/assets/guns/pistol1/scene.gltf");
@@ -214,6 +215,23 @@ void FPSTest::loadOfflineEntities()
 	physicsComponent = reinterpret_cast<PhysicsComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
 	physicsComponent->InitComplexShape("Target", physicsWorld, PhysicsComponent::PhysicsType::STATIC, models[renderComponent->GetModelIndex()], entity->GetModelMatrix(), entity->GetEntityId());
 	GetGameMode().SetTargetEntity(entity);
+
+	// player model
+	//types = { RENDER };
+	//entity = entityManager.MakeNewEntity(types);
+	//entity->SetPosition(glm::vec3(0.0f, 0.0f, 0.0f));
+	//entity->SetRotation(90.0f, glm::vec3(0.0f, 0.0f, 1.0f));
+	//entity->SetScale(30.0f);
+	//renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
+	//renderComponent->SetModelIndex(1);
+
+	//types = { RENDER };
+	//entity = entityManager.MakeNewEntity(types);
+	//entity->SetPosition(glm::vec3(0.0f, 0.0f, -5.0f));
+	//entity->SetRotation(90.0f, glm::vec3(0.0f, 0.0f, 1.0f));
+	//entity->SetScale(30.0f);
+	//renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
+	//renderComponent->SetModelIndex(1);
 
 	// int numberOfTargets = 5;
 	GetEntityManager().ResetChanged();
@@ -302,6 +320,6 @@ Crosshair& FPSTest::GetCrosshair() {
 	return this->crosshair;
 }
 
-Decals& FPSTest::getDecals() {
-	return this->decals;
+Decals& FPSTest::getBulletDecals() {
+	return this->bulletDecals;
 }

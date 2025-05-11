@@ -25,9 +25,16 @@
 #include "../Engine/Events/MouseEvent.hpp"
 #include "../Engine/Events/WindowEvent.hpp"
 
+#include "../Engine/Rendering/features/Decals.hpp"
+
+#include "../Input/Input.hpp"
+#include "../Input/InputCodes.hpp"
+#include "../Input/Joystick.hpp"
+
+#include "../ThreadPool/thread_pool_wait.h"
+
 #include "gameRendering/Renderer.hpp"
 #include "gameRendering/Crosshair.hpp"
-#include "gameRendering/Decals.hpp"
 #include "gameRendering/RenderMode.hpp"
 
 #include "gameModes/GameMode.hpp"
@@ -65,7 +72,7 @@ public:
 	RenderMode getRenderMode();
 	GameMode& GetGameMode();
 	Crosshair& GetCrosshair();
-	Decals& getDecals();
+	Engine::Decals& getBulletDecals();
 
 	std::chrono::steady_clock::time_point previous;
 
@@ -87,7 +94,7 @@ private:
 
 	std::unique_ptr<GameMode> gameMode;
 	Crosshair crosshair;
-	Decals decals;
+	Engine::Decals bulletDecals;
 
 	int offlineClientId = 0;
 };

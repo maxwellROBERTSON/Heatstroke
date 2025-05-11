@@ -44,7 +44,7 @@ void makeGameGUIS(FPSTest* game)
 	gui.AddFont("HomeHovered", "Engine/third_party/imgui/misc/fonts/Freedom-10eM.ttf", 70.0f);
 	gui.AddFont("Game", "Engine/third_party/imgui/misc/fonts/Roboto-Medium.ttf", 36.0f);
 
-	gui.AddTexture("Test", "Game/assets/maps/russian_house/textures/Balkon_01_baseColor.png");
+	gui.AddTexture("HomeBackground", "Game/assets/heatstroke_background.png");
 
 	gui.ToggleGUIMode("Home");
 }
@@ -68,7 +68,7 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 
 	ImGui::Begin("BackgroundImage", nullptr, window_flags);
 	ImGui::SetCursorPos(ImVec2(0.f, 0.f));
-	ImGui::Image((ImTextureID)std::get<3>(*game->GetGUI().GetImage("Test")), viewport->Size);
+	ImGui::Image((ImTextureID)std::get<3>(*game->GetGUI().GetImage("HomeBackground")), viewport->Size);
 	ImGui::End();
 
 	ImGui::SetNextWindowPos(ImVec2(0, 0));
@@ -486,6 +486,14 @@ void makeSettingsGUI(FPSTest* game, int* w, int* h)
 
 	if (ImGui::Checkbox("Shadows Enabled", &game->getRenderer().getShadowState())) {
 		// When shadows are toggled, we need to recreate the swapchain
+		game->getRenderer().setRecreateSwapchain(true);
+	}
+
+	const char* shadowResolutions[] = { "1024x1024", "2048x2048", "4096x4096", "8192x8192" };
+
+	ImGui::Text("Shadow Map Resolution:");
+	if (ImGui::Combo("Shadow Map Resolution", &game->getRenderer().getShadowResolutionIndex(), shadowResolutions, IM_ARRAYSIZE(shadowResolutions))) {
+		game->getRenderer().updateShadowMapResolution();
 		game->getRenderer().setRecreateSwapchain(true);
 	}
 
@@ -913,7 +921,7 @@ void ShowRendererDebug(FPSTest* game, int* w, int* h)
 	ImGui::SliderFloat("Depth Bias Constant", &game->getRenderer().depthBiasConstant, 0.0f, 10.0f);
 	ImGui::SliderFloat("Depth Bias Slope Factor", &game->getRenderer().depthBiasSlopeFactor, 0.0f, 10.0f);
 
-	ImGui::Text("Active Decals: %d/100", game->getDecals().getNbActiveDecals());
+	ImGui::Text("Active Decals: %d/100", game->getBulletDecals().getNbActiveDecals());
 
 	ImGui::End();
 }

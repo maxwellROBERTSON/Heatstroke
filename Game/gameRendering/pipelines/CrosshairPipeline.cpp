@@ -3,8 +3,8 @@
 #include "Error.hpp"
 #include "toString.hpp"
 #include "Engine/vulkan/VulkanDevice.hpp"
-#include "Engine/vulkan/PipelineCreation.hpp"
-#include "Engine/Rendering/HsRenderPass.hpp"
+#include "Engine/Rendering/PipelineCreation.hpp"
+#include "Engine/Rendering/objects/base/HsRenderPass.hpp"
 
 CrosshairPipeline::CrosshairPipeline(
 	Engine::VulkanWindow* window,
@@ -131,7 +131,7 @@ void CrosshairPipeline::recreate() {
 	pipeInfo.pDepthStencilState = &depthInfo;
 	pipeInfo.pColorBlendState = &blendInfo;
 	pipeInfo.pDynamicState = nullptr;
-	pipeInfo.layout = this->pipelineLayout->get()->getPipelineLayoutHandle();
+	pipeInfo.layout = this->pipelineLayout->get()->getHandle();
 	pipeInfo.renderPass = this->renderPass->handle;
 	pipeInfo.subpass = 0;
 

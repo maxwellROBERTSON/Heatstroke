@@ -43,7 +43,7 @@ namespace Engine
 		bool GetIsActive() { return isActive; }
 
 		// Get entity pointer
-		Entity* GetEntityPointer() { return entity; }
+		Entity* GetEntity() { return entity; }
 
 		// Setters
 
