@@ -29,7 +29,7 @@ namespace Engine
 		}
 
 		// Pvd
-#if defined(OS_WINDOWS)
+#if defined(_DEBUG)
 		gPvd = PxCreatePvd(*gFoundation);
 		if (!gPvd)
 		{
@@ -358,7 +358,7 @@ namespace Engine
 		}
 
 		// disconnect PVD
-#if defined(OS_WINDOWS)
+#if defined(_DEBUG)
 		if (gPvd)
 		{
 			PxPvdTransport* transport = gPvd->getTransport();
@@ -367,7 +367,8 @@ namespace Engine
 				transport->disconnect();
 				transport->release();
 			}
-			gPvd->release();
+			/*if (gPvd->isConnected())
+				gPvd->release();*/
 			gPvd = nullptr;
 		}
 #endif

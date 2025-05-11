@@ -110,13 +110,20 @@ namespace Engine
 	{
 		int blockSize = message->GetBlockSize();
 		if (blockSize == 0)
-			throw std::runtime_error("Null block data size");
+			throw ("Null block data size");
 
 		if (game->GetNetwork().GetStatus() == Status::SERVER_INITIALIZED)
 		{
 			if (blockSize != 0)
 			{
-				game->GetEntityManager().SetAllChangedData(message->GetBlockData(), -1);
+				if (isListenServer)
+				{
+					game->GetEntityManager().SetAllChangedData(message->GetBlockData(), listenServerEntityId);
+				}
+				else
+				{
+					game->GetEntityManager().SetAllChangedData(message->GetBlockData(), -1);
+				}
 				std::cout << "Data updated from client " << clientIndex << std::endl;
 			}
 			else
@@ -189,7 +196,7 @@ namespace Engine
 			uint8_t* block = server->AllocateBlock(clientIndex, bytes);
 			if (block)
 			{
-				game->GetEntityManager().AssignNextClient(server->GetClientId(clientIndex));
+				game->GetEntityManager().AssignNextClient(server->GetClientId(clientIndex), isListenServer);
 				game->GetEntityManager().GetAllData(block);
 				server->AttachBlockToMessage(clientIndex, message, block, bytes);
 				if (!server->CanSendMessage(clientIndex, yojimbo::CHANNEL_TYPE_RELIABLE_ORDERED))
@@ -250,6 +257,12 @@ namespace Engine
 				Entity* entityPtr = game->GetEntityManager().GetEntity(entity);
 				entityPtr->ResetToSpawnState();
 				game->GetEntityManager().AddToNetworkComponentQueue(entityPtr->GetComponent(NETWORK));
+				if (isListenServer)
+				{
+					PhysicsComponent* physicsComponent = reinterpret_cast<Engine::PhysicsComponent*>(game->GetEntityManager().GetComponentOfEntity(entity, PHYSICS));
+					physicsComponent->SetSimulation(PhysicsComponent::PhysicsSimulation::NOTUPDATED);
+					game->GetEntityManager().AddUpdatedPhysicsComp(physicsComponent, false);
+				}
 			}
 		}
 	}

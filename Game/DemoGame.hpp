@@ -61,7 +61,7 @@ public:
 	void initialiseModels();
 
 	void loadOfflineEntities();
-	void loadOnlineEntities(int, int);
+	void loadOnlineEntities(int, int, bool);
 
 	// Setters
 	void SetGameMode(std::unique_ptr<GameMode>);

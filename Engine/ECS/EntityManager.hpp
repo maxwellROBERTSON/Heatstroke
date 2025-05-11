@@ -88,7 +88,7 @@ namespace Engine
 		void AddChangedComponent(ComponentTypes type, Entity* entity);
 
 		// Set next network component unassigned to a client
-		void AssignNextClient(uint64_t);
+		void AssignNextClient(uint64_t, bool);
 
 		// Set the number of teams (max = 4)
 		void SetNumTeams(int t);

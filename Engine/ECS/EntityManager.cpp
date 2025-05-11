@@ -638,7 +638,7 @@ namespace Engine
 	}
 
 	// Set next network component unassigned to a client
-	void EntityManager::AssignNextClient(uint64_t clientId)
+	void EntityManager::AssignNextClient(uint64_t clientId, bool isListenServer)
 	{
 		NetworkComponent* netcomp = reinterpret_cast<NetworkComponent*>((*componentMap[NETWORK])[availableNetworkComponentQueue.front()].get());
 		availableNetworkComponentQueue.pop_front();
@@ -646,6 +646,13 @@ namespace Engine
 		Entity* e = netcomp->GetEntityPointer();
 		RenderComponent* rencomp = reinterpret_cast<RenderComponent*>(GetComponentOfEntity(e->GetEntityId(), RENDER));
 		rencomp->SetIsActive(true);
+
+		if (isListenServer)
+		{
+			PhysicsComponent* physicsComponent = reinterpret_cast<Engine::PhysicsComponent*>(GetComponentOfEntity(e->GetEntityId(), PHYSICS));
+			physicsComponent->SetSimulation(PhysicsComponent::PhysicsSimulation::LOCALLYUPDATED);
+			AddUpdatedPhysicsComp(physicsComponent, true);
+		}
 	}
 
 	// Set the number of teams (max = 4)

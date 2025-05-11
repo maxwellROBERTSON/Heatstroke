@@ -2,6 +2,8 @@
 
 #include <memory>
 
+#include "Log.hpp"
+
 #include "../ECS/EntityManager.hpp"
 #include "../Events/Event.hpp"
 #include "../Events/KeyEvent.hpp"

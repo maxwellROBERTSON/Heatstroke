@@ -10,10 +10,11 @@
 using namespace Engine;
 
 // Define the global variables here
+bool showServerGui{ false };
 bool showImGuiDemoWindow{ false };
 bool debugRenderer{ false };
-bool debugInput = false;
-bool debugGame = true;
+bool debugInput{ false };
+bool debugGame{ true } ;
 bool debugAnimations{ false };
 bool debugNetwork{ false };
 bool showGameGUI{ true };
@@ -33,7 +34,7 @@ void makeGameGUIS(FPSTest* game)
 
 	gui.AddFunction("Home", [game](int* w, int* h) { makeHomeGUI(game, w, h); });
 	gui.AddFunction("Settings", [game](int* w, int* h) { makeSettingsGUI(game, w, h); });
-	gui.AddFunction("Server", [game](int* w, int* h) { makeServerGUI(game, w, h); });
+	//gui.AddFunction("Server", [game](int* w, int* h) { showServerGUI(game, w, h); });
 	gui.AddFunction("Loading", [game](int* w, int* h) { makeLoadingGUI(game, w, h); });
 	gui.AddFunction("Debug", [game](int* w, int* h) { makeDebugGUI(game, w, h); });
 	gui.AddFunction("SinglePlayer", [game](int* w, int* h) { makeSinglePlayerGUI(game, w, h); });
@@ -335,7 +336,7 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 
 		ImGui::Text("Join a server");
 
-		static char addressStr[16] = "129.11.146.212\0";
+		static char addressStr[16] = "192.168.0.77\0";
 		ImGui::Text("Address:");
 		ImGui::InputText("Address", addressStr, IM_ARRAYSIZE(addressStr));
 
@@ -400,6 +401,9 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 		ImGui::InputText("Number of Teams", numTeamsStr, IM_ARRAYSIZE(numTeamsStr));
 		int numTeamsNum = atoi(numTeamsStr);
 
+		static bool isListenServer = false;
+		ImGui::Checkbox("Listen Server", &isListenServer);
+
 		if (ImGui::Button("Go", ImVec2(40, 40)))
 		{
 			if (strlen(portStr) == 0)
@@ -429,15 +433,23 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 			else
 			{
 				errorMsg = "";
-
 				game->SetGameMode(std::make_unique<MultiPlayer>(game));
-				game->loadOnlineEntities(maxClientsNum, numTeamsNum);
+				game->SetRenderMode(RenderMode::FORWARD);
+				game->loadOnlineEntities(maxClientsNum, numTeamsNum, isListenServer);
 				game->getRenderer().initialiseJointMatrices();
 				game->GetGUI().ToggleGUIMode("Home");
-				game->GetGUI().ToggleGUIMode("Server");
+				game->GetGUI().ToggleGUIMode("MultiPlayer");
+				GLFWwindow* window = game->GetContext().getGLFWWindow();
+				glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 				game->SetServer(portNum, maxClientsNum);
+				if (isListenServer)
+				{
+					GameServer* server = reinterpret_cast<GameServer*>(game->GetNetwork().GetNetworkTypePointer());
+					server->SetListenServer(game->GetGameMode().GetPlayerEntity()->GetEntityId());
+				}
 			}
 		}
+
 		ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), errorMsg.c_str());
 
 		ImGui::PopFont();
@@ -544,48 +556,21 @@ void makeSettingsGUI(FPSTest* game, int* w, int* h)
 	}
 	ImGui::PopItemWidth();
 
+	bool isServer = false;
+	if (GameServer* server = dynamic_cast<GameServer*>(game->GetNetwork().GetNetworkTypePointer()))
+	{
+		isServer = true;
+		// Server info and disconnect/stop servr button
+		ImGui::Checkbox("Show server information", &showServerGui);
+
+		if (showServerGui)
+			ShowServerInfo(game, w, h);
+	}
+
 	ImVec2 topRightPos = ImVec2(*w - *w / 6 - 10, 30);
 	ImGui::SetCursorPos(topRightPos);
-	if (ImGui::Button("Disconnect", ImVec2(*w / 6, *h / 6)))
-	{
-		if (renderer.getIsSceneLoaded())
-		{
-			game->GetGUI().ResetGUIModes();
-			game->GetGUI().ToggleGUIMode("Home");
-			game->GetPhysicsWorld().reset(&game->GetEntityManager());
-			game->SetRenderMode(RenderMode::NO_DATA_MODE);
-			game->SetGameMode(nullptr);
-			game->GetEntityManager().ClearManager();
-			game->GetNetwork().Reset();
-		}
-	}
 
-	ImGui::End();
-
-	ImGui::PopStyleColor(3);
-	ImGui::PopFont();
-}
-
-void makeServerGUI(FPSTest* game, int* w, int* h)
-{
-	ImGui::PushFont(game->GetGUI().GetFont("Default"));
-
-	ImGui::SetNextWindowPos(ImVec2(0, 0));
-	ImGui::SetNextWindowSize(ImVec2(*w, *h));
-
-	ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.5f, 0.1f, 0.1f, 1.0f));
-	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.8f, 0.2f, 0.2f, 1.0f));
-	ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(1.0f, 0.1f, 0.1f, 1.0f));
-
-	ImGui::Begin("Server Menu", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
-
-	std::map<std::string, std::string> networkInfo = game->GetNetwork().GetNetworkInfo();
-	for (const auto& [key, value] : networkInfo)
-	{
-		ImGui::Text("%s: %s", key.c_str(), value.c_str());
-	}
-
-	if (ImGui::Button("Stop server", ImVec2(*w / 6, *h / 6)))
+	if (ImGui::Button(isServer ? "Stop Server" : "Leave", ImVec2(*w / 6, *h / 6)))
 	{
 		game->GetGUI().ResetGUIModes();
 		game->GetGUI().ToggleGUIMode("Home");
@@ -816,6 +801,17 @@ void toggleSettings(FPSTest* game)
 			glfwSetCursorPos(aWindow, x, y);
 		}
 
+	}
+}
+
+void ShowServerInfo(FPSTest* game, int* w, int* h)
+{
+	ImGui::Text("Server information:");
+
+	std::map<std::string, std::string> networkInfo = game->GetNetwork().GetNetworkInfo();
+	for (const auto& [key, value] : networkInfo)
+	{
+		ImGui::Text("%s: %s", key.c_str(), value.c_str());
 	}
 }
 

@@ -35,6 +35,8 @@ namespace Engine
 			return GetDynamicBody();
 		case PhysicsComponent::PhysicsType::CONTROLLER:
 			return GetController()->getActor();
+		default:
+			return nullptr;
 		}
 	}
 
@@ -117,17 +119,20 @@ namespace Engine
 			return;
 		}
 
+		glm::mat4 transformNoTranslation = transform;
+		transformNoTranslation[3] = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+
 		PxTransform pxTransform(
 			PxVec3(translation.x, translation.y, translation.z),
 			PxQuat(rotation.x, rotation.y, rotation.z, rotation.w)
 		);
 
-		glm::vec3 worldSpaceMin = glm::vec3(0, 0, 0);
-		glm::vec3 worldSpaceMax = glm::vec3(0, 0, 0);
+		glm::vec3 worldSpaceMin = glm::vec3(FLT_MAX);
+		glm::vec3 worldSpaceMax = glm::vec3(-FLT_MAX);
 
 		for (Engine::vk::Node* node : model.linearNodes) {
 			if (node->mesh) {
-				glm::mat4 nodeMatrix = transform * node->getModelMatrix();
+				glm::mat4 nodeMatrix = transformNoTranslation * node->getModelMatrix();
 
 				glm::vec3 localMin = node->bbMin;
 				glm::vec3 localMax = node->bbMax;
@@ -154,6 +159,10 @@ namespace Engine
 
 		glm::vec3 glmHalfExtent = (worldSpaceMax - worldSpaceMin) / 2.0f;
 		PxVec3 halfExtent(std::max(0.001f, glmHalfExtent.x), std::max(0.001f, glmHalfExtent.y), std::max(0.001f, glmHalfExtent.z));
+		// std::cout << "Max: " << worldSpaceMax.x << " " << worldSpaceMax.y << " " << worldSpaceMax.z << std::endl;
+		// std::cout << "Min: " << worldSpaceMin.x << " " << worldSpaceMin.y << " " << worldSpaceMin.z << std::endl;
+		// std::cout << "glmHalf: " << glmHalfExtent.x << " " << glmHalfExtent.y << " " << glmHalfExtent.z << std::endl;
+		// std::cout << "halfExtent: " << halfExtent.x << " " << halfExtent.y << " " << halfExtent.z << std::endl;
 
 		PxMaterial* material = pworld.gPhysics->createMaterial(0.5f, 0.5f, 0.5f);
 		material->setRestitution(0.0f);
@@ -207,26 +216,9 @@ namespace Engine
 				break;
 
 			float radius = halfExtent.x > halfExtent.z ? halfExtent.x : halfExtent.z;
-			float height = halfExtent.y * 2 - (2.0f * radius);
+			float height = halfExtent.y * 2.0f - (2.0f * radius);
 			if (height <= 0.0f)
 				height = 0.01f;
-
-			// if (isClient && !isLocalPlayer)
-			// {
-			// 	PxCapsuleGeometry capsuleGeom(radius, halfExtent.y);
-
-			// 	dynamicBody = pworld.gPhysics->createRigidDynamic(pxTransform);
-
-			// 	dynamicBody->setActorFlag(PxActorFlag::eVISUALIZATION, true);
-
-			// 	PxShape* shape = PxRigidActorExt::createExclusiveShape(
-			// 		*dynamicBody, PxCapsuleGeometry(radius, halfExtent.y), *material
-			// 	);
-
-			// 	dynamicBody->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, true);
-
-			// 	pworld.gScene->addActor(*dynamicBody);
-			// }
 			
 			PxCapsuleControllerDesc desc;
 			desc.radius = radius;
@@ -235,9 +227,7 @@ namespace Engine
 			desc.scaleCoeff = 1.0f;
 			desc.contactOffset = 0.001f * radius;
 			desc.material = pworld.gPhysics->createMaterial(0.5f, 0.5f, 0.6f);
-			std::cout << "Translation: " << translation.x << " " << translation.y << " " << translation.z << std::endl;
 			desc.position = PxExtendedVec3(translation.x, translation.y + (height / 2 + radius), translation.z);
-			std::cout << "Position: " << desc.position.x << " " << desc.position.y << " " << desc.position.z << std::endl;
 			desc.slopeLimit = 0.3f;
 			desc.upDirection = PxVec3(0, 1, 0);
 
@@ -248,7 +238,7 @@ namespace Engine
 			{
 				pworld.controller = pcontroller;
 				pworld.setControllerEntity(entity);
-				pworld.setControllerHeight(height + radius);
+				pworld.setControllerHeight(halfExtent.y * 2 * 0.9);
 			}
 
 			break;
@@ -260,8 +250,8 @@ namespace Engine
 	{
 		entityId = index;
 
-		glm::vec3 worldSpaceMin = glm::vec3(0, 0, 0);
-		glm::vec3 worldSpaceMax = glm::vec3(0, 0, 0);
+		glm::vec3 worldSpaceMin = glm::vec3(FLT_MAX);
+		glm::vec3 worldSpaceMax = glm::vec3(-FLT_MAX);
 
 		// Iterate over model nodes and primitives to add static rigid bodies
 		// based on the model's triangle meshes.

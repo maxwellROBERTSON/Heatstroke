@@ -78,10 +78,7 @@ void MultiPlayer::InitNetwork()
 				physicsComp->Init(game->GetPhysicsWorld(), type, model, mat, vec[i], true, false);
 			}
 		}
-		if (renderComp->GetIsActive())
-		{
-			manager->AddUpdatedPhysicsComp(physicsComp, true);
-		}
+		manager->AddUpdatedPhysicsComp(physicsComp, renderComp->GetIsActive());
 	}
 
 	game->GetEntityManager().ResetChanged();
@@ -103,15 +100,6 @@ void MultiPlayer::Update(float timeDelta)
 	{
 		countdown--;
 		counter = 1.0f;
-	}
-
-	std::vector<int> ents = entityManager.GetEntitiesWithComponent(PHYSICS);
-	std::vector<bool> isActives;
-	for (int i = 0; i < ents.size(); i++)
-	{
-		Engine::Entity* entity = entityManager.GetEntity(ents[i]);
-		Engine::RenderComponent* renderComponent = reinterpret_cast<Engine::RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
-		std::cout << renderComponent->GetIsActive() << std::endl;//isActives.emplace_back(renderComponent->GetIsActive());
 	}
 
 	/*if (countdown <= 0)
@@ -217,7 +205,7 @@ void MultiPlayer::Update(float timeDelta)
 
 			if (!hit) {
 				if (entityHit.actor != nullptr && entityHit.actor->getName() != "levelBounds" && entityHit.distance != PX_MAX_REAL) {
-					this->game->getDecals().setNextDecal(entityHit.position, entityHit.normal);
+					this->game->getBulletDecals().setNextDecal(entityHit.position, entityHit.normal);
 				}
 			}
 		}

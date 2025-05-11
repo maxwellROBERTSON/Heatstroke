@@ -204,8 +204,6 @@ namespace Engine
 	void GameClient::HandleServerUpdateEntityData(ServerUpdateEntityData* message)
 	{
 		int blockSize = message->GetBlockSize();
-		/*if (blockSize == 0)
-			throw std::runtime_error("Null block data size");*/
 
 		if (game->GetNetwork().GetStatus() == Status::CLIENT_ACTIVE)
 		{
@@ -224,7 +222,6 @@ namespace Engine
 		{
 			std::cout << "FAILED, CLIENT NOT YET ACTIVE." << std::endl;
 		}
-		//int blockSize = message->GetBlockSize();
 	}
 
 	// Clean up client memory using yojimbo

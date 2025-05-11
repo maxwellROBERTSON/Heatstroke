@@ -8,12 +8,12 @@
 void makeGameGUIS(FPSTest* game);
 void makeHomeGUI(FPSTest* game, int*, int*);
 void makeSettingsGUI(FPSTest* game, int*, int*);
-void makeServerGUI(FPSTest* game, int*, int*);
 void makeLoadingGUI(FPSTest* game, int*, int*);
 void makeDebugGUI(FPSTest* game, int*, int*);
 void makeSinglePlayerGUI(FPSTest* game, int*, int*);
 void makeMultiPlayerGUI(FPSTest* game, int*, int*);
 
+void ShowServerInfo(FPSTest* game, int*, int*);
 void ShowInputDebug(FPSTest* game, int*, int*);
 void ShowRendererDebug(FPSTest* game, int*, int*);
 void ShowAnimationDebug(FPSTest* game, int*, int*);
@@ -23,6 +23,7 @@ void ShowGameDebug(FPSTest* game, int*, int*);
 void toggleSettings(FPSTest* game);
 
 // Declare global variables as externs
+extern bool showserverGui;
 extern bool showImGuiDemoWindow;
 extern bool debugRenderer;
 extern bool debugAnimations;

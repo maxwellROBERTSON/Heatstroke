@@ -547,8 +547,8 @@ void Renderer::drawModels(VkCommandBuffer cmdBuf, VkPipelineLayout pipelineLayou
 		if (!renderComponent->GetIsActive())
 			continue;
 
-		// if (game->GetGameMode().IsMultiPlayer() && game->GetGameMode().GetPlayerEntity() == renderComponent->GetEntityPointer())
-		// 	continue;
+		if (game->GetGameMode().IsMultiPlayer() && game->GetGameMode().GetPlayerEntity() == renderComponent->GetEntity())
+		 	continue;
 
 		int modelIndex = renderComponent->GetModelIndex();
 
