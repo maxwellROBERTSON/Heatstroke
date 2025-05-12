@@ -8,7 +8,7 @@ namespace Engine
 		{ComponentTypes::CAMERA, 36},
 		{ComponentTypes::CHILDREN, 40},
 		{ComponentTypes::NETWORK, 9},
-		{ComponentTypes::PHYSICS, 49},
+		{ComponentTypes::PHYSICS, 50},
 		{ComponentTypes::RENDER, 8}
 	};
 }

@@ -67,7 +67,7 @@ namespace Engine
 		ComponentTypes StaticType() const override { return ComponentTypes::PHYSICS; }
 
 		// Size getter from Component parent
-		size_t StaticSize() const override { return sizeof(type) + sizeof(translation) + sizeof(scale) + sizeof(rotation) + sizeof(isPerson) + sizeof(entityId); }
+		size_t StaticSize() const override { return sizeof(type) + sizeof(translation) + sizeof(scale) + sizeof(rotation) + sizeof(isPerson) + sizeof(entityId) + sizeof(reset); }
 
 		// Get component data
 		void GetDataArray(uint8_t*) override;
@@ -132,6 +132,9 @@ namespace Engine
 		// Set this components simulation status
 		void SetSimulation(PhysicsSimulation s) { simulation = s; }
 
+		// Set reset
+		void SetReset(bool b) { reset = b; SetComponentHasChanged(); }
+
 		// Set component has changed in entity manager
 		void SetComponentHasChanged();
 
@@ -162,6 +165,8 @@ namespace Engine
 		glm::quat rotation = glm::angleAxis(0.f, glm::vec3(0, 0, 0));
 
 		bool isPerson = false;
+
+		bool reset = false;
 
 		int entityId = -1;
 	};

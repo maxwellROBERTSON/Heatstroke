@@ -22,6 +22,8 @@ namespace Engine
 		std::memcpy(data + offset, &isPerson, sizeof(isPerson));
 		offset += sizeof(isPerson);
 		std::memcpy(data + offset, &entityId, sizeof(entityId));
+		offset += sizeof(reset);
+		std::memcpy(data + offset, &reset, sizeof(reset));
 	}
 
 	// Get this components physx actor
@@ -88,6 +90,19 @@ namespace Engine
 			SetComponentHasChanged();
 		}
 		offset += sizeof(entityId);
+
+		if (std::memcmp(&reset, data + offset, sizeof(reset)) != 0)
+		{
+			std::memcpy(&reset, data + offset, sizeof(reset));
+			if (reset)
+			{
+				entity->ResetToSpawnState();
+				glm::vec3 pos = entity->GetPosition();
+				GetController()->setFootPosition(PxExtendedVec3(pos.x, pos.y, pos.z));
+				reset = false;
+			}
+		}
+		offset += sizeof(reset);
 	}
 
 	// Init
