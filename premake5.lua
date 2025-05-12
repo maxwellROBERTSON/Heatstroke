@@ -73,18 +73,10 @@ workspace "Heatstroke"
 
     filter "system:linux"
         links "dl"
-        defines {"OS_LINUX", "DISABLE_CUDA_PHYSX"}
-        -- filter "configurations:Debug"
-        --     buildoptions { "-D_ITERATOR_DEBUG_LEVEL=2" }
-        -- filter "configurations:Release"
-        --     buildoptions { "-D_ITERATOR_DEBUG_LEVEL=0" }
+        defines {"OS_LINUX"}
 
     filter "system:windows"
         defines {"OS_WINDOWS"}
-        -- filter "configurations:Debug"
-        --     buildoptions { "/D_ITERATOR_DEBUG_LEVEL=2" }
-        -- filter "configurations:Release"
-        --     buildoptions { "/D_ITERATOR_DEBUG_LEVEL=0" }
     
     filter "*"
 

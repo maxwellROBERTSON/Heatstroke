@@ -637,6 +637,8 @@ namespace Engine {
 
 		// Give nodes their respective skin
 		for (std::size_t i = 0; i < vkModel.linearNodes.size(); i++) {
+			if (vkModel.skins.size() == 0)
+				break;
 			vk::Node* node = vkModel.linearNodes[i];
 			try {
 				node->skin = vkModel.skins.at(node->skinIndex);

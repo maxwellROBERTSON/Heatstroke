@@ -24,6 +24,7 @@ namespace Engine
 		state = AL_INITIAL;
 	}
 
+	// Get component data
 	void AudioComponent::GetDataArray(uint8_t* data)
 	{
 		uint32_t offset = 0;
@@ -32,6 +33,7 @@ namespace Engine
 		offset += sizeof(soundClipCurrentlyPlaying);
 	}
 
+	// Set component data
 	void AudioComponent::SetDataArray(uint8_t* data)
 	{
 		size_t offset = 0;
@@ -63,7 +65,7 @@ namespace Engine
 	{
 		if (soundClips[key] == NULL)
 		{
-			std::cout << "No audio clip with that key value exists\n";
+			// std::cout << "No audio clip with that key value exists\n";
 			return;
 		}
 

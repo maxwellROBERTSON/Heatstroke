@@ -54,10 +54,15 @@ namespace Engine
 		// Set the data for a given entity
 		void SetDataArray(uint8_t*);
 
+		// Set entity has changed in entity manager
+		void SetEntityHasChanged();
+
+		// Toggle has changed boolean
+		void ToggleHasChanged() { hasChanged = !hasChanged; }
+
 		// Position Setters
 		void SetPosition(float x, float y, float z);
 		void SetPosition(glm::vec3 position);
-		glm::vec3 GetPosition() { return position; }
 
 		// Rotation setters
 		void SetRotation(float angInDeg, glm::vec3 axis);
@@ -71,18 +76,12 @@ namespace Engine
 		// Set model matrix
 		void SetModelMatrix(glm::mat4 aModelMatrix);
 
-		// Set entity has changed in entity manager
-		void SetEntityHasChanged();
-
-		// Toggle has changed boolean
-		void ToggleHasChanged() { hasChanged = !hasChanged; }
-
 		// Set entity id
 		void SetEntityId(int id) { entityId = id; }
 
 		// Set component index vector of this entity
 		// Only use if null constructor is used
-		void SetComponentIndexArray(std::vector<int> l) { componentTypeIndexList = l; }
+		void SetComponentIndexArray(std::vector<int>);
 
 	private:
 		bool hasChanged = false;
@@ -99,6 +98,6 @@ namespace Engine
 
 		// Holds a list of components with the type = index and
 		// value = component index in that types list
-		std::vector<int> componentTypeIndexList;
+		std::vector<int> componentTypeIndexList = std::vector<int>(TYPE_COUNT);
 	};
 }

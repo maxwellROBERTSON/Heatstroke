@@ -25,6 +25,8 @@
 #include "../Engine/Events/MouseEvent.hpp"
 #include "../Engine/Events/WindowEvent.hpp"
 
+#include "../Engine/Rendering/features/Decals.hpp"
+
 #include "../Input/Input.hpp"
 #include "../Input/InputCodes.hpp"
 #include "../Input/Joystick.hpp"
@@ -34,9 +36,8 @@
 #include "gameRendering/Crosshair.hpp"
 #include "gameRendering/Decals.hpp"
 #include "gameRendering/Renderer.hpp"
-#include "gameRendering/RenderMode.hpp"
 
-#include "gameGUI/GUI.hpp"
+#include "gameRendering/RenderMode.hpp"
 
 #include "gameModes/GameMode.hpp"
 
@@ -69,11 +70,10 @@ public:
 
 	// Getters
 	Renderer& getRenderer();
-	GUI& getGUI();
 	RenderMode getRenderMode();
 	GameMode& GetGameMode();
 	Crosshair& GetCrosshair();
-	Decals& getDecals();
+	Engine::Decals& getBulletDecals();
 
 	std::chrono::steady_clock::time_point previous;
 
@@ -90,13 +90,12 @@ public:
 
 private:
 	Renderer renderer;
-	GUI gui;
 
 	RenderMode renderMode = RenderMode::NO_DATA_MODE;
 
 	std::unique_ptr<GameMode> gameMode;
 	Crosshair crosshair;
-	Decals decals;
+	Engine::Decals bulletDecals;
 
 	thread_pool_wait* threadPool;
 	int offlineClientId = 0;

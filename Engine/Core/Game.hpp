@@ -13,6 +13,7 @@
 #include "../Network/Network.hpp"
 #include "../Physics/PhysicsWorld.hpp"
 #include "../vulkan/VulkanContext.hpp"
+#include "../GUI/GUI.hpp"
 
 #include "Camera.hpp"
 
@@ -20,7 +21,7 @@
 namespace Engine
 {
 	class Camera;
-	//class GUI;
+	class GUI;
 	class Network;
 
 	class Game
@@ -42,6 +43,7 @@ namespace Engine
 		inline EntityManager& GetEntityManager() { return entityManager; }
 		inline PhysicsWorld& GetPhysicsWorld() { return physics_world; }
 		inline Engine::Network& GetNetwork() { return *network; }
+		inline Engine::GUI& GetGUI() { return *gui; }
 
 		// Setters
 		void SetClient(yojimbo::Address);
@@ -58,6 +60,7 @@ namespace Engine
 		EntityManager entityManager = EntityManager();
 		PhysicsWorld physics_world;
 		std::unique_ptr<Engine::Network> network;
+		std::unique_ptr<Engine::GUI> gui;
 
 		float deltaTime = 0.0f, lastTime = 0.0f;
 	};

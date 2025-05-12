@@ -11,6 +11,7 @@ namespace Engine
 	{
         AUDIO,
 		CAMERA,
+        CHILDREN,
 		NETWORK,
 		PHYSICS,
 		RENDER,

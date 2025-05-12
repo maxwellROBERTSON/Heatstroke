@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 namespace Engine {
 	class Camera;
 	class Entity;
@@ -13,7 +15,9 @@ public:
 
 	virtual void Update(float) = 0;
 
-	virtual void ToggleSceneCamera(Engine::Camera*) = 0;
+	// SinglePlayer functions
+
+	virtual void ToggleSceneCamera(Engine::Camera*) {};
 
 	virtual Engine::Entity* GetPlayerEntity() { return nullptr; };
 
@@ -24,4 +28,11 @@ public:
 	virtual void SetRifleEntity(Engine::Entity*) {};
 
 	virtual void SetTargetEntity(Engine::Entity*) {};
+
+	// MultiPlayer functions
+
+	virtual void SetPlayerEntities(std::vector<Engine::Entity*>) {};
+
+	virtual void SetPistolEntities(std::vector<Engine::Entity*>) {};
+
 };

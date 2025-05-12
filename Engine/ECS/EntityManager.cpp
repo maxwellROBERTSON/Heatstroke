@@ -6,9 +6,9 @@
 #include "Components/AudioComponent.hpp"
 #include "Components/CameraComponent.hpp"
 #include "Components/NetworkComponent.hpp"
+#include "Components/ChildrenComponent.hpp"
 #include "Components/PhysicsComponent.hpp"
 #include "Components/RenderComponent.hpp"
-#include "Components/AudioComponent.hpp"
 
 namespace Engine
 {
@@ -18,25 +18,46 @@ namespace Engine
 		// Check map size
 		if (componentMap.size() != ComponentTypes::TYPE_COUNT)
 		{
-			std::cout << "componentMap.size(): " << componentMap.size() << "ComponentTypes::TYPE_COUNT: " << ComponentTypes::TYPE_COUNT << std::endl;
+			std::cout << "componentMap.size(): " << componentMap.size() << " ComponentTypes::TYPE_COUNT: " << ComponentTypes::TYPE_COUNT << std::endl;
 			throw std::runtime_error("Size mismatch between componentMap and ComponentTypes");
 		}
 		// Check if ComponentSizes is correct
-		AudioComponent a;
-		if (ComponentSizes[AUDIO] != a.StaticSize())
-			throw std::runtime_error("Size mismatch between: ComponentSizes[AUDIO] and Audio size");
-		CameraComponent c;
-		if (ComponentSizes[CAMERA] != c.StaticSize())
-			throw std::runtime_error("Size mismatch between: ComponentSizes[CAMERA] and Camera size");
-		NetworkComponent n;
-		if (ComponentSizes[NETWORK] != n.StaticSize())
-			throw std::runtime_error("Size mismatch between: ComponentSizes[NETWORK] and Network size");
-		PhysicsComponent p;
-		if (ComponentSizes[PHYSICS] != p.StaticSize())
-			throw std::runtime_error("Size mismatch between: ComponentSizes[PHYSICS] and Physics size");
-		RenderComponent r;
-		if (ComponentSizes[RENDER] != r.StaticSize())
-			throw std::runtime_error("Size mismatch between: ComponentSizes[RENDER] and Render size");
+		AudioComponent audio;
+		if (audio.StaticSize() != ComponentSizes[AUDIO])
+		{
+			std::cout << "audio.StaticSize(): " << audio.StaticSize() << " ComponentSizes[AUDIO]: " << static_cast<int>(ComponentSizes[AUDIO]) << std::endl;
+			throw std::runtime_error("Size mismatch between: Audio size and ComponentSizes[AUDIO]");
+		}
+		CameraComponent camera;
+		if (camera.StaticSize() != ComponentSizes[CAMERA])
+		{
+			std::cout << "camera.StaticSize(): " << camera.StaticSize() << " ComponentSizes[CAMERA]: " << static_cast<int>(ComponentSizes[CAMERA]) << std::endl;
+			throw std::runtime_error("Size mismatch between: Camera size and ComponentSizes[CAMERA]");
+		}
+		ChildrenComponent children;
+		if (children.StaticSize() != ComponentSizes[CHILDREN])
+		{
+			std::cout << "children.StaticSize(): " << children.StaticSize() << " ComponentSizes[CHILDREN]: " << static_cast<int>(ComponentSizes[CHILDREN]) << std::endl;
+			throw std::runtime_error("Size mismatch between: Children size and ComponentSizes[CHILDREN]");
+		}
+		NetworkComponent network;
+		if (network.StaticSize() != ComponentSizes[NETWORK])
+		{
+			std::cout << "network.StaticSize(): " << network.StaticSize() << " ComponentSizes[NETWORK]: " << static_cast<int>(ComponentSizes[NETWORK]) << std::endl;
+			throw std::runtime_error("Size mismatch between: Network size and ComponentSizes[NETWORK]");
+		}
+		PhysicsComponent physics;
+		if (physics.StaticSize() != ComponentSizes[PHYSICS])
+		{
+			std::cout << "physics.StaticSize(): " << physics.StaticSize() << " ComponentSizes[PHYSICS]: " << static_cast<int>(ComponentSizes[PHYSICS]) << std::endl;
+			throw std::runtime_error("Size mismatch between: Physics size and ComponentSizes[PHYSICS]");
+		}
+		RenderComponent render;
+		if (render.StaticSize() != ComponentSizes[RENDER])
+		{
+			std::cout << "render.StaticSize(): " << render.StaticSize() << " ComponentSizes[RENDER]: " << ComponentSizes[RENDER] << std::endl;
+			throw std::runtime_error("Size mismatch between: Render size and ComponentSizes[RENDER]");
+		}
 	};
 
 	// Getters
@@ -402,6 +423,12 @@ namespace Engine
 					f = block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[CAMERA];
 					reinterpret_cast<CameraComponent*>(base)->SetDataArray(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[CAMERA]);
 					break;
+				case CHILDREN:
+					std::cout << "Setting the " << componentIndexArray[types[j]] << " of component of type " << types[j] << " at ";
+					std::cout << reinterpret_cast<uintptr_t>(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[CHILDREN]) << std::endl;
+					f = block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[CHILDREN];
+					reinterpret_cast<ChildrenComponent*>(base)->SetDataArray(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[CHILDREN]);
+					break;
 				case NETWORK:
 					std::cout << "Setting the " << componentIndexArray[types[j]] << " of component of type " << types[j] << " at ";
 					std::cout << reinterpret_cast<uintptr_t>(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[NETWORK]) << std::endl;
@@ -514,6 +541,10 @@ namespace Engine
 							reinterpret_cast<CameraComponent*>(base)->SetDataArray(block + entityComponentOffsets[(j * 8 + k)]);
 							entityComponentOffsets[(j * 8 + k)] += ComponentSizes[CAMERA];
 							break;
+						case CHILDREN:
+							reinterpret_cast<ChildrenComponent*>(base)->SetDataArray(block + entityComponentOffsets[(j * 8 + k)]);
+							entityComponentOffsets[(j * 8 + k)] += ComponentSizes[CHILDREN];
+							break;
 						case NETWORK:
 							reinterpret_cast<NetworkComponent*>(base)->SetDataArray(block + entityComponentOffsets[(j * 8 + k)]);
 							entityComponentOffsets[(j * 8 + k)] += ComponentSizes[NETWORK];
@@ -562,6 +593,9 @@ namespace Engine
 					break;
 				case CAMERA:
 					reinterpret_cast<CameraComponent*>(base)->ToggleHasChanged();
+					break;
+				case CHILDREN:
+					reinterpret_cast<ChildrenComponent*>(base)->ToggleHasChanged();
 					break;
 				case NETWORK:
 					reinterpret_cast<NetworkComponent*>(base)->ToggleHasChanged();
@@ -651,6 +685,9 @@ namespace Engine
 			case CAMERA:
 				index = AddComponent(CAMERA, entity);
 				break;
+			case CHILDREN:
+				index = AddComponent(CHILDREN, entity);
+				break;
 			case NETWORK:
 				index = AddComponent(NETWORK, entity);
 				break;
@@ -700,6 +737,9 @@ namespace Engine
 				break;
 			case CAMERA:
 				index = AddComponent(CAMERA, entity);
+				break;
+			case CHILDREN:
+				index = AddComponent(CHILDREN, entity);
 				break;
 			case NETWORK:
 				index = AddComponent(NETWORK, entity);
@@ -763,6 +803,9 @@ namespace Engine
 			break;
 		case CAMERA:
 			(*componentMap[CAMERA]).emplace_back(std::make_unique<CameraComponent>(this, entity));
+			break;
+		case CHILDREN:
+			(*componentMap[CHILDREN]).emplace_back(std::make_unique<ChildrenComponent>(this, entity));
 			break;
 		case NETWORK:
 			(*componentMap[NETWORK]).emplace_back(std::make_unique<NetworkComponent>(this, entity));

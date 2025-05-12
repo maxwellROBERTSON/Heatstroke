@@ -18,17 +18,6 @@ namespace Engine
         return messageBitsArray[index];
     }
 
-    /*MESSAGE_RECEIVED,
-    REQUEST_ENTITY_DATA,
-    RESPONSE_ENTITY_DATA,
-    REQUEST_PLAYER_STATS,
-    RESPONSE_PLAYER_STATS,
-    REQUEST_GAME_STATE,
-    RESPONSE_GAME_STATE,
-    REQUEST_CHAT_MESSAGES,
-    RESPONSE_CHAT_MESSAGES,
-    COUNT*/
-
     class RequestEntityData : public yojimbo::Message
     {
     public:

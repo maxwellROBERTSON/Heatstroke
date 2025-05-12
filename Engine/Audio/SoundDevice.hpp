@@ -16,6 +16,8 @@ namespace Engine
 		SoundDevice();
 		~SoundDevice();
 
+		static SoundDevice* snd_device;
+
 		ALCdevice* p_ALCDevice;
 		ALCcontext* p_ALCcontext;
 	};

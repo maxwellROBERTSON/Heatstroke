@@ -3,18 +3,23 @@
 #include "alc.h"
 
 #include <stdio.h>
+#include <iostream>
 
 namespace Engine
 {
+	Engine::SoundDevice* Engine::SoundDevice::snd_device = nullptr;
+
 	//get singleton instance
 	SoundDevice* SoundDevice::get()
 	{
-		static SoundDevice* snd_device = new SoundDevice();
+		if (snd_device == nullptr)
+			snd_device = new SoundDevice();
 		return snd_device;
 	}
 
 	SoundDevice::SoundDevice()
 	{
+#if defined(_WIN32)
 		//opens a device by name and returns a pointer to a ALCdevice object
 		p_ALCDevice = alcOpenDevice(nullptr); //nullptr = get default device
 
@@ -26,6 +31,7 @@ namespace Engine
 
 		//create a context with the device we just created (p_ALCDevice)
 		//optional pass in a pointer to a set of attributes, not used here
+
 		p_ALCcontext = alcCreateContext(p_ALCDevice, nullptr); //set context
 		if (!p_ALCcontext)
 		{
@@ -44,7 +50,8 @@ namespace Engine
 		if (!name || alcGetError(p_ALCDevice) != AL_NO_ERROR)
 			name = alcGetString(p_ALCDevice, ALC_ALL_DEVICES_SPECIFIER);
 
-		printf("Opened \"s\"\n", name);
+		printf("Opened \"%s\"\n", name);
+#endif
 	}
 
 	SoundDevice::~SoundDevice()

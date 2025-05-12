@@ -30,7 +30,7 @@ bool serverHovered = false;
 
 void makeGameGUIS(FPSTest* game)
 {
-	GUI& gui = game->getGUI();
+	GUI& gui = game->GetGUI();
 
 	gui.AddFunction("Home", [game](int* w, int* h) { makeHomeGUI(game, w, h); });
 	gui.AddFunction("Settings", [game](int* w, int* h) { makeSettingsGUI(game, w, h); });
@@ -41,11 +41,11 @@ void makeGameGUIS(FPSTest* game)
 	gui.AddFunction("MultiPlayer", [game](int* w, int* h) { makeMultiPlayerGUI(game, w, h); });
 
 	gui.AddFont("Default", "Engine/third_party/imgui/misc/fonts/Roboto-Medium.ttf", 12.0f);
-	gui.AddFont("Home", "Engine/third_party/imgui/misc/fonts/Freedom.ttf", 60.0f);
-	gui.AddFont("HomeHovered", "Engine/third_party/imgui/misc/fonts/Freedom.ttf", 70.0f);
+	gui.AddFont("Home", "Engine/third_party/imgui/misc/fonts/Freedom-10eM.ttf", 60.0f);
+	gui.AddFont("HomeHovered", "Engine/third_party/imgui/misc/fonts/Freedom-10eM.ttf", 70.0f);
 	gui.AddFont("Game", "Engine/third_party/imgui/misc/fonts/Roboto-Medium.ttf", 36.0f);
 
-	gui.AddTexture("Test", "Game/assets/maps/russian_house/textures/Balkon_01_baseColor.png");
+	gui.AddTexture("HomeBackground", "Game/assets/heatstroke_background.png");
 
 	gui.ToggleGUIMode("Home");
 }
@@ -69,7 +69,7 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 
 	ImGui::Begin("BackgroundImage", nullptr, window_flags);
 	ImGui::SetCursorPos(ImVec2(0.f, 0.f));
-	ImGui::Image((ImTextureID)std::get<3>(*game->getGUI().GetImage("Test")), viewport->Size);
+	ImGui::Image((ImTextureID)std::get<3>(*game->GetGUI().GetImage("HomeBackground")), viewport->Size);
 	ImGui::End();
 
 	ImGui::SetNextWindowPos(ImVec2(0, 0));
@@ -84,7 +84,7 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 
 	ImGui::Text("Demo game made using Heatstroke", ImVec2(*w / 4, *h / 4));
 
-	ImGui::PushFont(game->getGUI().GetFont("Home"));
+	ImGui::PushFont(game->GetGUI().GetFont("Home"));
 
 	const char* label = "Single Player";
 	ImVec2 textSize;
@@ -94,7 +94,7 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 
 	if (singleHovered)
 	{
-		ImGui::PushFont(game->getGUI().GetFont("HomeHovered"));
+		ImGui::PushFont(game->GetGUI().GetFont("HomeHovered"));
 		textSize = ImGui::CalcTextSize(label);
 		boxSize = ImVec2(textSize.x - 10.f, textSize.y - 30.f);
 
@@ -108,10 +108,10 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 			game->SetGameMode(std::make_unique<SinglePlayer>(game));
 			game->loadOfflineEntities();
 			game->getRenderer().initialiseJointMatrices();
-			game->getGUI().ToggleGUIMode("Home");
-			game->getGUI().ToggleGUIMode("SinglePlayer");
+			game->GetGUI().ToggleGUIMode("Home");
+			game->GetGUI().ToggleGUIMode("SinglePlayer");
 			if (game->debugging)
-				game->getGUI().ToggleGUIMode("Debug");
+				game->GetGUI().ToggleGUIMode("Debug");
 			game->SetRenderMode(RenderMode::FORWARD);
 			GLFWwindow* window = game->GetContext().getGLFWWindow();
 			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -147,11 +147,11 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 			game->SetGameMode(std::make_unique<SinglePlayer>(game));
 			game->loadOfflineEntities();
 			game->getRenderer().initialiseJointMatrices();
-			game->getGUI().ToggleGUIMode("Home");
+			game->GetGUI().ToggleGUIMode("Home");
 			if (game->showGUI) // hope this works
-				game->getGUI().ToggleGUIMode("SinglePlayer");
+				game->GetGUI().ToggleGUIMode("SinglePlayer");
 			if (game->debugging)
-				game->getGUI().ToggleGUIMode("Debug");
+				game->GetGUI().ToggleGUIMode("Debug");
 			game->SetRenderMode(RenderMode::FORWARD);
 			GLFWwindow* window = game->GetContext().getGLFWWindow();
 			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -175,7 +175,7 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 
 	if (multiHovered)
 	{
-		ImGui::PushFont(game->getGUI().GetFont("HomeHovered"));
+		ImGui::PushFont(game->GetGUI().GetFont("HomeHovered"));
 		textSize = ImGui::CalcTextSize(label);
 		boxSize = ImVec2(textSize.x - 10.f, textSize.y - 30.f);
 
@@ -253,7 +253,7 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 
 	if (serverHovered)
 	{
-		ImGui::PushFont(game->getGUI().GetFont("HomeHovered"));
+		ImGui::PushFont(game->GetGUI().GetFont("HomeHovered"));
 		textSize = ImGui::CalcTextSize(label);
 		boxSize = ImVec2(textSize.x - 10.f, textSize.y - 30.f);
 
@@ -334,11 +334,11 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 	{
 		ImGui::BeginChild("MultiplayerBox", childSize, true, ImGuiWindowFlags_ChildWindow | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 
-		ImGui::PushFont(game->getGUI().GetFont("Default"));
+		ImGui::PushFont(game->GetGUI().GetFont("Default"));
 
 		ImGui::Text("Join a server");
 
-		static char addressStr[16] = "192.168.68.60\0";
+		static char addressStr[16] = "10.41.204.183\0";
 		ImGui::Text("Address:");
 		ImGui::InputText("Address", addressStr, IM_ARRAYSIZE(addressStr));
 
@@ -368,8 +368,8 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 			else
 			{
 				errorMsg = "";
-				game->getGUI().ToggleGUIMode("Home");
-				game->getGUI().ToggleGUIMode("Loading");
+				game->GetGUI().ToggleGUIMode("Home");
+				game->GetGUI().ToggleGUIMode("Loading");
 				yojimbo::Address address = yojimbo::Address(addressStr, portNum);
 				game->SetClient(address);
 			}
@@ -384,7 +384,7 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 	{
 		ImGui::BeginChild("ServerBox", childSize, true, ImGuiWindowFlags_ChildWindow | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 
-		ImGui::PushFont(game->getGUI().GetFont("Default"));
+		ImGui::PushFont(game->GetGUI().GetFont("Default"));
 
 		ImGui::Text("Start a server");
 
@@ -421,8 +421,8 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 				errorMsg = "";
 				game->loadOnlineEntities(maxClientsNum);
 				game->getRenderer().initialiseJointMatrices();
-				game->getGUI().ToggleGUIMode("Home");
-				game->getGUI().ToggleGUIMode("Server");
+				game->GetGUI().ToggleGUIMode("Home");
+				game->GetGUI().ToggleGUIMode("Server");
 				game->SetServer(portNum, maxClientsNum);
 			}
 		}
@@ -441,7 +441,7 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 
 void makeSettingsGUI(FPSTest* game, int* w, int* h)
 {
-	ImGui::PushFont(game->getGUI().GetFont("Default"));
+	ImGui::PushFont(game->GetGUI().GetFont("Default"));
 
 	ImGui::SetNextWindowPos(ImVec2(0, 0));
 	ImGui::SetNextWindowSize(ImVec2(*w, *h));
@@ -474,6 +474,14 @@ void makeSettingsGUI(FPSTest* game, int* w, int* h)
 
 	if (ImGui::Checkbox("Shadows Enabled", &game->getRenderer().getShadowState())) {
 		// When shadows are toggled, we need to recreate the swapchain
+		game->getRenderer().setRecreateSwapchain(true);
+	}
+
+	const char* shadowResolutions[] = { "1024x1024", "2048x2048", "4096x4096", "8192x8192" };
+
+	ImGui::Text("Shadow Map Resolution:");
+	if (ImGui::Combo("Shadow Map Resolution", &game->getRenderer().getShadowResolutionIndex(), shadowResolutions, IM_ARRAYSIZE(shadowResolutions))) {
+		game->getRenderer().updateShadowMapResolution();
 		game->getRenderer().setRecreateSwapchain(true);
 	}
 
@@ -530,8 +538,8 @@ void makeSettingsGUI(FPSTest* game, int* w, int* h)
 	{
 		if (renderer.getIsSceneLoaded())
 		{
-			game->getGUI().ResetGUIModes();
-			game->getGUI().ToggleGUIMode("Home");
+			game->GetGUI().ResetGUIModes();
+			game->GetGUI().ToggleGUIMode("Home");
 			game->GetPhysicsWorld().reset(&game->GetEntityManager());
 			game->SetRenderMode(RenderMode::NO_DATA_MODE);
 			game->SetGameMode(nullptr);
@@ -548,7 +556,7 @@ void makeSettingsGUI(FPSTest* game, int* w, int* h)
 
 void makeServerGUI(FPSTest* game, int* w, int* h)
 {
-	ImGui::PushFont(game->getGUI().GetFont("Default"));
+	ImGui::PushFont(game->GetGUI().GetFont("Default"));
 
 	ImGui::SetNextWindowPos(ImVec2(0, 0));
 	ImGui::SetNextWindowSize(ImVec2(*w, *h));
@@ -582,7 +590,7 @@ void makeServerGUI(FPSTest* game, int* w, int* h)
 
 void makeLoadingGUI(FPSTest* game, int* w, int* h)
 {
-	ImGui::PushFont(game->getGUI().GetFont("Default"));
+	ImGui::PushFont(game->GetGUI().GetFont("Default"));
 
 	ImGui::SetNextWindowPos(ImVec2(0, 0));
 	ImGui::SetNextWindowSize(ImVec2(*w, *h));
@@ -592,10 +600,12 @@ void makeLoadingGUI(FPSTest* game, int* w, int* h)
 	Status s = game->GetNetwork().GetStatus();
 	if (s == Status::CLIENT_INITIALIZING_DATA)
 	{
+		game->SetGameMode(std::make_unique<MultiPlayer>(game));
 		game->getRenderer().initialiseJointMatrices();
-		game->getGUI().ToggleGUIMode("Loading");
+		game->GetGUI().ToggleGUIMode("Loading");
+		game->GetGUI().ToggleGUIMode("MultiPlayer");
 		if (game->debugging)
-			game->getGUI().ToggleGUIMode("Debug");
+			game->GetGUI().ToggleGUIMode("Debug");
 		game->SetRenderMode(RenderMode::FORWARD);
 		GLFWwindow* window = game->GetContext().getGLFWWindow();
 		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -608,9 +618,12 @@ void makeLoadingGUI(FPSTest* game, int* w, int* h)
 		ImGui::SetCursorPos(topRightPos);
 		if (ImGui::Button("Home", ImVec2(*w / 6, *h / 6)))
 		{
-			game->getGUI().ToggleGUIMode("Home");
-			if (game->debugging)
-				game->getGUI().ToggleGUIMode("Debug");
+			game->GetGUI().ResetGUIModes();
+			game->GetGUI().ToggleGUIMode("Home");
+			game->GetPhysicsWorld().reset(&game->GetEntityManager());
+			game->SetRenderMode(RenderMode::NO_DATA_MODE);
+			game->SetGameMode(nullptr);
+			game->GetEntityManager().ClearManager();
 			game->GetNetwork().Reset();
 		}
 	}
@@ -622,10 +635,11 @@ void makeLoadingGUI(FPSTest* game, int* w, int* h)
 		ImGui::SetCursorPos(topRightPos);
 		if (ImGui::Button("Home", ImVec2(*w / 6, *h / 6)))
 		{
+			game->GetGUI().ResetGUIModes();
+			game->GetGUI().ToggleGUIMode("Home");
+			game->GetPhysicsWorld().reset(&game->GetEntityManager());
 			game->SetRenderMode(RenderMode::NO_DATA_MODE);
-			game->getGUI().ToggleGUIMode("Home");
-			if (game->debugging)
-				game->getGUI().ToggleGUIMode("Debug");
+			game->SetGameMode(nullptr);
 			game->GetEntityManager().ClearManager();
 			game->GetNetwork().Reset();
 		}
@@ -643,7 +657,7 @@ void makeLoadingGUI(FPSTest* game, int* w, int* h)
 
 void makeDebugGUI(FPSTest* game, int* w, int* h)
 {
-	ImGui::PushFont(game->getGUI().GetFont("Default"));
+	ImGui::PushFont(game->GetGUI().GetFont("Default"));
 
 	ImGui::Begin("Debug Menu");
 
@@ -705,7 +719,7 @@ void makeSinglePlayerGUI(FPSTest* game, int*, int*)
 			ImVec2(1.0f, 0.0f) // Pivot (1, 0) means align from top-right corner
 		);
 
-		ImGui::PushFont(game->getGUI().GetFont("Game"));
+		ImGui::PushFont(game->GetGUI().GetFont("Game"));
 		ImGui::Begin("Game:", &test, window_flags);
 
 		ImGui::Text("SCORE: %u", sp->score);
@@ -731,7 +745,7 @@ void makeMultiPlayerGUI(FPSTest* game, int*, int*)
 		window_flags |= ImGuiWindowFlags_NoTitleBar;
 		bool test = true;
 
-		ImGui::PushFont(game->getGUI().GetFont("Game"));
+		ImGui::PushFont(game->GetGUI().GetFont("Game"));
 		ImGui::Begin("Multi Player:", &test, window_flags);
 
 		ImGui::End();
@@ -742,7 +756,7 @@ void makeMultiPlayerGUI(FPSTest* game, int*, int*)
 void toggleSettings(FPSTest* game)
 {
 	RenderMode mode = game->getRenderMode();
-	GUI& gui = game->getGUI();
+	GUI& gui = game->GetGUI();
 	if (mode == NO_DATA_MODE)
 	{
 		multiplayerSelected = false;
@@ -849,6 +863,7 @@ void ShowInputDebug(FPSTest* game, int* w, int* h)
 
 	ImGui::End();
 }
+
 void ShowRendererDebug(FPSTest* game, int* w, int* h)
 {
 	ImGui::Begin("Renderer Debug");
@@ -883,10 +898,11 @@ void ShowRendererDebug(FPSTest* game, int* w, int* h)
 	ImGui::SliderFloat("Depth Bias Constant", &game->getRenderer().depthBiasConstant, 0.0f, 10.0f);
 	ImGui::SliderFloat("Depth Bias Slope Factor", &game->getRenderer().depthBiasSlopeFactor, 0.0f, 10.0f);
 
-	ImGui::Text("Active Decals: %d/100", game->getDecals().getNbActiveDecals());
+	ImGui::Text("Active Decals: %d/100", game->getBulletDecals().getNbActiveDecals());
 
 	ImGui::End();
 }
+
 void ShowAnimationDebug(FPSTest* game, int* w, int* h)
 {
 	ImGui::Begin("Animations Debug");
@@ -924,6 +940,7 @@ void ShowAnimationDebug(FPSTest* game, int* w, int* h)
 	//}
 	ImGui::End();
 }
+
 void ShowNetworkDebug(FPSTest* game, int* w, int* h)
 {
 	ImGui::Begin("Network Debug");

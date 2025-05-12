@@ -14,6 +14,7 @@ namespace Engine
 		InputManager::RegisterCallbacks(mContext.window.get());
 		mContext.window.get()->SetEventCallback(std::bind(&Game::OnEvent, this, std::placeholders::_1));
 		network = std::make_unique<Network>();
+		gui = std::make_unique<GUI>(this);
 		this->Init();
 	}
 	void Game::Run()
