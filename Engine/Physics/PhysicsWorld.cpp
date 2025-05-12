@@ -159,11 +159,12 @@ namespace Engine
 			{
 				if (actorPair.second)
 				{
-					gScene->addActor(*comp->GetComponentActor());
+					comp->SetSimulation(PhysicsComponent::PhysicsSimulation::LOCALLYUPDATED);
 				}
 				else
 				{
-					gScene->removeActor(*comp->GetComponentActor());
+					comp->SetSimulation(PhysicsComponent::PhysicsSimulation::NOTUPDATED);
+					comp->GetController()->setFootPosition(PxExtendedVec3(-99999.0, -99999.0, -99999.0));
 				}
 			}
 			else

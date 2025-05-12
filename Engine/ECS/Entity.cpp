@@ -204,9 +204,12 @@ namespace Engine
 	// from input actions
 	void Entity::SetRotation(glm::mat4 aRotation)
 	{
-		this->rotation = aRotation;
-		this->dirty = true;
-		SetEntityHasChanged();
+		if (this->rotation != aRotation)
+		{
+			this->rotation = aRotation;
+			this->dirty = true;
+			SetEntityHasChanged();
+		}
 	}
 
 	void Entity::SetRotation(glm::quat rotation)

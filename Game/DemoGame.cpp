@@ -305,8 +305,11 @@ void FPSTest::loadOnlineEntities(int maxClientsNum, int numTeams, bool isListenS
 		networkComponent->SetTeam(team);
 		physicsComponent = reinterpret_cast<PhysicsComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
 		physicsComponent->Init(physicsWorld, PhysicsComponent::PhysicsType::CONTROLLER, models[renderComponent->GetModelIndex()], entity->GetModelMatrix(), entity->GetEntityId(), isListenServer, false);
-		physicsComponent->SetSimulation(PhysicsComponent::PhysicsSimulation::NOTUPDATED);
-		entityManager.AddUpdatedPhysicsComp(physicsComponent, false);
+		if (isListenServer)
+		{
+			physicsComponent->SetSimulation(PhysicsComponent::PhysicsSimulation::NOTUPDATED);
+			entityManager.AddUpdatedPhysicsComp(physicsComponent, false);
+		}
 		audioComponent = reinterpret_cast<AudioComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), AUDIO));
 		audioComponent->addClip("GunShot", "Game/assets/AudioClips/singlegunshot.wav");
 		childrenComponent = reinterpret_cast<ChildrenComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), CHILDREN));

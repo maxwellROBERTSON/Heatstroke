@@ -29,8 +29,8 @@ public:
 
 	// Max 4 teams
 	std::vector<glm::vec3> startPositions = {
-		{0.0f, 0.5f, 0.0f},
-		{1.0f, 0.5f, 0.0f},
+		{-15.f, 0.002f, 11.f},
+		{-1.5f, 0.002f, -8.f},
 		{2.0f, 0.5f, 0.0f},
 		{3.0f, 0.5f, 0.0f}
 	};

@@ -727,6 +727,12 @@ void makeSinglePlayerGUI(FPSTest* game, int*, int*)
 
 		ImGui::End();
 
+		ImGui::SetNextWindowPos(
+			ImVec2(displaySize.x - windowPadding.x, displaySize.y - windowPadding.y),
+			ImGuiCond_Always,
+			ImVec2(1.0f, 1.0f)
+		);
+
 		ImGui::Begin("Gun Stuff:", &test, window_flags);
 		ImGui::Text("Ammo: %u", sp->ammoCount);
 		ImGui::End();
@@ -764,6 +770,12 @@ void makeMultiPlayerGUI(FPSTest* game, int*, int*)
 		ImGui::Text("SCORE: %u", mp->score);
 
 		ImGui::End();
+
+		ImGui::SetNextWindowPos(
+			ImVec2(displaySize.x - windowPadding.x, displaySize.y - windowPadding.y),
+			ImGuiCond_Always,
+			ImVec2(1.0f, 1.0f)
+		);
 
 		ImGui::Begin("Gun Stuff:", &test, window_flags);
 		ImGui::Text("Ammo: %u", mp->ammoCount);

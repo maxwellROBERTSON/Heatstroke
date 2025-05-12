@@ -76,9 +76,9 @@ void MultiPlayer::InitNetwork()
 			else
 			{
 				physicsComp->Init(game->GetPhysicsWorld(), type, model, mat, vec[i], true, false);
+				manager->AddUpdatedPhysicsComp(physicsComp, renderComp->GetIsActive());
 			}
 		}
-		manager->AddUpdatedPhysicsComp(physicsComp, renderComp->GetIsActive());
 	}
 
 	game->GetEntityManager().ResetChanged();
@@ -130,8 +130,6 @@ void MultiPlayer::Update(float timeDelta)
 					PxQuat(rotation.x, rotation.y, rotation.z, rotation.w)
 				);
 				physicsComponent->GetStaticBody()->setGlobalPose(pxTransform);
-
-				hit = true;
 			}
 		}
 	}*/
@@ -184,26 +182,23 @@ void MultiPlayer::Update(float timeDelta)
 			{
 				Engine::Entity* entity = entityManager.GetEntity(entitiesWithPhysicsComponent[i]);
 				Engine::PhysicsComponent* physicsComponent = reinterpret_cast<Engine::PhysicsComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
-				if (physicsComponent->GetStaticBody() != nullptr && physicsComponent->GetStaticBody() == entityHit.actor)
+				if (physicsComponent->GetComponentActor() != nullptr && physicsComponent->GetComponentActor() == entityHit.actor)
 				{
 					score++;
-
-					entity->ResetToSpawnState();
-					glm::vec3 translation;
-					glm::vec3 scale;
-					glm::quat rotation;
-					physicsComponent->DecomposeTransform(entity->GetModelMatrix(), translation, rotation, scale);
-					PxTransform pxTransform(
-						PxVec3(translation.x, translation.y, translation.z),
-						PxQuat(rotation.x, rotation.y, rotation.z, rotation.w)
-					);
-					physicsComponent->GetStaticBody()->setGlobalPose(pxTransform);
-
 					hit = true;
 				}
 			}
 
-			if (!hit) {
+			if (hit)
+			{
+				for (int i = 0; i < entitiesWithPhysicsComponent.size(); i++)
+				{
+					Engine::Entity* entity = entityManager.GetEntity(entitiesWithPhysicsComponent[i]);
+					entity->ResetToSpawnState();
+				}
+			}
+
+			else {
 				if (entityHit.actor != nullptr && entityHit.actor->getName() != "levelBounds" && entityHit.distance != PX_MAX_REAL) {
 					this->game->getBulletDecals().setNextDecal(entityHit.position, entityHit.normal);
 				}
@@ -221,7 +216,7 @@ void MultiPlayer::SetPlayerEntity(Engine::Entity* e)
 glm::vec3 MultiPlayer::GetStartPos(int team)
 {
 	if (team > 0 && team <= 4)
-		return startPositions[team];
+		return startPositions[team - 1];
 	else
 		throw("Team < 1 or Team > 4");
 }
