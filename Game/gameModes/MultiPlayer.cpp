@@ -194,7 +194,13 @@ void MultiPlayer::Update(float timeDelta)
 				for (int i = 0; i < entitiesWithPhysicsComponent.size(); i++)
 				{
 					Engine::Entity* entity = entityManager.GetEntity(entitiesWithPhysicsComponent[i]);
-					entity->ResetToSpawnState();
+					Engine::PhysicsComponent* physicsComponent = reinterpret_cast<Engine::PhysicsComponent*>(entityManager.GetComponentOfEntity(entitiesWithPhysicsComponent[i], PHYSICS));
+					if (physicsComponent->GetPhysicsType() == PhysicsComponent::PhysicsType::CONTROLLER)
+					{
+						entity->ResetToSpawnState();
+						glm::vec3 pos = entity->GetPosition();
+						physicsComponent->GetController()->setFootPosition(PxExtendedVec3(pos.x, pos.y, pos.z));
+					}
 				}
 			}
 
