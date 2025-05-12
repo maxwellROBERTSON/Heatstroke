@@ -10,9 +10,9 @@
 #include <type_traits>
 
 #include "../ECS/Components/AudioComponent.hpp"
-#include "../Engine/vulkan/objects/Buffer.hpp"
-#include "../Engine/Rendering/PipelineCreation.hpp"
 #include "../Engine/Rendering/features/Skybox.hpp"
+#include "../Engine/Rendering/PipelineCreation.hpp"
+#include "../Engine/vulkan/objects/Buffer.hpp"
 #include "../Engine/vulkan/VulkanDevice.hpp"
 #include "Error.hpp"
 #include "glm/gtx/string_cast.hpp"
@@ -30,7 +30,7 @@ void FPSTest::Init() {
 	this->renderer = Renderer(&GetContext(), &GetEntityManager(), this);
 	this->renderer.initialise();
 
-	this->gui = GUI(this);
+	//this->gui = GUI(this);
 
 	srand(time(0));
 	this->threadPool = thread_pool_wait::get_instance();

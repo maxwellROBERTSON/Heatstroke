@@ -34,7 +34,7 @@
 #include "../ThreadPool/thread_pool_wait.h"
 
 #include "gameRendering/Crosshair.hpp"
-#include "gameRendering/Decals.hpp"
+//#include "gameRendering/Decals.hpp"
 #include "gameRendering/Renderer.hpp"
 
 #include "gameRendering/RenderMode.hpp"

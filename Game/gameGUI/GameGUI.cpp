@@ -13,8 +13,8 @@ using namespace Engine;
 // Define the global variables here
 bool showImGuiDemoWindow{ false };
 bool debugRenderer{ false };
-bool debugInput = true;
-bool debugGame = true;
+bool debugInput = false;
+bool debugGame = false;
 bool debugAnimations{ false };
 bool debugNetwork{ false };
 bool showGameGUI{ true };
@@ -510,6 +510,17 @@ void makeSettingsGUI(FPSTest* game, int* w, int* h)
 	float sensitivity = renderer.getCameraPointer()->sensitivity;
 	int sensitivityInt = static_cast<int>(sensitivity * 100);
 
+	int currentInputDevice = InputManager::getInputDevice();
+	const char* inputDeviceNames[InputDevice::INPUT_DEVICE_COUNT] = { "Keyboard & Mouse", "Controller" };
+	const char* inputDeviceName = (currentInputDevice >= 0 && currentInputDevice < INPUT_DEVICE_COUNT) ? inputDeviceNames[currentInputDevice] : "Unknown";
+	if (InputManager::hasJoysticksConnected())
+	{
+		ImGui::SliderInt("Input Device", &currentInputDevice, 0, INPUT_DEVICE_COUNT - 1, inputDeviceName); // Use ImGuiSliderFlags_NoInput flag to disable CTRL+Click here.
+		InputManager::setInputDevivce((InputDevice)currentInputDevice);
+	}
+	else
+		InputManager::setInputDevivce(InputDevice::KBM);
+
 	// Slider from 0.01 to 1.00
 	ImGui::PushItemWidth(*w / 4.f);
 	if (ImGui::SliderInt("##SensitivitySlider", &sensitivityInt, 1, 100))
@@ -725,8 +736,21 @@ void makeSinglePlayerGUI(FPSTest* game, int*, int*)
 		ImGui::Text("SCORE: %u", sp->score);
 		ImGui::Text("Time: %u", sp->countdown);
 
+		if (ImGui::Button("Reset Game"))
+		{
+			sp->countdown = 31;
+			sp->score = 0;
+		}
+
+
 		ImGui::End();
 
+		// Set window position to top-right (with padding)
+		ImGui::SetNextWindowPos(
+			ImVec2(displaySize.x - windowPadding.x, displaySize.y - windowPadding.y),
+			ImGuiCond_Always,
+			ImVec2(1.0f, 1.0f) // Pivot (1, 0) means align from top-right corner
+		);
 		ImGui::Begin("Gun Stuff:", &test, window_flags);
 		ImGui::Text("Ammo: %u", sp->ammoCount);
 		ImGui::End();
@@ -832,16 +856,16 @@ void ShowInputDebug(FPSTest* game, int* w, int* h)
 	ImGui::Checkbox("##MFKBM", &shootHeld); ImGui::SameLine();
 	ImGui::Checkbox("##MFKBM", &shootDown);
 
-	int currentInputDevice = InputManager::getInputDevice();
-	const char* inputDeviceNames[InputDevice::INPUT_DEVICE_COUNT] = { "Keyboard & Mouse", "Controller" };
-	const char* inputDeviceName = (currentInputDevice >= 0 && currentInputDevice < INPUT_DEVICE_COUNT) ? inputDeviceNames[currentInputDevice] : "Unknown";
-	if (InputManager::hasJoysticksConnected())
-	{
-		ImGui::SliderInt("Input Device", &currentInputDevice, 0, INPUT_DEVICE_COUNT - 1, inputDeviceName); // Use ImGuiSliderFlags_NoInput flag to disable CTRL+Click here.
-		InputManager::setInputDevivce((InputDevice)currentInputDevice);
-	}
-	else
-		InputManager::setInputDevivce(InputDevice::KBM);
+	//int currentInputDevice = InputManager::getInputDevice();
+	//const char* inputDeviceNames[InputDevice::INPUT_DEVICE_COUNT] = { "Keyboard & Mouse", "Controller" };
+	//const char* inputDeviceName = (currentInputDevice >= 0 && currentInputDevice < INPUT_DEVICE_COUNT) ? inputDeviceNames[currentInputDevice] : "Unknown";
+	//if (InputManager::hasJoysticksConnected())
+	//{
+	//	ImGui::SliderInt("Input Device", &currentInputDevice, 0, INPUT_DEVICE_COUNT - 1, inputDeviceName); // Use ImGuiSliderFlags_NoInput flag to disable CTRL+Click here.
+	//	InputManager::setInputDevivce((InputDevice)currentInputDevice);
+	//}
+	//else
+	//	InputManager::setInputDevivce(InputDevice::KBM);
 
 	if (InputManager::getInputDevice() == InputDevice::CONTROLLER)
 	{
@@ -964,11 +988,11 @@ void ShowGameDebug(FPSTest* game, int* w, int* h)
 	SinglePlayer* sp = dynamic_cast<SinglePlayer*>(&game->GetGameMode());
 	if (sp)
 	{
-		if (ImGui::Button("Reset Game"))
-		{
-			sp->countdown = 31;
-			sp->score = 0;
-		}
+		//if (ImGui::Button("Reset Game"))
+		//{
+		//	sp->countdown = 31;
+		//	sp->score = 0;
+		//}
 
 		ImGui::InputFloat3("Rifle Position", &sp->riflePosition.x);
 		ImGui::InputFloat("Rifle X Rot:", &sp->rifleXRot);

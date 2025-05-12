@@ -101,6 +101,13 @@ void SinglePlayer::Update(float timeDelta)
 			shootPistol();
 		}
 
+		if (InputManager::getMouse().isDown(HS_MOUSE_BUTTON_LEFT) && !holdingPistol)
+			shootRifle();
+
+		if (InputManager::getKeyboard().isPressed(HS_KEY_R) && !holdingPistol)
+			reloadRifle();
+
+
 		break;
 	}
 	}
@@ -228,7 +235,7 @@ void SinglePlayer::shootPistol()
 
 		if (!hitTarget) {
 			if (entityHit.actor != nullptr && entityHit.actor->getName() != "levelBounds" && entityHit.distance != PX_MAX_REAL) {
-				this->game->getDecals().setNextDecal(entityHit.position, entityHit.normal);
+				this->game->getBulletDecals().setNextDecal(entityHit.position, entityHit.normal);
 			}
 		}
 	}
@@ -238,36 +245,36 @@ void SinglePlayer::reloadRifle()
 {
 	if (canReload)
 	{
-		canReload = false;
-		isReloading = true;
-		reloadDelay = 0.5f;
-		RenderComponent* pistolRenderComponent = reinterpret_cast<RenderComponent*>(this->game->GetEntityManager().GetComponentOfEntity(pistolEntity->GetEntityId(), RENDER));
+		//canReload = false;
+		//isReloading = true;
+		//reloadDelay = 0.5f;
+		RenderComponent* rifleRenderComponent = reinterpret_cast<RenderComponent*>(this->game->GetEntityManager().GetComponentOfEntity(rifleEntity->GetEntityId(), RENDER));
 		std::vector<vk::Model>& models = this->game->GetModels();
-		int pistolModelIndex = pistolRenderComponent->GetModelIndex();
-		models[pistolModelIndex].animationQueue.push(models[pistolModelIndex].animations[4]);
-		models[pistolModelIndex].blending = true;
-		ammoCount = 6;
+		int rifleModelIndex = rifleRenderComponent->GetModelIndex();
+		models[rifleModelIndex].animationQueue.push(models[rifleModelIndex].animations[2]);
+		models[rifleModelIndex].blending = true;
+		//ammoCount = 6;
 	}
 }
 
 void SinglePlayer::shootRifle()
 {
-	Engine::RenderComponent* pistolRenderComponent = reinterpret_cast<Engine::RenderComponent*>(this->game->GetEntityManager().GetComponentOfEntity(pistolEntity->GetEntityId(), RENDER));
+	Engine::RenderComponent* rifleRenderComponent = reinterpret_cast<Engine::RenderComponent*>(this->game->GetEntityManager().GetComponentOfEntity(rifleEntity->GetEntityId(), RENDER));
 	Engine::AudioComponent* playerAudioComponent = reinterpret_cast<Engine::AudioComponent*>(this->game->GetEntityManager().GetComponentOfEntity(playerEntity->GetEntityId(), AUDIO));
-	int pistolModelIndex = pistolRenderComponent->GetModelIndex();
+	int rifleModelIndex = rifleRenderComponent->GetModelIndex();
 	std::vector<vk::Model>& models = this->game->GetModels();
 
 	if (ammoCount <= 0)
 	{
-		reloadPistol();
+		reloadRifle();
 	}
 	else
 	{
-		models[pistolModelIndex].animationQueue.push(models[pistolModelIndex].animations[3]);
-		models[pistolModelIndex].blending = true;
-		ammoCount--;
-		canFire = false;
-		fireDelay = 1.0f;
+		models[rifleModelIndex].animationQueue.push(models[rifleModelIndex].animations[6]);
+		models[rifleModelIndex].blending = true;
+		//ammoCount--;
+		//canFire = false;
+		//fireDelay = 1.0f;
 
 		PxRaycastHit entityHit = this->game->GetPhysicsWorld().handleShooting();
 		bool hitTarget = false;
@@ -305,7 +312,7 @@ void SinglePlayer::shootRifle()
 
 		if (!hitTarget) {
 			if (entityHit.actor != nullptr && entityHit.actor->getName() != "levelBounds" && entityHit.distance != PX_MAX_REAL) {
-				this->game->getDecals().setNextDecal(entityHit.position, entityHit.normal);
+				this->game->getBulletDecals().setNextDecal(entityHit.position, entityHit.normal);
 			}
 		}
 	}
