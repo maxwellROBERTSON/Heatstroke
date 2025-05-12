@@ -93,10 +93,9 @@ namespace Engine
 
 	void InputManager::Update()
 	{
-		glfwPollEvents();
 
-		//mKeyboard.getKeyboardState().Update();
-		//mMouse.getMouseState().Update();
+		mKeyboard.getKeyboardState().Update();
+		mMouse.getMouseState().Update();
 
 		for (int j = 0; j < GLFW_JOYSTICK_LAST; ++j) {
 			if (glfwJoystickPresent(j) == GLFW_TRUE) {
@@ -104,6 +103,9 @@ namespace Engine
 				joystick.Update();
 			}
 		}
+
+		glfwPollEvents();
+
 	}
 	void InputManager::RegisterCallbacks(VulkanWindow* window)
 	{

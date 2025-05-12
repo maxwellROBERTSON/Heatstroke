@@ -237,7 +237,6 @@ void FPSTest::loadOfflineEntities()
 	entityManager.AddSimulatedPhysicsEntity(entity->GetEntityId());
 	GetGameMode().SetTargetEntity(entity);
 
-	// int numberOfTargets = 5;
 	GetEntityManager().ResetChanged();
 }
 
@@ -246,7 +245,6 @@ void FPSTest::loadOnlineEntities(int maxClientsNum)
 	// Pointers
 	Entity* entity;
 	CameraComponent* cameraComponent;
-	// NetworkComponent* networkComponent;
 	RenderComponent* renderComponent;
 	PhysicsComponent* physicsComponent;
 

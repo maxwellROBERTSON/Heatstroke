@@ -64,4 +64,6 @@ public:
 	void swapWeapon();
 	void reloadPistol();
 	void shootPistol();
+	void reloadRifle();
+	void shootRifle();
 };
