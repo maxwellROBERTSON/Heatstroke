@@ -47,6 +47,9 @@ namespace Engine
 		// Get camera front direction
 		glm::vec3 GetFrontDirection();
 
+		// Get camera yaw
+		float GetYaw() { return camera.yaw; }
+
 		// Setters
 
 		// Set component data

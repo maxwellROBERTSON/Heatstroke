@@ -326,8 +326,14 @@ namespace Engine
 			if (p->GetPhysicsType() == PhysicsComponent::PhysicsType::CONTROLLER && p->GetSimulation() == PhysicsComponent::PhysicsSimulation::LOCALLYSIMULATED)
 			{
 				PxExtendedVec3 pos = p->GetController()->getFootPosition();
-				entityManager->GetEntity(p->GetEntityId())->SetPosition(pos.x, pos.y, pos.z);
+				Entity* entity = entityManager->GetEntity(p->GetEntityId());
+				entity->SetPosition(pos.x, pos.y, pos.z);
 				CameraComponent* cameraComponent = reinterpret_cast<CameraComponent*>(entityManager->GetComponentOfEntity(controllerEntity->GetEntityId(), CAMERA));
+				float yaw = cameraComponent->GetYaw();
+				yaw = glm::radians(-yaw - 180);
+				glm::quat yawRotation = glm::angleAxis(yaw, glm::vec3(0.0f, 1.0f, 0.0f));
+				glm::quat finalRotation = yawRotation * glm::quat_cast(entity->GetSpawnRotation());
+				entity->SetRotation(finalRotation);
 				cameraComponent->UpdateCameraPosition(pos.x, pos.y + controllerHeight, pos.z);
 			}
 			else if (p->GetPhysicsType() == PhysicsComponent::PhysicsType::CONTROLLER && p->GetSimulation() == PhysicsComponent::PhysicsSimulation::LOCALLYUPDATED)

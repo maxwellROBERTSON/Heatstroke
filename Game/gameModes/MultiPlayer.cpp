@@ -207,6 +207,7 @@ void MultiPlayer::Update(float timeDelta)
 						if (entity == playerEntity)
 							continue;
 						physicsComponent->SetReset(true);
+						physicsComponent->SetComponentHasChanged();
 					}
 				}
 			}

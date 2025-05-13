@@ -55,6 +55,15 @@ namespace Engine
 		// Scale Getter
 		glm::vec3 GetScale() const { return scale; }
 
+		// Spawn Position Getter
+		glm::vec3 GetSpawnPosition() const { return spawnPosition; }
+
+		// Spawn Rotation Getter
+		glm::mat4 GetSpawnRotation() const { return spawnRotation; }
+
+		// Spawn Scale Getter
+		glm::vec3 GetSpawnScale() const { return spawnScale; }
+
 		// Setters
 
 		// Set the data for a given entity

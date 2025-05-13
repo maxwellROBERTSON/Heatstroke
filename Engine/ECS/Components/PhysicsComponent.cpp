@@ -100,6 +100,7 @@ namespace Engine
 				glm::vec3 pos = entity->GetPosition();
 				GetController()->setFootPosition(PxExtendedVec3(pos.x, pos.y, pos.z));
 				reset = false;
+				std::cout << "Reset" << std::endl;
 			}
 		}
 		offset += sizeof(reset);
