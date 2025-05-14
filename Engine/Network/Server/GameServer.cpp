@@ -1,5 +1,7 @@
 #include "GameServer.hpp"
 
+#include "../../Core/Log.hpp"
+
 namespace Engine
 {
 	GameServer::GameServer(
@@ -46,23 +48,43 @@ namespace Engine
 	void GameServer::Update()
 	{
 		serverTime = server->GetTime();
-		if (serverTime + dt > yojimbo_time()) {
+		int dtCount = 0;
+		while(serverTime + dtCount * dt < yojimbo_time())
+		{
+			dtCount++;
+		}
+		if (dtCount == 0)
+		{
 			return;
 		}
-		serverTime += dt;
+		else
+		{
+			serverTime += dtCount * dt;
+		}
 		server->AdvanceTime(serverTime);
 
 		server->ReceivePackets();
+
+		EntityManager& manager = game->GetEntityManager();
 
 		ProcessMessages();
 
 		if (sendResetPositionsMessage)
 		{
 			HandleClientResetPositions();
+			manager.SetResetTimer(5.f);
 			sendResetPositionsMessage = false;
 		}
 
-		QueueStateMessages();
+		if (manager.GetResetTimer() != 0.f)
+		{
+			ResetClientPositions();
+			manager.DecreaseResetTimer(dtCount * dt);
+		}
+		else
+		{
+			QueueStateMessages();
+		}
 
 		server->SendPackets();
 	}
@@ -96,7 +118,7 @@ namespace Engine
 	// Process message type with corresponding function
 	void GameServer::ProcessMessage(int clientIndex, yojimbo::Message* message)
 	{
-		std::cout << GameMessageTypeStrings[message->GetType()] << " FROM CLIENT " << clientIndex << " WITH MESSAGEID = " << message->GetId() << std::endl;
+		DLOG(GameMessageTypeStrings[message->GetType()] << " FROM CLIENT " << clientIndex << " WITH MESSAGEID = " << message->GetId());
 		if (message->GetType() == REQUEST_ENTITY_DATA)
 		{
 			connectionQueue.push_back(std::make_pair(clientIndex, server->GetClientId(clientIndex)));
@@ -104,10 +126,12 @@ namespace Engine
 		else if (message->GetType() == CLIENT_INITIALIZED)
 		{
 			loadedClients.push_back(std::make_pair(clientIndex, server->GetClientId(clientIndex)));
+			sendResetPositionsMessage = true;
 		}
 		else if (message->GetType() == CLIENT_UPDATE_ENTITY_DATA)
 		{
-			HandleClientUpdateEntityData(clientIndex, (ClientUpdateEntityData*)message);
+			if (game->GetEntityManager().GetResetTimer() == 0.f)
+				HandleClientUpdateEntityData(clientIndex, (ClientUpdateEntityData*)message);
 		}
 		else if (message->GetType() == CLIENT_RESET_POSITIONS)
 		{
@@ -134,16 +158,16 @@ namespace Engine
 				{
 					game->GetEntityManager().SetAllChangedData(message->GetBlockData(), -1);
 				}
-				std::cout << "Data updated from client " << clientIndex << std::endl;
+				DLOG("Data updated from client " << clientIndex);
 			}
 			else
 			{
-				std::cout << "FAILED, BLOCK SIZE IS 0." << std::endl;
+				DLOG("FAILED, BLOCK SIZE IS 0.");
 			}
 		}
 		else
 		{
-			std::cout << "FAILED, SERVER NOT YET INITIALISED." << std::endl;
+			DLOG("FAILED, SERVER NOT YET INITIALISED.");
 		}
 	}
 
@@ -165,30 +189,29 @@ namespace Engine
 				ServerUpdateEntityData* message = static_cast<ServerUpdateEntityData*>(server->CreateMessage(client.first, SERVER_UPDATE_ENTITY_DATA));
 				if (message)
 				{
-					uint8_t* block = server->AllocateBlock(client.first, bytes);
-					std::cout << "Block allocated at: " << static_cast<void*>(block) << std::endl;
+					uint8_t* block = server->AllocateBlock(client.first, 1024);
+					DLOG("Block allocated at: " << static_cast<void*>(block));
 					if (block)
 					{
 						game->GetEntityManager().GetAllChangedData(block);
-						server->AttachBlockToMessage(client.first, message, block, bytes);
+						server->AttachBlockToMessage(client.first, message, block, 1024);
 						if (!server->CanSendMessage(client.first, yojimbo::CHANNEL_TYPE_UNRELIABLE_UNORDERED))
 						{
-							std::cout << "MESSAGE QUEUE NOT AVAILABLE FOR " << GameMessageTypeStrings[SERVER_UPDATE_ENTITY_DATA] << std::endl;
+							DLOG("MESSAGE QUEUE NOT AVAILABLE FOR " << GameMessageTypeStrings[SERVER_UPDATE_ENTITY_DATA]);
 							server->ReleaseMessage(client.first, message);
 							continue;
 						}
 						server->SendServerMessage(client.first, yojimbo::CHANNEL_TYPE_UNRELIABLE_UNORDERED, message);
-						std::cout << GameMessageTypeStrings[SERVER_UPDATE_ENTITY_DATA] << " TO CLIENT " << client.first << " WITH ";
-						std::cout << "MESSAGEID = " << message->GetId() << ", BLOCK SIZE = " << bytes << std::endl;
+						DLOG(GameMessageTypeStrings[SERVER_UPDATE_ENTITY_DATA] << " TO CLIENT " << client.first << " WITH MESSAGEID = " << message->GetId() << ", BLOCK SIZE = " << 1024);
 						continue;
 					}
 					else
 					{
-						std::cout << "Block allocation failed." << std::endl;
+						DLOG("Block allocation failed.");
 						server->ReleaseMessage(client.first, message);
 					}
 				}
-				std::cout << "FAILED TO SEND " << GameMessageTypeStrings[SERVER_UPDATE_ENTITY_DATA] << " TO CLIENT " << client.first << std::endl;
+				DLOG("FAILED TO SEND " << GameMessageTypeStrings[SERVER_UPDATE_ENTITY_DATA] << " TO CLIENT " << client.first);
 			}
 			game->GetEntityManager().ResetChanged();
 		}
@@ -209,12 +232,11 @@ namespace Engine
 				server->AttachBlockToMessage(clientIndex, message, block, bytes);
 				if (!server->CanSendMessage(clientIndex, yojimbo::CHANNEL_TYPE_RELIABLE_ORDERED))
 				{
-					std::cout << "MESSAGE QUEUE NOT AVAILABLE FOR " << GameMessageTypeStrings[RESPONSE_ENTITY_DATA] << " TO CLIENT " << clientIndex << std::endl;
+					DLOG("MESSAGE QUEUE NOT AVAILABLE FOR " << GameMessageTypeStrings[RESPONSE_ENTITY_DATA] << " TO CLIENT " << clientIndex);
 					return;
 				}
 				server->SendServerMessage(clientIndex, yojimbo::CHANNEL_TYPE_RELIABLE_ORDERED, message);
-				std::cout << GameMessageTypeStrings[RESPONSE_ENTITY_DATA] << " TO CLIENT " << clientIndex << " WITH ";
-				std::cout << "MESSAGEID = " << message->GetId() << ", BLOCK SIZE = " << bytes << std::endl;
+				DLOG(GameMessageTypeStrings[RESPONSE_ENTITY_DATA] << " TO CLIENT " << clientIndex << " WITH MESSAGEID = " << message->GetId() << ", BLOCK SIZE = " << bytes);
 				return;
 			}
 			else
@@ -222,11 +244,34 @@ namespace Engine
 				server->ReleaseMessage(clientIndex, message);
 			}
 		}
-		std::cout << "FAILED TO SEND " << GameMessageTypeStrings[RESPONSE_ENTITY_DATA] << " TO CLIENT " << clientIndex << std::endl;
+		DLOG("FAILED TO SEND " << GameMessageTypeStrings[RESPONSE_ENTITY_DATA] << " TO CLIENT " << clientIndex);
 	}
 
 	// Handle a client message for resetting positions
 	void GameServer::HandleClientResetPositions()
+	{
+		ResetClientPositions();
+
+		for (int i = 0; i < server->GetNumConnectedClients(); i++)
+		{
+			ServerResetPositions* message = static_cast<ServerResetPositions*>(server->CreateMessage(i, SERVER_RESET_POSITIONS));
+			if (message)
+			{
+				if (!server->CanSendMessage(i, yojimbo::CHANNEL_TYPE_RELIABLE_ORDERED))
+				{
+					DLOG("MESSAGE QUEUE NOT AVAILABLE FOR " << GameMessageTypeStrings[SERVER_RESET_POSITIONS] << " TO CLIENT " << i);
+					continue;
+				}
+				server->SendServerMessage(i, yojimbo::CHANNEL_TYPE_RELIABLE_ORDERED, message);
+				DLOG(GameMessageTypeStrings[SERVER_RESET_POSITIONS] << " TO CLIENT " << i << " WITH MESSAGEID = " << message->GetId());
+				continue;
+			}
+			DLOG("FAILED TO SEND " << GameMessageTypeStrings[SERVER_RESET_POSITIONS] << " TO CLIENT " << i);
+		}
+	}
+
+	// Function to reset entities to spawn state
+	void GameServer::ResetClientPositions()
 	{
 		if (isListenServer)
 		{
@@ -246,24 +291,6 @@ namespace Engine
 					physicsComponent->GetController()->setFootPosition(PxExtendedVec3(pos.x, pos.y, pos.z));
 				}
 			}
-		}
-
-		for (int i = 0; i < server->GetNumConnectedClients(); i++)
-		{
-			ServerResetPositions* message = static_cast<ServerResetPositions*>(server->CreateMessage(i, SERVER_RESET_POSITIONS));
-			if (message)
-			{
-				if (!server->CanSendMessage(i, yojimbo::CHANNEL_TYPE_RELIABLE_ORDERED))
-				{
-					std::cout << "MESSAGE QUEUE NOT AVAILABLE FOR " << GameMessageTypeStrings[SERVER_RESET_POSITIONS] << " TO CLIENT " << i << std::endl;
-					return;
-				}
-				server->SendServerMessage(i, yojimbo::CHANNEL_TYPE_RELIABLE_ORDERED, message);
-				std::cout << GameMessageTypeStrings[SERVER_RESET_POSITIONS] << " TO CLIENT " << i << " WITH ";
-				std::cout << "MESSAGEID = " << message->GetId() << std::endl;
-				return;
-			}
-			std::cout << "FAILED TO SEND " << GameMessageTypeStrings[SERVER_RESET_POSITIONS] << " TO CLIENT " << i << std::endl;
 		}
 	}
 

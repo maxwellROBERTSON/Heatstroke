@@ -7,6 +7,8 @@
 #include <yojimbo.h>
 #include <iostream>
 
+#include "../../Core/Log.hpp"
+
 namespace Engine
 {
     // Retrieves the number of bits required for a message based on a sequence number
@@ -233,10 +235,10 @@ namespace Engine
             YOJIMBO_DELETE(allocator, GameMessageFactory, factory);
         }
         void OnServerClientConnected(int clientIndex) override {
-            std::cout << "Client connected: " << clientIndex << std::endl;
+            DLOG("Client connected: " << clientIndex);
         }
         void OnServerClientDisconnected(int clientIndex) override {
-            std::cout << "Client disconnected: " << clientIndex << std::endl;
+            DLOG("Client disconnected: " << clientIndex);
         }
         GameMessageFactory* factory;
 

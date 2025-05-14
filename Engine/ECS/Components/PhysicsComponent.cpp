@@ -1,5 +1,7 @@
 ﻿#include "PhysicsComponent.hpp"
 
+#include "../../Core/Log.hpp"
+
 namespace Engine
 {
 	class PhysicsWorld;
@@ -94,23 +96,7 @@ namespace Engine
 		if (std::memcmp(&reset, data + offset, sizeof(reset)) != 0)
 		{
 			std::memcpy(&reset, data + offset, sizeof(reset));
-			/*std::cout << "Received a reset value of ";
-			std::cout << std::boolalpha << reset << std::endl;
-			if (reset)
-			{
-				entity->ResetToSpawnState();
-				glm::vec3 pos = entity->GetPosition();
-				GetController()->setFootPosition(PxExtendedVec3(pos.x, pos.y, pos.z));
-				std::cout << "Reset position to: " << pos.x << " " << pos.y << " " << pos.z << std::endl;
-				reset = false;
-			}*/
 		}
-		/*else
-		{
-			uint8_t rawResetByte = *(reinterpret_cast<const uint8_t*>(data + offset));
-			std::cout << "\n\n RESET VALUE SET TO ";
-			std::cout << std::boolalpha << rawResetByte << std::endl;
-		}*/
 		offset += sizeof(reset);
 	}
 
@@ -139,7 +125,7 @@ namespace Engine
 		// parse mat4
 		if (!DecomposeTransform(transform, translation, rotation, scale))
 		{
-			std::cout << "DecomposeTransform failed!" << std::endl;
+			DLOG("DecomposeTransform failed!");
 			return;
 		}
 
@@ -183,10 +169,6 @@ namespace Engine
 
 		glm::vec3 glmHalfExtent = (worldSpaceMax - worldSpaceMin) / 2.0f;
 		PxVec3 halfExtent(std::max(0.001f, glmHalfExtent.x), std::max(0.001f, glmHalfExtent.y), std::max(0.001f, glmHalfExtent.z));
-		// std::cout << "Max: " << worldSpaceMax.x << " " << worldSpaceMax.y << " " << worldSpaceMax.z << std::endl;
-		// std::cout << "Min: " << worldSpaceMin.x << " " << worldSpaceMin.y << " " << worldSpaceMin.z << std::endl;
-		// std::cout << "glmHalf: " << glmHalfExtent.x << " " << glmHalfExtent.y << " " << glmHalfExtent.z << std::endl;
-		// std::cout << "halfExtent: " << halfExtent.x << " " << halfExtent.y << " " << halfExtent.z << std::endl;
 
 		PxMaterial* material = pworld.gPhysics->createMaterial(0.5f, 0.5f, 0.5f);
 		material->setRestitution(0.0f);
@@ -291,7 +273,7 @@ namespace Engine
 
 				// Decompose transform
 				if (!DecomposeTransform(nodeMatrix, translation, rotation, scale)) {
-					std::cout << "DecomposeTransform failed!" << std::endl;
+					DLOG("DecomposeTransform failed!");
 					return;
 				}
 

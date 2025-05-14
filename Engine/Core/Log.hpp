@@ -2,12 +2,7 @@
 #include <iostream>
 
 #ifdef _DEBUG
-#define LOG(x) std::cout << x
+#define DLOG(x) std::cout << x << std::endl
 #else
-struct NullBuffer : std::streambuf {
-    int overflow(int c) override { return c; }
-};
-static NullBuffer nullBuffer;
-static std::ostream nullStream(&nullBuffer);
-#define LOG(x) nullStream
+#define DLOG(x)
 #endif

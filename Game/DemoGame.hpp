@@ -3,6 +3,7 @@
 #include <chrono>
 
 #include "../Engine/Core/Game.hpp"
+#include "../Engine/Core/Log.hpp"
 
 #include "../Engine/ECS/Components/AudioComponent.hpp"
 #include "../Engine/ECS/Components/CameraComponent.hpp"

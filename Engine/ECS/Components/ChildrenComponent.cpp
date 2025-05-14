@@ -1,5 +1,7 @@
 #include "ChildrenComponent.hpp"
 
+#include "../../Core/Log.hpp"
+
 namespace Engine
 {
 	// Getters
@@ -59,7 +61,7 @@ namespace Engine
 	{
 		if (numChildren == childrenEntityIds.size())
 		{
-			std::cout << "Max children reached." << std::endl;
+			DLOG("Max children reached.");
 			return;
 		}
 		childrenEntityIds.at(numChildren) = entityId;

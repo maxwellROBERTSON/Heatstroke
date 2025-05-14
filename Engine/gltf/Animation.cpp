@@ -2,6 +2,8 @@
 
 #include "glTF.hpp"
 
+#include "../Core/Log.hpp"
+
 namespace Engine {
 namespace vk {
 
@@ -21,7 +23,7 @@ namespace vk {
 			break;
 		}
 		case AnimationSampler::InterpolationType::CUBIC_SPLINE: {
-			std::cout << "Warning: There is no support for cubic spline interpolation!" << std::endl;
+			DLOG("Warning: There is no support for cubic spline interpolation!");
 			break;
 		}
 		}
@@ -67,7 +69,7 @@ namespace vk {
 			break;
 		}
 		case AnimationSampler::InterpolationType::CUBIC_SPLINE: {
-			std::cout << "Warning: There is no support for cubic spline interpolation!" << std::endl;
+			DLOG("Warning: There is no support for cubic spline interpolation!");
 			break;
 		}
 		}
@@ -89,7 +91,7 @@ namespace vk {
 			break;
 		}
 		case AnimationSampler::InterpolationType::CUBIC_SPLINE: {
-			std::cout << "Warning: There is no support for cubic spline interpolation!" << std::endl;
+			DLOG("Warning: There is no support for cubic spline interpolation!");
 			break;
 		}
 		}

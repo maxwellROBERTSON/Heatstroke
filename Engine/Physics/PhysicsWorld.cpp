@@ -14,6 +14,8 @@
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/string_cast.hpp>
 
+#include "../Core/Log.hpp"
+
 namespace Engine
 {
 	physx::PxDefaultErrorCallback PhysicsWorld::gErrorCallback;
@@ -51,7 +53,7 @@ namespace Engine
 		}
 		else
 		{
-			std::cout << "PVD connected\n";
+			DLOG("PVD connected.");
 		}
 
 		gPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *gFoundation, PxTolerancesScale(), true, gPvd);
@@ -192,18 +194,10 @@ namespace Engine
 			const float gravity = -9.81f;
 			PxVec3 displacement(0.0f, gravity * deltatime, 0.0f);
 			PxVec3 old = displacement;
-			float speed = 5.0f;
+			float speed = 4.0f;
 			const float jumpSpeed = 3.0f;
 			PxVec3 frontDir(entityFrontDir.x, entityFrontDir.y, entityFrontDir.z);
 			PxVec3 rightDir(entityRightDir.x, entityRightDir.y, entityRightDir.z);
-
-			//auto& keyboard = Engine::InputManager::getKeyboard();
-			//auto& gamepad = Engine::InputManager::getJoystick(0);
-
-			//if (gamepad.getAxisValue(HS_GAMEPAD_AXIS_RIGHT_Y) < -0.2f)
-			//{
-			//	displacement += frontDir * speed * deltatime;
-			//}
 
 			if (InputManager::Action(Controls::MoveForward))
 			{
@@ -213,7 +207,6 @@ namespace Engine
 			if (InputManager::Action(Controls::MoveBackward)) {
 				displacement -= frontDir * speed * deltatime;
 			}
-
 
 			if (InputManager::Action(Controls::MoveLeft)) {
 				displacement -= rightDir * speed * deltatime;
@@ -266,19 +259,15 @@ namespace Engine
 			if (hit.actor->is<PxRigidDynamic>()) {
 				// hit dynamic
 				DebugDrawRayInPVD(gScene, pos, pos + direction * hit.distance, 0xFF000000);
-				//std::cout << "Hit dynamic actor at (" << hit.position.x << ", " << hit.position.y << ", " << hit.position.z << ")\n";
 			}
 			else {
 				// hit static
 				DebugDrawRayInPVD(gScene, pos, pos + direction * hit.distance, 0xFFFFFF00);
-				//hit.actor
-				//std::cout << hit.actor->getName() << std::endl;
 			}
 		}
 		else {
 			// hit nothing
 			DebugDrawRayInPVD(gScene, pos, pos + direction * 100.0f, 0xFFFFFF00);
-			//std::cout << "Hit nothing\n";
 		}
 		AudioComponent* audioComponent = reinterpret_cast<AudioComponent*>(entityManager->GetComponentOfEntity(controllerEntity->GetEntityId(), AUDIO));
 		audioComponent->playSound("GunShot");

@@ -29,18 +29,16 @@ void FPSTest::Init() {
 	this->renderer = Renderer(&GetContext(), &GetEntityManager(), this);
 	this->renderer.initialise();
 
-	// srand(time(0));
-	// this->threadPool = thread_pool_wait::get_instance();
+	srand(time(0));
 
 	InputManager::InitDefaultControls();
 
-	// //submit task to initialise Models to thread pool
-	// auto modelsFut = threadPool->submit(&FPSTest::initialiseModels, this);
+	//submit task to initialise Models to thread pool
+	auto modelsFut = GetThreadPool().submit(&FPSTest::initialiseModels, this);
 
-	// std::cout << "Waiting for model initialisation" << std::endl;
-	// //blocks execution of the rest of the program until the initialiseModels Thread has finished
-	// modelsFut.get();
-	initialiseModels();
+	DLOG("Waiting for model initialisation");
+	//blocks execution of the rest of the program until the initialiseModels Thread has finished
+	modelsFut.get();
 
 	// Scene camera
 	sceneCamera = Camera(60.0f, 0.01f, 1000.0f, glm::vec3(0.0f, 0.0f, -5.0f), glm::vec3(0.0f, 0.0f, 1.0f));
@@ -104,8 +102,6 @@ void FPSTest::Update() {
 		if (gameMode)
 		{
 			gameMode->Update(timeDelta);
-			/*Engine::Camera* c = this->renderer.getCameraPointer();
-			std::cout << "pos " << c->position.x << " " << c->position.y << " " << c->position.z << std::endl;*/
 		}
 
 		GetPhysicsWorld().updateObjects(GetModels());
@@ -133,20 +129,8 @@ void FPSTest::OnEvent(Engine::Event& e)
 
 void FPSTest::initialiseModels()
 {
-	/* tinygltf::Model sponza = Engine::loadFromFile("Game/assets/Sponza/glTF/Sponza.gltf");
-	tinygltf::Model map = Engine::loadFromFile("Game/assets/Assets/maps/breeze/scene.gltf");
-	tinygltf::Model map2 = Engine::loadFromFile("Game/assets/Assets/maps/chamberOfSecrets/scene.gltf");
-	tinygltf::Model map3 = Engine::loadFromFile("Game/assets/Assets/maps/house/scene.gltf");
-	tinygltf::Model map4 = Engine::loadFromFile("Game/assets/Assets/maps/map/scene.gltf");
-	tinygltf::Model map5 = Engine::loadFromFile("Game/assets/Assets/maps/pipeline/scene.gltf");
-	tinygltf::Model map6 = Engine::loadFromFile("Game/assets/Assets/maps/russian_house/scene.gltf");
-	tinygltf::Model map7 = Engine::loadFromFile("Game/assets/Assets/maps/standoff/scene.gltf");
-	tinygltf::Model map8 = Engine::loadFromFile("Game/assets/Assets/maps/uncharted/scene.gltf");
-	tinygltf::Model map9 = Engine::loadFromFile("Game/assets/Assets/maps/warehouse/scene.gltf"); */
-
 	// Here we would load all relevant glTF models and put them in the models vector
 
-	//tinygltf::Model map = Engine::loadFromFile("Game/assets/Sponza/glTF/Sponza.gltf");
 	tinygltf::Model map = Engine::loadFromFile("Game/assets/maps/warehouse/scene.gltf");
 	tinygltf::Model character = Engine::loadFromFile("Game/assets/characters/csgo/scene.gltf");
 	tinygltf::Model pistol = Engine::loadFromFile("Game/assets/guns/pistol1/scene.gltf");
@@ -158,7 +142,7 @@ void FPSTest::initialiseModels()
 	GetModels().emplace_back(Engine::makeVulkanModel(this->GetContext(), rifle, DrawType::OVERLAY));
 	GetModels().emplace_back(Engine::makeVulkanModel(this->GetContext(), target, DrawType::WORLD));
 
-	std::cout << "Models created" << std::endl;
+	DLOG("Models created.");
 }
 
 void FPSTest::loadOfflineEntities()

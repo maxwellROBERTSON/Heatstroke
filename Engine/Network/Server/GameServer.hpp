@@ -48,6 +48,9 @@ namespace Engine
 		// Handle a client message for resetting positions
 		void HandleClientResetPositions();
 
+		// Function to reset entities to spawn state
+		void ResetClientPositions();
+
 		// Reset an entity and its component used by a disconnected client index
 		void ResetNetworkEntity(int);
 
@@ -76,7 +79,6 @@ namespace Engine
 		int listenServerEntityId = -1;
 
 		bool sendResetPositionsMessage = false;
-		bool toDoReset = false;
 
 		// Client sends a request for entity data, which moves it into the connection queue
 		// Once server, sends the response for entity data, it is removed from the connection queue

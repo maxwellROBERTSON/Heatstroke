@@ -29,14 +29,13 @@ public:
 
 	// Max 4 teams
 	std::vector<glm::vec3> startPositions = {
-		{-15.f, 0.002f, 11.f},
+		{-16.f, 0.002f, 11.f},
 		{-1.5f, 0.002f, -8.f},
 		{2.0f, 0.5f, 0.0f},
 		{3.0f, 0.5f, 0.0f}
 	};
 
 	int score = 0;
-	int countdown = 60;
 	float fireDelay = 1.5f;
 	bool canFire = true;
 	float counter = 1.0f;

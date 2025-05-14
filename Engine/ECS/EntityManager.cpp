@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <iostream>
+#include <sstream>
 
 #include "EntityManager.hpp"
 #include "Components/Component.hpp"
@@ -10,6 +11,8 @@
 #include "Components/PhysicsComponent.hpp"
 #include "Components/RenderComponent.hpp"
 
+#include "../Core/Log.hpp"
+
 namespace Engine
 {
 	// Constructor
@@ -18,44 +21,44 @@ namespace Engine
 		// Check map size
 		if (componentMap.size() != ComponentTypes::TYPE_COUNT)
 		{
-			std::cout << "componentMap.size(): " << componentMap.size() << " ComponentTypes::TYPE_COUNT: " << ComponentTypes::TYPE_COUNT << std::endl;
+			DLOG("componentMap.size(): " << componentMap.size() << " ComponentTypes::TYPE_COUNT: " << ComponentTypes::TYPE_COUNT);
 			throw std::runtime_error("Size mismatch between componentMap and ComponentTypes");
 		}
 		// Check if ComponentSizes is correct
 		AudioComponent audio;
 		if (audio.StaticSize() != ComponentSizes[AUDIO])
 		{
-			std::cout << "audio.StaticSize(): " << audio.StaticSize() << " ComponentSizes[AUDIO]: " << static_cast<int>(ComponentSizes[AUDIO]) << std::endl;
+			DLOG("audio.StaticSize(): " << audio.StaticSize() << " ComponentSizes[AUDIO]: " << static_cast<int>(ComponentSizes[AUDIO]));
 			throw std::runtime_error("Size mismatch between: Audio size and ComponentSizes[AUDIO]");
 		}
 		CameraComponent camera;
 		if (camera.StaticSize() != ComponentSizes[CAMERA])
 		{
-			std::cout << "camera.StaticSize(): " << camera.StaticSize() << " ComponentSizes[CAMERA]: " << static_cast<int>(ComponentSizes[CAMERA]) << std::endl;
+			DLOG("camera.StaticSize(): " << camera.StaticSize() << " ComponentSizes[CAMERA]: " << static_cast<int>(ComponentSizes[CAMERA]));
 			throw std::runtime_error("Size mismatch between: Camera size and ComponentSizes[CAMERA]");
 		}
 		ChildrenComponent children;
 		if (children.StaticSize() != ComponentSizes[CHILDREN])
 		{
-			std::cout << "children.StaticSize(): " << children.StaticSize() << " ComponentSizes[CHILDREN]: " << static_cast<int>(ComponentSizes[CHILDREN]) << std::endl;
+			DLOG("children.StaticSize(): " << children.StaticSize() << " ComponentSizes[CHILDREN]: " << static_cast<int>(ComponentSizes[CHILDREN]));
 			throw std::runtime_error("Size mismatch between: Children size and ComponentSizes[CHILDREN]");
 		}
 		NetworkComponent network;
 		if (network.StaticSize() != ComponentSizes[NETWORK])
 		{
-			std::cout << "network.StaticSize(): " << network.StaticSize() << " ComponentSizes[NETWORK]: " << static_cast<int>(ComponentSizes[NETWORK]) << std::endl;
+			DLOG("network.StaticSize(): " << network.StaticSize() << " ComponentSizes[NETWORK]: " << static_cast<int>(ComponentSizes[NETWORK]));
 			throw std::runtime_error("Size mismatch between: Network size and ComponentSizes[NETWORK]");
 		}
 		PhysicsComponent physics;
 		if (physics.StaticSize() != ComponentSizes[PHYSICS])
 		{
-			std::cout << "physics.StaticSize(): " << physics.StaticSize() << " ComponentSizes[PHYSICS]: " << static_cast<int>(ComponentSizes[PHYSICS]) << std::endl;
+			DLOG("physics.StaticSize(): " << physics.StaticSize() << " ComponentSizes[PHYSICS]: " << static_cast<int>(ComponentSizes[PHYSICS]));
 			throw std::runtime_error("Size mismatch between: Physics size and ComponentSizes[PHYSICS]");
 		}
 		RenderComponent render;
 		if (render.StaticSize() != ComponentSizes[RENDER])
 		{
-			std::cout << "render.StaticSize(): " << render.StaticSize() << " ComponentSizes[RENDER]: " << ComponentSizes[RENDER] << std::endl;
+			DLOG("render.StaticSize(): " << render.StaticSize() << " ComponentSizes[RENDER]: " << ComponentSizes[RENDER]);
 			throw std::runtime_error("Size mismatch between: Render size and ComponentSizes[RENDER]");
 		}
 	};
@@ -253,7 +256,7 @@ namespace Engine
 		size_t offset = 0;
 		ComponentTypes type;
 		size_t numChangedEntities = changedEntitiesAndComponents.size();
-		std::cout << "numChangedEntities: " << numChangedEntities << std::endl;
+		DLOG("numChangedEntities: " << numChangedEntities);
 
 		// | # changed entities |
 		block[offset++] = static_cast<uint8_t>(numChangedEntities);
@@ -261,10 +264,12 @@ namespace Engine
 		// | entity ID's | * # changed entities
 		for (auto& [entity, flags] : changedEntitiesAndComponents)
 		{
-			std::cout << "Entity " << entity << " with flags ";
-			for (int i : flags)
-				std::cout << i << " ";
-			std::cout << std::endl;
+			DLOG("Entity " << entity << " with flags: " << [&] {
+				std::ostringstream oss;
+				for (int i : flags)
+					oss << i << " ";
+				return oss.str();
+			}());
 			block[offset++] = static_cast<uint8_t>(entity);
 		}
 
@@ -395,7 +400,7 @@ namespace Engine
 			types.resize(typesSize);
 			entity = entities[i].get();
 			AddEntity(entity, types);
-			std::cout << "ADDED entity " << i << std::endl;
+			DLOG("ADDED entity " << i);
 
 			// | components of type | * # of component types
 			ComponentBase* base;
@@ -405,39 +410,33 @@ namespace Engine
 				switch (types[j])
 				{
 				case AUDIO:
-					std::cout << "Setting the " << componentIndexArray[types[j]] << " of component of type " << types[j] << " at ";
-					std::cout << reinterpret_cast<uintptr_t>(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[AUDIO]) << std::endl;
+					DLOG("Setting the " << componentIndexArray[types[j]] << " of component of type " << types[j] << " at " << reinterpret_cast<uintptr_t>(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[AUDIO]));
 					reinterpret_cast<AudioComponent*>(base)->SetDataArray(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[AUDIO]);
 					break;
 				case CAMERA:
-					std::cout << "Setting the " << componentIndexArray[types[j]] << " of component of type " << types[j] << " at ";
-					std::cout << reinterpret_cast<uintptr_t>(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[CAMERA]) << std::endl;
+					DLOG("Setting the " << componentIndexArray[types[j]] << " of component of type " << types[j] << " at " << reinterpret_cast<uintptr_t>(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[CAMERA]));
 					reinterpret_cast<CameraComponent*>(base)->SetDataArray(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[CAMERA]);
 					break;
 				case CHILDREN:
-					std::cout << "Setting the " << componentIndexArray[types[j]] << " of component of type " << types[j] << " at ";
-					std::cout << reinterpret_cast<uintptr_t>(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[CHILDREN]) << std::endl;
+					DLOG("Setting the " << componentIndexArray[types[j]] << " of component of type " << types[j] << " at " << reinterpret_cast<uintptr_t>(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[CHILDREN]));
 					reinterpret_cast<ChildrenComponent*>(base)->SetDataArray(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[CHILDREN]);
 					break;
 				case NETWORK:
-					std::cout << "Setting the " << componentIndexArray[types[j]] << " of component of type " << types[j] << " at ";
-					std::cout << reinterpret_cast<uintptr_t>(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[NETWORK]) << std::endl;
+					DLOG("Setting the " << componentIndexArray[types[j]] << " of component of type " << types[j] << " at " << reinterpret_cast<uintptr_t>(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[NETWORK]));
 					reinterpret_cast<NetworkComponent*>(base)->SetDataArray(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[NETWORK]);
 					break;
 				case PHYSICS:
-					std::cout << "Setting the " << componentIndexArray[types[j]] << " of component of type " << types[j] << " at ";
-					std::cout << reinterpret_cast<uintptr_t>(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[PHYSICS]) << std::endl;
+					DLOG("Setting the " << componentIndexArray[types[j]] << " of component of type " << types[j] << " at " << reinterpret_cast<uintptr_t>(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[PHYSICS]));
 					reinterpret_cast<PhysicsComponent*>(base)->SetDataArray(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[PHYSICS]);
 					break;
 				case RENDER:
-					std::cout << "Setting the " << componentIndexArray[types[j]] << " of component of type " << types[j] << " at ";
-					std::cout << reinterpret_cast<uintptr_t>(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[RENDER]) << std::endl;
+					DLOG("Setting the " << componentIndexArray[types[j]] << " of component of type " << types[j] << " at " << reinterpret_cast<uintptr_t>(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[RENDER]));
 					reinterpret_cast<RenderComponent*>(base)->SetDataArray(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[RENDER]);
 					break;
 				default:
 					throw std::runtime_error("Unknown component type");
 				}
-				std::cout << "ADDED component " << types[j] << " to entity " << entity->GetEntityId() << std::endl;
+				DLOG("ADDED component " << types[j] << " to entity " << entity->GetEntityId());
 			}
 		}
 	}
@@ -459,14 +458,14 @@ namespace Engine
 
 		// | # changed entities |
 		int numChangedEntities = static_cast<int>(block[offset++]);
-		std::cout << "numChangedEntities: " << numChangedEntities << std::endl;
+		DLOG("numChangedEntities: " << numChangedEntities);
 
 		// | entity ID's | * # changed entities
 		std::vector<int> entityIdEntityComponentIndex = std::vector<int>(numChangedEntities);
 		for (int i = 0; i < numChangedEntities; i++)
 		{
 			entityIdEntityComponentIndex[i] = static_cast<int>(block[offset++]);
-			std::cout << "Entity ID " << entityIdEntityComponentIndex[i] << std::endl;
+			DLOG("Entity ID " << entityIdEntityComponentIndex[i]);
 		}
 
 		// | # changed entity / components | * # types + 1
@@ -552,7 +551,7 @@ namespace Engine
 						default:
 							throw std::runtime_error("Unknown component type");
 						}
-						std::cout << "Edited component " << type << " of entity " << entityPtr->GetEntityId() << std::endl;
+						DLOG("Edited component " << type << " of entity " << entityPtr->GetEntityId());
 					}
 				}
 			}
@@ -676,6 +675,35 @@ namespace Engine
 		else
 		{
 			numTeams = t;
+		}
+	}
+
+	// Set reset timer
+	void EntityManager::SetResetTimer(float t)
+	{
+		if (t <= 0.f)
+		{
+			resetTimer = 0.f;
+		}
+		else if (t > 5.f)
+		{
+			resetTimer = 5.f;
+		}
+		else
+		{
+			resetTimer = t;
+		}
+	}
+
+	// Decrease reset timer by float
+	void EntityManager::DecreaseResetTimer(float t)
+	{
+		if (t <= 0)
+			return;
+		resetTimer -= t;
+		if (resetTimer <= 0.f)
+		{
+			resetTimer = 0.f;
 		}
 	}
 

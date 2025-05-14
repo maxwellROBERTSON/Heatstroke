@@ -86,7 +86,6 @@ namespace Engine
 		bool sendInitMessage = false;
 
 		bool sendResetPositionsMessage = false;
-		bool toDoReset = false;
 
 		yojimbo::Address serverAddress;
 

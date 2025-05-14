@@ -34,7 +34,7 @@ void makeGameGUIS(FPSTest* game)
 
 	gui.AddFunction("Home", [game](int* w, int* h) { makeHomeGUI(game, w, h); });
 	gui.AddFunction("Settings", [game](int* w, int* h) { makeSettingsGUI(game, w, h); });
-	//gui.AddFunction("Server", [game](int* w, int* h) { showServerGUI(game, w, h); });
+	gui.AddFunction("Server", [game](int* w, int* h) { makeServerGUI(game, w, h); });
 	gui.AddFunction("Loading", [game](int* w, int* h) { makeLoadingGUI(game, w, h); });
 	gui.AddFunction("Debug", [game](int* w, int* h) { makeDebugGUI(game, w, h); });
 	gui.AddFunction("SinglePlayer", [game](int* w, int* h) { makeSinglePlayerGUI(game, w, h); });
@@ -336,7 +336,7 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 
 		ImGui::Text("Join a server");
 
-		static char addressStr[16] = "192.168.0.77\0";
+		static char addressStr[16] = "129.11.146.183\0";
 		ImGui::Text("Address:");
 		ImGui::InputText("Address", addressStr, IM_ARRAYSIZE(addressStr));
 
@@ -434,18 +434,32 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 			{
 				errorMsg = "";
 				game->SetGameMode(std::make_unique<MultiPlayer>(game));
-				game->SetRenderMode(RenderMode::FORWARD);
+				if (isListenServer)
+				{
+					game->SetRenderMode(RenderMode::FORWARD);
+				}
+				else
+				{
+					game->SetRenderMode(RenderMode::NO_DATA_MODE);
+				}
 				game->loadOnlineEntities(maxClientsNum, numTeamsNum, isListenServer);
 				game->getRenderer().initialiseJointMatrices();
-				game->GetGUI().ToggleGUIMode("Home");
-				game->GetGUI().ToggleGUIMode("MultiPlayer");
 				GLFWwindow* window = game->GetContext().getGLFWWindow();
 				glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 				game->SetServer(portNum, maxClientsNum);
 				if (isListenServer)
 				{
+					game->GetGUI().ToggleGUIMode("Home");
+					game->GetGUI().ToggleGUIMode("MultiPlayer");
+					if (game->debugging)
+						game->GetGUI().ToggleGUIMode("Debug");
 					GameServer* server = reinterpret_cast<GameServer*>(game->GetNetwork().GetNetworkTypePointer());
 					server->SetListenServer(game->GetGameMode().GetPlayerEntity()->GetEntityId());
+				}
+				else
+				{
+					game->GetGUI().ToggleGUIMode("Home");
+					game->GetGUI().ToggleGUIMode("Server");
 				}
 			}
 		}
@@ -509,12 +523,6 @@ void makeSettingsGUI(FPSTest* game, int* w, int* h)
 		game->getRenderer().setRecreateSwapchain(true);
 	}
 
-	//// Shadow toggle display (reflects render mode but can't be toggled directly)
-	//bool shadowsEnabled = (selected == 2);
-	//ImGui::BeginDisabled(); // Shadows are implied by mode, not toggleable separately
-	//ImGui::Checkbox("Shadows Enabled", &shadowsEnabled);
-	//ImGui::EndDisabled();
-
 	Renderer& renderer = game->getRenderer();
 
 	ImGui::Text("Anti Aliasing:");
@@ -571,6 +579,44 @@ void makeSettingsGUI(FPSTest* game, int* w, int* h)
 	ImGui::SetCursorPos(topRightPos);
 
 	if (ImGui::Button(isServer ? "Stop Server" : "Leave", ImVec2(*w / 6, *h / 6)))
+	{
+		game->GetGUI().ResetGUIModes();
+		game->GetGUI().ToggleGUIMode("Home");
+		game->GetPhysicsWorld().reset(&game->GetEntityManager());
+		game->SetRenderMode(RenderMode::NO_DATA_MODE);
+		game->SetGameMode(nullptr);
+		game->GetEntityManager().ClearManager();
+		game->GetNetwork().Reset();
+		multiplayerSelected = false;
+		serverSelected = false;
+	}
+
+	ImGui::End();
+
+	ImGui::PopStyleColor(3);
+	ImGui::PopFont();
+}
+
+void makeServerGUI(FPSTest* game, int* w, int* h)
+{
+	ImGui::PushFont(game->GetGUI().GetFont("Default"));
+
+	ImGui::SetNextWindowPos(ImVec2(0, 0));
+	ImGui::SetNextWindowSize(ImVec2(*w, *h));
+
+	ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.5f, 0.1f, 0.1f, 1.0f));
+	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.8f, 0.2f, 0.2f, 1.0f));
+	ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(1.0f, 0.1f, 0.1f, 1.0f));
+
+	ImGui::Begin("Server Menu", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
+
+	std::map<std::string, std::string> networkInfo = game->GetNetwork().GetNetworkInfo();
+	for (const auto& [key, value] : networkInfo)
+	{
+		ImGui::Text("%s: %s", key.c_str(), value.c_str());
+	}
+
+	if (ImGui::Button("Stop server", ImVec2(*w / 6, *h / 6)))
 	{
 		game->GetGUI().ResetGUIModes();
 		game->GetGUI().ToggleGUIMode("Home");
@@ -744,6 +790,14 @@ void makeSinglePlayerGUI(FPSTest* game, int*, int*)
 void makeMultiPlayerGUI(FPSTest* game, int*, int*)
 {
 	MultiPlayer* mp = dynamic_cast<MultiPlayer*>(&game->GetGameMode());
+
+	if (game->GetNetwork().GetStatus() == Status::CLIENT_DISCONNECTED)
+	{
+		game->GetGUI().ResetGUIModes();
+		game->GetGUI().ToggleGUIMode("Loading");
+		return;
+	}
+
 	if (mp)
 	{
 		ImGuiWindowFlags window_flags = 0;
@@ -780,6 +834,20 @@ void makeMultiPlayerGUI(FPSTest* game, int*, int*)
 		ImGui::Begin("Gun Stuff:", &test, window_flags);
 		ImGui::Text("Ammo: %u", mp->ammoCount);
 		ImGui::End();
+
+		int timer = game->GetEntityManager().GetResetTimerInt();
+		if (timer != 0)
+		{
+			ImGui::SetNextWindowPos(
+				ImVec2(displaySize.x * 0.5f, displaySize.y * 0.5f),
+				ImGuiCond_Always,
+				ImVec2(0.5f, 0.5f)
+			);
+
+			ImGui::Begin("Game Timer", &test, window_flags);
+			ImGui::Text("Game starts in: %u", timer);
+			ImGui::End();
+		}
 
 		ImGui::PopFont();
 	}

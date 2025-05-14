@@ -96,43 +96,10 @@ void MultiPlayer::Update(float timeDelta)
 	if (fireDelay <= 0.0f)
 		canFire = true;
 
-	if (counter <= 0.0f && countdown > 0)
+	if (counter <= 0.0f)
 	{
-		countdown--;
 		counter = 1.0f;
 	}
-
-	/*if (countdown <= 0)
-	{
-		int score = 0;
-		int countdown = 60;
-		float fireDelay = 1.5f;
-		bool canFire = true;
-		float counter = 1.0f;
-		int ammoCount = 6;
-		std::vector<int> entitiesWithPhysicsComponent = entityManager.GetEntitiesWithComponent(PHYSICS);
-		for (int i = 0; i < entitiesWithPhysicsComponent.size(); i++)
-		{
-			Engine::Entity* entity = entityManager.GetEntity(entitiesWithPhysicsComponent[i]);
-			Engine::PhysicsComponent* physicsComponent = reinterpret_cast<Engine::PhysicsComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
-			if (physicsComponent->GetStaticBody() != nullptr && physicsComponent->GetStaticBody() == entityHit.actor)
-			{
-				score++;
-
-				Engine::NetworkComponent* networkComponent = reinterpret_cast<Engine::NetworkComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), NETWORK));
-				entity->SetPosition(GetStartPos(networkComponent->GetTeam()));
-				glm::vec3 translation;
-				glm::vec3 scale;
-				glm::quat rotation;
-				physicsComponent->DecomposeTransform(entity->GetModelMatrix(), translation, rotation, scale);
-				PxTransform pxTransform(
-					PxVec3(translation.x, translation.y, translation.z),
-					PxQuat(rotation.x, rotation.y, rotation.z, rotation.w)
-				);
-				physicsComponent->GetStaticBody()->setGlobalPose(pxTransform);
-			}
-		}
-	}*/
 
 	physicsWorld.updatePhysics(timeDelta, true);
 	renderer.getCameraPointer()->updateCamera(this->game->GetContext().getGLFWWindow(), timeDelta, false);
@@ -189,7 +156,7 @@ void MultiPlayer::Update(float timeDelta)
 				}
 			}
 
-			if (hit)
+			if (hit && entityManager.GetResetTimerInt() == 0)
 			{
 				game->GetNetwork().GetNetworkTypePointer()->ReadyToSendResetMessage();
 			}

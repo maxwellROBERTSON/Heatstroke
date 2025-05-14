@@ -9,6 +9,8 @@
 
 #include "../EntityManager.hpp"
 
+#include "../../Core/Log.hpp"
+
 namespace Engine
 {
 	class EntityManager;
@@ -27,7 +29,7 @@ namespace Engine
 		
 		void operator=(const AudioComponent& other) override
 		{
-			std::cout << "assignment operator here" << std::endl;
+			DLOG("assignment operator here");
 		}
 
 		// Getters

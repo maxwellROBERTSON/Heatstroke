@@ -16,6 +16,8 @@
 #include <GLFW/glfw3.h>
 #include <imgui.h>
 
+#include "../Core/Log.hpp"
+
 namespace Engine {
 	void onWindowClose(GLFWwindow* aWindow)
 	{
@@ -28,11 +30,11 @@ namespace Engine {
 	{
 		Joystick& joystick = static_cast<Joystick&>(InputManager::getJoystick(jid));
 		if (event == GLFW_CONNECTED && glfwJoystickIsGamepad(jid)) {
-			std::cout << joystick.getDeviceName() << " conneceted" << std::endl;
+			DLOG(joystick.getDeviceName() << " conneceted");
 			InputManager::addJoysitck(jid);
 		}
 		else {
-			std::cout << joystick.getDeviceName() << " disconneceted" << std::endl;
+			DLOG(joystick.getDeviceName() << " disconneceted");
 			InputManager::removeJoystick(jid);
 
 		}

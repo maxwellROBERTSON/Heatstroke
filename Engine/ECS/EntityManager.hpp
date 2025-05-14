@@ -4,6 +4,7 @@
 #include <string>
 #include <memory>
 #include <PxActor.h>
+#include <cmath>
 
 #include "Entity.hpp"
 #include "Components/PhysicsComponent.hpp"
@@ -63,6 +64,12 @@ namespace Engine
 		// Get number of teams
 		int GetNumTeams() { return static_cast<int>(numTeams); }
 
+		// Get reset timer float
+		float GetResetTimer() { return resetTimer; }
+
+		// Get reset timer rounded up to an int
+		int GetResetTimerInt() { return static_cast<int>(std::ceil(resetTimer)); }
+
 		// Get all changed entity and component data
 		void GetAllChangedData(uint8_t*);
 
@@ -93,6 +100,12 @@ namespace Engine
 		// Set the number of teams (max = 4)
 		void SetNumTeams(int t);
 
+		// Set reset timer
+		void SetResetTimer(float t);
+
+		// Decrease reset timer by float
+		void DecreaseResetTimer(float t);
+
 		// Add an existing entity to the manager
 		// ComponentIndexArray overwritten so only use if components not yet initialised
 		void AddEntity(Entity*, std::vector<ComponentTypes>);
@@ -121,6 +134,9 @@ namespace Engine
 
 		// Number of teams for multiplayer mode
 		uint8_t numTeams = 1;
+
+		// Reset timer for multiplayer mode
+		float resetTimer = 0.f;
 
 		// Private used in AddEntity - doesn't add to entity's
 		// vector so mustn't be used except when making a new entity

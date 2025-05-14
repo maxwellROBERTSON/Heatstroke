@@ -8,6 +8,7 @@
 void makeGameGUIS(FPSTest* game);
 void makeHomeGUI(FPSTest* game, int*, int*);
 void makeSettingsGUI(FPSTest* game, int*, int*);
+void makeServerGUI(FPSTest* game, int*, int*);
 void makeLoadingGUI(FPSTest* game, int*, int*);
 void makeDebugGUI(FPSTest* game, int*, int*);
 void makeSinglePlayerGUI(FPSTest* game, int*, int*);
