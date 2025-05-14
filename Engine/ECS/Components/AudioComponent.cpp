@@ -65,7 +65,7 @@ namespace Engine
 	{
 		if (soundClips[key] == NULL)
 		{
-			// std::cout << "No audio clip with that key value exists\n";
+			// DLOG("No audio clip with that key value exists");
 			return;
 		}
 
@@ -93,7 +93,7 @@ namespace Engine
 		//	//stop current clip
 		//	speaker->Stop();
 
-		//	std::cout << "Stopped file playing" << std::endl;
+		//	DLOG("Stopped file playing" << std::endl;
 
 		//	//set new active clip
 		//	//setActiveClip(key);
@@ -106,7 +106,7 @@ namespace Engine
 		//else
 		//{
 		//	//yes - return
-		//	std::cout << "Audio alreading playing through this source" << std::endl;
+		//	DLOG("Audio alreading playing through this source" << std::endl;
 		//	return;
 		//}
 	}
@@ -127,14 +127,14 @@ namespace Engine
 
 		if (ALenum res = alGetError(); res != AL_NO_ERROR)
 		{
-			std::cout << "ERROR from alGetError() " << res << std::endl;
+			DLOG("ERROR from alGetError() " << res);
 
-			if (res == ALC_NO_ERROR) std::cout << "ALC_NO_ERROR\n";
-			if (res == ALC_INVALID_DEVICE) std::cout << "ALC_INVALID_DEVICE\n";
-			if (res == ALC_INVALID_CONTEXT) std::cout << "ALC_INVALID_CONTEXT\n";
-			if (res == ALC_INVALID_ENUM) std::cout << "ALC_INVALID_ENUM\n";
-			if (res == ALC_INVALID_VALUE) std::cout << "ALC_INVALID_VALUE\n";
-			if (res == ALC_OUT_OF_MEMORY) std::cout << "ALC_OUT_OF_MEMORY\n";
+			if (res == ALC_NO_ERROR) DLOG("ALC_NO_ERROR");
+			if (res == ALC_INVALID_DEVICE) DLOG("ALC_INVALID_DEVICE");
+			if (res == ALC_INVALID_CONTEXT) DLOG("ALC_INVALID_CONTEXT");
+			if (res == ALC_INVALID_ENUM) DLOG("ALC_INVALID_ENUM");
+			if (res == ALC_INVALID_VALUE) DLOG("ALC_INVALID_VALUE");
+			if (res == ALC_OUT_OF_MEMORY) DLOG("ALC_OUT_OF_MEMORY");
 		}
 
 		//if no clip has been played yet default value is AL_INITIAL thus nothing is playing so return false
@@ -171,25 +171,25 @@ namespace Engine
 
 		if (state == AL_INITIAL)
 		{
-			//std::cout << "initial state\n";
+			//DLOG("initial state");
 			return AL_INITIAL;
 		}
 
 		if (state == AL_PLAYING)
 		{
-			//std::cout << "Playing state\n";
+			//DLOG("Playing state");
 			return AL_PLAYING;
 		}
 
 		if (state == AL_PAUSED)
 		{
-			//std::cout << "Paused state\n";
+			//DLOG("Paused state");
 			return AL_PAUSED;
 		}
 
 		if (state == AL_STOPPED)
 		{
-			//std::cout << "Stopped state\n";
+			//DLOG("Stopped state");
 			return AL_STOPPED;
 		}
 	}

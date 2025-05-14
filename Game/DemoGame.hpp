@@ -3,6 +3,7 @@
 #include <chrono>
 
 #include "../Engine/Core/Game.hpp"
+#include "../Engine/Core/Log.hpp"
 
 #include "../Engine/ECS/Components/AudioComponent.hpp"
 #include "../Engine/ECS/Components/CameraComponent.hpp"
@@ -39,6 +40,7 @@
 
 #include "gameModes/GameMode.hpp"
 
+class HsRenderer;
 
 class FPSTest : public Engine::Game
 {
@@ -60,7 +62,7 @@ public:
 	void initialiseModels();
 
 	void loadOfflineEntities();
-	void loadOnlineEntities(int);
+	void loadOnlineEntities(int, int, bool);
 
 	// Setters
 	void SetGameMode(std::unique_ptr<GameMode>);
@@ -95,6 +97,5 @@ private:
 	Crosshair crosshair;
 	Engine::Decals bulletDecals;
 
-	thread_pool_wait* threadPool;
 	int offlineClientId = 0;
 };

@@ -94,7 +94,6 @@ namespace Engine
 						);
 						if (value > 0.0f)
 							controllerIsDown = true;
-						//else std::cout << value << std::endl;
 					}
 					break;
 					case InputType::BUTTON:

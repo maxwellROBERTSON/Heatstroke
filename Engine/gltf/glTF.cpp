@@ -11,6 +11,8 @@
 #include "VulkanEnums.hpp"
 #include "VulkanUtils.hpp"
 
+#include "../Core/Log.hpp"
+
 #define MAX_JOINTS 128u
 
 namespace Engine {
@@ -488,7 +490,9 @@ namespace Engine {
 
 	void loadAnimations(tinygltf::Model& model, vk::Model& vkModel) {
 		if (model.animations.size() == 0)
+		{
 			return;
+		}
 
 		for (tinygltf::Animation& gltfAnimation : model.animations) {
 			vk::Animation animation{};
@@ -557,7 +561,7 @@ namespace Engine {
 						break;
 					}
 					default:
-						std::cout << "Unknown channel type!" << std::endl;
+						DLOG("Unknown channel type!");
 						break;
 					}
 				}
@@ -576,7 +580,7 @@ namespace Engine {
 				if (animChannel.target_path == "scale")
 					channel.pathType = vk::AnimationChannel::PathType::SCALE;
 				if (animChannel.target_path == "weights") {
-					std::cout << "AnimationChannel 'weights' not supported!" << std::endl;
+					DLOG("AnimationChannel 'weights' not supported!");
 					continue;
 				}
 
@@ -629,7 +633,7 @@ namespace Engine {
 			}
 
 			if (skin->joints.size() > MAX_JOINTS) {
-				std::cout << "Warning: Number of joints (" << skin->joints.size() << ") exceeds the supported maximum: " << MAX_JOINTS << "." << std::endl;
+				DLOG("Warning: Number of joints (" << skin->joints.size() << ") exceeds the supported maximum: " << MAX_JOINTS << ".");
 			}
 
 			vkModel.skins.push_back(skin);

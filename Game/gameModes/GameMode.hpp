@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <glm/glm.hpp>
 
 namespace Engine {
 	class Camera;
@@ -13,13 +14,13 @@ public:
 	// Constructor
 	GameMode() {}
 
-	virtual void Update(float) = 0;
+	virtual void InitNetwork() {};
 
-	// SinglePlayer functions
+	virtual void Update(float) = 0;
 
 	virtual void ToggleSceneCamera(Engine::Camera*) {};
 
-	virtual Engine::Entity* GetPlayerEntity() { return nullptr; };
+	virtual Engine::Entity* GetPlayerEntity() = 0;
 
 	virtual void SetPlayerEntity(Engine::Entity*) {};
 
@@ -29,10 +30,7 @@ public:
 
 	virtual void SetTargetEntity(Engine::Entity*) {};
 
-	// MultiPlayer functions
+	virtual glm::vec3 GetStartPos(int) = 0;
 
-	virtual void SetPlayerEntities(std::vector<Engine::Entity*>) {};
-
-	virtual void SetPistolEntities(std::vector<Engine::Entity*>) {};
-
+	virtual bool IsMultiPlayer() = 0;
 };

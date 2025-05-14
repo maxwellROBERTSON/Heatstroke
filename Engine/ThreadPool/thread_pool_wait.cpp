@@ -1,5 +1,7 @@
 #include "thread_pool_wait.h"
 
+#include "../Core/Log.hpp"
+
 //function to get the single instance of the thread pool class
 thread_pool_wait* thread_pool_wait::get_instance()
 {
@@ -16,8 +18,7 @@ thread_pool_wait::thread_pool_wait() : done(false), joiner(threads)
 	unsigned const thread_count = std::thread::hardware_concurrency();
 
 
-	std::cout << "Creating thread pool... \n"
-		"Threads avaiable: " << thread_count << std::endl;
+	DLOG("Creating thread pool... Threads avaiable: " << thread_count);
 
 	try
 	{
@@ -48,7 +49,7 @@ void thread_pool_wait::worker_thread()
 		work_queue.wait_and_pop(task); //thread sleeps while waiting
 
 		std::thread::id this_id = std::this_thread::get_id();
-		std::cout << "#: " << this_id << std::endl;
+		DLOG("#: " << this_id);
 
 		//when wait_and_pop returns with a task
 		task(); //execute task
@@ -59,7 +60,7 @@ void thread_pool_wait::worker_thread()
 //destructor
 thread_pool_wait::~thread_pool_wait()
 {
-	std::cout << "Thread Pool Destroyed" << std::endl;
+	DLOG("Thread Pool Destroyed");
 	done = true;
 }
 

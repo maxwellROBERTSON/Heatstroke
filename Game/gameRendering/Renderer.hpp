@@ -20,6 +20,7 @@ namespace Engine {
 	struct VulkanContext;
 	class EntityManager;
 	class Camera;
+	class HsRenderer;
 }
 
 struct Uniforms {

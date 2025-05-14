@@ -18,7 +18,6 @@
 #include "glm/gtx/string_cast.hpp"
 #include "toString.hpp"
 
-
 #include "gameGUI/GameGUI.hpp"
 #include "gameModes/SinglePlayer.hpp"
 #include "gameModes/MultiPlayer.hpp"
@@ -31,14 +30,13 @@ void FPSTest::Init() {
 	this->renderer.initialise();
 
 	srand(time(0));
-	this->threadPool = thread_pool_wait::get_instance();
 
 	InputManager::InitDefaultControls();
 
 	//submit task to initialise Models to thread pool
-	auto modelsFut = threadPool->submit(&FPSTest::initialiseModels, this);
+	auto modelsFut = GetThreadPool().submit(&FPSTest::initialiseModels, this);
 
-	std::cout << "Waiting for model initialisation" << std::endl;
+	DLOG("Waiting for model initialisation");
 	//blocks execution of the rest of the program until the initialiseModels Thread has finished
 	modelsFut.get();
 
@@ -78,8 +76,6 @@ void FPSTest::Render() {
 
 void FPSTest::Update() {
 
-	Engine::PhysicsWorld& physicsWorld = GetPhysicsWorld();
-
 	Engine::InputManager::Update();
 
 	GetNetwork().Update();
@@ -108,7 +104,7 @@ void FPSTest::Update() {
 			gameMode->Update(timeDelta);
 		}
 
-		physicsWorld.updateObjects(GetModels());
+		GetPhysicsWorld().updateObjects(GetModels());
 
 		this->renderer.updateAnimations(timeDelta);
 	}
@@ -133,20 +129,8 @@ void FPSTest::OnEvent(Engine::Event& e)
 
 void FPSTest::initialiseModels()
 {
-	/* tinygltf::Model sponza = Engine::loadFromFile("Game/assets/Sponza/glTF/Sponza.gltf");
-	tinygltf::Model map = Engine::loadFromFile("Game/assets/Assets/maps/breeze/scene.gltf");
-	tinygltf::Model map2 = Engine::loadFromFile("Game/assets/Assets/maps/chamberOfSecrets/scene.gltf");
-	tinygltf::Model map3 = Engine::loadFromFile("Game/assets/Assets/maps/house/scene.gltf");
-	tinygltf::Model map4 = Engine::loadFromFile("Game/assets/Assets/maps/map/scene.gltf");
-	tinygltf::Model map5 = Engine::loadFromFile("Game/assets/Assets/maps/pipeline/scene.gltf");
-	tinygltf::Model map6 = Engine::loadFromFile("Game/assets/Assets/maps/russian_house/scene.gltf");
-	tinygltf::Model map7 = Engine::loadFromFile("Game/assets/Assets/maps/standoff/scene.gltf");
-	tinygltf::Model map8 = Engine::loadFromFile("Game/assets/Assets/maps/uncharted/scene.gltf");
-	tinygltf::Model map9 = Engine::loadFromFile("Game/assets/Assets/maps/warehouse/scene.gltf"); */
-
 	// Here we would load all relevant glTF models and put them in the models vector
 
-	//tinygltf::Model map = Engine::loadFromFile("Game/assets/Sponza/glTF/Sponza.gltf");
 	tinygltf::Model map = Engine::loadFromFile("Game/assets/maps/warehouse/scene.gltf");
 	tinygltf::Model character = Engine::loadFromFile("Game/assets/characters/csgo/scene.gltf");
 	tinygltf::Model pistol = Engine::loadFromFile("Game/assets/guns/pistol1/scene.gltf");
@@ -158,7 +142,7 @@ void FPSTest::initialiseModels()
 	GetModels().emplace_back(Engine::makeVulkanModel(this->GetContext(), rifle, DrawType::OVERLAY));
 	GetModels().emplace_back(Engine::makeVulkanModel(this->GetContext(), target, DrawType::WORLD));
 
-	std::cout << "Models created" << std::endl;
+	DLOG("Models created.");
 }
 
 void FPSTest::loadOfflineEntities()
@@ -183,14 +167,11 @@ void FPSTest::loadOfflineEntities()
 	renderComponent->SetModelIndex(0);
 	physicsComponent = reinterpret_cast<PhysicsComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
 	physicsComponent->InitComplexShape("Map", physicsWorld, PhysicsComponent::PhysicsType::STATICBOUNDED, models[renderComponent->GetModelIndex()], entity->GetModelMatrix(), entity->GetEntityId());
-	entityManager.AddSimulatedPhysicsEntity(entity->GetEntityId());
 
 	// Character Model
 	types = { CAMERA, RENDER, PHYSICS, AUDIO };
 	entity = entityManager.MakeNewEntity(types);
-	entity->SetPosition(0.0f, 0.5f, 0.0f);
-	entity->SetRotation(90.0f, glm::vec3(0.0f, 0.0f, 1.0f));
-	entity->SetScale(25.0f);
+	entity->SetSpawnState(GetGameMode().GetStartPos(0), 90.f, glm::vec3(0.0f, 0.0f, 1.0f), 24.f);
 	cameraComponent = reinterpret_cast<CameraComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), CAMERA));
 	cameraComponent->SetCamera(sceneCamera);
 	this->renderer.attachCamera(cameraComponent->GetCamera());
@@ -199,7 +180,6 @@ void FPSTest::loadOfflineEntities()
 	renderComponent->SetIsActive(false);
 	physicsComponent = reinterpret_cast<PhysicsComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
 	physicsComponent->Init(physicsWorld, PhysicsComponent::PhysicsType::CONTROLLER, models[renderComponent->GetModelIndex()], entity->GetModelMatrix(), entity->GetEntityId(), true, true);
-	entityManager.AddSimulatedPhysicsEntity(entity->GetEntityId());
 	audioComponent = reinterpret_cast<AudioComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), AUDIO));
 	audioComponent->addClip("GunShot", "Game/assets/AudioClips/singlegunshot.wav");
 	GetGameMode().SetPlayerEntity(entity);
@@ -207,8 +187,7 @@ void FPSTest::loadOfflineEntities()
 	// pistol
 	types = { RENDER };
 	entity = entityManager.MakeNewEntity(types);
-	entity->SetPosition(0.0f, -2.0f, -1.0f);
-	entity->SetRotation(180.0f, glm::vec3(0.0f, 1.0f, 0.0f));
+	entity->SetSpawnState(glm::vec3(0.0f, -2.0f, -1.0f), 180.0f, glm::vec3(0.0f, 1.0f, 0.0f), 1.0f);
 	renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
 	renderComponent->SetModelIndex(2);
 	GetGameMode().SetPistolEntity(entity);
@@ -216,37 +195,17 @@ void FPSTest::loadOfflineEntities()
 	// target
 	types = { RENDER, PHYSICS };
 	entity = entityManager.MakeNewEntity(types);
-	entity->SetPosition(glm::vec3(-2.85f, 0.8f, 0.0f));
-	entity->SetRotation(glm::mat4(0, 0, 1, 0, 0, -1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1));
+	entity->SetSpawnState(glm::vec3(-2.85f, 0.8f, 0.0f), 180, glm::normalize(glm::vec3(1, 0, -1)), 1.f);
 	renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
 	renderComponent->SetModelIndex(4);
 	physicsComponent = reinterpret_cast<PhysicsComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
 	physicsComponent->InitComplexShape("Target", physicsWorld, PhysicsComponent::PhysicsType::STATIC, models[renderComponent->GetModelIndex()], entity->GetModelMatrix(), entity->GetEntityId());
-	entityManager.AddSimulatedPhysicsEntity(entity->GetEntityId());
 	GetGameMode().SetTargetEntity(entity);
 
-	// player model
-	//types = { RENDER };
-	//entity = entityManager.MakeNewEntity(types);
-	//entity->SetPosition(glm::vec3(0.0f, 0.0f, 0.0f));
-	//entity->SetRotation(90.0f, glm::vec3(0.0f, 0.0f, 1.0f));
-	//entity->SetScale(30.0f);
-	//renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
-	//renderComponent->SetModelIndex(1);
-
-	//types = { RENDER };
-	//entity = entityManager.MakeNewEntity(types);
-	//entity->SetPosition(glm::vec3(0.0f, 0.0f, -5.0f));
-	//entity->SetRotation(90.0f, glm::vec3(0.0f, 0.0f, 1.0f));
-	//entity->SetScale(30.0f);
-	//renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
-	//renderComponent->SetModelIndex(1);
-
-	// int numberOfTargets = 5;
 	GetEntityManager().ResetChanged();
 }
 
-void FPSTest::loadOnlineEntities(int maxClientsNum)
+void FPSTest::loadOnlineEntities(int maxClientsNum, int numTeams, bool isListenServer)
 {
 	// Pointers
 	Entity* entity;
@@ -255,8 +214,10 @@ void FPSTest::loadOnlineEntities(int maxClientsNum)
 	RenderComponent* renderComponent;
 	PhysicsComponent* physicsComponent;
 	AudioComponent* audioComponent;
+	ChildrenComponent* childrenComponent;
 
 	EntityManager& entityManager = GetEntityManager();
+	entityManager.SetNumTeams(numTeams);
 	PhysicsWorld& physicsWorld = GetPhysicsWorld();
 
 	std::vector<Engine::vk::Model>& models = GetModels();
@@ -269,39 +230,84 @@ void FPSTest::loadOnlineEntities(int maxClientsNum)
 	renderComponent->SetModelIndex(0);
 	physicsComponent = reinterpret_cast<PhysicsComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
 	physicsComponent->InitComplexShape("Map", physicsWorld, PhysicsComponent::PhysicsType::STATICBOUNDED, models[renderComponent->GetModelIndex()], entity->GetModelMatrix(), entity->GetEntityId());
-	entityManager.AddSimulatedPhysicsEntity(entity->GetEntityId());
 
-	// Load maxClientsNum of players
-	types = { AUDIO, CAMERA, NETWORK, RENDER, PHYSICS };
-	for (int i = 0; i < maxClientsNum; i++)
+	this->renderer.attachCamera(&sceneCamera);
+	int start = 0;
+
+	if (isListenServer)
 	{
-		// Character Model
-		types = { CAMERA, RENDER, PHYSICS, AUDIO };
+		// Load start server clients's player
+		types = { CAMERA, RENDER, NETWORK, PHYSICS, AUDIO, CHILDREN };
 		entity = entityManager.MakeNewEntity(types);
-		entity->SetPosition(0.0f, 0.5f, 0.0f);
-		entity->SetRotation(90.0f, glm::vec3(0.0f, 0.0f, 1.0f));
-		entity->SetScale(25.0f);
+		entity->SetSpawnState(GetGameMode().GetStartPos(1), 90.0f, glm::vec3(0.0f, 0.0f, 1.0f), 24.f);
 		cameraComponent = reinterpret_cast<CameraComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), CAMERA));
 		cameraComponent->SetCamera(sceneCamera);
 		this->renderer.attachCamera(cameraComponent->GetCamera());
 		renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
 		renderComponent->SetModelIndex(1);
 		renderComponent->SetIsActive(false);
+		networkComponent = reinterpret_cast<NetworkComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), NETWORK));
+		networkComponent->SetTeam(1);
 		physicsComponent = reinterpret_cast<PhysicsComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
 		physicsComponent->Init(physicsWorld, PhysicsComponent::PhysicsType::CONTROLLER, models[renderComponent->GetModelIndex()], entity->GetModelMatrix(), entity->GetEntityId(), true, true);
 		audioComponent = reinterpret_cast<AudioComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), AUDIO));
 		audioComponent->addClip("GunShot", "Game/assets/AudioClips/singlegunshot.wav");
+		childrenComponent = reinterpret_cast<ChildrenComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), CHILDREN));
+
+		entityManager.AssignNextClient(0, false);
+		GetGameMode().SetPlayerEntity(entity);
 
 		// pistol
 		types = { RENDER };
 		entity = entityManager.MakeNewEntity(types);
-		entity->SetPosition(0.0f, -2.0f, -1.0f);
-		entity->SetRotation(180.0f, glm::vec3(0.0f, 1.0f, 0.0f));
+		entity->SetSpawnState(glm::vec3(0.0f, -2.0f, -1.0f), 180.0f, glm::vec3(0.0f, 1.0f, 0.0f), 1.0f);
 		renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
 		renderComponent->SetModelIndex(2);
+
+		childrenComponent->AddChild(entity->GetEntityId());
+
+		GetGameMode().SetPistolEntity(entity);
+
+		start++;
+		maxClientsNum++;
 	}
 
-	EntityManager& e = GetEntityManager();
+	// Load maxClientsNum of players
+	for (int i = start; i < maxClientsNum; i++)
+	{
+		int team = i % numTeams + 1;
+		// Character Model
+		types = { CAMERA, RENDER, NETWORK, PHYSICS, AUDIO, CHILDREN };
+		entity = entityManager.MakeNewEntity(types);
+		entity->SetSpawnState(GetGameMode().GetStartPos(team), 90.0f, glm::vec3(0.0f, 0.0f, 1.0f), 24.f);
+		cameraComponent = reinterpret_cast<CameraComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), CAMERA));
+		cameraComponent->SetCamera(sceneCamera);
+		renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
+		renderComponent->SetModelIndex(1);
+		renderComponent->SetIsActive(false);
+		networkComponent = reinterpret_cast<NetworkComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), NETWORK));
+		networkComponent->SetTeam(team);
+		physicsComponent = reinterpret_cast<PhysicsComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
+		physicsComponent->Init(physicsWorld, PhysicsComponent::PhysicsType::CONTROLLER, models[renderComponent->GetModelIndex()], entity->GetModelMatrix(), entity->GetEntityId(), isListenServer, false);
+		if (isListenServer)
+		{
+			physicsComponent->SetSimulation(PhysicsComponent::PhysicsSimulation::NOTUPDATED);
+			entityManager.AddUpdatedPhysicsComp(physicsComponent, false);
+		}
+		audioComponent = reinterpret_cast<AudioComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), AUDIO));
+		audioComponent->addClip("GunShot", "Game/assets/AudioClips/singlegunshot.wav");
+		childrenComponent = reinterpret_cast<ChildrenComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), CHILDREN));
+
+		// pistol
+		types = { RENDER };
+		entity = entityManager.MakeNewEntity(types);
+		entity->SetSpawnState(glm::vec3(0.0f, -2.0f, -1.0f), 180.0f, glm::vec3(0.0f, 1.0f, 0.0f), 1.0f);
+		renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
+		renderComponent->SetModelIndex(2);
+
+		childrenComponent->AddChild(entity->GetEntityId());
+	}
+
 	GetEntityManager().ResetChanged();
 }
 

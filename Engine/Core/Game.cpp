@@ -15,6 +15,7 @@ namespace Engine
 		mContext.window.get()->SetEventCallback(std::bind(&Game::OnEvent, this, std::placeholders::_1));
 		network = std::make_unique<Network>();
 		gui = std::make_unique<GUI>(this);
+		threadPool = thread_pool_wait::get_instance();
 		this->Init();
 	}
 	void Game::Run()

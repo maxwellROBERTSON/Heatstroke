@@ -6,6 +6,8 @@
 
 #include <yojimbo.h>
 
+#include "../../Core/Log.hpp"
+
 namespace Engine
 {
 #ifdef OS_WINDOWS
@@ -43,12 +45,6 @@ namespace Engine
 		struct sockaddr_in* addr = (struct sockaddr_in*)info->ai_addr;
 		add_str = inet_ntoa(addr->sin_addr);
 
-		/*if (!isValidIPAddress(add_str.c_str()))
-		{
-			std::cerr << "Invalid IP address\n";
-			exit(1);
-		}*/
-
 		yojimbo::Address address(add_str.c_str(), port);
 		freeaddrinfo(info);
 		WSACleanup();
@@ -81,7 +77,7 @@ namespace Engine
 				if (!strncmp(ifa->ifa_name, "eno1", 4))
 				{
 					yojimbo::Address address(addressBuffer, port);
-					std::cout << port << std::endl;
+					DLOG(port);
 					return address;
 				}
 			}
