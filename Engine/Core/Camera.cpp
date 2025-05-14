@@ -118,6 +118,7 @@ namespace Engine
 		dispatcher.Dispatch<MouseButtonPressedEvent>(
 			[&](MouseButtonPressedEvent& event)
 			{
+#ifdef _DEBUG
 				if (event.GetMouseButton() == HS_MOUSE_BUTTON_RIGHT)
 				{
 					if (glfwGetInputMode(aWindow, GLFW_CURSOR) == GLFW_CURSOR_NORMAL) {
@@ -128,6 +129,7 @@ namespace Engine
 					}
 					return true;
 				}
+#endif
 				return false;
 			}
 		);
