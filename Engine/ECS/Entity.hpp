@@ -23,7 +23,7 @@ namespace Engine
 		// Getters
 
 		// Get the size of an entity
-		size_t GetEntitySize() { return sizeof(entityId) + sizeof(position) + sizeof(rotation) + sizeof(scale); }
+		size_t GetEntitySize() { return sizeof(entityId) + sizeof(position) + sizeof(rotation); }
 
 		// Get the initial size of an entity for initial transfer
 		size_t GetInitialEntitySize() { return sizeof(entityId) + 2 * (sizeof(position) + sizeof(rotation) + sizeof(scale)); }

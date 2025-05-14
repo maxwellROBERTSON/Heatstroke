@@ -64,6 +64,19 @@ namespace Engine
         YOJIMBO_VIRTUAL_SERIALIZE_FUNCTIONS();
     };
 
+    class ClientResetPositions : public yojimbo::Message
+    {
+    public:
+        ClientResetPositions() {}
+
+        template <typename Stream> bool Serialize(Stream& stream)
+        {
+            return true;
+        }
+
+        YOJIMBO_VIRTUAL_SERIALIZE_FUNCTIONS();
+    };
+
     class ClientUpdateEntityData : public yojimbo::BlockMessage
     {
     public:
@@ -104,13 +117,28 @@ namespace Engine
         YOJIMBO_VIRTUAL_SERIALIZE_FUNCTIONS();
     };
 
+    class ServerResetPositions : public yojimbo::Message
+    {
+    public:
+        ServerResetPositions() {}
+
+        template <typename Stream> bool Serialize(Stream& stream)
+        {
+            return true;
+        }
+
+        YOJIMBO_VIRTUAL_SERIALIZE_FUNCTIONS();
+    };
+
     enum GameMessageType
     {
         REQUEST_ENTITY_DATA,
         RESPONSE_ENTITY_DATA,
         CLIENT_INITIALIZED,
+        CLIENT_RESET_POSITIONS,
         CLIENT_UPDATE_ENTITY_DATA,
         SERVER_UPDATE_ENTITY_DATA,
+        SERVER_RESET_POSITIONS,
         NUM_GAME_MESSAGE_TYPES
     };
 
@@ -119,8 +147,10 @@ namespace Engine
         "REQUEST_ENTITY_DATA",
         "RESPONSE_ENTITY_DATA",
         "CLIENT_INITIALIZED",
+        "CLIENT_RESET_POSITIONS",
         "CLIENT_UPDATE_ENTITY_DATA",
         "SERVER_UPDATE_ENTITY_DATA",
+        "SERVER_RESET_POSITIONS",
         "NUM_GAME_MESSAGE_TYPES"
     };
 
@@ -154,6 +184,12 @@ namespace Engine
                     return nullptr;
                 SetMessageType(message, type);
                 return message;
+            case CLIENT_RESET_POSITIONS:
+                message = YOJIMBO_NEW(allocator, ClientResetPositions);
+                if (!message)
+                    return nullptr;
+                SetMessageType(message, type);
+                return message;
             case CLIENT_UPDATE_ENTITY_DATA:
                 message = YOJIMBO_NEW(allocator, ClientUpdateEntityData);
                 if (!message)
@@ -162,6 +198,12 @@ namespace Engine
                 return message;
             case SERVER_UPDATE_ENTITY_DATA:
                 message = YOJIMBO_NEW(allocator, ServerUpdateEntityData);
+                if (!message)
+                    return nullptr;
+                SetMessageType(message, type);
+                return message;
+            case SERVER_RESET_POSITIONS:
+                message = YOJIMBO_NEW(allocator, ServerResetPositions);
                 if (!message)
                     return nullptr;
                 SetMessageType(message, type);

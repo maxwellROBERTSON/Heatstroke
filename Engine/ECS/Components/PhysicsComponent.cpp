@@ -94,15 +94,23 @@ namespace Engine
 		if (std::memcmp(&reset, data + offset, sizeof(reset)) != 0)
 		{
 			std::memcpy(&reset, data + offset, sizeof(reset));
+			/*std::cout << "Received a reset value of ";
+			std::cout << std::boolalpha << reset << std::endl;
 			if (reset)
 			{
 				entity->ResetToSpawnState();
 				glm::vec3 pos = entity->GetPosition();
 				GetController()->setFootPosition(PxExtendedVec3(pos.x, pos.y, pos.z));
+				std::cout << "Reset position to: " << pos.x << " " << pos.y << " " << pos.z << std::endl;
 				reset = false;
-				std::cout << "Reset" << std::endl;
-			}
+			}*/
 		}
+		/*else
+		{
+			uint8_t rawResetByte = *(reinterpret_cast<const uint8_t*>(data + offset));
+			std::cout << "\n\n RESET VALUE SET TO ";
+			std::cout << std::boolalpha << rawResetByte << std::endl;
+		}*/
 		offset += sizeof(reset);
 	}
 

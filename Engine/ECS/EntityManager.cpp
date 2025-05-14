@@ -504,8 +504,6 @@ namespace Engine
 				{
 					if (byte & (1 << (7 - k))) // If the corresponding bit is set
 					{
-						if (clientEntityId == entityPtr->GetEntityId())
-							continue;
 						if ((j * 8 + k) == 0)
 						{
 							entityPtr->SetDataArray(block + entityComponentOffsets[0]);
@@ -515,6 +513,15 @@ namespace Engine
 
 						type = static_cast<ComponentTypes>((j * 8 + k - 1));
 						base = GetComponentOfEntity(entityPtr->GetEntityId(), type);
+
+						if (clientEntityId == entityPtr->GetEntityId() && type != PHYSICS)
+						{
+							continue;
+						}
+						else
+						{
+							int i = 0;
+						}
 
 						switch (type)
 						{

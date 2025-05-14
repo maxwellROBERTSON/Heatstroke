@@ -43,8 +43,14 @@ namespace Engine
 		// Send client initialsed message to server
 		void SendClientInitialised();
 
+		// Send reset message to server
+		void SendResetPositionsMessage();
+
 		// Handle a server update message 
 		void HandleServerUpdateEntityData(ServerUpdateEntityData*);
+
+		// Handle a server message for resetting positions
+		void HandleServerResetPositions();
 
 		// Clean up client memory using yojimbo
 		void CleanUp();
@@ -67,6 +73,9 @@ namespace Engine
 		// Toggle sendInitMessage for next update loop
 		void ReadyToSendInitMessage() { sendInitMessage = true; }
 
+		// Toggle sendResetMessage for next update loop
+		void ReadyToSendResetMessage() override { sendResetPositionsMessage = true; }
+
 	private:
 		double clientTime;
 
@@ -75,6 +84,9 @@ namespace Engine
 		int clientEntityId = -1;
 
 		bool sendInitMessage = false;
+
+		bool sendResetPositionsMessage = false;
+		bool toDoReset = false;
 
 		yojimbo::Address serverAddress;
 

@@ -27,12 +27,6 @@ namespace Engine
 		std::memcpy(data + offset, &camera.frontDirection, sizeof(camera.frontDirection));
 	}
 
-	// Get camera front direction
-	glm::vec3 CameraComponent::GetFrontDirection()
-	{
-		return this->GetCamera()->frontDirection;
-	}
-
 	// Setters
 
 	// Set component data

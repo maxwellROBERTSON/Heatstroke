@@ -191,25 +191,7 @@ void MultiPlayer::Update(float timeDelta)
 
 			if (hit)
 			{
-				playerEntity->ResetToSpawnState();
-				Engine::PhysicsComponent* physicsComponent = reinterpret_cast<Engine::PhysicsComponent*>(entityManager.GetComponentOfEntity(playerEntity->GetEntityId(), PHYSICS));
-				glm::vec3 pos = playerEntity->GetPosition();
-				physicsComponent->GetController()->setFootPosition(PxExtendedVec3(pos.x, pos.y, pos.z));
-				for (int i = 0; i < entitiesWithPhysicsComponent.size(); i++)
-				{
-					Engine::Entity* entity = entityManager.GetEntity(entitiesWithPhysicsComponent[i]);
-					physicsComponent = reinterpret_cast<Engine::PhysicsComponent*>(entityManager.GetComponentOfEntity(entitiesWithPhysicsComponent[i], PHYSICS));
-					if (physicsComponent->GetPhysicsType() == PhysicsComponent::PhysicsType::CONTROLLER)
-					{
-						entity->ResetToSpawnState();
-						glm::vec3 pos = entity->GetPosition();
-						physicsComponent->GetController()->setFootPosition(PxExtendedVec3(pos.x, pos.y, pos.z));
-						if (entity == playerEntity)
-							continue;
-						physicsComponent->SetReset(true);
-						physicsComponent->SetComponentHasChanged();
-					}
-				}
+				game->GetNetwork().GetNetworkTypePointer()->ReadyToSendResetMessage();
 			}
 
 			else {

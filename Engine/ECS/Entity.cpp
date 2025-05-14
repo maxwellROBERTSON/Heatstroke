@@ -37,8 +37,6 @@ namespace Engine
 		std::memcpy(data + offset, &position, sizeof(position));
 		offset += sizeof(position);
 		std::memcpy(data + offset, &rotation, sizeof(rotation));
-		offset += sizeof(rotation);
-		std::memcpy(data + offset, &scale, sizeof(scale));
 	}
 
 	// Get the initial data for a given entity
@@ -95,13 +93,6 @@ namespace Engine
 		if (std::memcmp(&rotation, data + offset, sizeof(rotation)) != 0)
 		{
 			std::memcpy(&rotation, data + offset, sizeof(rotation));
-			SetEntityHasChanged();
-			dirty = true;
-		}
-		offset += sizeof(rotation);
-		if (std::memcmp(&scale, data + offset, sizeof(scale)) != 0)
-		{
-			std::memcpy(&scale, data + offset, sizeof(scale));
 			SetEntityHasChanged();
 			dirty = true;
 		}
