@@ -59,7 +59,7 @@ namespace Engine
     private:
         Status status = Status::NETWORK_UNINITIALIZED;
         std::unique_ptr<GameNetworkType> networkType;  // Holds either GameClient or GameServer
-        yojimbo::ClientServerConfig config;
+        GameConfig config;
         GameAdapter* adapter;
 	};
 }

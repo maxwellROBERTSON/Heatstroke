@@ -32,6 +32,24 @@ namespace Engine
 
 	static const uint8_t DEFAULT_PRIVATE_KEY[yojimbo::KeyBytes] = { 0 };
 
+	struct GameConfig : public yojimbo::ClientServerConfig
+	{
+		GameConfig()
+		{
+			channel[1].type = yojimbo::CHANNEL_TYPE_UNRELIABLE_UNORDERED;
+			channel[1].maxBlockSize = maxPacketSize;
+			channel[1].blockFragmentSize = maxPacketSize;
+			/*channel[yojimbo::CHANNEL_TYPE_UNRELIABLE_UNORDERED].disableBlocks = false;
+			channel[yojimbo::CHANNEL_TYPE_UNRELIABLE_UNORDERED].sentPacketBufferSize = 1024;
+			channel[yojimbo::CHANNEL_TYPE_UNRELIABLE_UNORDERED].messageSendQueueSize = 1024;
+			channel[yojimbo::CHANNEL_TYPE_UNRELIABLE_UNORDERED].messageReceiveQueueSize = 1024;
+			channel[yojimbo::CHANNEL_TYPE_UNRELIABLE_UNORDERED].maxMessagesPerPacket = 256;
+			channel[yojimbo::CHANNEL_TYPE_UNRELIABLE_UNORDERED].packetBudget = -1;
+			channel[yojimbo::CHANNEL_TYPE_UNRELIABLE_UNORDERED].messageResendTime = 0.1f;
+			channel[yojimbo::CHANNEL_TYPE_UNRELIABLE_UNORDERED].blockFragmentResendTime = 0.25f;*/
+		}
+	};
+
 	// Parent class of client and server
 	class GameNetworkType
 	{

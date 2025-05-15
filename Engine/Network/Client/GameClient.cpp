@@ -5,7 +5,7 @@
 namespace Engine
 {
 	GameClient::GameClient(
-		yojimbo::ClientServerConfig* config,
+		GameConfig* config,
 		GameAdapter* adapter,
 		yojimbo::Address serverAddress,
 		Engine::Game* game)
@@ -156,12 +156,13 @@ namespace Engine
 		ClientUpdateEntityData* message = static_cast<ClientUpdateEntityData*>(client->CreateMessage(CLIENT_UPDATE_ENTITY_DATA));
 		if (message)
 		{
-			uint8_t* block = client->AllocateBlock(1024);
+			bytes = (bytes + 7) & ~7;
+			uint8_t* block = client->AllocateBlock(bytes);
 			DLOG("Block allocated at: " << static_cast<void*>(block));
 			if (block)
 			{
 				game->GetEntityManager().GetAllChangedData(block);
-				client->AttachBlockToMessage(message, block, 1024);
+				client->AttachBlockToMessage(message, block, bytes);
 				if (!client->CanSendMessage(yojimbo::CHANNEL_TYPE_UNRELIABLE_UNORDERED))
 				{
 					DLOG("MESSAGE QUEUE NOT AVAILABLE FOR " << GameMessageTypeStrings[CLIENT_UPDATE_ENTITY_DATA]);
@@ -169,7 +170,7 @@ namespace Engine
 					return;
 				}
 				client->SendClientMessage(yojimbo::CHANNEL_TYPE_UNRELIABLE_UNORDERED, message);
-				DLOG(GameMessageTypeStrings[CLIENT_UPDATE_ENTITY_DATA] << " TO SERVER WITH MESSAGEID = " << message->GetId() << ", BLOCK SIZE = " << 1024);
+				DLOG(GameMessageTypeStrings[CLIENT_UPDATE_ENTITY_DATA] << " TO SERVER WITH MESSAGEID = " << message->GetId() << ", BLOCK SIZE = " << bytes);
 				game->GetEntityManager().ResetChanged();
 				return; 
 			}

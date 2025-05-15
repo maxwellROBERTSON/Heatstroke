@@ -16,7 +16,7 @@ namespace Engine
 	public:
 		// Constructor
 		GameServer(
-			yojimbo::ClientServerConfig* config,
+			GameConfig* config,
 			GameAdapter* adapter,
 			yojimbo::Address address,
 			int maxClients,
@@ -88,7 +88,7 @@ namespace Engine
 		std::vector<std::pair<int, uint64_t>> loadedClients;
 
 		yojimbo::Server* server;
-		yojimbo::ClientServerConfig* config;
+		GameConfig* config;
 		GameAdapter* adapter;
 
 		Engine::Game* game;

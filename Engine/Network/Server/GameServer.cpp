@@ -5,7 +5,7 @@
 namespace Engine
 {
 	GameServer::GameServer(
-		yojimbo::ClientServerConfig* config,
+		GameConfig* config,
 		GameAdapter* adapter,
 		yojimbo::Address address,
 		int maxClients,

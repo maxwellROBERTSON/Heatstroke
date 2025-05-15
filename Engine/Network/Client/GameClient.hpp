@@ -15,7 +15,7 @@ namespace Engine
 	{
 	public:
 		GameClient(
-			yojimbo::ClientServerConfig*,
+			GameConfig*,
 			GameAdapter*,
 			yojimbo::Address,
 			Engine::Game* game
@@ -90,7 +90,7 @@ namespace Engine
 		yojimbo::Address serverAddress;
 
 		yojimbo::Client* client;
-		yojimbo::ClientServerConfig* config;
+		GameConfig* config;
 		GameAdapter* adapter;
 
 		Engine::Game* game;

@@ -336,7 +336,7 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 
 		ImGui::Text("Join a server");
 
-		static char addressStr[16] = "129.11.146.183\0";
+		static char addressStr[16] = "192.168.0.77\0";
 		ImGui::Text("Address:");
 		ImGui::InputText("Address", addressStr, IM_ARRAYSIZE(addressStr));
 
@@ -444,11 +444,11 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 				}
 				game->loadOnlineEntities(maxClientsNum, numTeamsNum, isListenServer);
 				game->getRenderer().initialiseJointMatrices();
-				GLFWwindow* window = game->GetContext().getGLFWWindow();
-				glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 				game->SetServer(portNum, maxClientsNum);
 				if (isListenServer)
 				{
+					GLFWwindow* window = game->GetContext().getGLFWWindow();
+					glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 					game->GetGUI().ToggleGUIMode("Home");
 					game->GetGUI().ToggleGUIMode("MultiPlayer");
 					if (game->debugging)
