@@ -157,12 +157,12 @@ namespace Engine
 		if (message)
 		{
 			bytes = (bytes + 7) & ~7;
-			uint8_t* block = client->AllocateBlock(bytes);
+			uint8_t* block = client->AllocateBlock(1024);
 			DLOG("Block allocated at: " << static_cast<void*>(block));
 			if (block)
 			{
 				game->GetEntityManager().GetAllChangedData(block);
-				client->AttachBlockToMessage(message, block, bytes);
+				client->AttachBlockToMessage(message, block, 1024);
 				if (!client->CanSendMessage(yojimbo::CHANNEL_TYPE_UNRELIABLE_UNORDERED))
 				{
 					DLOG("MESSAGE QUEUE NOT AVAILABLE FOR " << GameMessageTypeStrings[CLIENT_UPDATE_ENTITY_DATA]);
@@ -170,7 +170,7 @@ namespace Engine
 					return;
 				}
 				client->SendClientMessage(yojimbo::CHANNEL_TYPE_UNRELIABLE_UNORDERED, message);
-				DLOG(GameMessageTypeStrings[CLIENT_UPDATE_ENTITY_DATA] << " TO SERVER WITH MESSAGEID = " << message->GetId() << ", BLOCK SIZE = " << bytes);
+				DLOG(GameMessageTypeStrings[CLIENT_UPDATE_ENTITY_DATA] << " TO SERVER WITH MESSAGEID = " << message->GetId() << ", BLOCK SIZE = " << 1024);
 				game->GetEntityManager().ResetChanged();
 				return; 
 			}
@@ -249,6 +249,7 @@ namespace Engine
 	void GameClient::HandleServerUpdateEntityData(ServerUpdateEntityData* message)
 	{
 		int blockSize = message->GetBlockSize();
+		DLOG("Block size received of: " << blockSize);
 
 		if (game->GetNetwork().GetStatus() == Status::CLIENT_ACTIVE)
 		{

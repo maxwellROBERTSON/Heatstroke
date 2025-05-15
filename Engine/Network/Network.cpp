@@ -69,7 +69,7 @@ namespace Engine
             DLOG("Adapter created.");
         }
 #ifdef _DEBUG
-        yojimbo_log_level(YOJIMBO_LOG_LEVEL_DEBUG);
+        yojimbo_log_level(YOJIMBO_LOG_LEVEL_INFO);
 #else
         yojimbo_log_level(YOJIMBO_LOG_LEVEL_INFO);
 #endif
