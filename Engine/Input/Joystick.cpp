@@ -84,6 +84,7 @@ namespace Engine
 			mAxisStates[a] = axes[a];
 		}
 	}
+
 	const std::string& Joystick::getDeviceName() const
 	{
 		return joyStickName;

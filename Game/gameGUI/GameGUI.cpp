@@ -1,20 +1,21 @@
-#include "GameGUI.hpp"
 #include "../gameModes/GameMode.hpp"
 #include "../gameModes/MultiPlayer.hpp"
 #include "../gameModes/SinglePlayer.hpp"
+#include "GameGUI.hpp"
 
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+#include <glm/gtx/string_cast.hpp>
 using namespace Engine;
 
 // Define the global variables here
 bool showServerGui{ false };
 bool showImGuiDemoWindow{ false };
 bool debugRenderer{ false };
-bool debugInput{ false };
-bool debugGame{ true } ;
+bool debugInput = false;
+bool debugGame = false;
 bool debugAnimations{ false };
 bool debugNetwork{ false };
 bool showGameGUI{ true };
@@ -116,6 +117,8 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 			GLFWwindow* window = game->GetContext().getGLFWWindow();
 			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 		}
+
+		InputManager::InitDefaultControls();
 
 		cursorPos = ImGui::GetCursorScreenPos();
 		cursorPos.x += 20.f;
@@ -542,6 +545,17 @@ void makeSettingsGUI(FPSTest* game, int* w, int* h)
 	float sensitivity = renderer.getCameraPointer()->sensitivity;
 	int sensitivityInt = static_cast<int>(sensitivity * 100);
 
+	int currentInputDevice = InputManager::getInputDevice();
+	const char* inputDeviceNames[InputDevice::INPUT_DEVICE_COUNT] = { "Keyboard & Mouse", "Controller" };
+	const char* inputDeviceName = (currentInputDevice >= 0 && currentInputDevice < INPUT_DEVICE_COUNT) ? inputDeviceNames[currentInputDevice] : "Unknown";
+	if (InputManager::hasJoysticksConnected())
+	{
+		ImGui::SliderInt("Input Device", &currentInputDevice, 0, INPUT_DEVICE_COUNT - 1, inputDeviceName); // Use ImGuiSliderFlags_NoInput flag to disable CTRL+Click here.
+		InputManager::setInputDevivce((InputDevice)currentInputDevice);
+	}
+	else
+		InputManager::setInputDevivce(InputDevice::KBM);
+
 	// Slider from 0.01 to 1.00
 	ImGui::PushItemWidth(*w / 4.f);
 	if (ImGui::SliderInt("##SensitivitySlider", &sensitivityInt, 1, 100))
@@ -713,9 +727,10 @@ void makeDebugGUI(FPSTest* game, int* w, int* h)
 	ImGui::Checkbox("Demo Window", &showImGuiDemoWindow);
 	ImGui::Checkbox("Renderer Debug", &debugRenderer);
 	ImGui::Checkbox("Input Debug", &debugInput);
+	ImGui::Checkbox("Network Debug", &debugNetwork);
 	ImGui::Checkbox("Animation Debug", &debugAnimations);
 	ImGui::Checkbox("Game Debug", &debugGame);
-	ImGui::Checkbox("Game GUI", &game->showGUI); // to be fixed
+	ImGui::Checkbox("Game GUI", &game->showGUI); // to be fixed 
 
 	// ImGui Demo Window
 	if (showImGuiDemoWindow)
@@ -724,6 +739,7 @@ void makeDebugGUI(FPSTest* game, int* w, int* h)
 	// Renderer 
 	if (debugRenderer)
 		ShowRendererDebug(game, w, h);
+
 
 	if (debugInput)
 		ShowInputDebug(game, w, h);
@@ -771,7 +787,16 @@ void makeSinglePlayerGUI(FPSTest* game, int*, int*)
 		ImGui::Text("SCORE: %u", sp->score);
 		ImGui::Text("Time: %u", sp->countdown);
 
+		if (ImGui::Button("Reset Game"))
+		{
+			sp->countdown = 31;
+			sp->score = 0;
+		}
+
+
 		ImGui::End();
+
+		// Set window position to top-right (with padding)
 
 		ImGui::SetNextWindowPos(
 			ImVec2(displaySize.x - windowPadding.x, displaySize.y - windowPadding.y),
@@ -935,6 +960,7 @@ void ShowInputDebug(FPSTest* game, int* w, int* h)
 	INPUT_DEBUG(Shoot, HS_MOUSE_BUTTON_LEFT, HS_GAMEPAD_BUTTON_B); // TODO: fix (axis), also hard coded keyboard
 	INPUT_DEBUG(Jump, HS_KEY_SPACE, HS_GAMEPAD_BUTTON_A);
 
+	ImGui::Text("Shoot: "); ImGui::SameLine();
 	bool shootPressed = InputManager::getMouse().isPressed(HS_MOUSE_BUTTON_LEFT);
 	bool shootHeld = InputManager::getMouse().isHeld(HS_MOUSE_BUTTON_LEFT);
 	bool shootDown = InputManager::getMouse().isDown(HS_MOUSE_BUTTON_LEFT);
@@ -942,22 +968,33 @@ void ShowInputDebug(FPSTest* game, int* w, int* h)
 	ImGui::Checkbox("##MFKBM", &shootHeld); ImGui::SameLine();
 	ImGui::Checkbox("##MFKBM", &shootDown);
 
-	//if defaultControls.getDigitalValue(Controls::Shoot)
+	//int currentInputDevice = InputManager::getInputDevice();
+	//const char* inputDeviceNames[InputDevice::INPUT_DEVICE_COUNT] = { "Keyboard & Mouse", "Controller" };
+	//const char* inputDeviceName = (currentInputDevice >= 0 && currentInputDevice < INPUT_DEVICE_COUNT) ? inputDeviceNames[currentInputDevice] : "Unknown";
+	//if (InputManager::hasJoysticksConnected())
+	//{
+	//	ImGui::SliderInt("Input Device", &currentInputDevice, 0, INPUT_DEVICE_COUNT - 1, inputDeviceName); // Use ImGuiSliderFlags_NoInput flag to disable CTRL+Click here.
+	//	InputManager::setInputDevivce((InputDevice)currentInputDevice);
+	//}
+	//else
+	//	InputManager::setInputDevivce(InputDevice::KBM);
 
-	if (InputManager::hasJoysticksConnected())
+	if (InputManager::getInputDevice() == InputDevice::CONTROLLER)
 	{
-		ImGui::Text("A: %s", InputManager::getJoystick(0).isPressed(HS_GAMEPAD_BUTTON_A) ? "Pressed" : "Released");
-		ImGui::Text("B: %s", InputManager::getJoystick(0).isPressed(HS_GAMEPAD_BUTTON_B) ? "Pressed" : "Released");
-		ImGui::Text("Y: %s", InputManager::getJoystick(0).isPressed(HS_GAMEPAD_BUTTON_Y) ? "Pressed" : "Released");
-		ImGui::Text("X: %s", InputManager::getJoystick(0).isPressed(HS_GAMEPAD_BUTTON_X) ? "Pressed" : "Released");
-		ImGui::Text("RB: %s", InputManager::getJoystick(0).isPressed(HS_GAMEPAD_BUTTON_RIGHT_BUMPER) ? "Pressed" : "Released");
-		ImGui::Text("LB: %s", InputManager::getJoystick(0).isPressed(HS_GAMEPAD_BUTTON_LEFT_BUMPER) ? "Pressed" : "Released");
+		ImGui::Text("A: %s", InputManager::getJoystick(0).isDown(HS_GAMEPAD_BUTTON_A) ? "Pressed" : "Released");
+		ImGui::Text("B: %s", InputManager::getJoystick(0).isDown(HS_GAMEPAD_BUTTON_B) ? "Pressed" : "Released");
+		ImGui::Text("Y: %s", InputManager::getJoystick(0).isDown(HS_GAMEPAD_BUTTON_Y) ? "Pressed" : "Released");
+		ImGui::Text("X: %s", InputManager::getJoystick(0).isDown(HS_GAMEPAD_BUTTON_X) ? "Pressed" : "Released");
+		ImGui::Text("RB: %s", InputManager::getJoystick(0).isDown(HS_GAMEPAD_BUTTON_RIGHT_BUMPER) ? "Pressed" : "Released");
+		ImGui::Text("LB: %s", InputManager::getJoystick(0).isDown(HS_GAMEPAD_BUTTON_LEFT_BUMPER) ? "Pressed" : "Released");
 		ImGui::Text("RT: %f", InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_RIGHT_TRIGGER));
 		ImGui::Text("LT: %f", InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_LEFT_TRIGGER));
 		ImGui::Text("LS - Horizontal: %f", InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_LEFT_X));
 		ImGui::Text("LS - Vertical: %f", InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_LEFT_Y));
 		ImGui::Text("RS - Horizontal: %f", InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_RIGHT_X));
 		ImGui::Text("RS - Vertical: %f", InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_RIGHT_Y));
+		ImGui::Text("RS: %s", InputManager::getJoystick(0).isDown(HS_GAMEPAD_BUTTON_RIGHT_THUMB) ? "Pressed" : "Released");
+		ImGui::Text("LS: % s", InputManager::getJoystick(0).isDown(HS_GAMEPAD_BUTTON_LEFT_THUMB) ? "Pressed" : "Released");
 	}
 
 	ImGui::End();
@@ -1009,22 +1046,34 @@ void ShowAnimationDebug(FPSTest* game, int* w, int* h)
 	// Should fix to select model - avoid error
 	// Iterate over all models and find ones with animations
 	std::vector<vk::Model>& models = game->GetModels();
-	for (vk::Model& model : models) {
-		if (model.animations.size() == 0)
-			continue;
+	vk::Model& model = models[3];
+	// Get the list of animation names
+	std::vector<const char*> list;
+	std::size_t size = model.animations.size();
+	list.reserve(size);
+	for (std::size_t i = 0; i < size; i++)
+		list.push_back(model.animations[i].name.c_str());
 
-		// Get the list of animation names
-		std::vector<const char*> list;
-		std::size_t size = model.animations.size();
-		list.reserve(size);
-		for (std::size_t i = 0; i < size; i++)
-			list.push_back(model.animations[i].name.c_str());
-
-		ImGui::Combo("Animation", &model.animationIndex, list.data(), (int)size, (int)size);
-		if (ImGui::Button("Play Animation")) {
-			model.playAnimation();
-		}
+	ImGui::Combo("Animation", &model.animationIndex, list.data(), (int)size, (int)size);
+	if (ImGui::Button("Play Animation")) {
+		model.playAnimation();
 	}
+	//for (vk::Model& model : models) {
+	//	if (model.animations.size() == 0)
+	//		continue;
+
+	//	// Get the list of animation names
+	//	std::vector<const char*> list;
+	//	std::size_t size = model.animations.size();
+	//	list.reserve(size);
+	//	for (std::size_t i = 0; i < size; i++)
+	//		list.push_back(model.animations[i].name.c_str());
+
+	//	ImGui::Combo("Animation", &model.animationIndex, list.data(), (int)size, (int)size);
+	//	if (ImGui::Button("Play Animation")) {
+	//		model.playAnimation();
+	//	}
+	//}
 	ImGui::End();
 }
 
@@ -1051,11 +1100,41 @@ void ShowGameDebug(FPSTest* game, int* w, int* h)
 	SinglePlayer* sp = dynamic_cast<SinglePlayer*>(&game->GetGameMode());
 	if (sp)
 	{
-		if (ImGui::Button("Reset Game"))
+		//if (ImGui::Button("Reset Game"))
+		//{
+		//	sp->countdown = 31;
+		//	sp->score = 0;
+		//}
+
+		ImGui::InputFloat3("Rifle Position", &sp->riflePosition.x);
+		ImGui::InputFloat("Rifle X Rot:", &sp->rifleXRot);
+
+		ImGui::InputFloat("Rifle Y Rot:", &sp->rifleYRot);
+		ImGui::InputFloat("Rifle Scale:", &sp->rifleScale);
+
+		glm::mat4 xRot = glm::rotate(glm::radians(sp->rifleXRot), glm::vec3(1.0f, 0.0f, 0.0f));
+		glm::mat4 yRot = glm::rotate(glm::radians(sp->rifleYRot), glm::vec3(0.0f, 1.0f, 0.0f));
+
+		if (ImGui::Button("PRINT MATRICES"))
 		{
-			sp->countdown = 31;
-			sp->score = 0;
+			std::cout << "----XROT------" << std::endl;
+			std::cout << glm::to_string(xRot) << std::endl;
+			std::cout << "----XROT------" << std::endl;
+
+			std::cout << "----YROT------" << std::endl;
+			std::cout << glm::to_string(yRot) << std::endl;
+			std::cout << "----YROT------" << std::endl;
+
 		}
+
+		glm::mat4 rifleRot = xRot * yRot;
+
+
+		sp->rifleEntity->SetPosition(sp->riflePosition);
+		sp->rifleEntity->SetRotation(rifleRot);
+		sp->rifleEntity->SetScale(sp->rifleScale);
+
+
 	}
 	ImGui::End();
 }

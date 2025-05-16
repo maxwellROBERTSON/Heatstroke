@@ -34,8 +34,10 @@
 
 #include "../ThreadPool/thread_pool_wait.h"
 
-#include "gameRendering/Renderer.hpp"
 #include "gameRendering/Crosshair.hpp"
+//#include "gameRendering/Decals.hpp"
+#include "gameRendering/Renderer.hpp"
+
 #include "gameRendering/RenderMode.hpp"
 
 #include "gameModes/GameMode.hpp"
@@ -67,7 +69,7 @@ public:
 	// Setters
 	void SetGameMode(std::unique_ptr<GameMode>);
 	void SetRenderMode(RenderMode r) { renderMode = r; }
-	
+
 	// Getters
 	Renderer& getRenderer();
 	RenderMode getRenderMode();

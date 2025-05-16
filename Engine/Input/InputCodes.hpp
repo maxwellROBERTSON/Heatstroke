@@ -161,7 +161,25 @@
 #define HS_MOUSE_BUTTON_MIDDLE    HS_MOUSE_BUTTON_3
 #define HS_MOUSE_BUTTON_LAST      HS_MOUSE_BUTTON_8
 
-// controller input
+// controller input -- original
+//#define HS_GAMEPAD_BUTTON_A               0
+//#define HS_GAMEPAD_BUTTON_B               1
+//#define HS_GAMEPAD_BUTTON_X               2
+//#define HS_GAMEPAD_BUTTON_Y               3
+//#define HS_GAMEPAD_BUTTON_LEFT_BUMPER     4
+//#define HS_GAMEPAD_BUTTON_RIGHT_BUMPER    5
+//#define HS_GAMEPAD_BUTTON_BACK            6
+//#define HS_GAMEPAD_BUTTON_START           7
+//#define HS_GAMEPAD_BUTTON_GUIDE           8
+//#define HS_GAMEPAD_BUTTON_LEFT_THUMB      9
+//#define HS_GAMEPAD_BUTTON_RIGHT_THUMB     10
+//#define HS_GAMEPAD_BUTTON_DPAD_UP         11
+//#define HS_GAMEPAD_BUTTON_DPAD_RIGHT      12
+//#define HS_GAMEPAD_BUTTON_DPAD_DOWN       13
+//#define HS_GAMEPAD_BUTTON_DPAD_LEFT       14
+//#define HS_GAMEPAD_BUTTON_LAST            HS_GAMEPAD_BUTTON_DPAD_LEFT
+
+// for my xbox controller
 #define HS_GAMEPAD_BUTTON_A               0
 #define HS_GAMEPAD_BUTTON_B               1
 #define HS_GAMEPAD_BUTTON_X               2
@@ -170,14 +188,15 @@
 #define HS_GAMEPAD_BUTTON_RIGHT_BUMPER    5
 #define HS_GAMEPAD_BUTTON_BACK            6
 #define HS_GAMEPAD_BUTTON_START           7
-#define HS_GAMEPAD_BUTTON_GUIDE           8
-#define HS_GAMEPAD_BUTTON_LEFT_THUMB      9
-#define HS_GAMEPAD_BUTTON_RIGHT_THUMB     10
+#define HS_GAMEPAD_BUTTON_LEFT_THUMB           8
+#define HS_GAMEPAD_BUTTON_RIGHT_THUMB      9
+#define HS_GAMEPAD_BUTTON_GUIDE    10
 #define HS_GAMEPAD_BUTTON_DPAD_UP         11
 #define HS_GAMEPAD_BUTTON_DPAD_RIGHT      12
 #define HS_GAMEPAD_BUTTON_DPAD_DOWN       13
 #define HS_GAMEPAD_BUTTON_DPAD_LEFT       14
 #define HS_GAMEPAD_BUTTON_LAST            HS_GAMEPAD_BUTTON_DPAD_LEFT
+
 
 #define HS_GAMEPAD_BUTTON_CROSS       HS_GAMEPAD_BUTTON_A
 #define HS_GAMEPAD_BUTTON_CIRCLE      HS_GAMEPAD_BUTTON_B
