@@ -69,6 +69,16 @@ void SinglePlayer::Update(float timeDelta)
 	if (playerEntity == nullptr || pistolEntity == nullptr || targetEntity == nullptr)
 		return;
 
+	if (InputManager::getKeyboard().isPressed(HS_KEY_P))
+
+	{
+
+		score = 0;
+		countdown = 30;
+		ammoCount = 10;
+	}
+
+
 	// Handle swap gun
 	switch (InputManager::getInputDevice())
 	{
@@ -82,6 +92,11 @@ void SinglePlayer::Update(float timeDelta)
 
 		if ((InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_RIGHT_TRIGGER) > -0.5f) && canFire)
 			shootPistol();
+
+
+		if ((InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_RIGHT_TRIGGER) > -0.5f) && !holdingPistol)
+			shootRifle();
+
 		break;
 	}
 	case InputDevice::KBM:
@@ -106,6 +121,7 @@ void SinglePlayer::Update(float timeDelta)
 
 		if (InputManager::getKeyboard().isPressed(HS_KEY_R) && !holdingPistol)
 			reloadRifle();
+
 
 
 		break;
@@ -176,7 +192,7 @@ void SinglePlayer::reloadPistol()
 		int pistolModelIndex = pistolRenderComponent->GetModelIndex();
 		models[pistolModelIndex].animationQueue.push(models[pistolModelIndex].animations[4]);
 		models[pistolModelIndex].blending = true;
-		ammoCount = 6;
+		ammoCount = 10;
 	}
 }
 
@@ -193,49 +209,54 @@ void SinglePlayer::shootPistol()
 	}
 	else
 	{
-		models[pistolModelIndex].animationQueue.push(models[pistolModelIndex].animations[3]);
-		models[pistolModelIndex].blending = true;
-		ammoCount--;
-		canFire = false;
-		fireDelay = 1.0f;
-
-		PxRaycastHit entityHit = this->game->GetPhysicsWorld().handleShooting();
-		bool hitTarget = false;
-
-		std::vector<int> entitiesWithPhysicsComponent = this->game->GetEntityManager().GetEntitiesWithComponent(PHYSICS);
-		for (int i = 0; i < entitiesWithPhysicsComponent.size(); i++)
+		if (models[pistolModelIndex].animationQueue.empty())
 		{
-			Engine::Entity* entity = this->game->GetEntityManager().GetEntity(entitiesWithPhysicsComponent[i]);
-			Engine::PhysicsComponent* physicsComponent = reinterpret_cast<Engine::PhysicsComponent*>(this->game->GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
-			if (physicsComponent->GetStaticBody() != nullptr && physicsComponent->GetStaticBody() == entityHit.actor)
+			models[pistolModelIndex].animationQueue.push(models[pistolModelIndex].animations[3]);
+			models[pistolModelIndex].blending = true;
+			ammoCount--;
+			canFire = false;
+			fireDelay = 0.25f;
+
+			PxRaycastHit entityHit = this->game->GetPhysicsWorld().handleShooting();
+
+			bool hitTarget = false;
+
+			std::vector<int> entitiesWithPhysicsComponent = this->game->GetEntityManager().GetEntitiesWithComponent(PHYSICS);
+			for (int i = 0; i < entitiesWithPhysicsComponent.size(); i++)
 			{
-				score++;
+				Engine::Entity* entity = this->game->GetEntityManager().GetEntity(entitiesWithPhysicsComponent[i]);
+				Engine::PhysicsComponent* physicsComponent = reinterpret_cast<Engine::PhysicsComponent*>(this->game->GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
+				if (physicsComponent->GetStaticBody() != nullptr && physicsComponent->GetStaticBody() == entityHit.actor)
+				{
+					if (countdown > 0)
+						score++;
 
-				Engine::RenderComponent* hitRenderComponent = reinterpret_cast<Engine::RenderComponent*>(this->game->GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), RENDER));
-				hitRenderComponent->SetIsActive(0);
-				glm::vec3 pos = entity->GetPosition();
-				int xPos = randomDistribX(gen);
-				int zPos = randomDistribZ(gen);
-				glm::vec3 newPos{ xPos, pos.y, zPos };
-				targetEntity->SetPosition(newPos);
-				glm::vec3 translation;
-				glm::vec3 scale;
-				glm::quat rotation;
-				physicsComponent->DecomposeTransform(targetEntity->GetModelMatrix(), translation, rotation, scale);
-				PxTransform pxTransform(
-					PxVec3(translation.x, translation.y, translation.z),
-					PxQuat(rotation.x, rotation.y, rotation.z, rotation.w)
-				);
-				physicsComponent->GetStaticBody()->setGlobalPose(pxTransform);
-				hitRenderComponent->SetIsActive(1);
+					Engine::RenderComponent* hitRenderComponent = reinterpret_cast<Engine::RenderComponent*>(this->game->GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), RENDER));
+					hitRenderComponent->SetIsActive(0);
+					glm::vec3 pos = entity->GetPosition();
+					int xPos = randomDistribX(gen);
+					int zPos = randomDistribZ(gen);
+					glm::vec3 newPos{ xPos, pos.y, zPos };
+					targetEntity->SetPosition(newPos);
+					glm::vec3 translation;
+					glm::vec3 scale;
+					glm::quat rotation;
+					physicsComponent->DecomposeTransform(targetEntity->GetModelMatrix(), translation, rotation, scale);
+					PxTransform pxTransform(
+						PxVec3(translation.x, translation.y, translation.z),
+						PxQuat(rotation.x, rotation.y, rotation.z, rotation.w)
+					);
+					physicsComponent->GetStaticBody()->setGlobalPose(pxTransform);
+					hitRenderComponent->SetIsActive(1);
 
-				hitTarget = true;
+					hitTarget = true;
+				}
 			}
-		}
 
-		if (!hitTarget) {
-			if (entityHit.actor != nullptr && entityHit.actor->getName() != "levelBounds" && entityHit.distance != PX_MAX_REAL) {
-				this->game->getBulletDecals().setNextDecal(entityHit.position, entityHit.normal);
+			if (!hitTarget) {
+				if (entityHit.actor != nullptr && entityHit.actor->getName() != "levelBounds" && entityHit.distance != PX_MAX_REAL) {
+					this->game->getBulletDecals().setNextDecal(entityHit.position, entityHit.normal);
+				}
 			}
 		}
 	}
@@ -251,7 +272,7 @@ void SinglePlayer::reloadRifle()
 		RenderComponent* rifleRenderComponent = reinterpret_cast<RenderComponent*>(this->game->GetEntityManager().GetComponentOfEntity(rifleEntity->GetEntityId(), RENDER));
 		std::vector<vk::Model>& models = this->game->GetModels();
 		int rifleModelIndex = rifleRenderComponent->GetModelIndex();
-		models[rifleModelIndex].animationQueue.push(models[rifleModelIndex].animations[2]);
+		models[rifleModelIndex].animationQueue.push(models[rifleModelIndex].animations[4]);
 		models[rifleModelIndex].blending = true;
 		//ammoCount = 6;
 	}
@@ -270,49 +291,53 @@ void SinglePlayer::shootRifle()
 	}
 	else
 	{
-		models[rifleModelIndex].animationQueue.push(models[rifleModelIndex].animations[6]);
-		models[rifleModelIndex].blending = true;
-		//ammoCount--;
-		//canFire = false;
-		//fireDelay = 1.0f;
-
-		PxRaycastHit entityHit = this->game->GetPhysicsWorld().handleShooting();
-		bool hitTarget = false;
-
-		std::vector<int> entitiesWithPhysicsComponent = this->game->GetEntityManager().GetEntitiesWithComponent(PHYSICS);
-		for (int i = 0; i < entitiesWithPhysicsComponent.size(); i++)
+		if (models[rifleModelIndex].animationQueue.empty())
 		{
-			Engine::Entity* entity = this->game->GetEntityManager().GetEntity(entitiesWithPhysicsComponent[i]);
-			Engine::PhysicsComponent* physicsComponent = reinterpret_cast<Engine::PhysicsComponent*>(this->game->GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
-			if (physicsComponent->GetStaticBody() != nullptr && physicsComponent->GetStaticBody() == entityHit.actor)
+			models[rifleModelIndex].animationQueue.push(models[rifleModelIndex].animations[6]);
+			models[rifleModelIndex].blending = true;
+			ammoCount--;
+			canFire = false;
+			fireDelay = 0.01f;
+			//fireDelay = 1.0f;
+
+			PxRaycastHit entityHit = this->game->GetPhysicsWorld().handleShooting();
+			bool hitTarget = false;
+
+			std::vector<int> entitiesWithPhysicsComponent = this->game->GetEntityManager().GetEntitiesWithComponent(PHYSICS);
+			for (int i = 0; i < entitiesWithPhysicsComponent.size(); i++)
 			{
-				score++;
+				Engine::Entity* entity = this->game->GetEntityManager().GetEntity(entitiesWithPhysicsComponent[i]);
+				Engine::PhysicsComponent* physicsComponent = reinterpret_cast<Engine::PhysicsComponent*>(this->game->GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
+				if (physicsComponent->GetStaticBody() != nullptr && physicsComponent->GetStaticBody() == entityHit.actor)
+				{
+					score++;
 
-				Engine::RenderComponent* hitRenderComponent = reinterpret_cast<Engine::RenderComponent*>(this->game->GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), RENDER));
-				hitRenderComponent->SetIsActive(0);
-				glm::vec3 pos = entity->GetPosition();
-				int xPos = randomDistribX(gen);
-				int zPos = randomDistribZ(gen);
-				glm::vec3 newPos{ xPos, pos.y, zPos };
-				targetEntity->SetPosition(newPos);
-				glm::vec3 translation;
-				glm::vec3 scale;
-				glm::quat rotation;
-				physicsComponent->DecomposeTransform(targetEntity->GetModelMatrix(), translation, rotation, scale);
-				PxTransform pxTransform(
-					PxVec3(translation.x, translation.y, translation.z),
-					PxQuat(rotation.x, rotation.y, rotation.z, rotation.w)
-				);
-				physicsComponent->GetStaticBody()->setGlobalPose(pxTransform);
-				hitRenderComponent->SetIsActive(1);
+					Engine::RenderComponent* hitRenderComponent = reinterpret_cast<Engine::RenderComponent*>(this->game->GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), RENDER));
+					hitRenderComponent->SetIsActive(0);
+					glm::vec3 pos = entity->GetPosition();
+					int xPos = randomDistribX(gen);
+					int zPos = randomDistribZ(gen);
+					glm::vec3 newPos{ xPos, pos.y, zPos };
+					targetEntity->SetPosition(newPos);
+					glm::vec3 translation;
+					glm::vec3 scale;
+					glm::quat rotation;
+					physicsComponent->DecomposeTransform(targetEntity->GetModelMatrix(), translation, rotation, scale);
+					PxTransform pxTransform(
+						PxVec3(translation.x, translation.y, translation.z),
+						PxQuat(rotation.x, rotation.y, rotation.z, rotation.w)
+					);
+					physicsComponent->GetStaticBody()->setGlobalPose(pxTransform);
+					hitRenderComponent->SetIsActive(1);
 
-				hitTarget = true;
+					hitTarget = true;
+				}
 			}
-		}
 
-		if (!hitTarget) {
-			if (entityHit.actor != nullptr && entityHit.actor->getName() != "levelBounds" && entityHit.distance != PX_MAX_REAL) {
-				this->game->getBulletDecals().setNextDecal(entityHit.position, entityHit.normal);
+			if (!hitTarget) {
+				if (entityHit.actor != nullptr && entityHit.actor->getName() != "levelBounds" && entityHit.distance != PX_MAX_REAL) {
+					this->game->getBulletDecals().setNextDecal(entityHit.position, entityHit.normal);
+				}
 			}
 		}
 	}
