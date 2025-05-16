@@ -42,6 +42,7 @@ namespace Engine
 		virtual void CleanUp() = 0;
 		virtual std::map<std::string, std::string> GetInfo() = 0;
 		virtual void UpdateStatus() = 0;
+		virtual void ReadyToSendResetMessage() = 0;
 	protected:
 		float dt = 1.0f / 120.0f;
 	};

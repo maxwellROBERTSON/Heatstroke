@@ -13,6 +13,8 @@ namespace Engine
 
 		std::memcpy(data + offset, &clientId, sizeof(clientId));
 		offset += sizeof(clientId);
+		std::memcpy(data + offset, &team, sizeof(team));
+		offset += sizeof(team);
 	}
 
 	// Setters
@@ -27,6 +29,11 @@ namespace Engine
 			SetComponentHasChanged();
 		}
 		offset += sizeof(clientId);
+		if (std::memcmp(&team, data + offset, sizeof(team)) != 0)
+		{
+			std::memcpy(&team, data + offset, sizeof(team));
+			SetComponentHasChanged();
+		}
 	}
 
 

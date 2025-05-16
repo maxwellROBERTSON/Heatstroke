@@ -1,4 +1,3 @@
-#include "../../Game/DemoGame.hpp"
 #include "../Core/Game.hpp"
 #include "../ECS/Components/AudioComponent.hpp"
 #include "../ECS/Components/PhysicsComponent.hpp"
@@ -15,6 +14,8 @@
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/string_cast.hpp>
 
+#include "../Core/Log.hpp"
+
 namespace Engine
 {
 	physx::PxDefaultErrorCallback PhysicsWorld::gErrorCallback;
@@ -30,7 +31,7 @@ namespace Engine
 		}
 
 		// Pvd
-#if defined(OS_WINDOWS)
+#if defined(_DEBUG)
 		gPvd = PxCreatePvd(*gFoundation);
 		if (!gPvd)
 		{
@@ -52,7 +53,7 @@ namespace Engine
 		}
 		else
 		{
-			std::cout << "PVD connected\n";
+			DLOG("PVD connected.");
 		}
 
 		gPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *gFoundation, PxTolerancesScale(), true, gPvd);
@@ -86,7 +87,9 @@ namespace Engine
 		gControllerManager = PxCreateControllerManager(*gScene);
 
 		// set parameters for the scene
+#if defined(_DEBUG)
 		gScene->setVisualizationParameter(PxVisualizationParameter::eSCALE, 1.0f);
+#endif
 		//gScene->setVisualizationParameter(PxVisualizationParameter::eCOLLISION_SHAPES, 1.0f);
 		/*gScene->setVisualizationParameter(PxVisualizationParameter::eWORLD_AXES, 1.0f);
 		gScene->setVisualizationParameter(PxVisualizationParameter::eACTOR_AXES, 1.0f);
@@ -138,10 +141,40 @@ namespace Engine
 		if (this->gSimulationTimer > gTimestep) {
 			if (updateCharacter)
 				this->updateCharacter(gTimestep);
+			this->updateActors();
 			this->gScene->simulate(gTimestep);
 			this->gScene->fetchResults(true);
 			this->gSimulationTimer -= gTimestep;
 		}
+	}
+
+	void PhysicsWorld::updateActors()
+	{
+		for(auto& actorPair : *entityManager->GetUpdatedPhysicsComps())
+		{
+			if (actorPair.first == nullptr)
+				continue;
+
+			PhysicsComponent* comp = actorPair.first;
+			
+			if(comp->GetPhysicsType() == PhysicsComponent::PhysicsType::CONTROLLER)
+			{
+				if (actorPair.second)
+				{
+					comp->SetSimulation(PhysicsComponent::PhysicsSimulation::LOCALLYUPDATED);
+				}
+				else
+				{
+					comp->SetSimulation(PhysicsComponent::PhysicsSimulation::NOTUPDATED);
+					comp->GetController()->setFootPosition(PxExtendedVec3(-99999.0, -99999.0, -99999.0));
+				}
+			}
+			else
+			{
+				actorPair.first->GetComponentActor()->setActorFlag(PxActorFlag::eDISABLE_SIMULATION, !actorPair.second);
+			}
+		}
+		entityManager->ClearUpdatedPhysicsComps();
 	}
 
 	void PhysicsWorld::updateCharacter(PxReal deltatime)
@@ -165,6 +198,28 @@ namespace Engine
 			const float jumpSpeed = 5.0f;
 			PxVec3 frontDir(entityFrontDir.x, entityFrontDir.y, entityFrontDir.z);
 			PxVec3 rightDir(entityRightDir.x, entityRightDir.y, entityRightDir.z);
+
+// 			float speed = 4.0f;
+// 			const float jumpSpeed = 3.0f;
+// 			PxVec3 frontDir(entityFrontDir.x, entityFrontDir.y, entityFrontDir.z);
+// 			PxVec3 rightDir(entityRightDir.x, entityRightDir.y, entityRightDir.z);
+
+// 			if (InputManager::Action(Controls::MoveForward))
+// 			{
+// 				displacement += frontDir * speed * deltatime;
+// 			}
+
+// 			if (InputManager::Action(Controls::MoveBackward)) {
+// 				displacement -= frontDir * speed * deltatime;
+// 			}
+
+// 			if (InputManager::Action(Controls::MoveLeft)) {
+// 				displacement -= rightDir * speed * deltatime;
+// 			}
+
+// 			if (InputManager::Action(Controls::MoveRight)) {
+// 				displacement += rightDir * speed * deltatime;
+// 			}
 
 			// isGrounded check
 			PxControllerState cstate;
@@ -316,19 +371,15 @@ namespace Engine
 			if (hit.actor->is<PxRigidDynamic>()) {
 				// hit dynamic
 				DebugDrawRayInPVD(gScene, pos, pos + direction * hit.distance, 0xFF000000);
-				//std::cout << "Hit dynamic actor at (" << hit.position.x << ", " << hit.position.y << ", " << hit.position.z << ")\n";
 			}
 			else {
 				// hit static
 				DebugDrawRayInPVD(gScene, pos, pos + direction * hit.distance, 0xFFFFFF00);
-				//hit.actor
-				//std::cout << hit.actor->getName() << std::endl;
 			}
 		}
 		else {
 			// hit nothing
 			DebugDrawRayInPVD(gScene, pos, pos + direction * 100.0f, 0xFFFFFF00);
-			//std::cout << "Hit nothing\n";
 		}
 		AudioComponent* audioComponent = reinterpret_cast<AudioComponent*>(entityManager->GetComponentOfEntity(controllerEntity->GetEntityId(), AUDIO));
 		audioComponent->playSound("GunShot");
@@ -339,13 +390,13 @@ namespace Engine
 	// update models matrices
 	void PhysicsWorld::updateObjects(std::vector<Engine::vk::Model>& models)
 	{
-		// get all PhysicsComponents which are simulated locally
-		std::vector<ComponentBase*> physicsComponents = entityManager->GetSimulatedPhysicsComponents();
-		for (std::size_t i = 0; i < physicsComponents.size(); i++) {
-			PhysicsComponent* p = reinterpret_cast<PhysicsComponent*>(physicsComponents[i]);
+		// get all PhysicsComponents
+		std::vector<std::unique_ptr<ComponentBase>>* physicsComponents = entityManager->GetComponentsOfType(PHYSICS);
+		for (std::size_t i = 0; i < physicsComponents->size(); i++) {
+			PhysicsComponent* p = reinterpret_cast<PhysicsComponent*>((*physicsComponents)[i].get());
 
 			// dynamic update
-			if (p->GetPhysicsType() == PhysicsComponent::PhysicsType::DYNAMIC)
+			if (p->GetPhysicsType() == PhysicsComponent::PhysicsType::DYNAMIC && p->GetSimulation() == PhysicsComponent::PhysicsSimulation::LOCALLYSIMULATED)
 			{
 				Entity* entity = entityManager->GetEntity(p->GetEntityId());
 				PxTransform transform = p->GetDynamicBody()->getGlobalPose();
@@ -353,17 +404,43 @@ namespace Engine
 				entity->SetRotation(glm::quat(transform.q.w, transform.q.x, transform.q.y, transform.q.z));
 				entity->SetScale(p->GetScale().x, p->GetScale().y, p->GetScale().z);
 
-				continue; //?
+				continue;
+			}
+			else if (p->GetPhysicsType() == PhysicsComponent::PhysicsType::DYNAMIC && p->GetSimulation() == PhysicsComponent::PhysicsSimulation::LOCALLYUPDATED)
+			{
+				Entity* entity = entityManager->GetEntity(p->GetEntityId());
+
+				glm::vec3 position = entity->GetPosition();
+				glm::quat rotation = entity->GetRotation();
+
+				PxTransform transform(
+					PxVec3(position.x, position.y, position.z),
+					PxQuat(rotation.x, rotation.y, rotation.z, rotation.w)
+				);
+
+				p->GetDynamicBody()->setGlobalPose(transform);
+
+				continue;
 			}
 
 			// controller update
-			if (p->GetPhysicsType() == PhysicsComponent::PhysicsType::CONTROLLER)
+			if (p->GetPhysicsType() == PhysicsComponent::PhysicsType::CONTROLLER && p->GetSimulation() == PhysicsComponent::PhysicsSimulation::LOCALLYSIMULATED)
 			{
 				PxExtendedVec3 pos = p->GetController()->getFootPosition();
-				//pos.y -= p->GetController()->getContactOffset();
-				entityManager->GetEntity(p->GetEntityId())->SetPosition(pos.x, pos.y, pos.z);
+				Entity* entity = entityManager->GetEntity(p->GetEntityId());
+				entity->SetPosition(pos.x, pos.y, pos.z);
 				CameraComponent* cameraComponent = reinterpret_cast<CameraComponent*>(entityManager->GetComponentOfEntity(controllerEntity->GetEntityId(), CAMERA));
+				float yaw = cameraComponent->GetYaw();
+				yaw = glm::radians(-yaw - 180);
+				glm::quat yawRotation = glm::angleAxis(yaw, glm::vec3(0.0f, 1.0f, 0.0f));
+				glm::quat finalRotation = yawRotation * glm::quat_cast(entity->GetSpawnRotation());
+				entity->SetRotation(finalRotation);
 				cameraComponent->UpdateCameraPosition(pos.x, pos.y + controllerHeight, pos.z);
+			}
+			else if (p->GetPhysicsType() == PhysicsComponent::PhysicsType::CONTROLLER && p->GetSimulation() == PhysicsComponent::PhysicsSimulation::LOCALLYUPDATED)
+			{
+				glm::vec3 pos = entityManager->GetEntity(p->GetEntityId())->GetPosition();
+				p->GetController()->setFootPosition(PxExtendedVec3(pos.x, pos.y, pos.z));
 			}
 		}
 	}
@@ -389,7 +466,7 @@ namespace Engine
 		}
 
 		// disconnect PVD
-#if defined(OS_WINDOWS)
+#if defined(_DEBUG)
 		if (gPvd)
 		{
 			PxPvdTransport* transport = gPvd->getTransport();
@@ -398,7 +475,8 @@ namespace Engine
 				transport->disconnect();
 				transport->release();
 			}
-			gPvd->release();
+			/*if (gPvd->isConnected())
+				gPvd->release();*/
 			gPvd = nullptr;
 		}
 #endif

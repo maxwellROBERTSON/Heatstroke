@@ -2,11 +2,14 @@
 
 #include <string>
 #include <iostream>
+
 #include "al.h"
 
 #include "Component.hpp"
 
 #include "../EntityManager.hpp"
+
+#include "../../Core/Log.hpp"
 
 namespace Engine
 {
@@ -26,7 +29,7 @@ namespace Engine
 		
 		void operator=(const AudioComponent& other) override
 		{
-			std::cout << "assignment operator here" << std::endl;
+			DLOG("assignment operator here");
 		}
 
 		// Getters

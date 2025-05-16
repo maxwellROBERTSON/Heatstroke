@@ -34,6 +34,8 @@ namespace Engine
         // Get status string of the network
         std::string GetStatusString();
 
+        GameNetworkType* GetNetworkTypePointer() { return networkType.get(); }
+
         // Setters
 
         // Initialize yojimbo, debug and adapter

@@ -3,11 +3,18 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <PxActor.h>
+#include <cmath>
 
 #include "Entity.hpp"
+#include "Components/PhysicsComponent.hpp"
 
 namespace Engine
 {
+	using namespace physx;
+
+	class PhysicsComponent;
+
 	class EntityManager
 	{
 	public:
@@ -54,11 +61,20 @@ namespace Engine
 		// Get component data of all entities for all component type
 		void GetAllData(uint8_t*);
 
+		// Get number of teams
+		int GetNumTeams() { return static_cast<int>(numTeams); }
+
+		// Get reset timer float
+		float GetResetTimer() { return resetTimer; }
+
+		// Get reset timer rounded up to an int
+		int GetResetTimerInt() { return static_cast<int>(std::ceil(resetTimer)); }
+
 		// Get all changed entity and component data
 		void GetAllChangedData(uint8_t*);
 
-		// Get physics components of entities to be simulated locally
-		std::vector<ComponentBase*> GetSimulatedPhysicsComponents();
+		// Get physics components of entites with an updated renderComponent.isActive()
+		std::vector<std::pair<PhysicsComponent*, bool>>* GetUpdatedPhysicsComps() { return &updatedPhysicsComponents; }
 
 		// Setters
 
@@ -79,7 +95,16 @@ namespace Engine
 		void AddChangedComponent(ComponentTypes type, Entity* entity);
 
 		// Set next network component unassigned to a client
-		void AssignNextClient(uint64_t);
+		void AssignNextClient(uint64_t, bool);
+
+		// Set the number of teams (max = 4)
+		void SetNumTeams(int t);
+
+		// Set reset timer
+		void SetResetTimer(float t);
+
+		// Decrease reset timer by float
+		void DecreaseResetTimer(float t);
 
 		// Add an existing entity to the manager
 		// ComponentIndexArray overwritten so only use if components not yet initialised
@@ -88,14 +113,17 @@ namespace Engine
 		// Add an entity with given types
 		Entity* MakeNewEntity(std::vector<ComponentTypes>);
 
-		// Add physics entity to be simulated locally
-		void AddSimulatedPhysicsEntity(int entityId) { simulatedPhysicsEntities.emplace_back(entityId); }
-
 		// Add a network component to the queue
 		void AddToNetworkComponentQueue(int index) { availableNetworkComponentQueue.push_back(index); }
 
 		// Clears the manager on disconnect
 		void ClearManager();
+
+		// Add a physics component of entity with an updated renderComponent.isActive()
+		void AddUpdatedPhysicsComp(PhysicsComponent* c, bool b) { updatedPhysicsComponents.emplace_back(std::make_pair(c, b)); }
+
+		// Clear all updated physics components
+		void ClearUpdatedPhysicsComps() { updatedPhysicsComponents.clear(); }
 
 	private:
 		// Data to be used when updating client server information
@@ -103,6 +131,12 @@ namespace Engine
 		// first = entity id,
 		// second = vector(size TYPE_COUNT + 1) to hold bits for if entity or component data has changed
 		std::vector<std::pair<int, std::vector<int>>> changedEntitiesAndComponents = std::vector<std::pair<int, std::vector<int>>>(0);
+
+		// Number of teams for multiplayer mode
+		uint8_t numTeams = 1;
+
+		// Reset timer for multiplayer mode
+		float resetTimer = 0.f;
 
 		// Private used in AddEntity - doesn't add to entity's
 		// vector so mustn't be used except when making a new entity
@@ -134,10 +168,10 @@ namespace Engine
 		std::vector<std::vector<int>> entitiesWithType = std::vector<std::vector<int>>(TYPE_COUNT);
 
 		// Queue to store the entities with network components unassigned to clients
-		std::vector<int> availableNetworkComponentQueue;
+		std::deque<int> availableNetworkComponentQueue;
 
-		// Vector of entities with physics components that need to be updated locally per frame
-		std::vector<int> simulatedPhysicsEntities;
+		// PhysicsComponents of entites with a recently updated renderComponent.isActive()
+		std::vector<std::pair<PhysicsComponent*, bool>> updatedPhysicsComponents;
 
 		// For each entity:
 		// Component vector of int = registry.GetNumComponents * sizeof(int)

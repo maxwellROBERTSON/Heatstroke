@@ -59,16 +59,17 @@ namespace Engine
     {
         if (!InitializeYojimbo())
         {
-            std::cerr << "Failed to initialize Yojimbo.\n";
+            DLOG("Failed to initialize Yojimbo.");
+            return;
         }
         else
         {
-            std::cout << "Yojimbo initialized.\n";
+            DLOG("Yojimbo initialized.");
             adapter = YOJIMBO_NEW(yojimbo::GetDefaultAllocator(), GameAdapter);
-            std::cout << "Adapter created.\n";
+            DLOG("Adapter created.");
         }
 #ifdef _DEBUG
-        yojimbo_log_level(YOJIMBO_LOG_LEVEL_INFO);
+        yojimbo_log_level(YOJIMBO_LOG_LEVEL_DEBUG);
 #else
         yojimbo_log_level(YOJIMBO_LOG_LEVEL_INFO);
 #endif
@@ -90,7 +91,7 @@ namespace Engine
         }
         else
         {
-            std::cout << "Network already initialised as " << typeid(*networkType).name() << std::endl;
+            DLOG("Network already initialised as " << typeid(*networkType).name());
         }
     }
 
@@ -104,7 +105,7 @@ namespace Engine
         }
         else
         {
-            std::cout << "Network already initialised as " << typeid(*networkType).name() << std::endl;
+            DLOG("Network already initialised as " << typeid(*networkType).name());
         }
     }
 
@@ -126,19 +127,19 @@ namespace Engine
     {
         if (status == Status::NETWORK_UNINITIALIZED)
         {
-            std::cout << "Network uninitialized." << std::endl;
+            DLOG("Network uninitialized.");
             return;
         }
         else if (status == Status::NETWORK_INITIALIZED)
         {
             networkType.reset();
-            std::cout << "Network cleaned and reset." << std::endl;
+            DLOG("Network cleaned and reset.");
         }
         else
         {
             networkType->CleanUp();
             networkType.reset();
-            std::cout << "Network reset." << std::endl;
+            DLOG("Network reset.");
         }
         ShutdownYojimbo();
         status = Status::NETWORK_UNINITIALIZED;

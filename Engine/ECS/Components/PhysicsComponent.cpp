@@ -1,5 +1,7 @@
 ﻿#include "PhysicsComponent.hpp"
 
+#include "../../Core/Log.hpp"
+
 namespace Engine
 {
 	class PhysicsWorld;
@@ -22,6 +24,24 @@ namespace Engine
 		std::memcpy(data + offset, &isPerson, sizeof(isPerson));
 		offset += sizeof(isPerson);
 		std::memcpy(data + offset, &entityId, sizeof(entityId));
+		offset += sizeof(reset);
+		std::memcpy(data + offset, &reset, sizeof(reset));
+	}
+
+	// Get this components physx actor
+	PxActor* PhysicsComponent::GetComponentActor()
+	{
+		switch (type)
+		{
+		case PhysicsComponent::PhysicsType::STATIC:
+			return GetStaticBody();
+		case PhysicsComponent::PhysicsType::DYNAMIC:
+			return GetDynamicBody();
+		case PhysicsComponent::PhysicsType::CONTROLLER:
+			return GetController()->getActor();
+		default:
+			return nullptr;
+		}
 	}
 
 	// Setters
@@ -72,8 +92,13 @@ namespace Engine
 			SetComponentHasChanged();
 		}
 		offset += sizeof(entityId);
-	}
 
+		if (std::memcmp(&reset, data + offset, sizeof(reset)) != 0)
+		{
+			std::memcpy(&reset, data + offset, sizeof(reset));
+		}
+		offset += sizeof(reset);
+	}
 
 	// Init
 	// isClient = true if the system using the function is a client (not the server)
@@ -82,24 +107,42 @@ namespace Engine
 	{
 		entityId = index;
 
+		type = physicsType;
+
+		if (!isClient)
+		{
+			simulation = PhysicsSimulation::NOTUPDATED;
+		}
+		else if (isClient && !isLocalPlayer)
+		{
+			simulation = PhysicsSimulation::LOCALLYUPDATED;
+		}
+		else if (isClient && isLocalPlayer)
+		{
+			simulation = PhysicsSimulation::LOCALLYSIMULATED;
+		}
+
 		// parse mat4
 		if (!DecomposeTransform(transform, translation, rotation, scale))
 		{
-			std::cout << "DecomposeTransform failed!" << std::endl;
+			DLOG("DecomposeTransform failed!");
 			return;
 		}
+
+		glm::mat4 transformNoTranslation = transform;
+		transformNoTranslation[3] = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 
 		PxTransform pxTransform(
 			PxVec3(translation.x, translation.y, translation.z),
 			PxQuat(rotation.x, rotation.y, rotation.z, rotation.w)
 		);
 
-		glm::vec3 worldSpaceMin = glm::vec3(0, 0, 0);
-		glm::vec3 worldSpaceMax = glm::vec3(0, 0, 0);
+		glm::vec3 worldSpaceMin = glm::vec3(FLT_MAX);
+		glm::vec3 worldSpaceMax = glm::vec3(-FLT_MAX);
 
 		for (Engine::vk::Node* node : model.linearNodes) {
 			if (node->mesh) {
-				glm::mat4 nodeMatrix = transform * node->getModelMatrix();
+				glm::mat4 nodeMatrix = transformNoTranslation * node->getModelMatrix();
 
 				glm::vec3 localMin = node->bbMin;
 				glm::vec3 localMax = node->bbMax;
@@ -129,17 +172,11 @@ namespace Engine
 
 		PxMaterial* material = pworld.gPhysics->createMaterial(0.5f, 0.5f, 0.5f);
 		material->setRestitution(0.0f);
-		type = physicsType;
 
 		switch (type)
 		{
 		case PhysicsType::STATIC:
 		{
-			if (isClient && !isLocalPlayer)
-			{
-				break;
-			}
-
 			staticBody = pworld.gPhysics->createRigidStatic(pxTransform);
 			if (staticBody) {
 				PxShape* shape = PxRigidActorExt::createExclusiveShape(
@@ -148,11 +185,9 @@ namespace Engine
 
 				staticBody->setActorFlag(PxActorFlag::eVISUALIZATION, true);
 				pworld.gScene->addActor(*staticBody);
-
 			}
 			break;
 		}
-
 		case PhysicsType::DYNAMIC:
 		{
 			dynamicBody = pworld.gPhysics->createRigidDynamic(pxTransform);
@@ -181,30 +216,36 @@ namespace Engine
 
 			break;
 		}
-
 		case PhysicsType::CONTROLLER:
 		{
-			if ((!isClient) || (isClient && !isLocalPlayer))
+			if ((!isClient))
 				break;
 
+			float radius = halfExtent.x > halfExtent.z ? halfExtent.x : halfExtent.z;
+			float height = halfExtent.y * 2.0f - (2.0f * radius);
+			if (height <= 0.0f)
+				height = 0.01f;
+			
 			PxCapsuleControllerDesc desc;
-			desc.radius = halfExtent.x > halfExtent.z ? halfExtent.x : halfExtent.z;
-			desc.height = halfExtent.y * 2 - (2.0f * desc.radius);
-			if (desc.height <= 0.0f)
-				desc.height = 0.01f;
+			desc.radius = radius;
+			desc.height = height;
 			desc.stepOffset = 0.1f;
 			desc.scaleCoeff = 1.0f;
-			desc.contactOffset = 0.001f * desc.radius;
+			desc.contactOffset = 0.001f * radius;
 			desc.material = pworld.gPhysics->createMaterial(0.5f, 0.5f, 0.6f);
-			desc.position = PxExtendedVec3(translation.x, translation.y + (desc.height / 2 + desc.radius), translation.z);
+			desc.position = PxExtendedVec3(translation.x, translation.y + (height / 2 + radius), translation.z);
 			desc.slopeLimit = 0.3f;
 			desc.upDirection = PxVec3(0, 1, 0);
 
 			PxCapsuleController* pcontroller = static_cast<PxCapsuleController*>(pworld.gControllerManager->createController(desc));
 			controller = pcontroller;
-			pworld.controller = pcontroller;
-			pworld.setControllerEntity(entity);
-			pworld.setControllerHeight(desc.height + desc.radius);
+
+			if (isLocalPlayer)
+			{
+				pworld.controller = pcontroller;
+				pworld.setControllerEntity(entity);
+				pworld.setControllerHeight(halfExtent.y * 2 * 0.9);
+			}
 
 			break;
 		}
@@ -215,8 +256,8 @@ namespace Engine
 	{
 		entityId = index;
 
-		glm::vec3 worldSpaceMin = glm::vec3(0, 0, 0);
-		glm::vec3 worldSpaceMax = glm::vec3(0, 0, 0);
+		glm::vec3 worldSpaceMin = glm::vec3(FLT_MAX);
+		glm::vec3 worldSpaceMax = glm::vec3(-FLT_MAX);
 
 		// Iterate over model nodes and primitives to add static rigid bodies
 		// based on the model's triangle meshes.
@@ -232,7 +273,7 @@ namespace Engine
 
 				// Decompose transform
 				if (!DecomposeTransform(nodeMatrix, translation, rotation, scale)) {
-					std::cout << "DecomposeTransform failed!" << std::endl;
+					DLOG("DecomposeTransform failed!");
 					return;
 				}
 

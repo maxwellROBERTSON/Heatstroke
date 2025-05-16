@@ -45,7 +45,10 @@ namespace Engine
 		Engine::Camera* GetCamera() { return &camera; }
 
 		// Get camera front direction
-		glm::vec3 GetFrontDirection();
+		glm::vec3 GetFrontDirection() { return this->GetCamera()->frontDirection; }
+
+		// Get camera yaw
+		float GetYaw() { return camera.yaw; }
 
 		// Setters
 

@@ -6,6 +6,8 @@
 
 #include <stb_image.h>
 
+#include "../Core/Log.hpp"
+
 namespace Engine
 {
 	// Getters
@@ -156,7 +158,7 @@ namespace Engine
 			if (guiModes[i] == s)
 			{
 				activeGUIModes[i] = !activeGUIModes[i];
-				std::cout << "Toggled GUI Mode " << i << std::endl;
+				DLOG("Toggled GUI Mode " << i);
 			}
 		}
 	}

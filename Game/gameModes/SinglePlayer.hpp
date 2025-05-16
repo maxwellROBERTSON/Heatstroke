@@ -29,7 +29,10 @@ public:
 	void SetRifleEntity(Engine::Entity* e) override { rifleEntity = e; }
 	void SetTargetEntity(Engine::Entity* e) override { targetEntity = e; }
 
-	//void swapCurrentGun();
+
+	glm::vec3 GetStartPos(int i) override { return {0.0f, 0.5f, 0.0f}; }
+
+	bool IsMultiPlayer() override { return false; }
 
 	FPSTest* game;
 

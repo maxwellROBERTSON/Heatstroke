@@ -59,11 +59,11 @@ void SinglePlayer::Update(float timeDelta)
 	if (isPlayerCam)
 	{
 		physicsWorld.updatePhysics(timeDelta, true);
-		renderer.getCameraPointer()->updateCamera(this->game->GetContext().getGLFWWindow(), timeDelta, false);
+		camera->updateCamera(this->game->GetContext().getGLFWWindow(), timeDelta, false);
 	}
 	else
 	{
-		renderer.getCameraPointer()->updateCamera(this->game->GetContext().getGLFWWindow(), timeDelta, true);
+		camera->updateCamera(this->game->GetContext().getGLFWWindow(), timeDelta, true);
 	}
 
 	if (playerEntity == nullptr || pistolEntity == nullptr || targetEntity == nullptr)
@@ -93,9 +93,24 @@ void SinglePlayer::Update(float timeDelta)
 		if ((InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_RIGHT_TRIGGER) > -0.5f) && canFire)
 			shootPistol();
 
-
 		if ((InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_RIGHT_TRIGGER) > -0.5f) && !holdingPistol)
 			shootRifle();
+
+					// glm::vec3 pos = entity->GetPosition();
+					// int xPos = randomDistribX(gen);
+					// int zPos = randomDistribZ(gen);
+					// glm::vec3 newPos{ xPos, pos.y, zPos };
+					// entity->SetPosition(newPos);
+					// glm::vec3 translation;
+					// glm::vec3 scale;
+					// glm::quat rotation;
+					// physicsComponent->DecomposeTransform(entity->GetModelMatrix(), translation, rotation, scale);
+					// PxTransform pxTransform(
+					// 	PxVec3(translation.x, translation.y, translation.z),
+					// 	PxQuat(rotation.x, rotation.y, rotation.z, rotation.w)
+					// );
+					// physicsComponent->GetStaticBody()->setGlobalPose(pxTransform);
+
 
 		break;
 	}

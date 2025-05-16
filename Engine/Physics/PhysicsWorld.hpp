@@ -39,7 +39,7 @@ namespace Engine
 		float verticalVelocity = 0.0f;
 
 		// PVD
-#if defined(OS_WINDOWS)
+#if defined(_DEBUG)
 		PxPvd* gPvd = nullptr;
 		PxPvdTransport* gTransport = nullptr;
 #endif
@@ -56,6 +56,8 @@ namespace Engine
 		float getControllerHeight() { return controllerHeight; }
 
 		void updatePhysics(PxReal timeDelta, bool updateCharacter);
+
+		void updateActors();
 
 		void updateCharacter(PxReal deltatime);
 

@@ -45,6 +45,12 @@ namespace Engine
 		// Handle a request for entity data
 		void HandleRequestEntityData(int);
 
+		// Handle a client message for resetting positions
+		void HandleClientResetPositions();
+
+		// Function to reset entities to spawn state
+		void ResetClientPositions();
+
 		// Reset an entity and its component used by a disconnected client index
 		void ResetNetworkEntity(int);
 
@@ -54,12 +60,25 @@ namespace Engine
 		// Update network status based on clients and server status
 		void UpdateStatus();
 
+		// Get if the server is a listen server
+		bool GetListenServer() { return isListenServer; }
+
+		// Set if the server is a listen server and the entity for the server creator
+		void SetListenServer(int id) { listenServerEntityId = id; isListenServer = true; }
+
+		// Toggle sendResetMessage for next update loop
+		void ReadyToSendResetMessage() override { sendResetPositionsMessage = true; }
+
 		// Get debugging info for the server
 		std::map<std::string, std::string> GetInfo();
 
 	private:
 		double serverTime;
 		int maxClients;
+		bool isListenServer = false;
+		int listenServerEntityId = -1;
+
+		bool sendResetPositionsMessage = false;
 
 		// Client sends a request for entity data, which moves it into the connection queue
 		// Once server, sends the response for entity data, it is removed from the connection queue

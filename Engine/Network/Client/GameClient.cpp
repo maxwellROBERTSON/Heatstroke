@@ -1,5 +1,7 @@
 #include "GameClient.hpp"
 
+#include "../../Core/Log.hpp"
+
 namespace Engine
 {
 	GameClient::GameClient(
@@ -21,11 +23,6 @@ namespace Engine
 			*config,
 			*adapter,
 			clientTime);
-
-		client->SetLatency(1000.0f);
-		client->SetJitter(100.0f);
-		client->SetPacketLoss(25.0f);
-		client->SetDuplicates(25.0f);
 
 		while(clientId == 0)
 			yojimbo_random_bytes((uint8_t*)&clientId, 8);
@@ -49,26 +46,34 @@ namespace Engine
 		if (state == yojimbo::ClientState::CLIENT_STATE_DISCONNECTED)
 		{
 			game->GetNetwork().SetStatus(Status::CLIENT_DISCONNECTED);
-			std::cout << "Status set to client disconnected." << std::endl;
+			DLOG("Status set to client disconnected.");
 		}
 		else if (state == yojimbo::ClientState::CLIENT_STATE_ERROR)
 		{
 			game->GetNetwork().SetStatus(Status::CLIENT_CONNECTION_FAILED);
-			std::cout << "Status set to client connection failed." << std::endl;
+			DLOG("Status set to client connection failed.");
 		}
 
 		// Update time against yojimbo time
 		clientTime = client->GetTime();
-		double t = yojimbo_time();
-		if (clientTime + dt > yojimbo_time()) {
+		int dtCount = 0;
+		while(clientTime + dtCount * dt < yojimbo_time())
+		{
+			dtCount++;
+		}
+		if (dtCount == 0)
+		{
 			return;
 		}
-		clientTime += dt;
-
-		clientTime += dt;
+		else
+		{
+			clientTime += dtCount * dt;
+		}
 		client->AdvanceTime(clientTime);
 
 		client->ReceivePackets();
+
+		EntityManager& manager = game->GetEntityManager();
 
 		UpdateStatus();
 
@@ -76,9 +81,27 @@ namespace Engine
 		{
 			ProcessMessages();
 
-			if (game->GetEntityManager().HasSceneChanged() && !client->HasMessagesToSend(yojimbo::CHANNEL_TYPE_UNRELIABLE_UNORDERED))
+			if (manager.GetResetTimer() != 0.f)
 			{
-				SendGameUpdate();
+				HandleServerResetPositions();
+				manager.DecreaseResetTimer(dtCount * dt);
+			}
+			else
+			{
+				if (sendInitMessage)
+				{
+					SendClientInitialised();
+					sendInitMessage = false;
+				}
+				if (sendResetPositionsMessage)
+				{
+					SendResetPositionsMessage();
+					sendResetPositionsMessage = false;
+				}
+				else if (manager.HasSceneChanged() && !client->HasMessagesToSend(yojimbo::CHANNEL_TYPE_UNRELIABLE_UNORDERED))
+				{
+					SendGameUpdate();
+				}
 			}
 
 			// ... do connected stuff ...
@@ -105,7 +128,7 @@ namespace Engine
 	// Process message type with corresponding function
 	void GameClient::ProcessMessage(yojimbo::Message* message)
 	{
-		std::cout << GameMessageTypeStrings[message->GetType()] << " FROM SERVER WITH MESSAGEID = " << message->GetId() << std::endl;
+		DLOG(GameMessageTypeStrings[message->GetType()] << " FROM SERVER WITH MESSAGEID = " << message->GetId());
 		if (message->GetType() == RESPONSE_ENTITY_DATA)
 		{
 			HandleResponseEntityData((ResponseEntityData*)message);
@@ -113,6 +136,12 @@ namespace Engine
 		else if (message->GetType() == SERVER_UPDATE_ENTITY_DATA)
 		{
 			HandleServerUpdateEntityData((ServerUpdateEntityData*)message);
+		}
+		else if (message->GetType() == SERVER_RESET_POSITIONS)
+		{
+			yojimbo::NetworkInfo info;
+			client->GetNetworkInfo(info);
+			game->GetEntityManager().SetResetTimer(5.f - info.RTT / 2000);
 		}
 	}
 
@@ -125,35 +154,32 @@ namespace Engine
 		if (bytes == 0)
 			return;
 		ClientUpdateEntityData* message = static_cast<ClientUpdateEntityData*>(client->CreateMessage(CLIENT_UPDATE_ENTITY_DATA));
-		if (message->GetId() > 20)
-			exit(0);
 		if (message)
 		{
 			uint8_t* block = client->AllocateBlock(1024);
-			std::cout << "Block allocated at: " << static_cast<void*>(block) << std::endl;
+			DLOG("Block allocated at: " << static_cast<void*>(block));
 			if (block)
 			{
 				game->GetEntityManager().GetAllChangedData(block);
 				client->AttachBlockToMessage(message, block, 1024);
 				if (!client->CanSendMessage(yojimbo::CHANNEL_TYPE_UNRELIABLE_UNORDERED))
 				{
-					std::cout << "MESSAGE QUEUE NOT AVAILABLE FOR " << GameMessageTypeStrings[CLIENT_UPDATE_ENTITY_DATA] << std::endl;
+					DLOG("MESSAGE QUEUE NOT AVAILABLE FOR " << GameMessageTypeStrings[CLIENT_UPDATE_ENTITY_DATA]);
 					client->ReleaseMessage(message);
 					return;
 				}
 				client->SendClientMessage(yojimbo::CHANNEL_TYPE_UNRELIABLE_UNORDERED, message);
-				std::cout << GameMessageTypeStrings[CLIENT_UPDATE_ENTITY_DATA] << " TO SERVER WITH ";
-				std::cout << "MESSAGEID = " << message->GetId() << ", BLOCK SIZE = " << 1024 << std::endl;
+				DLOG(GameMessageTypeStrings[CLIENT_UPDATE_ENTITY_DATA] << " TO SERVER WITH MESSAGEID = " << message->GetId() << ", BLOCK SIZE = " << 1024);
 				game->GetEntityManager().ResetChanged();
 				return; 
 			}
 			else
 			{
-				std::cout << "Block allocation failed." << std::endl;
+				DLOG("Block allocation failed.");
 				client->ReleaseMessage(message);
 			}
 		}
-		std::cout << "FAILED TO SEND " << GameMessageTypeStrings[CLIENT_UPDATE_ENTITY_DATA] << " TO SERVER" << std::endl;
+		DLOG("FAILED TO SEND " << GameMessageTypeStrings[CLIENT_UPDATE_ENTITY_DATA] << " TO SERVER");
 	}
 
 	// Handle a response from a request for entity data
@@ -166,105 +192,62 @@ namespace Engine
 			if (blockSize != 0)
 			{
 				game->GetEntityManager().SetAllData(message->GetBlockData());
-				EntityManager* manager = &(game->GetEntityManager());
-
-				std::vector<int> entitiesWithNetworkComponent = manager->GetEntitiesWithComponent(NETWORK);
-				int thisClientEntity = -1;
-				NetworkComponent* networkComponent;
-				for (int i = 0; i < entitiesWithNetworkComponent.size(); i++)
-				{
-					networkComponent = reinterpret_cast<NetworkComponent*>(manager->GetComponentOfEntity(entitiesWithNetworkComponent[i], NETWORK));
-					if (networkComponent->GetClientId() == clientId)
-					{
-						thisClientEntity = entitiesWithNetworkComponent[i];
-						CameraComponent* cameraComponent = reinterpret_cast<CameraComponent*>(manager->GetComponentOfEntity(entitiesWithNetworkComponent[i], CAMERA));
-						// TODO change this so it works with the renderer being on client side
-						//game->GetRenderer().attachCamera(cameraComponent->GetCamera());
-						clientEntityId = entitiesWithNetworkComponent[i];
-						break;
-					}
-				}
-
-				std::vector<int> vec = manager->GetEntitiesWithComponent(PHYSICS);
-				PhysicsComponent* physicsComp;
-				RenderComponent* renderComp;
-
-				for (int i = 0; i < vec.size(); i++)
-				{
-					physicsComp = reinterpret_cast<PhysicsComponent*>(manager->GetComponentOfEntity(vec[i], PHYSICS));
-					renderComp = reinterpret_cast<RenderComponent*>(manager->GetComponentOfEntity(vec[i], RENDER));
-					glm::mat4 mat = manager->GetEntity(vec[i])->GetModelMatrix();
-					PhysicsComponent::PhysicsType type = physicsComp->GetPhysicsType();
-					Engine::vk::Model& model = game->GetModels()[renderComp->GetModelIndex()];
-					if (type == PhysicsComponent::PhysicsType::STATIC || type == PhysicsComponent::PhysicsType::STATICBOUNDED)
-					{
-						physicsComp->InitComplexShape("Temp", game->GetPhysicsWorld(), type, model, mat, vec[i]);
-					}
-					else
-					{
-						if (vec[i] == thisClientEntity)
-						{
-							physicsComp->Init(game->GetPhysicsWorld(), type, model, mat, vec[i], true, true);
-							manager->AddSimulatedPhysicsEntity(vec[i]);
-							glm::vec3 translation;
-							glm::quat rotation;
-							glm::vec3 scale;
-							Entity* entity;
-							if (physicsComp->DecomposeTransform(mat, translation, rotation, scale))
-							{
-								entity = manager->GetEntity(vec[i]);
-								entity->SetPosition(translation);
-								entity->SetRotation(rotation);
-								entity->SetScale(scale.x, scale.y, scale.z);
-							}
-							else
-							{
-								throw ("Failed to decompose matrix for client's entity");
-							}
-						}
-						else
-						{
-							physicsComp->Init(game->GetPhysicsWorld(), type, model, mat, vec[i], true, false);
-						}
-					}
-
-				}
-				game->GetNetwork().SetStatus(Status::CLIENT_INITIALIZING_DATA);
 				game->GetEntityManager().ResetChanged();
-
-				ClientInitialized* initMessage = static_cast<ClientInitialized*>(client->CreateMessage(CLIENT_INITIALIZED));
-				if (initMessage)
-				{
-					if (!client->CanSendMessage(yojimbo::CHANNEL_TYPE_RELIABLE_ORDERED))
-					{
-						std::cout << "MESSAGE QUEUE NOT AVAILABLE FOR " << GameMessageTypeStrings[CLIENT_INITIALIZED] << std::endl;
-						client->ReleaseMessage(initMessage);
-						return;
-					}
-					client->SendClientMessage(yojimbo::CHANNEL_TYPE_RELIABLE_ORDERED, initMessage);
-					std::cout << GameMessageTypeStrings[CLIENT_INITIALIZED] << " TO SERVER WITH ";
-					std::cout << "MESSAGEID = " << message->GetId() << std::endl;
-					return;
-				}
-				std::cout << "FAILED TO SEND " << GameMessageTypeStrings[CLIENT_INITIALIZED] << " TO SERVER" << std::endl;
+				game->GetNetwork().SetStatus(Status::CLIENT_INITIALIZING_DATA);
 			}
 			else
 			{
-				std::cout << "FAILED, BLOCK SIZE IS 0." << std::endl;
+				DLOG("FAILED, BLOCK SIZE IS 0.");
 			}
 		}
 		else
 		{
-			std::cout << "FAILED, CLIENT HAS ALREADY LOADED DATA." << std::endl;
+			DLOG("FAILED, CLIENT HAS ALREADY LOADED DATA.");
 		}
+	}
+
+	// Send client initialsed message to server
+	void GameClient::SendClientInitialised()
+	{
+		ClientInitialized* initMessage = static_cast<ClientInitialized*>(client->CreateMessage(CLIENT_INITIALIZED));
+		if (initMessage)
+		{
+			if (!client->CanSendMessage(yojimbo::CHANNEL_TYPE_RELIABLE_ORDERED))
+			{
+				DLOG("MESSAGE QUEUE NOT AVAILABLE FOR " << GameMessageTypeStrings[CLIENT_INITIALIZED]);
+				client->ReleaseMessage(initMessage);
+				return;
+			}
+			client->SendClientMessage(yojimbo::CHANNEL_TYPE_RELIABLE_ORDERED, initMessage);
+			DLOG(GameMessageTypeStrings[CLIENT_INITIALIZED] << " TO SERVER WITH MESSAGEID = " << initMessage->GetId());
+			return;
+		}
+		DLOG("FAILED TO SEND " << GameMessageTypeStrings[CLIENT_INITIALIZED] << " TO SERVER");
+	}
+
+	// Send reset message to server
+	void GameClient::SendResetPositionsMessage()
+	{
+		ClientResetPositions* resetMessage = static_cast<ClientResetPositions*>(client->CreateMessage(CLIENT_RESET_POSITIONS));
+		if (resetMessage)
+		{
+			if (!client->CanSendMessage(yojimbo::CHANNEL_TYPE_RELIABLE_ORDERED))
+			{
+				DLOG("MESSAGE QUEUE NOT AVAILABLE FOR " << GameMessageTypeStrings[CLIENT_RESET_POSITIONS]);
+				client->ReleaseMessage(resetMessage);
+				return;
+			}
+			client->SendClientMessage(yojimbo::CHANNEL_TYPE_RELIABLE_ORDERED, resetMessage);
+			DLOG(GameMessageTypeStrings[CLIENT_RESET_POSITIONS] << " TO SERVER WITH MESSAGEID = " << resetMessage->GetId());
+			return;
+		}
+		DLOG("FAILED TO SEND " << GameMessageTypeStrings[CLIENT_RESET_POSITIONS] << " TO SERVER");
 	}
 
 	// Handle a server update message
 	void GameClient::HandleServerUpdateEntityData(ServerUpdateEntityData* message)
 	{
 		int blockSize = message->GetBlockSize();
-		/*if (blockSize == 0)
-			throw std::runtime_error("Null block data size");*/
 
 		if (game->GetNetwork().GetStatus() == Status::CLIENT_ACTIVE)
 		{
@@ -272,18 +255,43 @@ namespace Engine
 			{
 				game->GetEntityManager().SetAllChangedData(message->GetBlockData(), clientEntityId);
 				game->GetEntityManager().ResetChanged();
-				std::cout << "Data updated from server" << std::endl;
+				DLOG("Data updated from server");
 			}
 			else
 			{
-				std::cout << "FAILED, BLOCK SIZE IS 0." << std::endl;
+				DLOG("FAILED, BLOCK SIZE IS 0.");
 			}
 		}
 		else
 		{
-			std::cout << "FAILED, CLIENT NOT YET ACTIVE." << std::endl;
+			DLOG("FAILED, CLIENT NOT YET ACTIVE.");
 		}
-		//int blockSize = message->GetBlockSize();
+	}
+
+	// Handle a server message for resetting positions
+	void GameClient::HandleServerResetPositions()
+	{
+		if (game->GetNetwork().GetStatus() == Status::CLIENT_ACTIVE)
+		{
+			EntityManager& manager = game->GetEntityManager();
+			std::vector<int> entitiesWithNetworkComponent = manager.GetEntitiesWithComponent(NETWORK);
+			for (int i = 0; i < entitiesWithNetworkComponent.size(); i++)
+			{
+				Entity* entity = game->GetEntityManager().GetEntity(entitiesWithNetworkComponent[i]);
+				entity->ResetToSpawnState();
+				NetworkComponent* networkComponent = reinterpret_cast<Engine::NetworkComponent*>(manager.GetComponentOfEntity(entity->GetEntityId(), NETWORK));
+				if (networkComponent->GetClientId() == clientId)
+				{
+					Engine::PhysicsComponent* physicsComponent = reinterpret_cast<Engine::PhysicsComponent*>(manager.GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
+					glm::vec3 pos = entity->GetPosition();
+					physicsComponent->GetController()->setFootPosition(PxExtendedVec3(pos.x, pos.y, pos.z));
+				}
+			}
+		}
+		else
+		{
+			DLOG("FAILED, CLIENT NOT YET ACTIVE.");
+		}
 	}
 
 	// Clean up client memory using yojimbo
@@ -318,12 +326,11 @@ namespace Engine
 			RequestEntityData* message = static_cast<RequestEntityData*>(client->CreateMessage(REQUEST_ENTITY_DATA));
 			if (!client->CanSendMessage(yojimbo::CHANNEL_TYPE_RELIABLE_ORDERED))
 			{
-				std::cout << "MESSAGE QUEUE NOT AVAILABLE FOR " << GameMessageTypeStrings[REQUEST_ENTITY_DATA] << std::endl;
+				DLOG("MESSAGE QUEUE NOT AVAILABLE FOR " << GameMessageTypeStrings[REQUEST_ENTITY_DATA]);
 				return;
 			}
 			client->SendClientMessage(yojimbo::CHANNEL_TYPE_RELIABLE_ORDERED, message);
-			std::cout << GameMessageTypeStrings[REQUEST_ENTITY_DATA] << " TO SERVER WITH ";
-			std::cout << "MESSAGEID = " << message->GetId() << std::endl;
+			DLOG(GameMessageTypeStrings[REQUEST_ENTITY_DATA] << " TO SERVER WITH MESSAGEID = " << message->GetId());
 			game->GetEntityManager().ResetChanged();
 			game->GetNetwork().SetStatus(Status::CLIENT_LOADING_DATA);
 		}

@@ -11,6 +11,7 @@
 using namespace Engine;
 
 // Define the global variables here
+bool showServerGui{ false };
 bool showImGuiDemoWindow{ false };
 bool debugRenderer{ false };
 bool debugInput = false;
@@ -338,11 +339,11 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 
 		ImGui::Text("Join a server");
 
-		static char addressStr[16] = "10.41.204.183\0";
+		static char addressStr[16] = "129.11.146.183\0";
 		ImGui::Text("Address:");
 		ImGui::InputText("Address", addressStr, IM_ARRAYSIZE(addressStr));
 
-		static char portStr[6] = "";
+		static char portStr[6] = "3000";
 		ImGui::Text("Port:");
 		ImGui::InputText("Port", portStr, IM_ARRAYSIZE(portStr));
 		int portNum = atoi(portStr);
@@ -388,15 +389,23 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 
 		ImGui::Text("Start a server");
 
-		static char portStr[6] = "";
+		static char portStr[6] = "3000";
 		ImGui::Text("Port:");
 		ImGui::InputText("Port", portStr, IM_ARRAYSIZE(portStr));
 		int portNum = atoi(portStr);
 
-		static char maxClientsStr[6] = "";
+		static char maxClientsStr[6] = "2";
 		ImGui::Text("Max Clients:");
 		ImGui::InputText("Max Clients", maxClientsStr, IM_ARRAYSIZE(maxClientsStr));
 		int maxClientsNum = atoi(maxClientsStr);
+
+		static char numTeamsStr[6] = "2";
+		ImGui::Text("Number of Teams:");
+		ImGui::InputText("Number of Teams", numTeamsStr, IM_ARRAYSIZE(numTeamsStr));
+		int numTeamsNum = atoi(numTeamsStr);
+
+		static bool isListenServer = false;
+		ImGui::Checkbox("Listen Server", &isListenServer);
 
 		if (ImGui::Button("Go", ImVec2(40, 40)))
 		{
@@ -408,6 +417,10 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 			{
 				errorMsg = "Error: Max Clients cannot be empty.";
 			}
+			else if (strlen(maxClientsStr) == 0)
+			{
+				errorMsg = "Error: Number of teams cannot be empty.";
+			}
 			else if (portNum < 1 || portNum > 65535)
 			{
 				errorMsg = "Error: Invalid Port number. " + std::string(portStr) + " not between 1 and 65535.";
@@ -416,16 +429,44 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 			{
 				errorMsg = "Error: Invalid Max Clients number. " + std::string(maxClientsStr) + " not between 1 and 50.";
 			}
+			else if (numTeamsNum < 1 || numTeamsNum > 4)
+			{
+				errorMsg = "Error: Invalid Number of teams number. " + std::string(numTeamsStr) + " not between 1 and 4.";
+			}
 			else
 			{
 				errorMsg = "";
-				game->loadOnlineEntities(maxClientsNum);
+				game->SetGameMode(std::make_unique<MultiPlayer>(game));
+				if (isListenServer)
+				{
+					game->SetRenderMode(RenderMode::FORWARD);
+				}
+				else
+				{
+					game->SetRenderMode(RenderMode::NO_DATA_MODE);
+				}
+				game->loadOnlineEntities(maxClientsNum, numTeamsNum, isListenServer);
 				game->getRenderer().initialiseJointMatrices();
-				game->GetGUI().ToggleGUIMode("Home");
-				game->GetGUI().ToggleGUIMode("Server");
+				GLFWwindow* window = game->GetContext().getGLFWWindow();
+				glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 				game->SetServer(portNum, maxClientsNum);
+				if (isListenServer)
+				{
+					game->GetGUI().ToggleGUIMode("Home");
+					game->GetGUI().ToggleGUIMode("MultiPlayer");
+					if (game->debugging)
+						game->GetGUI().ToggleGUIMode("Debug");
+					GameServer* server = reinterpret_cast<GameServer*>(game->GetNetwork().GetNetworkTypePointer());
+					server->SetListenServer(game->GetGameMode().GetPlayerEntity()->GetEntityId());
+				}
+				else
+				{
+					game->GetGUI().ToggleGUIMode("Home");
+					game->GetGUI().ToggleGUIMode("Server");
+				}
 			}
 		}
+
 		ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), errorMsg.c_str());
 
 		ImGui::PopFont();
@@ -485,12 +526,6 @@ void makeSettingsGUI(FPSTest* game, int* w, int* h)
 		game->getRenderer().setRecreateSwapchain(true);
 	}
 
-	//// Shadow toggle display (reflects render mode but can't be toggled directly)
-	//bool shadowsEnabled = (selected == 2);
-	//ImGui::BeginDisabled(); // Shadows are implied by mode, not toggleable separately
-	//ImGui::Checkbox("Shadows Enabled", &shadowsEnabled);
-	//ImGui::EndDisabled();
-
 	Renderer& renderer = game->getRenderer();
 
 	ImGui::Text("Anti Aliasing:");
@@ -543,20 +578,31 @@ void makeSettingsGUI(FPSTest* game, int* w, int* h)
 	}
 	ImGui::PopItemWidth();
 
+	bool isServer = false;
+	if (GameServer* server = dynamic_cast<GameServer*>(game->GetNetwork().GetNetworkTypePointer()))
+	{
+		isServer = true;
+		// Server info and disconnect/stop servr button
+		ImGui::Checkbox("Show server information", &showServerGui);
+
+		if (showServerGui)
+			ShowServerInfo(game, w, h);
+	}
+
 	ImVec2 topRightPos = ImVec2(*w - *w / 6 - 10, 30);
 	ImGui::SetCursorPos(topRightPos);
-	if (ImGui::Button("Disconnect", ImVec2(*w / 6, *h / 6)))
+
+	if (ImGui::Button(isServer ? "Stop Server" : "Leave", ImVec2(*w / 6, *h / 6)))
 	{
-		if (renderer.getIsSceneLoaded())
-		{
-			game->GetGUI().ResetGUIModes();
-			game->GetGUI().ToggleGUIMode("Home");
-			game->GetPhysicsWorld().reset(&game->GetEntityManager());
-			game->SetRenderMode(RenderMode::NO_DATA_MODE);
-			game->SetGameMode(nullptr);
-			game->GetEntityManager().ClearManager();
-			game->GetNetwork().Reset();
-		}
+		game->GetGUI().ResetGUIModes();
+		game->GetGUI().ToggleGUIMode("Home");
+		game->GetPhysicsWorld().reset(&game->GetEntityManager());
+		game->SetRenderMode(RenderMode::NO_DATA_MODE);
+		game->SetGameMode(nullptr);
+		game->GetEntityManager().ClearManager();
+		game->GetNetwork().Reset();
+		multiplayerSelected = false;
+		serverSelected = false;
 	}
 
 	ImGui::End();
@@ -586,7 +632,11 @@ void makeServerGUI(FPSTest* game, int* w, int* h)
 
 	if (ImGui::Button("Stop server", ImVec2(*w / 6, *h / 6)))
 	{
+		game->GetGUI().ResetGUIModes();
+		game->GetGUI().ToggleGUIMode("Home");
+		game->GetPhysicsWorld().reset(&game->GetEntityManager());
 		game->SetRenderMode(RenderMode::NO_DATA_MODE);
+		game->SetGameMode(nullptr);
 		game->GetEntityManager().ClearManager();
 		game->GetNetwork().Reset();
 		multiplayerSelected = false;
@@ -612,6 +662,7 @@ void makeLoadingGUI(FPSTest* game, int* w, int* h)
 	if (s == Status::CLIENT_INITIALIZING_DATA)
 	{
 		game->SetGameMode(std::make_unique<MultiPlayer>(game));
+		game->GetGameMode().InitNetwork();
 		game->getRenderer().initialiseJointMatrices();
 		game->GetGUI().ToggleGUIMode("Loading");
 		game->GetGUI().ToggleGUIMode("MultiPlayer");
@@ -746,11 +797,13 @@ void makeSinglePlayerGUI(FPSTest* game, int*, int*)
 		ImGui::End();
 
 		// Set window position to top-right (with padding)
+
 		ImGui::SetNextWindowPos(
 			ImVec2(displaySize.x - windowPadding.x, displaySize.y - windowPadding.y),
 			ImGuiCond_Always,
-			ImVec2(1.0f, 1.0f) // Pivot (1, 0) means align from top-right corner
+			ImVec2(1.0f, 1.0f)
 		);
+
 		ImGui::Begin("Gun Stuff:", &test, window_flags);
 		ImGui::Text("Ammo: %u", sp->ammoCount);
 		ImGui::End();
@@ -762,17 +815,65 @@ void makeSinglePlayerGUI(FPSTest* game, int*, int*)
 void makeMultiPlayerGUI(FPSTest* game, int*, int*)
 {
 	MultiPlayer* mp = dynamic_cast<MultiPlayer*>(&game->GetGameMode());
+
+	if (game->GetNetwork().GetStatus() == Status::CLIENT_DISCONNECTED)
+	{
+		game->GetGUI().ResetGUIModes();
+		game->GetGUI().ToggleGUIMode("Loading");
+		return;
+	}
+
 	if (mp)
 	{
 		ImGuiWindowFlags window_flags = 0;
 		window_flags |= ImGuiWindowFlags_NoBackground;
 		window_flags |= ImGuiWindowFlags_NoTitleBar;
+		window_flags |= ImGuiWindowFlags_AlwaysAutoResize;
 		bool test = true;
 
+		ImVec2 windowPadding = ImVec2(10, 10);
+
+		// Get current window size
+		ImVec2 displaySize = ImGui::GetIO().DisplaySize;
+
+		// Set window position to top-right (with padding)
+		ImGui::SetNextWindowPos(
+			ImVec2(displaySize.x - windowPadding.x, windowPadding.y),
+			ImGuiCond_Always,
+			ImVec2(1.0f, 0.0f) // Pivot (1, 0) means align from top-right corner
+		);
+
 		ImGui::PushFont(game->GetGUI().GetFont("Game"));
-		ImGui::Begin("Multi Player:", &test, window_flags);
+		ImGui::Begin("Game:", &test, window_flags);
+
+		ImGui::Text("SCORE: %u", mp->score);
 
 		ImGui::End();
+
+		ImGui::SetNextWindowPos(
+			ImVec2(displaySize.x - windowPadding.x, displaySize.y - windowPadding.y),
+			ImGuiCond_Always,
+			ImVec2(1.0f, 1.0f)
+		);
+
+		ImGui::Begin("Gun Stuff:", &test, window_flags);
+		ImGui::Text("Ammo: %u", mp->ammoCount);
+		ImGui::End();
+
+		int timer = game->GetEntityManager().GetResetTimerInt();
+		if (timer != 0)
+		{
+			ImGui::SetNextWindowPos(
+				ImVec2(displaySize.x * 0.5f, displaySize.y * 0.5f),
+				ImGuiCond_Always,
+				ImVec2(0.5f, 0.5f)
+			);
+
+			ImGui::Begin("Game Timer", &test, window_flags);
+			ImGui::Text("Game starts in: %u", timer);
+			ImGui::End();
+		}
+
 		ImGui::PopFont();
 	}
 }
@@ -805,6 +906,17 @@ void toggleSettings(FPSTest* game)
 			glfwSetCursorPos(aWindow, x, y);
 		}
 
+	}
+}
+
+void ShowServerInfo(FPSTest* game, int* w, int* h)
+{
+	ImGui::Text("Server information:");
+
+	std::map<std::string, std::string> networkInfo = game->GetNetwork().GetNetworkInfo();
+	for (const auto& [key, value] : networkInfo)
+	{
+		ImGui::Text("%s: %s", key.c_str(), value.c_str());
 	}
 }
 
