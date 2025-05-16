@@ -30,7 +30,7 @@ public:
 	void SetTargetEntity(Engine::Entity* e) override { targetEntity = e; }
 
 
-	glm::vec3 GetStartPos(int i) override { return {0.0f, 0.5f, 0.0f}; }
+	glm::vec3 GetStartPos(int i) override { return { 0.0f, 0.5f, 0.0f }; }
 
 	bool IsMultiPlayer() override { return false; }
 
@@ -42,11 +42,21 @@ public:
 	float fireDelay = 0.25f;
 	bool canFire = true;
 	float counter = 1.0f;
-	int ammoCount = 10;
+	int pistolAmmoCount = 10;
 	bool isReloading{ false };
 	float reloadDelay = 0.5f;
 	bool canReload{ true };
 	bool holdingPistol{ true };
+
+	int smgAmmoCount = 35;
+	bool smgIsReloading{ false };
+	float smgFireDelay = 0.05f;
+	bool smgCanReload{ true };
+	float smgReloadDelay = 0.25f;
+	bool smgCanFire{ false };
+
+
+
 
 	Engine::Entity* playerEntity = nullptr;
 	Engine::Entity* pistolEntity = nullptr;

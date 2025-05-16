@@ -32,11 +32,23 @@ SinglePlayer::SinglePlayer(FPSTest* game) {
 
 void SinglePlayer::Update(float timeDelta)
 {
-	fireDelay -= timeDelta;
-	reloadDelay -= timeDelta;
+	if (holdingPistol)
+	{
+		fireDelay -= timeDelta;
+		reloadDelay -= timeDelta;
+		if (fireDelay <= 0.0f && !isReloading)
+			canFire = true;
+	}
+	else
+	{
+		smgFireDelay -= timeDelta;
+		smgReloadDelay -= timeDelta;
+		if (smgFireDelay <= 0.0f && !smgIsReloading)
+			smgCanFire = true;
+	}
+
 	counter -= timeDelta;
-	if (fireDelay <= 0.0f && !isReloading)
-		canFire = true;
+
 
 	if (reloadDelay <= 0.0f)
 	{
@@ -72,10 +84,10 @@ void SinglePlayer::Update(float timeDelta)
 	if (InputManager::getKeyboard().isPressed(HS_KEY_P))
 
 	{
-
 		score = 0;
 		countdown = 30;
-		ammoCount = 10;
+		pistolAmmoCount = 10;
+		smgAmmoCount = 35;
 	}
 
 
@@ -96,20 +108,20 @@ void SinglePlayer::Update(float timeDelta)
 		if ((InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_RIGHT_TRIGGER) > -0.5f) && !holdingPistol)
 			shootRifle();
 
-					// glm::vec3 pos = entity->GetPosition();
-					// int xPos = randomDistribX(gen);
-					// int zPos = randomDistribZ(gen);
-					// glm::vec3 newPos{ xPos, pos.y, zPos };
-					// entity->SetPosition(newPos);
-					// glm::vec3 translation;
-					// glm::vec3 scale;
-					// glm::quat rotation;
-					// physicsComponent->DecomposeTransform(entity->GetModelMatrix(), translation, rotation, scale);
-					// PxTransform pxTransform(
-					// 	PxVec3(translation.x, translation.y, translation.z),
-					// 	PxQuat(rotation.x, rotation.y, rotation.z, rotation.w)
-					// );
-					// physicsComponent->GetStaticBody()->setGlobalPose(pxTransform);
+		// glm::vec3 pos = entity->GetPosition();
+		// int xPos = randomDistribX(gen);
+		// int zPos = randomDistribZ(gen);
+		// glm::vec3 newPos{ xPos, pos.y, zPos };
+		// entity->SetPosition(newPos);
+		// glm::vec3 translation;
+		// glm::vec3 scale;
+		// glm::quat rotation;
+		// physicsComponent->DecomposeTransform(entity->GetModelMatrix(), translation, rotation, scale);
+		// PxTransform pxTransform(
+		// 	PxVec3(translation.x, translation.y, translation.z),
+		// 	PxQuat(rotation.x, rotation.y, rotation.z, rotation.w)
+		// );
+		// physicsComponent->GetStaticBody()->setGlobalPose(pxTransform);
 
 
 		break;
@@ -207,7 +219,7 @@ void SinglePlayer::reloadPistol()
 		int pistolModelIndex = pistolRenderComponent->GetModelIndex();
 		models[pistolModelIndex].animationQueue.push(models[pistolModelIndex].animations[4]);
 		models[pistolModelIndex].blending = true;
-		ammoCount = 10;
+		pistolAmmoCount = 10;
 	}
 }
 
@@ -218,7 +230,7 @@ void SinglePlayer::shootPistol()
 	int pistolModelIndex = pistolRenderComponent->GetModelIndex();
 	std::vector<vk::Model>& models = this->game->GetModels();
 
-	if (ammoCount <= 0)
+	if (pistolAmmoCount <= 0)
 	{
 		reloadPistol();
 	}
@@ -228,7 +240,7 @@ void SinglePlayer::shootPistol()
 		{
 			models[pistolModelIndex].animationQueue.push(models[pistolModelIndex].animations[3]);
 			models[pistolModelIndex].blending = true;
-			ammoCount--;
+			pistolAmmoCount--;
 			canFire = false;
 			fireDelay = 0.25f;
 
@@ -281,15 +293,15 @@ void SinglePlayer::reloadRifle()
 {
 	if (canReload)
 	{
-		//canReload = false;
-		//isReloading = true;
-		//reloadDelay = 0.5f;
+		smgCanReload = false;
+		smgIsReloading = true;
+		smgReloadDelay = 0.25f;
 		RenderComponent* rifleRenderComponent = reinterpret_cast<RenderComponent*>(this->game->GetEntityManager().GetComponentOfEntity(rifleEntity->GetEntityId(), RENDER));
 		std::vector<vk::Model>& models = this->game->GetModels();
 		int rifleModelIndex = rifleRenderComponent->GetModelIndex();
 		models[rifleModelIndex].animationQueue.push(models[rifleModelIndex].animations[4]);
 		models[rifleModelIndex].blending = true;
-		//ammoCount = 6;
+		smgAmmoCount = 35;
 	}
 }
 
@@ -300,7 +312,7 @@ void SinglePlayer::shootRifle()
 	int rifleModelIndex = rifleRenderComponent->GetModelIndex();
 	std::vector<vk::Model>& models = this->game->GetModels();
 
-	if (ammoCount <= 0)
+	if (smgAmmoCount <= 0)
 	{
 		reloadRifle();
 	}
@@ -310,10 +322,9 @@ void SinglePlayer::shootRifle()
 		{
 			models[rifleModelIndex].animationQueue.push(models[rifleModelIndex].animations[6]);
 			models[rifleModelIndex].blending = true;
-			ammoCount--;
+			smgAmmoCount--;
 			canFire = false;
-			fireDelay = 0.01f;
-			//fireDelay = 1.0f;
+			smgFireDelay = 0.05f;
 
 			PxRaycastHit entityHit = this->game->GetPhysicsWorld().handleShooting();
 			bool hitTarget = false;

@@ -116,7 +116,7 @@ void MultiPlayer::Update(float timeDelta)
 		int pistolModelIndex = pistolRenderComponent->GetModelIndex();
 		models[pistolModelIndex].animationQueue.push(models[pistolModelIndex].animations[4]);
 		models[pistolModelIndex].blending = true;
-		ammoCount = 6;
+		pistolAmmoCount = 6;
 		models[pistolModelIndex].animationQueue.pop();
 	}
 
@@ -127,17 +127,17 @@ void MultiPlayer::Update(float timeDelta)
 		int pistolModelIndex = pistolRenderComponent->GetModelIndex();
 		std::vector<vk::Model>& models = this->game->GetModels();
 
-		if (ammoCount <= 0)
+		if (pistolAmmoCount <= 0)
 		{
 			models[pistolModelIndex].animationQueue.push(models[pistolModelIndex].animations[4]);
 			models[pistolModelIndex].blending = true;
-			ammoCount = 7;
+			pistolAmmoCount = 7;
 		}
 		else
 		{
 			models[pistolModelIndex].animationQueue.push(models[pistolModelIndex].animations[3]);
 			models[pistolModelIndex].blending = true;
-			ammoCount--;
+			pistolAmmoCount--;
 			canFire = false;
 			fireDelay = 1.5f;
 

@@ -805,7 +805,14 @@ void makeSinglePlayerGUI(FPSTest* game, int*, int*)
 		);
 
 		ImGui::Begin("Gun Stuff:", &test, window_flags);
-		ImGui::Text("Ammo: %u", sp->ammoCount);
+		if (sp->holdingPistol)
+		{
+			ImGui::Text("Ammo: %u", sp->pistolAmmoCount);
+		}
+		else
+		{
+			ImGui::Text("Ammo: %u", sp->smgAmmoCount);
+		}
 		ImGui::End();
 
 		ImGui::PopFont();
@@ -857,7 +864,8 @@ void makeMultiPlayerGUI(FPSTest* game, int*, int*)
 		);
 
 		ImGui::Begin("Gun Stuff:", &test, window_flags);
-		ImGui::Text("Ammo: %u", mp->ammoCount);
+
+		ImGui::Text("Ammo: %u", mp->pistolAmmoCount);
 		ImGui::End();
 
 		int timer = game->GetEntityManager().GetResetTimerInt();
