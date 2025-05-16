@@ -92,9 +92,13 @@ void MultiPlayer::Update(float timeDelta)
 	Renderer& renderer = this->game->getRenderer();
 
 	fireDelay -= timeDelta;
-	counter -= timeDelta;
-	if (fireDelay <= 0.0f)
+	reloadDelay -= timeDelta;
+
+	if (fireDelay <= 0.0f && !isReloading)
 		canFire = true;
+
+	counter -= timeDelta;
+
 
 	if (counter <= 0.0f)
 	{
@@ -111,62 +115,20 @@ void MultiPlayer::Update(float timeDelta)
 
 	if (InputManager::Action(Controls::Reload))
 	{
-		RenderComponent* pistolRenderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(pistolEntity->GetEntityId(), RENDER));
-		std::vector<vk::Model>& models = this->game->GetModels();
-		int pistolModelIndex = pistolRenderComponent->GetModelIndex();
-		models[pistolModelIndex].animationQueue.push(models[pistolModelIndex].animations[4]);
-		models[pistolModelIndex].blending = true;
-		pistolAmmoCount = 6;
-		models[pistolModelIndex].animationQueue.pop();
+		//RenderComponent* pistolRenderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(pistolEntity->GetEntityId(), RENDER));
+		//std::vector<vk::Model>& models = this->game->GetModels();
+		//int pistolModelIndex = pistolRenderComponent->GetModelIndex();
+		//models[pistolModelIndex].animationQueue.push(models[pistolModelIndex].animations[4]);
+		//models[pistolModelIndex].blending = true;
+		//pistolAmmoCount = 6;
+		//models[pistolModelIndex].animationQueue.pop();
+		reloadPistol();
+
 	}
 
-	if (InputManager::Action(Controls::Shoot) && canFire)
+	if (InputManager::getMouse().isPressed(HS_MOUSE_BUTTON_LEFT) && canFire)
 	{
-		Engine::RenderComponent* pistolRenderComponent = reinterpret_cast<Engine::RenderComponent*>(entityManager.GetComponentOfEntity(pistolEntity->GetEntityId(), RENDER));
-		Engine::AudioComponent* playerAudioComponent = reinterpret_cast<Engine::AudioComponent*>(entityManager.GetComponentOfEntity(playerEntity->GetEntityId(), AUDIO));
-		int pistolModelIndex = pistolRenderComponent->GetModelIndex();
-		std::vector<vk::Model>& models = this->game->GetModels();
-
-		if (pistolAmmoCount <= 0)
-		{
-			models[pistolModelIndex].animationQueue.push(models[pistolModelIndex].animations[4]);
-			models[pistolModelIndex].blending = true;
-			pistolAmmoCount = 7;
-		}
-		else
-		{
-			models[pistolModelIndex].animationQueue.push(models[pistolModelIndex].animations[3]);
-			models[pistolModelIndex].blending = true;
-			pistolAmmoCount--;
-			canFire = false;
-			fireDelay = 1.5f;
-
-			PxRaycastHit entityHit = physicsWorld.handleShooting();
-			bool hit = false;
-
-			std::vector<int> entitiesWithPhysicsComponent = entityManager.GetEntitiesWithComponent(PHYSICS);
-			for (int i = 0; i < entitiesWithPhysicsComponent.size(); i++)
-			{
-				Engine::Entity* entity = entityManager.GetEntity(entitiesWithPhysicsComponent[i]);
-				Engine::PhysicsComponent* physicsComponent = reinterpret_cast<Engine::PhysicsComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
-				if (physicsComponent->GetComponentActor() != nullptr && physicsComponent->GetComponentActor() == entityHit.actor)
-				{
-					score++;
-					hit = true;
-				}
-			}
-
-			if (hit && entityManager.GetResetTimerInt() == 0)
-			{
-				game->GetNetwork().GetNetworkTypePointer()->ReadyToSendResetMessage();
-			}
-
-			else {
-				if (entityHit.actor != nullptr && entityHit.actor->getName() != "levelBounds" && entityHit.distance != PX_MAX_REAL) {
-					this->game->getBulletDecals().setNextDecal(entityHit.position, entityHit.normal);
-				}
-			}
-		}
+		shootPistol();
 	}
 }
 
@@ -182,4 +144,94 @@ glm::vec3 MultiPlayer::GetStartPos(int team)
 		return startPositions[team - 1];
 	else
 		throw("Team < 1 or Team > 4");
+}
+
+void MultiPlayer::reloadPistol()
+{
+	if (canReload)
+	{
+		canReload = false;
+		isReloading = true;
+		reloadDelay = 0.5f;
+		RenderComponent* pistolRenderComponent = reinterpret_cast<RenderComponent*>(this->game->GetEntityManager().GetComponentOfEntity(pistolEntity->GetEntityId(), RENDER));
+		std::vector<vk::Model>& models = this->game->GetModels();
+		int pistolModelIndex = pistolRenderComponent->GetModelIndex();
+		models[pistolModelIndex].animationQueue.push(models[pistolModelIndex].animations[4]);
+		models[pistolModelIndex].blending = true;
+		pistolAmmoCount = 10;
+	}
+}
+
+void MultiPlayer::shootPistol()
+{
+	Engine::RenderComponent* pistolRenderComponent = reinterpret_cast<Engine::RenderComponent*>(this->game->GetEntityManager().GetComponentOfEntity(pistolEntity->GetEntityId(), RENDER));
+	Engine::AudioComponent* playerAudioComponent = reinterpret_cast<Engine::AudioComponent*>(this->game->GetEntityManager().GetComponentOfEntity(playerEntity->GetEntityId(), AUDIO));
+	int pistolModelIndex = pistolRenderComponent->GetModelIndex();
+	std::vector<vk::Model>& models = this->game->GetModels();
+
+	if (pistolAmmoCount <= 0)
+	{
+		reloadPistol();
+	}
+	else
+	{
+		if (models[pistolModelIndex].animationQueue.empty())
+		{
+
+			//		std::vector<int> entitiesWithPhysicsComponent = entityManager.GetEntitiesWithComponent(PHYSICS);
+			//		for (int i = 0; i < entitiesWithPhysicsComponent.size(); i++)
+			//		{
+			//			Engine::Entity* entity = entityManager.GetEntity(entitiesWithPhysicsComponent[i]);
+			//			Engine::PhysicsComponent* physicsComponent = reinterpret_cast<Engine::PhysicsComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
+			//			if (physicsComponent->GetComponentActor() != nullptr && physicsComponent->GetComponentActor() == entityHit.actor)
+			//			{
+			//				score++;
+			//				hit = true;
+			//			}
+			//		}
+
+			//		if (hit && entityManager.GetResetTimerInt() == 0)
+			//		{
+			//			game->GetNetwork().GetNetworkTypePointer()->ReadyToSendResetMessage();
+			//		}
+
+			//		else {
+			//			if (entityHit.actor != nullptr && entityHit.actor->getName() != "levelBounds" && entityHit.distance != PX_MAX_REAL) {
+			//				this->game->getBulletDecals().setNextDecal(entityHit.position, entityHit.normal);
+			//			}
+			//		}
+			models[pistolModelIndex].animationQueue.push(models[pistolModelIndex].animations[3]);
+			models[pistolModelIndex].blending = true;
+			pistolAmmoCount--;
+			canFire = false;
+			fireDelay = 0.25f;
+
+			PxRaycastHit entityHit = this->game->GetPhysicsWorld().handleShooting();
+			bool hit = false;
+
+			std::vector<int> entitiesWithPhysicsComponent = this->game->GetEntityManager().GetEntitiesWithComponent(PHYSICS);
+			for (int i = 0; i < entitiesWithPhysicsComponent.size(); i++)
+			{
+
+				Engine::Entity* entity = this->game->GetEntityManager().GetEntity(entitiesWithPhysicsComponent[i]);
+				Engine::PhysicsComponent* physicsComponent = reinterpret_cast<Engine::PhysicsComponent*>(this->game->GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
+				if (physicsComponent->GetComponentActor() != nullptr && physicsComponent->GetComponentActor() == entityHit.actor)
+				{
+					score++;
+					hit = true;
+				}
+			}
+
+			if (hit && this->game->GetEntityManager().GetResetTimerInt() == 0)
+			{
+				game->GetNetwork().GetNetworkTypePointer()->ReadyToSendResetMessage();
+			}
+
+			else {
+				if (entityHit.actor != nullptr && entityHit.actor->getName() != "levelBounds" && entityHit.distance != PX_MAX_REAL) {
+					this->game->getBulletDecals().setNextDecal(entityHit.position, entityHit.normal);
+				}
+			}
+		}
+	}
 }
