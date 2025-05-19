@@ -99,14 +99,16 @@ void MultiPlayer::Update(float timeDelta)
 
 	counter -= timeDelta;
 
-
 	if (counter <= 0.0f)
 	{
 		counter = 1.0f;
 	}
 
-	if (entityManager->GetResetTimer != 0)
+	if (entityManager.GetResetTimer() > 0.f)
+	{
+		physicsWorld.updatePhysics(timeDelta, false);
 		return;
+	}
 	physicsWorld.updatePhysics(timeDelta, true);
 	renderer.getCameraPointer()->updateCamera(this->game->GetContext().getGLFWWindow(), timeDelta, false);
 

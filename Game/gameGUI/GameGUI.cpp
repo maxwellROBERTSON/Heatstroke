@@ -93,6 +93,8 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 	ImVec2 cursorPos;
 	ImU32 color = ImGui::GetColorU32(ImGuiCol_Text);
 
+	InputManager::InitDefaultControls();
+
 	if (singleHovered)
 	{
 		ImGui::PushFont(game->GetGUI().GetFont("HomeHovered"));
@@ -117,8 +119,6 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 			GLFWwindow* window = game->GetContext().getGLFWWindow();
 			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 		}
-
-		InputManager::InitDefaultControls();
 
 		cursorPos = ImGui::GetCursorScreenPos();
 		cursorPos.x += 20.f;

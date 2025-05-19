@@ -29,10 +29,7 @@ void FPSTest::Init() {
 	this->renderer = Renderer(&GetContext(), &GetEntityManager(), this);
 	this->renderer.initialise();
 
-	//this->gui = GUI(this);
-
 	srand(time(0));
-
 
 	//submit task to initialise Models to thread pool
 	auto modelsFut = GetThreadPool().submit(&FPSTest::initialiseModels, this);
