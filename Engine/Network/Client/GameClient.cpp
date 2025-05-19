@@ -16,13 +16,12 @@ namespace Engine
 		game(game)
 	{
 		// Initialise  client
-		clientTime = yojimbo_time();
 		client = YOJIMBO_NEW(yojimbo::GetDefaultAllocator(), yojimbo::Client,
 			yojimbo::GetDefaultAllocator(),
 			yojimbo::Address("0.0.0.0"),
 			*config,
 			*adapter,
-			clientTime);
+			yojimbo_time());
 
 		while(clientId == 0)
 			yojimbo_random_bytes((uint8_t*)&clientId, 8);
@@ -39,7 +38,7 @@ namespace Engine
 	}
 
 	// Update client at a fixed rate, send and recieve packets, process messages from server, advance client time
-	void GameClient::Update()
+	void GameClient::Update(float timeDelta)
 	{
 		// Check client connection
 		yojimbo::ClientState state = client->GetClientState();
@@ -54,22 +53,16 @@ namespace Engine
 			DLOG("Status set to client connection failed.");
 		}
 
-		// Update time against yojimbo time
-		clientTime = client->GetTime();
-		int dtCount = 0;
-		while(clientTime + dtCount * dt < yojimbo_time())
-		{
-			dtCount++;
-		}
-		if (dtCount == 0)
+		clientDT += timeDelta;
+
+		if (clientDT < dt)
 		{
 			return;
 		}
-		else
-		{
-			clientTime += dtCount * dt;
-		}
-		client->AdvanceTime(clientTime);
+
+		clientDT -= dt;
+
+		client->AdvanceTime(client->GetTime() + dt);
 
 		client->ReceivePackets();
 
@@ -84,7 +77,7 @@ namespace Engine
 			if (manager.GetResetTimer() != 0.f)
 			{
 				HandleServerResetPositions();
-				manager.DecreaseResetTimer(dtCount * dt);
+				manager.DecreaseResetTimer(dt);
 			}
 			else
 			{
@@ -93,7 +86,7 @@ namespace Engine
 					SendClientInitialised();
 					sendInitMessage = false;
 				}
-				if (sendResetPositionsMessage)
+				else if (sendResetPositionsMessage)
 				{
 					SendResetPositionsMessage();
 					sendResetPositionsMessage = false;
@@ -103,10 +96,7 @@ namespace Engine
 					SendGameUpdate();
 				}
 			}
-
-			// ... do connected stuff ...
 		}
-
 		client->SendPackets();
 	}
 
@@ -150,19 +140,19 @@ namespace Engine
 	{
 		if (game->GetNetwork().GetStatus() != Status::CLIENT_ACTIVE)
 			game->GetNetwork().SetStatus(Status::CLIENT_ACTIVE);
-		size_t bytes = game->GetEntityManager().GetTotalChangedDataSize();
-		if (bytes == 0)
+		int bytes = game->GetEntityManager().GetTotalChangedDataSize();
+		if (bytes == 0 || bytes > this->config->channel[yojimbo::CHANNEL_TYPE_UNRELIABLE_UNORDERED].maxBlockSize)
 			return;
 		ClientUpdateEntityData* message = static_cast<ClientUpdateEntityData*>(client->CreateMessage(CLIENT_UPDATE_ENTITY_DATA));
 		if (message)
 		{
 			bytes = (bytes + 7) & ~7;
-			uint8_t* block = client->AllocateBlock(256);
+			uint8_t* block = client->AllocateBlock(bytes);
 			DLOG("Block allocated at: " << static_cast<void*>(block));
 			if (block)
 			{
 				game->GetEntityManager().GetAllChangedData(block);
-				client->AttachBlockToMessage(message, block, 256);
+				client->AttachBlockToMessage(message, block, bytes);
 				if (!client->CanSendMessage(yojimbo::CHANNEL_TYPE_UNRELIABLE_UNORDERED))
 				{
 					DLOG("MESSAGE QUEUE NOT AVAILABLE FOR " << GameMessageTypeStrings[CLIENT_UPDATE_ENTITY_DATA]);
@@ -170,7 +160,7 @@ namespace Engine
 					return;
 				}
 				client->SendClientMessage(yojimbo::CHANNEL_TYPE_UNRELIABLE_UNORDERED, message);
-				DLOG(GameMessageTypeStrings[CLIENT_UPDATE_ENTITY_DATA] << " TO SERVER WITH MESSAGEID = " << message->GetId() << ", BLOCK SIZE = " << 256);
+				DLOG(GameMessageTypeStrings[CLIENT_UPDATE_ENTITY_DATA] << " TO SERVER WITH MESSAGEID = " << message->GetId() << ", BLOCK SIZE = " << bytes);
 				game->GetEntityManager().ResetChanged();
 				return; 
 			}
@@ -324,7 +314,7 @@ namespace Engine
 		{
 			if (status == Status::CLIENT_LOADING_DATA || status == Status::CLIENT_INITIALIZING_DATA || status == Status::CLIENT_ACTIVE)
 				return;
-			clientTime = yojimbo_time();
+			client->AdvanceTime(yojimbo_time());
 			RequestEntityData* message = static_cast<RequestEntityData*>(client->CreateMessage(REQUEST_ENTITY_DATA));
 			if (!client->CanSendMessage(yojimbo::CHANNEL_TYPE_RELIABLE_ORDERED))
 			{
@@ -356,7 +346,7 @@ namespace Engine
 
 		// Client Info
 		info["Yojimbo Time"] = std::to_string(yojimbo_time());
-		info["Client Time"] = std::to_string(clientTime);
+		info["Client Time"] = std::to_string(client->GetTime());
 		info["Dt"] = std::to_string(dt);
 		info["Client Address"] = std::to_string(*client->GetAddress().GetAddress4());
 		const uint8_t* addPtr = client->GetAddress().GetAddress4();

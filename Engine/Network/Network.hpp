@@ -48,7 +48,7 @@ namespace Engine
         void InitializeServer(Game*, uint16_t, int);
 
         // Update network if some form of connection
-        void Update();
+        void Update(float);
 
         // Reset network if not uninitialized, clean up and reset pointer
         void Reset();

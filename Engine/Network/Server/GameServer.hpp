@@ -28,7 +28,7 @@ namespace Engine
 		void Start();
 
 		// Update server at a fixed rate, send and recieve packets, process messages from clients, advance server time
-		void Update();
+		void Update(float);
 
 		// Loop through all client messages, process and release
 		void ProcessMessages();
@@ -73,7 +73,7 @@ namespace Engine
 		std::map<std::string, std::string> GetInfo();
 
 	private:
-		double serverTime;
+		double serverDT = 0;
 		int maxClients;
 		bool isListenServer = false;
 		int listenServerEntityId = -1;

@@ -26,7 +26,7 @@ namespace Engine
 		void Connect();
 
 		// Update client at a fixed rate, send and recieve packets, process messages from server, advance client time
-		void Update();
+		void Update(float);
 
 		// Loop through all server messages, process and release
 		void ProcessMessages();
@@ -77,7 +77,7 @@ namespace Engine
 		void ReadyToSendResetMessage() override { sendResetPositionsMessage = true; }
 
 	private:
-		double clientTime;
+		double clientDT = 0;
 
 		uint64_t clientId = 0;
 
