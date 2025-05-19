@@ -48,7 +48,7 @@ namespace Engine
         void InitializeServer(Game*, uint16_t, int);
 
         // Update network if some form of connection
-        void Update();
+        void Update(float);
 
         // Reset network if not uninitialized, clean up and reset pointer
         void Reset();
@@ -59,7 +59,7 @@ namespace Engine
     private:
         Status status = Status::NETWORK_UNINITIALIZED;
         std::unique_ptr<GameNetworkType> networkType;  // Holds either GameClient or GameServer
-        yojimbo::ClientServerConfig config;
+        GameConfig config;
         GameAdapter* adapter;
 	};
 }

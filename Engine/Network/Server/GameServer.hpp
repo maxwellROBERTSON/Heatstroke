@@ -16,7 +16,7 @@ namespace Engine
 	public:
 		// Constructor
 		GameServer(
-			yojimbo::ClientServerConfig* config,
+			GameConfig* config,
 			GameAdapter* adapter,
 			yojimbo::Address address,
 			int maxClients,
@@ -28,7 +28,7 @@ namespace Engine
 		void Start();
 
 		// Update server at a fixed rate, send and recieve packets, process messages from clients, advance server time
-		void Update();
+		void Update(float);
 
 		// Loop through all client messages, process and release
 		void ProcessMessages();
@@ -73,7 +73,7 @@ namespace Engine
 		std::map<std::string, std::string> GetInfo();
 
 	private:
-		double serverTime;
+		double serverDT = 0;
 		int maxClients;
 		bool isListenServer = false;
 		int listenServerEntityId = -1;
@@ -88,7 +88,7 @@ namespace Engine
 		std::vector<std::pair<int, uint64_t>> loadedClients;
 
 		yojimbo::Server* server;
-		yojimbo::ClientServerConfig* config;
+		GameConfig* config;
 		GameAdapter* adapter;
 
 		Engine::Game* game;

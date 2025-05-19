@@ -5,6 +5,8 @@
 #include "netcode.h"
 #include "reliable.h"
 
+#include <iostream>
+
 namespace yojimbo
 {
     Client::Client( Allocator & allocator, const Address & address, const ClientServerConfig & config, Adapter & adapter, double time ) 
