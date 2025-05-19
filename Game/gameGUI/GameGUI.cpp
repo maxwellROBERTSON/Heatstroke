@@ -714,6 +714,7 @@ void makeDebugGUI(FPSTest* game, int* w, int* h)
 	ImGui::Checkbox("Renderer Debug", &debugRenderer);
 	ImGui::Checkbox("Input Debug", &debugInput);
 	ImGui::Checkbox("Animation Debug", &debugAnimations);
+	ImGui::Checkbox("Network Debug", &debugNetwork);
 	ImGui::Checkbox("Game Debug", &debugGame);
 	ImGui::Checkbox("Game GUI", &game->showGUI); // to be fixed
 

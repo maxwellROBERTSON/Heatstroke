@@ -146,6 +146,8 @@ namespace Engine
 		if (blockSize == 0)
 			throw ("Null block data size");
 
+		DLOG("Message has block size: " << blockSize);
+
 		if (game->GetNetwork().GetStatus() == Status::SERVER_INITIALIZED)
 		{
 			if (blockSize != 0)
@@ -189,12 +191,12 @@ namespace Engine
 				ServerUpdateEntityData* message = static_cast<ServerUpdateEntityData*>(server->CreateMessage(client.first, SERVER_UPDATE_ENTITY_DATA));
 				if (message)
 				{
-					uint8_t* block = server->AllocateBlock(client.first, 1024);
+					uint8_t* block = server->AllocateBlock(client.first, 256);
 					DLOG("Block allocated at: " << static_cast<void*>(block));
 					if (block)
 					{
 						game->GetEntityManager().GetAllChangedData(block);
-						server->AttachBlockToMessage(client.first, message, block, 1024);
+						server->AttachBlockToMessage(client.first, message, block, 256);
 						if (!server->CanSendMessage(client.first, yojimbo::CHANNEL_TYPE_UNRELIABLE_UNORDERED))
 						{
 							DLOG("MESSAGE QUEUE NOT AVAILABLE FOR " << GameMessageTypeStrings[SERVER_UPDATE_ENTITY_DATA]);
@@ -202,7 +204,7 @@ namespace Engine
 							continue;
 						}
 						server->SendServerMessage(client.first, yojimbo::CHANNEL_TYPE_UNRELIABLE_UNORDERED, message);
-						DLOG(GameMessageTypeStrings[SERVER_UPDATE_ENTITY_DATA] << " TO CLIENT " << client.first << " WITH MESSAGEID = " << message->GetId() << ", BLOCK SIZE = " << 1024);
+						DLOG(GameMessageTypeStrings[SERVER_UPDATE_ENTITY_DATA] << " TO CLIENT " << client.first << " WITH MESSAGEID = " << message->GetId() << ", BLOCK SIZE = " << 256);
 						continue;
 					}
 					else
@@ -378,6 +380,32 @@ namespace Engine
 		info["Address"] = ipAddress;
 		uint16_t port = server->GetAddress().GetPort();
 		info["Port"] = std::to_string(port);
+
+		/*yojimbo::NetworkInfo netInfo;
+		for (int i = 0; i < maxClients; i++)
+		{
+			if (server->IsClientConnected(i))
+			{
+				server->GetNetworkInfo(i, netInfo);
+
+				std::string prefix = "Client[" + std::to_string(i) + "] ";
+
+				info[prefix + "RTT"] = std::to_string(netInfo.RTT);
+				info[prefix + "Min RTT"] = std::to_string(netInfo.minRTT);
+				info[prefix + "Max RTT"] = std::to_string(netInfo.maxRTT);
+				info[prefix + "Avg RTT"] = std::to_string(netInfo.averageRTT);
+				info[prefix + "Avg Jitter"] = std::to_string(netInfo.averageJitter);
+				info[prefix + "Max Jitter"] = std::to_string(netInfo.maxJitter);
+				info[prefix + "Stddev Jitter"] = std::to_string(netInfo.stddevJitter);
+				info[prefix + "Packet Loss (%)"] = std::to_string(netInfo.packetLoss);
+				info[prefix + "Sent Bandwidth (kbps)"] = std::to_string(netInfo.sentBandwidth);
+				info[prefix + "Received Bandwidth (kbps)"] = std::to_string(netInfo.receivedBandwidth);
+				info[prefix + "Acked Bandwidth (kbps)"] = std::to_string(netInfo.ackedBandwidth);
+				info[prefix + "Packets Sent"] = std::to_string(netInfo.numPacketsSent);
+				info[prefix + "Packets Received"] = std::to_string(netInfo.numPacketsReceived);
+				info[prefix + "Packets Acked"] = std::to_string(netInfo.numPacketsAcked);
+			}
+		}*/
 
 		return info;
 	}

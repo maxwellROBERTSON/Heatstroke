@@ -157,12 +157,12 @@ namespace Engine
 		if (message)
 		{
 			bytes = (bytes + 7) & ~7;
-			uint8_t* block = client->AllocateBlock(1024);
+			uint8_t* block = client->AllocateBlock(256);
 			DLOG("Block allocated at: " << static_cast<void*>(block));
 			if (block)
 			{
 				game->GetEntityManager().GetAllChangedData(block);
-				client->AttachBlockToMessage(message, block, 1024);
+				client->AttachBlockToMessage(message, block, 256);
 				if (!client->CanSendMessage(yojimbo::CHANNEL_TYPE_UNRELIABLE_UNORDERED))
 				{
 					DLOG("MESSAGE QUEUE NOT AVAILABLE FOR " << GameMessageTypeStrings[CLIENT_UPDATE_ENTITY_DATA]);
@@ -170,7 +170,7 @@ namespace Engine
 					return;
 				}
 				client->SendClientMessage(yojimbo::CHANNEL_TYPE_UNRELIABLE_UNORDERED, message);
-				DLOG(GameMessageTypeStrings[CLIENT_UPDATE_ENTITY_DATA] << " TO SERVER WITH MESSAGEID = " << message->GetId() << ", BLOCK SIZE = " << 1024);
+				DLOG(GameMessageTypeStrings[CLIENT_UPDATE_ENTITY_DATA] << " TO SERVER WITH MESSAGEID = " << message->GetId() << ", BLOCK SIZE = " << 256);
 				game->GetEntityManager().ResetChanged();
 				return; 
 			}
@@ -389,6 +389,24 @@ namespace Engine
 		{
 			info["Is Loopback"] = "false";
 		}
+
+		yojimbo::NetworkInfo netInfo;
+		client->GetNetworkInfo(netInfo);
+
+		info["RTT"] = std::to_string(netInfo.RTT);
+		info["Min RTT"] = std::to_string(netInfo.minRTT);
+		info["Max RTT"] = std::to_string(netInfo.maxRTT);
+		info["Avg RTT"] = std::to_string(netInfo.averageRTT);
+		info["Avg Jitter"] = std::to_string(netInfo.averageJitter);
+		info["Max Jitter"] = std::to_string(netInfo.maxJitter);
+		info["Stddev Jitter"] = std::to_string(netInfo.stddevJitter);
+		info["Packet Loss (%)"] = std::to_string(netInfo.packetLoss);
+		info["Sent Bandwidth (kbps)"] = std::to_string(netInfo.sentBandwidth);
+		info["Received Bandwidth (kbps)"] = std::to_string(netInfo.receivedBandwidth);
+		info["Acked Bandwidth (kbps)"] = std::to_string(netInfo.ackedBandwidth);
+		info["Packets Sent"] = std::to_string(netInfo.numPacketsSent);
+		info["Packets Received"] = std::to_string(netInfo.numPacketsReceived);
+		info["Packets Acked"] = std::to_string(netInfo.numPacketsAcked);
 
 		return info;
 	}
