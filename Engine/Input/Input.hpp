@@ -36,7 +36,16 @@ namespace Engine
 		Shoot,
 		Reload,
 		Jump,
+		SwapWeapon,
+		Sprint,
 		Pause
+	};
+
+	enum InputDevice
+	{
+		KBM,
+		CONTROLLER,
+		INPUT_DEVICE_COUNT
 	};
 
 	class InputManager
@@ -55,22 +64,15 @@ namespace Engine
 		static void removeJoystick(int index);
 		static Mouse& getMouse();
 		static bool hasJoysticksConnected();
+		static void setInputDevivce(InputDevice inputDevice);
+		static InputDevice& getInputDevice();
 
 		static ControlMap& getDefaultControls();
-
 		static void InitDefaultControls();
-		//static std::map<std::string, std::pair<int, int>> mActionMap;
-		//static std::map<ActionType, std::pair<int, int>> mActionMap;
-
-		// Setters
-		//static void addAction(const std::string& actionName, int aKey, int aButton);
-		//static void bindAction(const ActionType& action, int aKey, int aButton);
 
 		// Input
 		static bool IsPressed(int aKey);
-		//static bool Action(const std::string& actionName);
 		static bool Action(const ControlID action);
-		// ?
 		static void Update();
 		static void RegisterCallbacks(VulkanWindow* window);
 
@@ -81,7 +83,8 @@ namespace Engine
 		static std::map<int, Joystick> mJoysticks;
 		static Mouse mMouse;
 		static ControlMap DefaultControls;
-
+		static InputDevice mInputDevice;
+		static float ControllerDeadzone;
 
 	};
 }

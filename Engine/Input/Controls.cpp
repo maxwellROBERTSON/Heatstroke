@@ -81,19 +81,29 @@ namespace Engine
 			if (!(findGamepad == gamepadControlsById.end())) {
 				const auto& entries = findGamepad->second;
 
+				float deadZone = 0.03f;
 				for (const auto& entry : entries) {
 					switch (entry.inputType)
 					{
 					case InputType::AXIS:
 					{
-						float value = getAxisValue(
-							InputManager::getJoystick(0).getAxisValue(entry.value),
-							entry.axisType,
-							entry.minAnalogueValue,
-							entry.maxAnalogueValue
-						);
-						if (value > 0.0f)
-							controllerIsDown = true;
+						//if (entry.axisType == AxisType::FULL)
+						//{
+						//	std::cout << (entry.value >= -deadZone && entry.value <= deadZone) ? "True" ? "False";
+						//	controllerIsDown = entry.value == 0.0f;
+						//}
+						if (entry.axisType == AxisType::NEGATIVE)
+						{
+							std::cout << (entry.value <= -deadZone ? "True" : "False") << std::endl;
+							controllerIsDown = entry.value < 0.0f;
+						}
+						else if (entry.axisType == AxisType::POSITIVE)
+						{
+							std::cout << (entry.value >= deadZone ? "True" : "False") << std::endl;
+							controllerIsDown = entry.value < 0.0f;
+						}
+						//else
+							//std::cout << "UNEXPECTED" << std::endl;
 					}
 					break;
 					case InputType::BUTTON:

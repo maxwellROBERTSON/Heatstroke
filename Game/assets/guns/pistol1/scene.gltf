@@ -77503,7 +77503,7 @@
           }
         }
       ],
-      "name": "Pistol_IDLE",
+      "name": "IDLE",
       "samplers": [
         {
           "input": 43,

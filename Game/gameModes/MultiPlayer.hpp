@@ -36,14 +36,21 @@ public:
 	};
 
 	int score = 0;
-	float fireDelay = 1.5f;
+	float fireDelay = 0.25f;
+	bool isReloading{ false };
+	float reloadDelay = 0.5f;
 	bool canFire = true;
 	float counter = 1.0f;
-	int ammoCount = 6;
+	int pistolAmmoCount = 10;
 
 	Engine::Entity* playerEntity = nullptr;
 	Engine::Entity* pistolEntity = nullptr;
 	Engine::Entity* rifleEntity = nullptr;
 	Engine::Entity* targetEntity = nullptr;
+
+	void reloadPistol();
+	bool canReload{ true };
+	void shootPistol();
+
 
 };
