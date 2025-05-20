@@ -82,7 +82,6 @@ void SinglePlayer::Update(float timeDelta)
 		return;
 
 	if (InputManager::getKeyboard().isPressed(HS_KEY_P))
-
 	{
 		score = 0;
 		countdown = 30;
