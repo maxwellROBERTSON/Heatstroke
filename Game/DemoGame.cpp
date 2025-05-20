@@ -33,7 +33,6 @@ void FPSTest::Init() {
 
 	srand(time(0));
 
-
 	//submit task to initialise Models to thread pool
 	auto modelsFut = GetThreadPool().submit(&FPSTest::initialiseModels, this);
 
@@ -48,6 +47,8 @@ void FPSTest::Init() {
 
 	GetGUI().initGUI(getRenderer().getRenderPassHandle("gui"));
 	makeGameGUIS(this);
+
+	InputManager::InitDefaultControls();
 
 	this->renderer.attachCamera(&sceneCamera);
 	this->renderer.initialiseModelDescriptors();

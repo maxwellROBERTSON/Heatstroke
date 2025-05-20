@@ -93,6 +93,8 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 	ImVec2 cursorPos;
 	ImU32 color = ImGui::GetColorU32(ImGuiCol_Text);
 
+	InputManager::InitDefaultControls();
+
 	if (singleHovered)
 	{
 		ImGui::PushFont(game->GetGUI().GetFont("HomeHovered"));
@@ -117,8 +119,6 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 			GLFWwindow* window = game->GetContext().getGLFWWindow();
 			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 		}
-
-		InputManager::InitDefaultControls();
 
 		cursorPos = ImGui::GetCursorScreenPos();
 		cursorPos.x += 20.f;
@@ -339,7 +339,7 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 
 		ImGui::Text("Join a server");
 
-		static char addressStr[16] = "129.11.146.183\0";
+		static char addressStr[16] = "129.11.146.120\0";
 		ImGui::Text("Address:");
 		ImGui::InputText("Address", addressStr, IM_ARRAYSIZE(addressStr));
 
@@ -447,11 +447,11 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 				}
 				game->loadOnlineEntities(maxClientsNum, numTeamsNum, isListenServer);
 				game->getRenderer().initialiseJointMatrices();
-				GLFWwindow* window = game->GetContext().getGLFWWindow();
-				glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 				game->SetServer(portNum, maxClientsNum);
 				if (isListenServer)
 				{
+					GLFWwindow* window = game->GetContext().getGLFWWindow();
+					glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 					game->GetGUI().ToggleGUIMode("Home");
 					game->GetGUI().ToggleGUIMode("MultiPlayer");
 					if (game->debugging)
@@ -729,6 +729,7 @@ void makeDebugGUI(FPSTest* game, int* w, int* h)
 	ImGui::Checkbox("Input Debug", &debugInput);
 	ImGui::Checkbox("Network Debug", &debugNetwork);
 	ImGui::Checkbox("Animation Debug", &debugAnimations);
+	ImGui::Checkbox("Network Debug", &debugNetwork);
 	ImGui::Checkbox("Game Debug", &debugGame);
 	ImGui::Checkbox("Game GUI", &game->showGUI); // to be fixed 
 
