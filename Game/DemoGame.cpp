@@ -29,8 +29,6 @@ void FPSTest::Init() {
 	this->renderer = Renderer(&GetContext(), &GetEntityManager(), this);
 	this->renderer.initialise();
 
-	//this->gui = GUI(this);
-
 	srand(time(0));
 
 	//submit task to initialise Models to thread pool
@@ -78,9 +76,14 @@ void FPSTest::Render() {
 
 void FPSTest::Update() {
 
+	// Calculate time delta
+	const auto now = std::chrono::steady_clock::now();
+	const auto timeDelta = std::chrono::duration_cast<std::chrono::duration<float, std::ratio<1>>>(now - previous).count();
+	previous = now;
+
 	Engine::InputManager::Update();
 
-	GetNetwork().Update();
+	GetNetwork().Update(timeDelta);
 
 	// Need to process GUI stuff before checking swapchain, since
 	// some GUI settings may require instant swapchain recreation
@@ -91,11 +94,6 @@ void FPSTest::Update() {
 
 	if (this->renderer.acquireSwapchainImage())
 		return;
-
-	// Calculate time delta
-	const auto now = std::chrono::steady_clock::now();
-	const auto timeDelta = std::chrono::duration_cast<std::chrono::duration<float, std::ratio<1>>>(now - previous).count();
-	previous = now;
 
 	this->renderer.calculateFPS();
 

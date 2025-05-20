@@ -194,32 +194,10 @@ namespace Engine
 			const float gravity = -9.81f;
 			PxVec3 displacement(0.0f, gravity * deltatime, 0.0f);
 			PxVec3 old = displacement;
-			float speed = 5.0f;
+			float speed = 4.0f;
 			const float jumpSpeed = 5.0f;
 			PxVec3 frontDir(entityFrontDir.x, entityFrontDir.y, entityFrontDir.z);
 			PxVec3 rightDir(entityRightDir.x, entityRightDir.y, entityRightDir.z);
-
-// 			float speed = 4.0f;
-// 			const float jumpSpeed = 3.0f;
-// 			PxVec3 frontDir(entityFrontDir.x, entityFrontDir.y, entityFrontDir.z);
-// 			PxVec3 rightDir(entityRightDir.x, entityRightDir.y, entityRightDir.z);
-
-// 			if (InputManager::Action(Controls::MoveForward))
-// 			{
-// 				displacement += frontDir * speed * deltatime;
-// 			}
-
-// 			if (InputManager::Action(Controls::MoveBackward)) {
-// 				displacement -= frontDir * speed * deltatime;
-// 			}
-
-// 			if (InputManager::Action(Controls::MoveLeft)) {
-// 				displacement -= rightDir * speed * deltatime;
-// 			}
-
-// 			if (InputManager::Action(Controls::MoveRight)) {
-// 				displacement += rightDir * speed * deltatime;
-// 			}
 
 			// isGrounded check
 			PxControllerState cstate;
@@ -230,7 +208,9 @@ namespace Engine
 			case InputDevice::CONTROLLER:
 			{
 				if (InputManager::getJoystick(0).isDown(HS_GAMEPAD_BUTTON_LEFT_THUMB))
+				{
 					speed = 7.5f;
+				}
 				if (InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_LEFT_Y) <= -0.05f)
 				{
 					displacement += frontDir * speed * deltatime;
@@ -239,7 +219,6 @@ namespace Engine
 				{
 					displacement -= frontDir * speed * deltatime;
 				}
-
 				if (InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_LEFT_X) <= -0.05f)
 				{
 					displacement -= rightDir * speed * deltatime;
@@ -248,7 +227,6 @@ namespace Engine
 				{
 					displacement += rightDir * speed * deltatime;
 				}
-
 				if (isGrounded && (InputManager::getJoystick(0).isPressed(HS_GAMEPAD_BUTTON_A)))
 				{
 					verticalVelocity = jumpSpeed;
@@ -258,22 +236,23 @@ namespace Engine
 			case InputDevice::KBM:
 			{
 				if (InputManager::Action(Controls::Sprint))
+				{
 					speed = 7.5f;
+				}
 				if (InputManager::Action(Controls::MoveForward))
 				{
 					displacement += frontDir * speed * deltatime;
 				}
-
-				if (InputManager::Action(Controls::MoveBackward)) {
+				if (InputManager::Action(Controls::MoveBackward))
+				{
 					displacement -= frontDir * speed * deltatime;
 				}
-
-
-				if (InputManager::Action(Controls::MoveLeft)) {
+				if (InputManager::Action(Controls::MoveLeft))
+				{
 					displacement -= rightDir * speed * deltatime;
 				}
-
-				if (InputManager::Action(Controls::MoveRight)) {
+				if (InputManager::Action(Controls::MoveRight))
+				{
 					displacement += rightDir * speed * deltatime;
 				}
 				if (isGrounded && InputManager::Action(Controls::Jump))
@@ -283,59 +262,7 @@ namespace Engine
 				break;
 			}
 			}
-			//if (InputManager::hasJoysticksConnected())
-			//{
-			//	if (InputManager::getJoystick(0).isDown(HS_GAMEPAD_BUTTON_LEFT_THUMB))
-			//		speed = 7.5f;
-			//	if (InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_LEFT_Y) <= -0.05f)
-			//	{
-			//		displacement += frontDir * speed * deltatime;
-			//	}
-			//	if (InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_LEFT_Y) >= 0.05f)
-			//	{
-			//		displacement -= frontDir * speed * deltatime;
-			//	}
-
-			//	if (InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_LEFT_X) <= -0.05f)
-			//	{
-			//		displacement -= rightDir * speed * deltatime;
-			//	}
-			//	if (InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_LEFT_X) >= 0.05f)
-			//	{
-			//		displacement += rightDir * speed * deltatime;
-			//	}
-			//}
-			//else
-			//{
-
-			//	if (InputManager::Action(Controls::MoveForward))
-			//	{
-			//		displacement += frontDir * speed * deltatime;
-			//	}
-
-			//	if (InputManager::Action(Controls::MoveBackward)) {
-			//		displacement -= frontDir * speed * deltatime;
-			//	}
-
-
-			//	if (InputManager::Action(Controls::MoveLeft)) {
-			//		displacement -= rightDir * speed * deltatime;
-			//	}
-
-			//	if (InputManager::Action(Controls::MoveRight)) {
-			//		displacement += rightDir * speed * deltatime;
-			//	}
-			//}
-
-			//// isGrounded check
-			//PxControllerState cstate;
-			//controller->getState(cstate);
-			//bool isGrounded = (cstate.collisionFlags & PxControllerCollisionFlag::eCOLLISION_DOWN);
-
-			//if (isGrounded && (InputManager::Action(Controls::Jump) || InputManager::getJoystick(0).isDown(HS_GAMEPAD_BUTTON_A)))
-			//{
-			//	verticalVelocity = jumpSpeed;
-			//}
+			
 			verticalVelocity += gravity * deltatime;
 			displacement.y = verticalVelocity * deltatime;
 

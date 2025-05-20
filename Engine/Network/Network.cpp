@@ -69,7 +69,7 @@ namespace Engine
             DLOG("Adapter created.");
         }
 #ifdef _DEBUG
-        yojimbo_log_level(YOJIMBO_LOG_LEVEL_DEBUG);
+        yojimbo_log_level(YOJIMBO_LOG_LEVEL_INFO);
 #else
         yojimbo_log_level(YOJIMBO_LOG_LEVEL_INFO);
 #endif
@@ -110,7 +110,7 @@ namespace Engine
     }
 
     // Update network if some form of connection
-    void Network::Update()
+    void Network::Update(float timeDelta)
     {
         if (status != Status::NETWORK_UNINITIALIZED &&
             status != Status::NETWORK_INITIALIZED &&
@@ -118,7 +118,7 @@ namespace Engine
             status != Status::CLIENT_CONNECTION_FAILED
             )
         {
-            networkType->Update();
+            networkType->Update(timeDelta);
         }
     }
 

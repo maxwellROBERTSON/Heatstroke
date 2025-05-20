@@ -101,11 +101,13 @@ namespace Engine
 	// Get total size of all the changed data
 	int EntityManager::GetTotalChangedDataSize()
 	{
-		size_t baseSize = 1 + changedEntitiesAndComponents.size() * 3;
-		size_t totalSize = baseSize;
+		int numChanged = changedEntitiesAndComponents.size();
+		if (numChanged == 0)
+			return 0;
+		size_t totalSize = 1 + numChanged + numChanged * (TYPE_COUNT + 1) + ((TYPE_COUNT + 2) / 8 + 1 ) * numChanged;
 
 		size_t entitySize = entities[0].get()->GetEntitySize();
-		for (int i = 0; i < changedEntitiesAndComponents.size(); i++)
+		for (int i = 0; i < numChanged; i++)
 		{
 			if (changedEntitiesAndComponents[i].second[0] != -1)
 			{
@@ -120,14 +122,7 @@ namespace Engine
 			}
 		}
 
-		if (totalSize == baseSize)
-		{
-			return 0;
-		}
-		else
-		{
-			return (int)totalSize;
-		}
+		return (int)totalSize;
 	}
 
 	// Get a pointer to the component of an entity
