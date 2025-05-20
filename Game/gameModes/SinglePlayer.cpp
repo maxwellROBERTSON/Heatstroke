@@ -281,7 +281,7 @@ void SinglePlayer::shootPistol()
 			}
 
 			if (!hitTarget) {
-				if (entityHit.actor != nullptr && entityHit.actor->getName() != "levelBounds" && entityHit.distance != PX_MAX_REAL) {
+				if (entityHit.actor != nullptr && (std::strncmp(entityHit.actor->getName(), "levelBounds", std::strlen(entityHit.actor->getName())) != 0) && entityHit.distance != PX_MAX_REAL) {
 					this->game->getBulletDecals().setNextDecal(entityHit.position, entityHit.normal);
 				}
 			}
@@ -361,7 +361,7 @@ void SinglePlayer::shootRifle()
 			}
 
 			if (!hitTarget) {
-				if (entityHit.actor != nullptr && entityHit.actor->getName() != "levelBounds" && entityHit.distance != PX_MAX_REAL) {
+				if (entityHit.actor != nullptr && (std::strncmp(entityHit.actor->getName(), "levelBounds", std::strlen(entityHit.actor->getName())) != 0) && entityHit.distance != PX_MAX_REAL) {
 					this->game->getBulletDecals().setNextDecal(entityHit.position, entityHit.normal);
 				}
 			}

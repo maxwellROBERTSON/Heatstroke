@@ -106,6 +106,9 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 
 		if (ImGui::InvisibleButton("##singlebtn", boxSize))
 		{
+			game->modelFut.get();
+			game->makeVulkanModels();
+			game->getRenderer().initialiseModelDescriptors();
 			game->SetGameMode(std::make_unique<SinglePlayer>(game));
 			game->loadOfflineEntities();
 			game->getRenderer().initialiseJointMatrices();

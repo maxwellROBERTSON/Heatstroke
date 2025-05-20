@@ -62,6 +62,7 @@ public:
 	virtual void OnEvent(Engine::Event& e) override;
 
 	void initialiseModels();
+	void makeVulkanModels();
 
 	void loadOfflineEntities();
 	void loadOnlineEntities(int, int, bool);
@@ -78,6 +79,9 @@ public:
 	Engine::Decals& getBulletDecals();
 
 	std::chrono::steady_clock::time_point previous;
+
+	std::future<void> modelFut;
+	std::map<std::string, tinygltf::Model> tinygltfModels;
 
 	// Cameras
 	Engine::Camera sceneCamera;

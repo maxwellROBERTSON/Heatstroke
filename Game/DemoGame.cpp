@@ -35,11 +35,7 @@ void FPSTest::Init() {
 
 
 	//submit task to initialise Models to thread pool
-	auto modelsFut = GetThreadPool().submit(&FPSTest::initialiseModels, this);
-
-	DLOG("Waiting for model initialisation");
-	//blocks execution of the rest of the program until the initialiseModels Thread has finished
-	modelsFut.get();
+	modelFut = GetThreadPool().submit(&FPSTest::initialiseModels, this);
 
 	// Scene camera
 	sceneCamera = Camera(60.0f, 0.01f, 1000.0f, glm::vec3(0.0f, 0.0f, -5.0f), glm::vec3(0.0f, 0.0f, 1.0f));
@@ -50,7 +46,6 @@ void FPSTest::Init() {
 	makeGameGUIS(this);
 
 	this->renderer.attachCamera(&sceneCamera);
-	this->renderer.initialiseModelDescriptors();
 
 	std::vector<const char*> skyboxFilenames = {
 		"Game/assets/skybox/right.bmp",
@@ -131,18 +126,24 @@ void FPSTest::OnEvent(Engine::Event& e)
 void FPSTest::initialiseModels()
 {
 	// Here we would load all relevant glTF models and put them in the models vector
+	
 
-	tinygltf::Model map = Engine::loadFromFile("Game/assets/maps/warehouse/scene.gltf");
-	tinygltf::Model character = Engine::loadFromFile("Game/assets/characters/csgo/scene.gltf");
-	tinygltf::Model pistol = Engine::loadFromFile("Game/assets/guns/pistol1/scene.gltf");
-	tinygltf::Model rifle = Engine::loadFromFile("Game/assets/guns/smg/scene.gltf");
-	//tinygltf::Model rifle = Engine::loadFromFile("Game/assets/guns/rifle/scene.gltf");
-	tinygltf::Model target = Engine::loadFromFile("Game/assets/target/scene.gltf");
-	GetModels().emplace_back(Engine::makeVulkanModel(this->GetContext(), map, DrawType::WORLD));
-	GetModels().emplace_back(Engine::makeVulkanModel(this->GetContext(), character, DrawType::WORLD));
-	GetModels().emplace_back(Engine::makeVulkanModel(this->GetContext(), pistol, DrawType::OVERLAY));
-	GetModels().emplace_back(Engine::makeVulkanModel(this->GetContext(), rifle, DrawType::OVERLAY));
-	GetModels().emplace_back(Engine::makeVulkanModel(this->GetContext(), target, DrawType::WORLD));
+	// tinygltf::Model map = Engine::loadFromFile("Game/assets/maps/warehouse/scene.gltf");
+	tinygltfModels.emplace("map", Engine::loadFromFile("Game/assets/maps/warehouseEdit/warehouse.glb"));
+	tinygltfModels.emplace("character", Engine::loadFromFile("Game/assets/characters/csgo/scene.gltf"));
+	tinygltfModels.emplace("pistol", Engine::loadFromFile("Game/assets/guns/pistol1/scene.gltf"));
+	tinygltfModels.emplace("rifle", Engine::loadFromFile("Game/assets/guns/smg/scene.gltf"));
+	tinygltfModels.emplace("target", Engine::loadFromFile("Game/assets/target/scene.gltf"));
+	
+	DLOG("Models parsed.");
+}
+
+void FPSTest::makeVulkanModels() {
+	GetModels().emplace_back(Engine::makeVulkanModel(this->GetContext(), tinygltfModels["map"], DrawType::WORLD));
+	GetModels().emplace_back(Engine::makeVulkanModel(this->GetContext(), tinygltfModels["character"], DrawType::WORLD));
+	GetModels().emplace_back(Engine::makeVulkanModel(this->GetContext(), tinygltfModels["pistol"], DrawType::OVERLAY));
+	GetModels().emplace_back(Engine::makeVulkanModel(this->GetContext(), tinygltfModels["rifle"], DrawType::OVERLAY));
+	GetModels().emplace_back(Engine::makeVulkanModel(this->GetContext(), tinygltfModels["target"], DrawType::WORLD));
 
 	DLOG("Models created.");
 }
