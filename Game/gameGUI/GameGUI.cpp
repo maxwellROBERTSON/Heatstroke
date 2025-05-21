@@ -28,12 +28,19 @@ Engine::Camera cameraTemp;
 bool singleHovered = false;
 bool multiHovered = false;
 bool serverHovered = false;
+int stepModelFut = 0;
+yojimbo::Address address = yojimbo::Address();
+int portNum = 0;
+int maxClientsNum = 0;
+int numTeamsNum = 0;
+bool isListenServer = false;
 
 void makeGameGUIS(FPSTest* game)
 {
 	GUI& gui = game->GetGUI();
 
 	gui.AddFunction("Home", [game](int* w, int* h) { makeHomeGUI(game, w, h); });
+	gui.AddFunction("ModelLoad", [game](int* w, int* h) { makeModelLoadGUI(game, w, h); });
 	gui.AddFunction("Settings", [game](int* w, int* h) { makeSettingsGUI(game, w, h); });
 	gui.AddFunction("Server", [game](int* w, int* h) { makeServerGUI(game, w, h); });
 	gui.AddFunction("Loading", [game](int* w, int* h) { makeLoadingGUI(game, w, h); });
@@ -108,22 +115,8 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 
 		if (ImGui::InvisibleButton("##singlebtn", boxSize))
 		{
-			if (game->modelFut.valid())
-			{
-				game->modelFut.get();
-				game->makeVulkanModels();
-				game->getRenderer().initialiseModelDescriptors();
-			}
-			game->SetGameMode(std::make_unique<SinglePlayer>(game));
-			game->loadOfflineEntities();
-			game->getRenderer().initialiseJointMatrices();
 			game->GetGUI().ToggleGUIMode("Home");
-			game->GetGUI().ToggleGUIMode("SinglePlayer");
-			if (game->debugging)
-				game->GetGUI().ToggleGUIMode("Debug");
-			game->SetRenderMode(RenderMode::FORWARD);
-			GLFWwindow* window = game->GetContext().getGLFWWindow();
-			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+			game->GetGUI().ToggleGUIMode("ModelLoad");
 		}
 
 		cursorPos = ImGui::GetCursorScreenPos();
@@ -315,7 +308,7 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 		static char portStr[6] = "3000";
 		ImGui::Text("Port:");
 		ImGui::InputText("Port", portStr, IM_ARRAYSIZE(portStr));
-		int portNum = atoi(portStr);
+		portNum = atoi(portStr);
 
 		if (ImGui::Button("Go", ImVec2(40, 40)))
 		{
@@ -338,16 +331,9 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 			else
 			{
 				errorMsg = "";
-				if (game->modelFut.valid())
-				{
-					game->modelFut.get();
-					game->makeVulkanModels();
-					game->getRenderer().initialiseModelDescriptors();
-				}
+				address = yojimbo::Address(addressStr, portNum);
 				game->GetGUI().ToggleGUIMode("Home");
-				game->GetGUI().ToggleGUIMode("Loading");
-				yojimbo::Address address = yojimbo::Address(addressStr, portNum);
-				game->SetClient(address);
+				game->GetGUI().ToggleGUIMode("ModelLoad");
 			}
 		}
 		ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), errorMsg.c_str());
@@ -367,19 +353,18 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 		static char portStr[6] = "3000";
 		ImGui::Text("Port:");
 		ImGui::InputText("Port", portStr, IM_ARRAYSIZE(portStr));
-		int portNum = atoi(portStr);
+		portNum = atoi(portStr);
 
 		static char maxClientsStr[6] = "2";
 		ImGui::Text("Max Clients:");
 		ImGui::InputText("Max Clients", maxClientsStr, IM_ARRAYSIZE(maxClientsStr));
-		int maxClientsNum = atoi(maxClientsStr);
+		maxClientsNum = atoi(maxClientsStr);
 
 		static char numTeamsStr[6] = "2";
 		ImGui::Text("Number of Teams:");
 		ImGui::InputText("Number of Teams", numTeamsStr, IM_ARRAYSIZE(numTeamsStr));
-		int numTeamsNum = atoi(numTeamsStr);
+		numTeamsNum = atoi(numTeamsStr);
 
-		static bool isListenServer = false;
 		ImGui::Checkbox("Listen Server", &isListenServer);
 
 		if (ImGui::Button("Go", ImVec2(40, 40)))
@@ -411,40 +396,8 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 			else
 			{
 				errorMsg = "";
-				if (game->modelFut.valid())
-				{
-					game->modelFut.get();
-					game->makeVulkanModels();
-					game->getRenderer().initialiseModelDescriptors();
-				}
-				game->SetGameMode(std::make_unique<MultiPlayer>(game));
-				if (isListenServer)
-				{
-					game->SetRenderMode(RenderMode::FORWARD);
-				}
-				else
-				{
-					game->SetRenderMode(RenderMode::NO_DATA_MODE);
-				}
-				game->loadOnlineEntities(maxClientsNum, numTeamsNum, isListenServer);
-				game->getRenderer().initialiseJointMatrices();
-				game->SetServer(portNum, maxClientsNum);
-				if (isListenServer)
-				{
-					GLFWwindow* window = game->GetContext().getGLFWWindow();
-					glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-					game->GetGUI().ToggleGUIMode("Home");
-					game->GetGUI().ToggleGUIMode("MultiPlayer");
-					if (game->debugging)
-						game->GetGUI().ToggleGUIMode("Debug");
-					GameServer* server = reinterpret_cast<GameServer*>(game->GetNetwork().GetNetworkTypePointer());
-					server->SetListenServer(game->GetGameMode().GetPlayerEntity()->GetEntityId());
-				}
-				else
-				{
-					game->GetGUI().ToggleGUIMode("Home");
-					game->GetGUI().ToggleGUIMode("Server");
-				}
+				game->GetGUI().ToggleGUIMode("Home");
+				game->GetGUI().ToggleGUIMode("ModelLoad");
 			}
 		}
 
@@ -459,6 +412,86 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 	ImGui::PopFont();
 
 	ImGui::End();
+}
+
+void makeModelLoadGUI(FPSTest* game, int* w, int* h)
+{
+	ImGui::PushFont(game->GetGUI().GetFont("Default"));
+
+	ImGui::SetNextWindowPos(ImVec2(0, 0));
+	ImGui::SetNextWindowSize(ImVec2(*w, *h));
+
+	ImGui::Begin("Loading Menu", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
+
+	if (stepModelFut == 2)
+	{
+		stepModelFut = 0;
+		if (game->modelFut.valid())
+		{
+			game->modelFut.get();
+			game->makeVulkanModels();
+			game->getRenderer().initialiseModelDescriptors();
+		}
+		if (singleHovered)
+		{
+			game->SetGameMode(std::make_unique<SinglePlayer>(game));
+			game->loadOfflineEntities();
+			game->getRenderer().initialiseJointMatrices();
+			game->GetGUI().ToggleGUIMode("ModelLoad");
+			game->GetGUI().ToggleGUIMode("SinglePlayer");
+			if (game->debugging)
+				game->GetGUI().ToggleGUIMode("Debug");
+			game->SetRenderMode(RenderMode::FORWARD);
+			GLFWwindow* window = game->GetContext().getGLFWWindow();
+			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+		}
+		else if (multiplayerSelected)
+		{
+			game->GetGUI().ToggleGUIMode("ModelLoad");
+			game->GetGUI().ToggleGUIMode("Loading");
+			game->SetClient(address);
+		}
+		else if (serverSelected)
+		{
+			game->SetGameMode(std::make_unique<MultiPlayer>(game));
+			if (isListenServer)
+			{
+				game->SetRenderMode(RenderMode::FORWARD);
+			}
+			else
+			{
+				game->SetRenderMode(RenderMode::NO_DATA_MODE);
+			}
+			game->loadOnlineEntities(maxClientsNum, numTeamsNum, isListenServer);
+			game->getRenderer().initialiseJointMatrices();
+			game->SetServer(portNum, maxClientsNum);
+			if (isListenServer)
+			{
+				GLFWwindow* window = game->GetContext().getGLFWWindow();
+				glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+				game->GetGUI().ToggleGUIMode("ModelLoad");
+				game->GetGUI().ToggleGUIMode("MultiPlayer");
+				if (game->debugging)
+					game->GetGUI().ToggleGUIMode("Debug");
+				GameServer* server = reinterpret_cast<GameServer*>(game->GetNetwork().GetNetworkTypePointer());
+				server->SetListenServer(game->GetGameMode().GetPlayerEntity()->GetEntityId());
+			}
+			else
+			{
+				game->GetGUI().ToggleGUIMode("ModelLoad");
+				game->GetGUI().ToggleGUIMode("Server");
+			}
+		}
+	}
+	else
+	{
+		ImGui::Text("Loading Models.");
+		stepModelFut++;
+	}
+
+	ImGui::End();
+
+	ImGui::PopFont();
 }
 
 void makeSettingsGUI(FPSTest* game, int* w, int* h)

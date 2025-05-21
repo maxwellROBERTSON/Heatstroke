@@ -7,6 +7,7 @@
 
 void makeGameGUIS(FPSTest* game);
 void makeHomeGUI(FPSTest* game, int*, int*);
+void makeModelLoadGUI(FPSTest* game, int*, int*);
 void makeSettingsGUI(FPSTest* game, int*, int*);
 void makeServerGUI(FPSTest* game, int*, int*);
 void makeLoadingGUI(FPSTest* game, int*, int*);
@@ -41,3 +42,9 @@ extern Engine::Camera cameraTemp;
 extern bool singleHovered;
 extern bool multiHovered;
 extern bool serverHovered;
+extern int stepModelFut;
+extern yojimbo::Address address;
+extern int portNum;
+extern int maxClientsNum;
+extern int numTeamsNum;
+extern bool isListenServer;
