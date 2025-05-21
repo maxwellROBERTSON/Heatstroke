@@ -65,7 +65,7 @@ void MultiPlayer::InitNetwork()
 		Engine::vk::Model& model = game->GetModels()[renderComp->GetModelIndex()];
 		if (type == PhysicsComponent::PhysicsType::STATIC || type == PhysicsComponent::PhysicsType::STATICBOUNDED)
 		{
-			physicsComp->InitComplexShape("Temp", game->GetPhysicsWorld(), type, model, mat, vec[i]);
+			physicsComp->InitComplexShape(game->GetPhysicsWorld(), type, model, mat, vec[i]);
 		}
 		else
 		{

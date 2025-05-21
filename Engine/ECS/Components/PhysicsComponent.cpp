@@ -252,7 +252,7 @@ namespace Engine
 		}
 	}
 
-	void PhysicsComponent::InitComplexShape(const char* name, PhysicsWorld& pWorld, PhysicsType physicsType, Engine::vk::Model& model, glm::mat4 transform, int index)
+	void PhysicsComponent::InitComplexShape(PhysicsWorld& pWorld, PhysicsType physicsType, Engine::vk::Model& model, glm::mat4 transform, int index)
 	{
 		entityId = index;
 
@@ -361,7 +361,6 @@ namespace Engine
 							*staticBody, triMeshGeometry, *material 
 						);
 
-						staticBody->setName(name);
 						pWorld.gScene->addActor(*staticBody);
 					}
 				}

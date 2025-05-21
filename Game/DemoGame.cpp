@@ -125,7 +125,6 @@ void FPSTest::OnEvent(Engine::Event& e)
 void FPSTest::initialiseModels()
 {
 	// Here we would load all relevant glTF models and put them in the models vector
-	
 
 	// tinygltf::Model map = Engine::loadFromFile("Game/assets/maps/warehouse/scene.gltf");
 	tinygltfModels.emplace("map", Engine::loadFromFile("Game/assets/maps/warehouseEdit/warehouse.glb"));
@@ -168,8 +167,8 @@ void FPSTest::loadOfflineEntities()
 	renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
 	renderComponent->SetModelIndex(0);
 	physicsComponent = reinterpret_cast<PhysicsComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
-	physicsComponent->InitComplexShape("Map", physicsWorld, PhysicsComponent::PhysicsType::STATICBOUNDED, models[renderComponent->GetModelIndex()], entity->GetModelMatrix(), entity->GetEntityId());
-
+	physicsComponent->InitComplexShape(physicsWorld, PhysicsComponent::PhysicsType::STATICBOUNDED, models[renderComponent->GetModelIndex()], entity->GetModelMatrix(), entity->GetEntityId());
+	
 	// Character Model
 	types = { CAMERA, RENDER, PHYSICS, AUDIO };
 	entity = entityManager.MakeNewEntity(types);
@@ -212,7 +211,7 @@ void FPSTest::loadOfflineEntities()
 	renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
 	renderComponent->SetModelIndex(4);
 	physicsComponent = reinterpret_cast<PhysicsComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
-	physicsComponent->InitComplexShape("Target", physicsWorld, PhysicsComponent::PhysicsType::STATIC, models[renderComponent->GetModelIndex()], entity->GetModelMatrix(), entity->GetEntityId());
+	physicsComponent->InitComplexShape(physicsWorld, PhysicsComponent::PhysicsType::STATIC, models[renderComponent->GetModelIndex()], entity->GetModelMatrix(), entity->GetEntityId());
 	GetGameMode().SetTargetEntity(entity);
 	GetEntityManager().ResetChanged();
 }
@@ -241,7 +240,7 @@ void FPSTest::loadOnlineEntities(int maxClientsNum, int numTeams, bool isListenS
 	renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
 	renderComponent->SetModelIndex(0);
 	physicsComponent = reinterpret_cast<PhysicsComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
-	physicsComponent->InitComplexShape("Map", physicsWorld, PhysicsComponent::PhysicsType::STATICBOUNDED, models[renderComponent->GetModelIndex()], entity->GetModelMatrix(), entity->GetEntityId());
+	physicsComponent->InitComplexShape(physicsWorld, PhysicsComponent::PhysicsType::STATICBOUNDED, models[renderComponent->GetModelIndex()], entity->GetModelMatrix(), entity->GetEntityId());
 
 	this->renderer.attachCamera(&sceneCamera);
 	int start = 0;
@@ -294,6 +293,7 @@ void FPSTest::loadOnlineEntities(int maxClientsNum, int numTeams, bool isListenS
 		entity->SetSpawnState(GetGameMode().GetStartPos(team), 90.0f, glm::vec3(0.0f, 0.0f, 1.0f), 24.f);
 		cameraComponent = reinterpret_cast<CameraComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), CAMERA));
 		cameraComponent->SetCamera(sceneCamera);
+		cameraComponent->GetCamera()->frontDirection = glm::vec3(-0.277270f, -0.017452f, 0.960634);
 		renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
 		renderComponent->SetModelIndex(1);
 		renderComponent->SetIsActive(false);
