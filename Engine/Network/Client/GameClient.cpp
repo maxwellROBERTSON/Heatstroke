@@ -76,7 +76,11 @@ namespace Engine
 
 			if (manager.GetResetTimer() != 0.f)
 			{
-				HandleServerResetPositions();
+				if (manager.GetToBeReset())
+				{
+					HandleServerResetPositions();
+					manager.SetToBeReset(false);
+				}
 				manager.DecreaseResetTimer(dt);
 			}
 			else

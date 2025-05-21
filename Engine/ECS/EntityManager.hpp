@@ -70,6 +70,9 @@ namespace Engine
 		// Get reset timer rounded up to an int
 		int GetResetTimerInt() { return static_cast<int>(std::ceil(resetTimer)); }
 
+		// Get toBeReset
+		bool GetToBeReset() { return toBeReset; }
+
 		// Get all changed entity and component data
 		void GetAllChangedData(uint8_t*);
 
@@ -102,6 +105,9 @@ namespace Engine
 
 		// Set reset timer
 		void SetResetTimer(float t);
+
+		// Set toBeReset
+		void SetToBeReset(bool b) { toBeReset = b;}
 
 		// Decrease reset timer by float
 		void DecreaseResetTimer(float t);
@@ -137,6 +143,9 @@ namespace Engine
 
 		// Reset timer for multiplayer mode
 		float resetTimer = 0.f;
+
+		// To be reset boolean
+		bool toBeReset = false;
 
 		// Private used in AddEntity - doesn't add to entity's
 		// vector so mustn't be used except when making a new entity

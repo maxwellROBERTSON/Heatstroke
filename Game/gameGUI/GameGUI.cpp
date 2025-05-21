@@ -108,9 +108,12 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 
 		if (ImGui::InvisibleButton("##singlebtn", boxSize))
 		{
-			game->modelFut.get();
-			game->makeVulkanModels();
-			game->getRenderer().initialiseModelDescriptors();
+			if (game->modelFut.valid())
+			{
+				game->modelFut.get();
+				game->makeVulkanModels();
+				game->getRenderer().initialiseModelDescriptors();
+			}
 			game->SetGameMode(std::make_unique<SinglePlayer>(game));
 			game->loadOfflineEntities();
 			game->getRenderer().initialiseJointMatrices();
@@ -146,20 +149,7 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 		temp.y += 20.f;
 		ImGui::SetCursorPos(temp);
 
-		if (ImGui::InvisibleButton("##singlebtn", boxSize))
-		{
-			game->SetGameMode(std::make_unique<SinglePlayer>(game));
-			game->loadOfflineEntities();
-			game->getRenderer().initialiseJointMatrices();
-			game->GetGUI().ToggleGUIMode("Home");
-			if (game->showGUI) // hope this works
-				game->GetGUI().ToggleGUIMode("SinglePlayer");
-			if (game->debugging)
-				game->GetGUI().ToggleGUIMode("Debug");
-			game->SetRenderMode(RenderMode::FORWARD);
-			GLFWwindow* window = game->GetContext().getGLFWWindow();
-			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-		}
+		ImGui::InvisibleButton("##singlebtn", boxSize);
 
 		cursorPos = ImGui::GetCursorScreenPos();
 		cursorPos.x += 20.f;
@@ -225,19 +215,7 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 		temp.y += 20.f;
 		ImGui::SetCursorPos(temp);
 
-		if (ImGui::InvisibleButton("##multibtn", boxSize))
-		{
-			if (multiplayerSelected)
-			{
-				multiplayerSelected = false;
-				serverSelected = false;
-			}
-			else
-			{
-				multiplayerSelected = true;
-				serverSelected = false;
-			}
-		}
+		ImGui::InvisibleButton("##multibtn", boxSize);
 
 		cursorPos = ImGui::GetCursorScreenPos();
 		cursorPos.x += 20.f;
@@ -303,19 +281,7 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 		temp.y += 20.f;
 		ImGui::SetCursorPos(temp);
 
-		if (ImGui::InvisibleButton("##serverbtn", boxSize))
-		{
-			if (serverSelected)
-			{
-				multiplayerSelected = false;
-				serverSelected = false;
-			}
-			else
-			{
-				multiplayerSelected = false;
-				serverSelected = true;
-			}
-		}
+		ImGui::InvisibleButton("##serverbtn", boxSize);
 
 		cursorPos = ImGui::GetCursorScreenPos();
 		cursorPos.x += 20.f;
@@ -372,6 +338,12 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 			else
 			{
 				errorMsg = "";
+				if (game->modelFut.valid())
+				{
+					game->modelFut.get();
+					game->makeVulkanModels();
+					game->getRenderer().initialiseModelDescriptors();
+				}
 				game->GetGUI().ToggleGUIMode("Home");
 				game->GetGUI().ToggleGUIMode("Loading");
 				yojimbo::Address address = yojimbo::Address(addressStr, portNum);
@@ -439,6 +411,12 @@ void makeHomeGUI(FPSTest* game, int* w, int* h)
 			else
 			{
 				errorMsg = "";
+				if (game->modelFut.valid())
+				{
+					game->modelFut.get();
+					game->makeVulkanModels();
+					game->getRenderer().initialiseModelDescriptors();
+				}
 				game->SetGameMode(std::make_unique<MultiPlayer>(game));
 				if (isListenServer)
 				{

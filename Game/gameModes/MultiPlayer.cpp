@@ -119,15 +119,7 @@ void MultiPlayer::Update(float timeDelta)
 
 	if (InputManager::Action(Controls::Reload))
 	{
-		//RenderComponent* pistolRenderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(pistolEntity->GetEntityId(), RENDER));
-		//std::vector<vk::Model>& models = this->game->GetModels();
-		//int pistolModelIndex = pistolRenderComponent->GetModelIndex();
-		//models[pistolModelIndex].animationQueue.push(models[pistolModelIndex].animations[4]);
-		//models[pistolModelIndex].blending = true;
-		//pistolAmmoCount = 6;
-		//models[pistolModelIndex].animationQueue.pop();
 		reloadPistol();
-
 	}
 
 	if (InputManager::getMouse().isPressed(HS_MOUSE_BUTTON_LEFT) && canFire)
@@ -181,29 +173,6 @@ void MultiPlayer::shootPistol()
 	{
 		if (models[pistolModelIndex].animationQueue.empty())
 		{
-
-			//		std::vector<int> entitiesWithPhysicsComponent = entityManager.GetEntitiesWithComponent(PHYSICS);
-			//		for (int i = 0; i < entitiesWithPhysicsComponent.size(); i++)
-			//		{
-			//			Engine::Entity* entity = entityManager.GetEntity(entitiesWithPhysicsComponent[i]);
-			//			Engine::PhysicsComponent* physicsComponent = reinterpret_cast<Engine::PhysicsComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
-			//			if (physicsComponent->GetComponentActor() != nullptr && physicsComponent->GetComponentActor() == entityHit.actor)
-			//			{
-			//				score++;
-			//				hit = true;
-			//			}
-			//		}
-
-			//		if (hit && entityManager.GetResetTimerInt() == 0)
-			//		{
-			//			game->GetNetwork().GetNetworkTypePointer()->ReadyToSendResetMessage();
-			//		}
-
-			//		else {
-			//			if (entityHit.actor != nullptr && entityHit.actor->getName() != "levelBounds" && entityHit.distance != PX_MAX_REAL) {
-			//				this->game->getBulletDecals().setNextDecal(entityHit.position, entityHit.normal);
-			//			}
-			//		}
 			models[pistolModelIndex].animationQueue.push(models[pistolModelIndex].animations[3]);
 			models[pistolModelIndex].blending = true;
 			pistolAmmoCount--;
@@ -230,8 +199,8 @@ void MultiPlayer::shootPistol()
 			{
 				game->GetNetwork().GetNetworkTypePointer()->ReadyToSendResetMessage();
 			}
-
-			else {
+			else 
+			{
 				if (entityHit.actor != nullptr && entityHit.actor->getName() != "levelBounds" && entityHit.distance != PX_MAX_REAL) {
 					this->game->getBulletDecals().setNextDecal(entityHit.position, entityHit.normal);
 				}

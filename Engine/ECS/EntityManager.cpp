@@ -676,18 +676,15 @@ namespace Engine
 	// Set reset timer
 	void EntityManager::SetResetTimer(float t)
 	{
-		if (t <= 0.f)
+		if (t < 0.f)
 		{
 			resetTimer = 0.f;
-		}
-		else if (t > 5.f)
-		{
-			resetTimer = 5.f;
 		}
 		else
 		{
 			resetTimer = t;
 		}
+		SetToBeReset(true);
 	}
 
 	// Decrease reset timer by float
