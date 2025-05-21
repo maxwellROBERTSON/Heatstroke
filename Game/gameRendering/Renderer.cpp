@@ -1,46 +1,46 @@
 #include "Renderer.hpp"
 
-#include <numeric>
 #include <iomanip>
+#include <numeric>
 
-#include "Engine/vulkan/VulkanContext.hpp"
-#include "Engine/vulkan/VulkanDevice.hpp"
 #include "Engine/Rendering/PipelineCreation.hpp"
 #include "Engine/Rendering/RenderingUtils.hpp"
+#include "Engine/vulkan/VulkanContext.hpp"
+#include "Engine/vulkan/VulkanDevice.hpp"
 
 #include "VulkanUtils.hpp"
 
 #include "../DemoGame.hpp"
 
-#include "Engine/Rendering/objects/defaults/renderPasses/GUIPass.hpp"
 #include "Engine/Rendering/objects/defaults/renderPasses/ForwardPass.hpp"
-#include "Engine/Rendering/objects/defaults/renderPasses/ShadowPass.hpp"
+#include "Engine/Rendering/objects/defaults/renderPasses/GUIPass.hpp"
 #include "Engine/Rendering/objects/defaults/renderPasses/OverlayPass.hpp"
+#include "Engine/Rendering/objects/defaults/renderPasses/ShadowPass.hpp"
 
-#include "Engine/Rendering/objects/defaults/pipelineLayouts/ShadowPipelineLayout.hpp"
-#include "Engine/Rendering/objects/defaults/pipelineLayouts/SkyboxPipelineLayout.hpp"
+#include "Engine/Rendering/objects/defaults/pipelineLayouts/DecalPipelineLayout.hpp"
 #include "Engine/Rendering/objects/defaults/pipelineLayouts/ForwardPipelineLayout.hpp"
 #include "Engine/Rendering/objects/defaults/pipelineLayouts/GUIPipelineLayout.hpp"
-#include "Engine/Rendering/objects/defaults/pipelineLayouts/DecalPipelineLayout.hpp"
+#include "Engine/Rendering/objects/defaults/pipelineLayouts/ShadowPipelineLayout.hpp"
+#include "Engine/Rendering/objects/defaults/pipelineLayouts/SkyboxPipelineLayout.hpp"
 
+#include "Engine/Rendering/objects/defaults/pipelines/DecalPipeline.hpp"
+#include "Engine/Rendering/objects/defaults/pipelines/ForwardPipeline.hpp"
 #include "Engine/Rendering/objects/defaults/pipelines/ShadowPipeline.hpp"
 #include "Engine/Rendering/objects/defaults/pipelines/SkyboxPipeline.hpp"
-#include "Engine/Rendering/objects/defaults/pipelines/ForwardPipeline.hpp"
-#include "Engine/Rendering/objects/defaults/pipelines/DecalPipeline.hpp"
 #include "pipelines/CrosshairPipeline.hpp"
 
 #include "Engine/Rendering/objects/defaults/textureBuffers/DepthTextureBuffer.hpp"
-#include "Engine/Rendering/objects/defaults/textureBuffers/ShadowDepthTextureBuffer.hpp"
 #include "Engine/Rendering/objects/defaults/textureBuffers/MultisampledColourTextureBuffer.hpp"
 #include "Engine/Rendering/objects/defaults/textureBuffers/MultisampledDepthTextureBuffer.hpp"
+#include "Engine/Rendering/objects/defaults/textureBuffers/ShadowDepthTextureBuffer.hpp"
 
-#include "Engine/Rendering/objects/defaults/framebuffers/ShadowFramebuffer.hpp"
 #include "Engine/Rendering/objects/defaults/framebuffers/ForwardFramebuffer.hpp"
 #include "Engine/Rendering/objects/defaults/framebuffers/GUIFramebuffer.hpp"
+#include "Engine/Rendering/objects/defaults/framebuffers/ShadowFramebuffer.hpp"
 
-#include "Engine/Rendering/objects/defaults/uniformBuffers/SceneUniformBuffer.hpp"
 #include "Engine/Rendering/objects/defaults/uniformBuffers/DepthMVPUniformBuffer.hpp"
 #include "Engine/Rendering/objects/defaults/uniformBuffers/OrthoUniformBuffer.hpp"
+#include "Engine/Rendering/objects/defaults/uniformBuffers/SceneUniformBuffer.hpp"
 
 #include <GLFW/glfw3.h>
 
@@ -478,7 +478,8 @@ void Renderer::renderForward() {
 		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["forward"]->getHandle(), 5, 1, &this->descriptorSets["shadowMap"], 0, nullptr); // Shadow map
 	}
 
-	this->drawModels(cmdBuf, this->pipelineLayouts["forward"]->getHandle(), Engine::DrawType::OVERLAY);
+	if (this->game->shouldDrawCrosshair)
+		this->drawModels(cmdBuf, this->pipelineLayouts["forward"]->getHandle(), Engine::DrawType::OVERLAY);
 
 	Engine::endRenderPass(cmdBuf);
 
@@ -492,10 +493,14 @@ void Renderer::renderForward() {
 	vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelines["crosshair"]->getHandle());
 	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayouts["gui"]->getHandle(), 0, 1, &this->descriptorSets["orthoMatrices"], 0, nullptr);
 
-	this->game->GetCrosshair().drawCrosshair(cmdBuf);
+	if (this->game->shouldDrawCrosshair)
+		this->game->GetCrosshair().drawCrosshair(cmdBuf);
 
-	if (ImGui::GetDrawData() != nullptr)
-		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmdBuf);
+	if (this->game->shouldDrawCrosshair)
+	{
+		if (ImGui::GetDrawData() != nullptr)
+			ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmdBuf);
+	}
 
 	Engine::endRenderPass(cmdBuf);
 
@@ -543,12 +548,12 @@ void Renderer::drawModels(VkCommandBuffer cmdBuf, VkPipelineLayout pipelineLayou
 
 	for (std::size_t i = 0; i < renderComponents->size(); i++) {
 		Engine::RenderComponent* renderComponent = reinterpret_cast<Engine::RenderComponent*>((*renderComponents)[i].get());
-		
+
 		if (!renderComponent->GetIsActive())
 			continue;
 
 		if (game->GetGameMode().IsMultiPlayer() && game->GetGameMode().GetPlayerEntity() == renderComponent->GetEntity())
-		 	continue;
+			continue;
 
 		int modelIndex = renderComponent->GetModelIndex();
 
@@ -659,7 +664,7 @@ void Renderer::recreateOthers() {
 	}
 
 	// Recreate descriptor sets
-	this->descriptorSets["shadowMap"] = 
+	this->descriptorSets["shadowMap"] =
 		Engine::createImageDescriptor(*this->context->window,
 			this->descriptorLayouts["fragImageLayout"].handle,
 			VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,

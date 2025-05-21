@@ -56,8 +56,6 @@ public:
 	bool smgCanFire{ false };
 
 
-
-
 	Engine::Entity* playerEntity = nullptr;
 	Engine::Entity* pistolEntity = nullptr;
 	Engine::Entity* rifleEntity = nullptr;

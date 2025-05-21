@@ -83,6 +83,8 @@ public:
 	std::future<void> modelFut;
 	std::map<std::string, tinygltf::Model> tinygltfModels;
 
+	bool shouldDrawCrosshair{ true };
+
 	// Cameras
 	Engine::Camera sceneCamera;
 

@@ -56,6 +56,13 @@ void SinglePlayer::Update(float timeDelta)
 		canReload = true;
 	}
 
+
+	if (smgReloadDelay <= 0.0f)
+	{
+		smgIsReloading = false;
+		smgCanReload = true;
+	}
+
 	if (counter <= 0.0f && countdown > 0)
 	{
 		countdown--;
@@ -170,12 +177,15 @@ void SinglePlayer::ToggleSceneCamera(Camera* sceneCamera)
 		playerRenderComp->SetIsActive(false);
 		renderer.attachCamera(cameraComponent->GetCamera());
 		isPlayerCam = true;
+		this->game->shouldDrawCrosshair = true;
 	}
 	else
 	{
 		playerRenderComp->SetIsActive(true);
 		renderer.attachCamera(sceneCamera);
 		isPlayerCam = false;
+		this->game->shouldDrawCrosshair = false;
+
 	}
 }
 
@@ -290,7 +300,7 @@ void SinglePlayer::shootPistol()
 
 void SinglePlayer::reloadRifle()
 {
-	if (canReload)
+	if (smgCanReload)
 	{
 		smgCanReload = false;
 		smgIsReloading = true;
