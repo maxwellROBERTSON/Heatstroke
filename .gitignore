@@ -21,3 +21,4 @@ compile_commands.json
 Engine/third_party/physx/tools/PhysXGpu_64.dll
 imgui.ini
 templates/
+Game/assets/maps/warehouseEdit/
