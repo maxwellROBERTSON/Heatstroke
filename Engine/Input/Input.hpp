@@ -72,6 +72,7 @@ namespace Engine
 
 		// Input
 		static bool IsPressed(int aKey);
+		static bool IsDown(int aKey);
 		static bool Action(const ControlID action);
 		static void Update();
 		static void RegisterCallbacks(VulkanWindow* window);

@@ -128,6 +128,10 @@ namespace Engine
 	{
 		return mKeyboard.isPressed(aKey);
 	}
+	bool InputManager::IsDown(int aKey)
+	{
+		return mKeyboard.isDown(aKey);
+	}
 	//bool InputManager::Action(const ActionType& action)
 	//{
 	//	std::pair<int, int> inputs = mActionMap[action];

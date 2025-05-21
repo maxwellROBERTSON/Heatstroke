@@ -47,32 +47,32 @@ namespace Engine
 		{
 			float speedModifier = 1.0f;
 
-			if (InputManager::IsPressed(HS_KEY_LEFT_SHIFT))
+			if (InputManager::IsDown(HS_KEY_LEFT_SHIFT))
 				speedModifier = 3.0f;
 
 			float distance = 1.0f * speedModifier * timeDelta;
 
-			if (InputManager::IsPressed(HS_KEY_W))
+			if (InputManager::IsDown(HS_KEY_W))
 			{
 				this->position += distance * this->frontDirection;
 			}
-			if (InputManager::IsPressed(HS_KEY_S))
+			if (InputManager::IsDown(HS_KEY_S))
 			{
 				this->position -= distance * this->frontDirection;
 			}
-			if (InputManager::IsPressed(HS_KEY_D))
+			if (InputManager::IsDown(HS_KEY_D))
 			{
 				this->position += glm::normalize(glm::cross(this->frontDirection, glm::vec3(0.0f, 1.0f, 0.0f))) * distance;
 			}
-			if (InputManager::IsPressed(HS_KEY_A))
+			if (InputManager::IsDown(HS_KEY_A))
 			{
 				this->position -= glm::normalize(glm::cross(this->frontDirection, glm::vec3(0.0f, 1.0f, 0.0f))) * distance;
 			}
-			if (InputManager::IsPressed(HS_KEY_E))
+			if (InputManager::IsDown(HS_KEY_E))
 			{
 				this->position += distance * glm::vec3(0.0f, 1.0f, 0.0f);
 			}
-			if (InputManager::IsPressed(HS_KEY_Q))
+			if (InputManager::IsDown(HS_KEY_Q))
 			{
 				this->position -= distance * glm::vec3(0.0f, 1.0f, 0.0f);
 			}
