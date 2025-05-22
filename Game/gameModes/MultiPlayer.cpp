@@ -182,14 +182,15 @@ void MultiPlayer::shootPistol()
 			PxRaycastHit entityHit = this->game->GetPhysicsWorld().handleShooting();
 			bool hit = false;
 
-			std::vector<int> entitiesWithPhysicsComponent = this->game->GetEntityManager().GetEntitiesWithComponent(PHYSICS);
-			for (int i = 0; i < entitiesWithPhysicsComponent.size(); i++)
+			std::vector<int> entitiesWithNetworkComponent = this->game->GetEntityManager().GetEntitiesWithComponent(NETWORK);
+			for (int i = 0; i < entitiesWithNetworkComponent.size(); i++)
 			{
-
-				Engine::Entity* entity = this->game->GetEntityManager().GetEntity(entitiesWithPhysicsComponent[i]);
+				DLOG("Entity " << i);
+				Engine::Entity* entity = this->game->GetEntityManager().GetEntity(entitiesWithNetworkComponent[i]);
 				Engine::PhysicsComponent* physicsComponent = reinterpret_cast<Engine::PhysicsComponent*>(this->game->GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
 				if (physicsComponent->GetComponentActor() != nullptr && physicsComponent->GetComponentActor() == entityHit.actor)
 				{
+					DLOG("Hit.");
 					score++;
 					hit = true;
 				}

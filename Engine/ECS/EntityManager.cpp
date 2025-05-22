@@ -405,27 +405,27 @@ namespace Engine
 				switch (types[j])
 				{
 				case AUDIO:
-					DLOG("Setting the " << componentIndexArray[types[j]] << " of component of type " << types[j] << " at " << reinterpret_cast<uintptr_t>(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[AUDIO]));
+					DLOG("Setting the " << componentIndexArray[types[j]] << " component of type " << types[j] << " at " << reinterpret_cast<uintptr_t>(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[AUDIO]));
 					reinterpret_cast<AudioComponent*>(base)->SetDataArray(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[AUDIO]);
 					break;
 				case CAMERA:
-					DLOG("Setting the " << componentIndexArray[types[j]] << " of component of type " << types[j] << " at " << reinterpret_cast<uintptr_t>(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[CAMERA]));
+					DLOG("Setting the " << componentIndexArray[types[j]] << " component of type " << types[j] << " at " << reinterpret_cast<uintptr_t>(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[CAMERA]));
 					reinterpret_cast<CameraComponent*>(base)->SetDataArray(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[CAMERA]);
 					break;
 				case CHILDREN:
-					DLOG("Setting the " << componentIndexArray[types[j]] << " of component of type " << types[j] << " at " << reinterpret_cast<uintptr_t>(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[CHILDREN]));
+					DLOG("Setting the " << componentIndexArray[types[j]] << " component of type " << types[j] << " at " << reinterpret_cast<uintptr_t>(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[CHILDREN]));
 					reinterpret_cast<ChildrenComponent*>(base)->SetDataArray(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[CHILDREN]);
 					break;
 				case NETWORK:
-					DLOG("Setting the " << componentIndexArray[types[j]] << " of component of type " << types[j] << " at " << reinterpret_cast<uintptr_t>(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[NETWORK]));
+					DLOG("Setting the " << componentIndexArray[types[j]] << " component of type " << types[j] << " at " << reinterpret_cast<uintptr_t>(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[NETWORK]));
 					reinterpret_cast<NetworkComponent*>(base)->SetDataArray(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[NETWORK]);
 					break;
 				case PHYSICS:
-					DLOG("Setting the " << componentIndexArray[types[j]] << " of component of type " << types[j] << " at " << reinterpret_cast<uintptr_t>(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[PHYSICS]));
+					DLOG("Setting the " << componentIndexArray[types[j]] << " component of type " << types[j] << " at " << reinterpret_cast<uintptr_t>(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[PHYSICS]));
 					reinterpret_cast<PhysicsComponent*>(base)->SetDataArray(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[PHYSICS]);
 					break;
 				case RENDER:
-					DLOG("Setting the " << componentIndexArray[types[j]] << " of component of type " << types[j] << " at " << reinterpret_cast<uintptr_t>(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[RENDER]));
+					DLOG("Setting the " << componentIndexArray[types[j]] << " component of type " << types[j] << " at " << reinterpret_cast<uintptr_t>(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[RENDER]));
 					reinterpret_cast<RenderComponent*>(base)->SetDataArray(block + componentOffsets[types[j]] + componentIndexArray[types[j]] * ComponentSizes[RENDER]);
 					break;
 				default:

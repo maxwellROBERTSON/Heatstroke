@@ -55,7 +55,6 @@ public:
 	float smgReloadDelay = 0.25f;
 	bool smgCanFire{ false };
 
-
 	Engine::Entity* playerEntity = nullptr;
 	Engine::Entity* pistolEntity = nullptr;
 	Engine::Entity* rifleEntity = nullptr;

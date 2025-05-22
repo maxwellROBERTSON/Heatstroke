@@ -96,7 +96,6 @@ void SinglePlayer::Update(float timeDelta)
 		smgAmmoCount = 35;
 	}
 
-
 	// Handle swap gun
 	switch (InputManager::getInputDevice())
 	{
@@ -113,50 +112,20 @@ void SinglePlayer::Update(float timeDelta)
 
 		if ((InputManager::getJoystick(0).getAxisValue(HS_GAMEPAD_AXIS_RIGHT_TRIGGER) > -0.5f) && !holdingPistol)
 			shootRifle();
-
-		// glm::vec3 pos = entity->GetPosition();
-		// int xPos = randomDistribX(gen);
-		// int zPos = randomDistribZ(gen);
-		// glm::vec3 newPos{ xPos, pos.y, zPos };
-		// entity->SetPosition(newPos);
-		// glm::vec3 translation;
-		// glm::vec3 scale;
-		// glm::quat rotation;
-		// physicsComponent->DecomposeTransform(entity->GetModelMatrix(), translation, rotation, scale);
-		// PxTransform pxTransform(
-		// 	PxVec3(translation.x, translation.y, translation.z),
-		// 	PxQuat(rotation.x, rotation.y, rotation.z, rotation.w)
-		// );
-		// physicsComponent->GetStaticBody()->setGlobalPose(pxTransform);
-
-
 		break;
 	}
 	case InputDevice::KBM:
 	{
-		//if (InputManager::Action(Controls::SwapWeapon))
 		if (InputManager::getKeyboard().isPressed(HS_KEY_X))
 			swapWeapon();
-
-		//if (InputManager::Action(Controls::Reload))
 		if (InputManager::getKeyboard().isPressed(HS_KEY_R))
 			reloadPistol();
-
-		//if (InputManager::Action(Controls::Shoot))
-		//if (InputManager::getMouse().isDown(HS_MOUSE_BUTTON_LEFT) && canFire)
 		if (InputManager::getMouse().isPressed(HS_MOUSE_BUTTON_LEFT) && canFire)
-		{
 			shootPistol();
-		}
-
 		if (InputManager::getMouse().isDown(HS_MOUSE_BUTTON_LEFT) && !holdingPistol)
 			shootRifle();
-
 		if (InputManager::getKeyboard().isPressed(HS_KEY_R) && !holdingPistol)
 			reloadRifle();
-
-
-
 		break;
 	}
 	}
@@ -257,40 +226,34 @@ void SinglePlayer::shootPistol()
 
 			bool hitTarget = false;
 
-			std::vector<int> entitiesWithPhysicsComponent = this->game->GetEntityManager().GetEntitiesWithComponent(PHYSICS);
-			for (int i = 0; i < entitiesWithPhysicsComponent.size(); i++)
+			Engine::PhysicsComponent* targetPhysicsComponent = reinterpret_cast<Engine::PhysicsComponent*>(this->game->GetEntityManager().GetComponentOfEntity(targetEntity->GetEntityId(), PHYSICS));
+
+			if (targetPhysicsComponent->GetStaticBody() != nullptr && targetPhysicsComponent->GetStaticBody() == entityHit.actor)
 			{
-				Engine::Entity* entity = this->game->GetEntityManager().GetEntity(entitiesWithPhysicsComponent[i]);
-				Engine::PhysicsComponent* physicsComponent = reinterpret_cast<Engine::PhysicsComponent*>(this->game->GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
-				if (physicsComponent->GetStaticBody() != nullptr && physicsComponent->GetStaticBody() == entityHit.actor)
-				{
-					if (countdown > 0)
-						score++;
+				if (countdown > 0)
+					score++;
 
-					Engine::RenderComponent* hitRenderComponent = reinterpret_cast<Engine::RenderComponent*>(this->game->GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), RENDER));
-					hitRenderComponent->SetIsActive(0);
-					glm::vec3 pos = entity->GetPosition();
-					int xPos = randomDistribX(gen);
-					int zPos = randomDistribZ(gen);
-					glm::vec3 newPos{ xPos, pos.y, zPos };
-					targetEntity->SetPosition(newPos);
-					glm::vec3 translation;
-					glm::vec3 scale;
-					glm::quat rotation;
-					physicsComponent->DecomposeTransform(targetEntity->GetModelMatrix(), translation, rotation, scale);
-					PxTransform pxTransform(
-						PxVec3(translation.x, translation.y, translation.z),
-						PxQuat(rotation.x, rotation.y, rotation.z, rotation.w)
-					);
-					physicsComponent->GetStaticBody()->setGlobalPose(pxTransform);
-					hitRenderComponent->SetIsActive(1);
+				Engine::RenderComponent* hitRenderComponent = reinterpret_cast<Engine::RenderComponent*>(this->game->GetEntityManager().GetComponentOfEntity(targetEntity->GetEntityId(), RENDER));
+				glm::vec3 pos = targetEntity->GetPosition();
+				int xPos = randomDistribX(gen);
+				int zPos = randomDistribZ(gen);
+				glm::vec3 newPos{ xPos, pos.y, zPos };
+				targetEntity->SetPosition(newPos);
+				glm::vec3 translation;
+				glm::vec3 scale;
+				glm::quat rotation;
+				targetPhysicsComponent->DecomposeTransform(targetEntity->GetModelMatrix(), translation, rotation, scale);
+				PxTransform pxTransform(
+					PxVec3(translation.x, translation.y, translation.z),
+					PxQuat(rotation.x, rotation.y, rotation.z, rotation.w)
+				);
+				targetPhysicsComponent->GetStaticBody()->setGlobalPose(pxTransform);
 
-					hitTarget = true;
-				}
+				hitTarget = true;
 			}
 
 			if (!hitTarget) {
-				if (entityHit.actor != nullptr && (std::strncmp(entityHit.actor->getName(), "levelBounds", std::strlen(entityHit.actor->getName())) != 0) && entityHit.distance != PX_MAX_REAL) {
+				if (entityHit.actor != nullptr && entityHit.actor->getName() == nullptr && entityHit.distance != PX_MAX_REAL) {
 					this->game->getBulletDecals().setNextDecal(entityHit.position, entityHit.normal);
 				}
 			}

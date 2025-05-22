@@ -2,6 +2,8 @@
 
 #include "../../Core/Log.hpp"
 
+#include <glm/gtx/string_cast.hpp>
+
 namespace Engine
 {
 	class PhysicsWorld;
@@ -103,9 +105,9 @@ namespace Engine
 	// Init
 	// isClient = true if the system using the function is a client (not the server)
 	// isLocalPlayer = true if this entity is the local client's entity
-	void PhysicsComponent::Init(PhysicsWorld& pworld, PhysicsType physicsType, vk::Model& model, glm::mat4 transform, int index, bool isClient, bool isLocalPlayer)
+	void PhysicsComponent::Init(PhysicsWorld& pworld, PhysicsType physicsType, vk::Model& model, glm::mat4 transform, int thisEntityId, bool isClient, bool isLocalPlayer)
 	{
-		entityId = index;
+		entityId = thisEntityId;
 
 		type = physicsType;
 
@@ -125,7 +127,7 @@ namespace Engine
 		// parse mat4
 		if (!DecomposeTransform(transform, translation, rotation, scale))
 		{
-			DLOG("DecomposeTransform failed!");
+			DLOG("DecomposeTransform failed for entity with id " << entityId << "!");
 			return;
 		}
 
@@ -252,9 +254,9 @@ namespace Engine
 		}
 	}
 
-	void PhysicsComponent::InitComplexShape(PhysicsWorld& pWorld, PhysicsType physicsType, Engine::vk::Model& model, glm::mat4 transform, int index)
+	void PhysicsComponent::InitComplexShape(PhysicsWorld& pWorld, PhysicsType physicsType, Engine::vk::Model& model, glm::mat4 transform, int thisEntityId)
 	{
-		entityId = index;
+		entityId = thisEntityId;
 
 		glm::vec3 worldSpaceMin = glm::vec3(FLT_MAX);
 		glm::vec3 worldSpaceMax = glm::vec3(-FLT_MAX);
@@ -273,8 +275,8 @@ namespace Engine
 
 				// Decompose transform
 				if (!DecomposeTransform(nodeMatrix, translation, rotation, scale)) {
-					DLOG("DecomposeTransform failed!");
-					return;
+					DLOG("DecomposeTransform failed for a node in the model used in entity with id " << entityId << "!");
+					continue;
 				}
 
 				PxTransform nodePxTransform(
