@@ -155,7 +155,7 @@ void main() {
     float metallicFactor = matInfo.metallicFactor;
     float roughnessFactor = matInfo.roughnessFactor;
 
-    vec3 ambient = vec3(0.03f) * texture(baseColourMap, v2fTexCoord0).rgb;
+    vec3 ambient = vec3(0.15f) * texture(baseColourMap, v2fTexCoord0).rgb;
     vec3 brdfVal = brdf(lightDir, viewDir, normal, metallicFactor, roughnessFactor) * 100;
     float NdotL = max(dot(normal, lightDir), 0.001f);
     float attenuation = 1 / pow(length(lightPos - v2fPosition), 1);

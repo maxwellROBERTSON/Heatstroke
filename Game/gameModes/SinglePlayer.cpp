@@ -301,39 +301,34 @@ void SinglePlayer::shootRifle()
 			PxRaycastHit entityHit = this->game->GetPhysicsWorld().handleShooting();
 			bool hitTarget = false;
 
-			std::vector<int> entitiesWithPhysicsComponent = this->game->GetEntityManager().GetEntitiesWithComponent(PHYSICS);
-			for (int i = 0; i < entitiesWithPhysicsComponent.size(); i++)
+			Engine::PhysicsComponent* targetPhysicsComponent = reinterpret_cast<Engine::PhysicsComponent*>(this->game->GetEntityManager().GetComponentOfEntity(targetEntity->GetEntityId(), PHYSICS));
+
+			if (targetPhysicsComponent->GetStaticBody() != nullptr && targetPhysicsComponent->GetStaticBody() == entityHit.actor)
 			{
-				Engine::Entity* entity = this->game->GetEntityManager().GetEntity(entitiesWithPhysicsComponent[i]);
-				Engine::PhysicsComponent* physicsComponent = reinterpret_cast<Engine::PhysicsComponent*>(this->game->GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
-				if (physicsComponent->GetStaticBody() != nullptr && physicsComponent->GetStaticBody() == entityHit.actor)
-				{
+				if (countdown > 0)
 					score++;
 
-					Engine::RenderComponent* hitRenderComponent = reinterpret_cast<Engine::RenderComponent*>(this->game->GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), RENDER));
-					hitRenderComponent->SetIsActive(0);
-					glm::vec3 pos = entity->GetPosition();
-					int xPos = randomDistribX(gen);
-					int zPos = randomDistribZ(gen);
-					glm::vec3 newPos{ xPos, pos.y, zPos };
-					targetEntity->SetPosition(newPos);
-					glm::vec3 translation;
-					glm::vec3 scale;
-					glm::quat rotation;
-					physicsComponent->DecomposeTransform(targetEntity->GetModelMatrix(), translation, rotation, scale);
-					PxTransform pxTransform(
-						PxVec3(translation.x, translation.y, translation.z),
-						PxQuat(rotation.x, rotation.y, rotation.z, rotation.w)
-					);
-					physicsComponent->GetStaticBody()->setGlobalPose(pxTransform);
-					hitRenderComponent->SetIsActive(1);
+				Engine::RenderComponent* hitRenderComponent = reinterpret_cast<Engine::RenderComponent*>(this->game->GetEntityManager().GetComponentOfEntity(targetEntity->GetEntityId(), RENDER));
+				glm::vec3 pos = targetEntity->GetPosition();
+				int xPos = randomDistribX(gen);
+				int zPos = randomDistribZ(gen);
+				glm::vec3 newPos{ xPos, pos.y, zPos };
+				targetEntity->SetPosition(newPos);
+				glm::vec3 translation;
+				glm::vec3 scale;
+				glm::quat rotation;
+				targetPhysicsComponent->DecomposeTransform(targetEntity->GetModelMatrix(), translation, rotation, scale);
+				PxTransform pxTransform(
+					PxVec3(translation.x, translation.y, translation.z),
+					PxQuat(rotation.x, rotation.y, rotation.z, rotation.w)
+				);
+				targetPhysicsComponent->GetStaticBody()->setGlobalPose(pxTransform);
 
-					hitTarget = true;
-				}
+				hitTarget = true;
 			}
 
 			if (!hitTarget) {
-				if (entityHit.actor != nullptr && (std::strncmp(entityHit.actor->getName(), "levelBounds", std::strlen(entityHit.actor->getName())) != 0) && entityHit.distance != PX_MAX_REAL) {
+				if (entityHit.actor != nullptr && entityHit.actor->getName() == nullptr && entityHit.distance != PX_MAX_REAL) {
 					this->game->getBulletDecals().setNextDecal(entityHit.position, entityHit.normal);
 				}
 			}
