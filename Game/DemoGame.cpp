@@ -245,6 +245,14 @@ void FPSTest::loadOnlineEntities(int maxClientsNum, int numTeams, bool isListenS
 	this->renderer.attachCamera(&sceneCamera);
 	int start = 0;
 
+	// pistol
+	types = { RENDER };
+	entity = entityManager.MakeNewEntity(types);
+	entity->SetSpawnState(glm::vec3(0.0f, -2.0f, -1.0f), 180.0f, glm::vec3(0.0f, 1.0f, 0.0f), 1.0f);
+	renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
+	renderComponent->SetModelIndex(2);
+	Entity* pistolEntity = entity;
+
 	if (isListenServer)
 	{
 		// Load start server clients's player
@@ -268,16 +276,9 @@ void FPSTest::loadOnlineEntities(int maxClientsNum, int numTeams, bool isListenS
 		entityManager.AssignNextClient(0, false);
 		GetGameMode().SetPlayerEntity(entity);
 
-		// pistol
-		types = { RENDER };
-		entity = entityManager.MakeNewEntity(types);
-		entity->SetSpawnState(glm::vec3(0.0f, -2.0f, -1.0f), 180.0f, glm::vec3(0.0f, 1.0f, 0.0f), 1.0f);
-		renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
-		renderComponent->SetModelIndex(2);
+		childrenComponent->AddChild(pistolEntity->GetEntityId());
 
-		childrenComponent->AddChild(entity->GetEntityId());
-
-		GetGameMode().SetPistolEntity(entity);
+		GetGameMode().SetPistolEntity(pistolEntity);
 
 		start++;
 		maxClientsNum++;
@@ -310,14 +311,7 @@ void FPSTest::loadOnlineEntities(int maxClientsNum, int numTeams, bool isListenS
 		audioComponent->addClip("GunShot", "Game/assets/AudioClips/singlegunshot.wav");
 		childrenComponent = reinterpret_cast<ChildrenComponent*>(GetEntityManager().GetComponentOfEntity(entity->GetEntityId(), CHILDREN));
 
-		// pistol
-		types = { RENDER };
-		entity = entityManager.MakeNewEntity(types);
-		entity->SetSpawnState(glm::vec3(0.0f, -2.0f, -1.0f), 180.0f, glm::vec3(0.0f, 1.0f, 0.0f), 1.0f);
-		renderComponent = reinterpret_cast<RenderComponent*>(entityManager.GetComponentOfEntity(entity->GetEntityId(), RENDER));
-		renderComponent->SetModelIndex(2);
-
-		childrenComponent->AddChild(entity->GetEntityId());
+		childrenComponent->AddChild(pistolEntity->GetEntityId());
 	}
 
 	GetEntityManager().ResetChanged();
