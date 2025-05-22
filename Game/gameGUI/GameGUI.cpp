@@ -431,12 +431,12 @@ void makeModelLoadGUI(FPSTest* game, int* w, int* h)
 			game->modelFut.get();
 			game->makeVulkanModels();
 			game->getRenderer().initialiseModelDescriptors();
+			game->getRenderer().initialiseJointMatrices();
 		}
 		if (singleHovered)
 		{
 			game->SetGameMode(std::make_unique<SinglePlayer>(game));
 			game->loadOfflineEntities();
-			game->getRenderer().initialiseJointMatrices();
 			game->GetGUI().ToggleGUIMode("ModelLoad");
 			game->GetGUI().ToggleGUIMode("SinglePlayer");
 			if (game->debugging)
@@ -463,7 +463,6 @@ void makeModelLoadGUI(FPSTest* game, int* w, int* h)
 				game->SetRenderMode(RenderMode::NO_DATA_MODE);
 			}
 			game->loadOnlineEntities(maxClientsNum, numTeamsNum, isListenServer);
-			game->getRenderer().initialiseJointMatrices();
 			game->SetServer(portNum, maxClientsNum);
 			if (isListenServer)
 			{
@@ -677,7 +676,6 @@ void makeLoadingGUI(FPSTest* game, int* w, int* h)
 	{
 		game->SetGameMode(std::make_unique<MultiPlayer>(game));
 		game->GetGameMode().InitNetwork();
-		game->getRenderer().initialiseJointMatrices();
 		game->GetGUI().ToggleGUIMode("Loading");
 		game->GetGUI().ToggleGUIMode("MultiPlayer");
 		if (game->debugging)

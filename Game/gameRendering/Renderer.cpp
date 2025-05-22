@@ -176,14 +176,8 @@ void Renderer::initialiseJointMatrices() {
 
 	this->isSceneLoaded = true;
 
-	std::vector<std::unique_ptr<Engine::ComponentBase>>* renderComponents = this->entityManager->GetComponentsOfType(Engine::RENDER);
-	if (renderComponents == nullptr)
-		return;
-
-	for (std::size_t i = 0; i < renderComponents->size(); i++) {
-		Engine::RenderComponent* renderComponent = reinterpret_cast<Engine::RenderComponent*>((*renderComponents)[i].get());
-		int modelIndex = renderComponent->GetModelIndex();
-		Engine::vk::Model& model = models[modelIndex];
+	for (std::size_t i = 0; i < models.size(); i++) {
+		Engine::vk::Model& model = models[i];
 
 		for (Engine::vk::Node* node : model.linearNodes) {
 			if (!node->mesh)
