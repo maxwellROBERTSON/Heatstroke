@@ -143,7 +143,7 @@ namespace Engine
 	void GameClient::SendGameUpdate()
 	{
 		if (game->GetNetwork().GetStatus() != Status::CLIENT_ACTIVE)
-			game->GetNetwork().SetStatus(Status::CLIENT_ACTIVE);
+			return;
 		int bytes = game->GetEntityManager().GetTotalChangedDataSize();
 		if (bytes == 0 || bytes > this->config->channel[yojimbo::CHANNEL_TYPE_UNRELIABLE_UNORDERED].maxBlockSize)
 			return;
@@ -267,26 +267,21 @@ namespace Engine
 	// Handle a server message for resetting positions
 	void GameClient::HandleServerResetPositions()
 	{
-		if (game->GetNetwork().GetStatus() == Status::CLIENT_ACTIVE)
+		if (game->GetNetwork().GetStatus() != Status::CLIENT_ACTIVE)
+			game->GetNetwork().SetStatus(Status::CLIENT_ACTIVE);
+		EntityManager& manager = game->GetEntityManager();
+		std::vector<int> entitiesWithNetworkComponent = manager.GetEntitiesWithComponent(NETWORK);
+		for (int i = 0; i < entitiesWithNetworkComponent.size(); i++)
 		{
-			EntityManager& manager = game->GetEntityManager();
-			std::vector<int> entitiesWithNetworkComponent = manager.GetEntitiesWithComponent(NETWORK);
-			for (int i = 0; i < entitiesWithNetworkComponent.size(); i++)
+			Entity* entity = game->GetEntityManager().GetEntity(entitiesWithNetworkComponent[i]);
+			entity->ResetToSpawnState();
+			NetworkComponent* networkComponent = reinterpret_cast<Engine::NetworkComponent*>(manager.GetComponentOfEntity(entity->GetEntityId(), NETWORK));
+			if (networkComponent->GetClientId() == clientId)
 			{
-				Entity* entity = game->GetEntityManager().GetEntity(entitiesWithNetworkComponent[i]);
-				entity->ResetToSpawnState();
-				NetworkComponent* networkComponent = reinterpret_cast<Engine::NetworkComponent*>(manager.GetComponentOfEntity(entity->GetEntityId(), NETWORK));
-				if (networkComponent->GetClientId() == clientId)
-				{
-					Engine::PhysicsComponent* physicsComponent = reinterpret_cast<Engine::PhysicsComponent*>(manager.GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
-					glm::vec3 pos = entity->GetPosition();
-					physicsComponent->GetController()->setFootPosition(PxExtendedVec3(pos.x, pos.y, pos.z));
-				}
+				Engine::PhysicsComponent* physicsComponent = reinterpret_cast<Engine::PhysicsComponent*>(manager.GetComponentOfEntity(entity->GetEntityId(), PHYSICS));
+				glm::vec3 pos = entity->GetPosition();
+				physicsComponent->GetController()->setFootPosition(PxExtendedVec3(pos.x, pos.y, pos.z));
 			}
-		}
-		else
-		{
-			DLOG("FAILED, CLIENT NOT YET ACTIVE.");
 		}
 	}
 

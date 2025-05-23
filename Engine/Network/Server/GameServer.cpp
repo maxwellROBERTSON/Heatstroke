@@ -117,23 +117,10 @@ namespace Engine
 		DLOG(GameMessageTypeStrings[message->GetType()] << " FROM CLIENT " << clientIndex << " WITH MESSAGEID = " << message->GetId());
 		if (message->GetType() == REQUEST_ENTITY_DATA)
 		{
-			yojimbo::NetworkInfo info;
-			server->GetNetworkInfo(clientIndex, info);
-			std::cout << "RTT of client " << clientIndex << " = " << info.RTT << std::endl;
-			auto now = std::chrono::steady_clock::now();
-			// Convert time_point to duration since epoch (steady_clock epoch is arbitrary)
-			auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
-
-			std::cout << "REQUEST_ENTITY_DATA at " << ms << " ms" << std::endl;
 			connectionQueue.push_back(std::make_pair(clientIndex, server->GetClientId(clientIndex)));
 		}
 		else if (message->GetType() == CLIENT_INITIALIZED)
 		{
-			auto now = std::chrono::steady_clock::now();
-			// Convert time_point to duration since epoch (steady_clock epoch is arbitrary)
-			auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
-
-			std::cout << "CLIENT_INITIALISED at " << ms << " ms" << std::endl;
 			loadedClients.push_back(std::make_pair(clientIndex, server->GetClientId(clientIndex)));
 			sendResetPositionsMessage = true;
 		}
